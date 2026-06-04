@@ -4,19 +4,32 @@ import SwiftUI
 struct PKwindowsManagementApp: App {
     @NSApplicationDelegateAdaptor(MenuBarController.self) private var menuBarController
     @StateObject private var settings = AppSettings()
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
-        WindowGroup("PKwindowsManagement") {
+        WindowGroup("PKwindowsManagement", id: "settings") {
             RootDashboardView(settings: settings)
                 .frame(minWidth: 760, minHeight: 720)
                 .onAppear {
                     AppRuntime.shared.settings = settings
+                    AppRuntime.shared.openSettings = {
+                        openWindow(id: "settings")
+                        NSApp.activate(ignoringOtherApps: true)
+                    }
                     let launcher = AppLauncherService()
                     let apps = launcher.launcherCommands() + launcher.loadApps(settings: settings)
                     LaunchShortcutMonitor.shared.start(settings: settings, apps: apps) { app in
                         launcher.launch(app, settings: settings)
                     }
                 }
+        }
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings...") {
+                    AppRuntime.shared.openSettings?()
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
     }
 }

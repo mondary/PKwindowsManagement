@@ -60,9 +60,12 @@ final class LaunchpadOverlayController {
     func openSettings() {
         hide()
         DispatchQueue.main.async {
-            guard let settingsWindow = NSApp.windows.first(where: { !($0 is LaunchpadPanel) }) else { return }
-            settingsWindow.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            if let settingsWindow = NSApp.windows.first(where: { $0.title == "PKwindowsManagement" }) {
+                settingsWindow.makeKeyAndOrderFront(nil)
+                NSApp.activate(ignoringOtherApps: true)
+                return
+            }
+            AppRuntime.shared.openSettings?()
         }
     }
 

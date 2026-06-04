@@ -12,19 +12,26 @@ final class LaunchShortcutMonitor {
     private var modifierState = ModifierState()
     private var appsByBundleID: [String: LaunchableApp] = [:]
     private var retryTimer: Timer?
+    private var didRequestAccessibility = false
 
     func start(settings: AppSettings, apps: [LaunchableApp], launchHandler: @escaping (LaunchableApp) -> Void) {
         self.settings = settings
         self.launchHandler = launchHandler
         refreshApps(apps)
 
+        requestAccessibilityOnce()
         installEventTap()
+    }
+
+    private func requestAccessibilityOnce() {
+        guard !didRequestAccessibility else { return }
+        didRequestAccessibility = true
+        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+        _ = AXIsProcessTrustedWithOptions(options)
     }
 
     private func installEventTap() {
         guard eventTap == nil else { return }
-        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        _ = AXIsProcessTrustedWithOptions(options)
         let mask = CGEventMask((1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.flagsChanged.rawValue))
         let callback: CGEventTapCallBack = { _, type, event, refcon in
             guard let refcon else { return Unmanaged.passUnretained(event) }

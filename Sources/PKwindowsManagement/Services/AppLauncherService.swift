@@ -21,6 +21,14 @@ struct LaunchableApp: Identifiable {
     let url: URL
     let icon: NSImage
     let shortcut: KeyboardShortcutSetting?
+
+    var commandSymbolName: String? {
+        switch id {
+        case LauncherCommand.emptyTrash.rawValue: "trash"
+        case LauncherCommand.eject.rawValue: "eject"
+        default: nil
+        }
+    }
 }
 
 final class AppLauncherService {

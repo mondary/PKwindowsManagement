@@ -8,12 +8,16 @@ struct LaunchpadOverlayView: View {
     @State private var uninstallTarget: LaunchableApp?
     @State private var uninstallError: String?
     @State private var appCatalogRevision = 0
+    @State private var currentPage = 0
+    @State private var scrollAccumulator: CGFloat = 0
+    @State private var lastScrollDate = Date.distantPast
     @FocusState private var searchFocused: Bool
     private let launcher = AppLauncherService()
 
     var body: some View {
         let apps = filteredApps
         GeometryReader { geometry in
+            let metrics = gridMetrics(for: geometry.size)
             ZStack {
                 VStack(spacing: 24) {
                     topBar
@@ -22,33 +26,7 @@ struct LaunchpadOverlayView: View {
 
                     searchField
 
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            LazyVGrid(columns: gridColumns(for: geometry.size), spacing: 28) {
-                                ForEach(apps) { app in
-                                    Button {
-                                        launch(app)
-                                    } label: {
-                                        OverlayAppTile(app: app, isSelected: app.id == selectedAppID)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .contextMenu {
-                                        appContextMenu(for: app)
-                                    }
-                                    .id(app.id)
-                                }
-                            }
-                            .padding(.horizontal, max(54, geometry.size.width * 0.1))
-                            .padding(.top, 34)
-                            .padding(.bottom, 126)
-                        }
-                        .onChange(of: selectedAppID) { id in
-                            guard let id else { return }
-                            withAnimation(.easeOut(duration: 0.12)) {
-                                proxy.scrollTo(id, anchor: .center)
-                            }
-                        }
-                    }
+                    gridContent(apps: apps, metrics: metrics)
 
                     Spacer(minLength: 0)
 
@@ -60,7 +38,7 @@ struct LaunchpadOverlayView: View {
             .background {
                 LaunchpadKeyEventMonitor { event in
                     guard shortcutTarget == nil, uninstallTarget == nil, uninstallError == nil else { return false }
-                    return handleKeyEvent(event, apps: apps, columnCount: gridColumns(for: geometry.size).count)
+                    return handleKeyEvent(event, apps: apps, columnCount: settings.launchpadGridColumns)
                 }
             }
         }
@@ -71,6 +49,7 @@ struct LaunchpadOverlayView: View {
             }
         }
         .onChange(of: query) { _ in
+            currentPage = 0
             selectFirstApp()
         }
         .onExitCommand {
@@ -126,7 +105,11 @@ struct LaunchpadOverlayView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.5))
-            TextField("Search", text: $query)
+            TextField(
+                "",
+                text: $query,
+                prompt: Text("Search").foregroundColor(.white.opacity(0.55))
+            )
                 .textFieldStyle(.plain)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(.white)
@@ -167,12 +150,139 @@ struct LaunchpadOverlayView: View {
         )
     }
 
-    private func gridColumns(for size: CGSize) -> [GridItem] {
+    @ViewBuilder
+    private func gridContent(apps: [LaunchableApp], metrics: LaunchpadGridMetrics) -> some View {
+        switch settings.launchpadGridNavigation {
+        case .vertical:
+            ScrollViewReader { proxy in
+                ScrollView(.vertical) {
+                    appGrid(apps: apps, metrics: metrics)
+                        .padding(.horizontal, metrics.horizontalPadding)
+                        .padding(.vertical, metrics.verticalPadding)
+                }
+                .scrollIndicators(.visible)
+                .frame(height: metrics.viewportHeight)
+                .onChange(of: selectedAppID) { id in
+                    guard let id else { return }
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        proxy.scrollTo(id, anchor: .center)
+                    }
+                }
+            }
+        case .horizontalPages:
+            let pages = appPages(apps)
+            VStack(spacing: 10) {
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal) {
+                        LazyHStack(spacing: 0) {
+                            ForEach(Array(pages.enumerated()), id: \.offset) { page, pageApps in
+                                appGrid(apps: pageApps, metrics: metrics)
+                                    .padding(.horizontal, metrics.horizontalPadding)
+                                    .padding(.vertical, metrics.verticalPadding)
+                                    .frame(width: metrics.viewportWidth, height: metrics.viewportHeight)
+                                    .id(page)
+                            }
+                        }
+                    }
+                    .scrollIndicators(.visible)
+                    .frame(width: metrics.viewportWidth, height: metrics.viewportHeight)
+                    .simultaneousGesture(
+                            DragGesture(minimumDistance: 30)
+                                .onEnded { value in
+                                    changePage(direction: value.translation.width < 0 ? 1 : -1, pageCount: pages.count)
+                                }
+                        )
+                    .onChange(of: currentPage) { page in
+                        withAnimation(.easeInOut(duration: 0.22)) {
+                            proxy.scrollTo(page, anchor: .leading)
+                        }
+                    }
+                }
+
+                pageIndicator(pageCount: pages.count)
+            }
+        }
+    }
+
+    private func appGrid(apps: [LaunchableApp], metrics: LaunchpadGridMetrics) -> some View {
+        LazyVGrid(columns: metrics.columns, spacing: metrics.rowSpacing) {
+            ForEach(apps) { app in
+                Button {
+                    launch(app)
+                } label: {
+                    OverlayAppTile(
+                        app: app,
+                        isSelected: app.id == selectedAppID,
+                        tileSize: metrics.tileSize,
+                        iconSize: metrics.iconSize
+                    )
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    appContextMenu(for: app)
+                }
+                .id(app.id)
+            }
+        }
+    }
+
+    private func pageIndicator(pageCount: Int) -> some View {
+        HStack(spacing: 7) {
+            ForEach(0..<pageCount, id: \.self) { page in
+                Button {
+                    currentPage = page
+                } label: {
+                    Circle()
+                        .fill(.white.opacity(page == currentPage ? 0.9 : 0.3))
+                        .frame(width: 7, height: 7)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(height: 10)
+    }
+
+    private func appPages(_ apps: [LaunchableApp]) -> [[LaunchableApp]] {
+        let pageSize = max(1, settings.launchpadGridColumns * settings.launchpadGridRows)
+        return stride(from: 0, to: apps.count, by: pageSize).map { start in
+            Array(apps[start..<min(start + pageSize, apps.count)])
+        }
+    }
+
+    private func changePage(direction: Int, pageCount: Int) {
+        guard pageCount > 0 else { return }
+        let nextPage = min(max(currentPage + direction, 0), pageCount - 1)
+        guard nextPage != currentPage else { return }
+        withAnimation(.easeInOut(duration: 0.22)) {
+            currentPage = nextPage
+        }
+    }
+
+    private func gridMetrics(for size: CGSize) -> LaunchpadGridMetrics {
         let horizontalInset = max(54, size.width * 0.1) * 2
-        let availableWidth = max(420, size.width - horizontalInset)
-        let itemWidth: CGFloat = 112
-        let count = max(4, min(10, Int(availableWidth / itemWidth)))
-        return Array(repeating: GridItem(.fixed(104), spacing: 34), count: count)
+        let viewportHeight = max(300, size.height - 260)
+        let columnSpacing = max(8, min(28, size.width / CGFloat(settings.launchpadGridColumns) * 0.16))
+        let rowSpacing = max(6, min(28, viewportHeight / CGFloat(settings.launchpadGridRows) * 0.14))
+        let verticalPadding = max(6, min(20, rowSpacing))
+        let availableWidth = size.width - horizontalInset - columnSpacing * CGFloat(settings.launchpadGridColumns - 1)
+        let availableHeight = viewportHeight - verticalPadding * 2 - rowSpacing * CGFloat(settings.launchpadGridRows - 1)
+        let tileWidth = min(104, availableWidth / CGFloat(settings.launchpadGridColumns))
+        let tileHeight = min(116, availableHeight / CGFloat(settings.launchpadGridRows))
+        let iconSize = max(28, min(64, tileWidth - 16, tileHeight - 30))
+
+        return LaunchpadGridMetrics(
+            columns: Array(
+                repeating: GridItem(.flexible(minimum: tileWidth, maximum: 104), spacing: columnSpacing),
+                count: settings.launchpadGridColumns
+            ),
+            rowSpacing: rowSpacing,
+            horizontalPadding: horizontalInset / 2,
+            verticalPadding: verticalPadding,
+            viewportWidth: size.width,
+            viewportHeight: viewportHeight,
+            tileSize: CGSize(width: tileWidth, height: tileHeight),
+            iconSize: iconSize
+        )
     }
 
     private func selectFirstApp() {
@@ -180,6 +290,15 @@ struct LaunchpadOverlayView: View {
     }
 
     private func handleKeyEvent(_ event: NSEvent, apps: [LaunchableApp], columnCount: Int) -> Bool {
+        if event.type == .scrollWheel {
+            return handleScrollEvent(event, apps: apps, columnCount: columnCount)
+        }
+
+        if event.keyCode == 43, event.modifierFlags.contains(.command) {
+            LaunchpadOverlayController.shared.openSettings()
+            return true
+        }
+
         if event.keyCode == 53 {
             if query.isEmpty {
                 LaunchpadOverlayController.shared.hide()
@@ -209,7 +328,58 @@ struct LaunchpadOverlayView: View {
         let currentIndex = apps.firstIndex { $0.id == selectedAppID } ?? 0
         let nextIndex = min(max(currentIndex + movement, 0), apps.count - 1)
         selectedAppID = apps[nextIndex].id
+        if settings.launchpadGridNavigation == .horizontalPages {
+            currentPage = nextIndex / max(1, settings.launchpadGridColumns * settings.launchpadGridRows)
+        }
         return true
+    }
+
+    private func handleScrollEvent(_ event: NSEvent, apps: [LaunchableApp], columnCount: Int) -> Bool {
+        guard !apps.isEmpty else { return false }
+
+        let now = Date()
+        if now.timeIntervalSince(lastScrollDate) > 0.3 {
+            scrollAccumulator = 0
+        }
+        lastScrollDate = now
+
+        let delta: CGFloat
+        switch settings.launchpadGridNavigation {
+        case .vertical:
+            delta = event.scrollingDeltaY
+        case .horizontalPages:
+            delta = abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY)
+                ? event.scrollingDeltaX
+                : event.scrollingDeltaY
+        }
+
+        scrollAccumulator += delta
+        let threshold: CGFloat = event.hasPreciseScrollingDeltas ? 12 : 1
+        guard abs(scrollAccumulator) >= threshold else { return true }
+
+        let direction = scrollAccumulator > 0 ? -1 : 1
+        scrollAccumulator = 0
+
+        switch settings.launchpadGridNavigation {
+        case .vertical:
+            moveSelection(by: direction * columnCount, apps: apps)
+        case .horizontalPages:
+            changePage(direction: direction, pageCount: appPages(apps).count)
+            selectFirstAppOnCurrentPage(apps)
+        }
+        return true
+    }
+
+    private func moveSelection(by movement: Int, apps: [LaunchableApp]) {
+        let currentIndex = apps.firstIndex { $0.id == selectedAppID } ?? 0
+        let nextIndex = min(max(currentIndex + movement, 0), apps.count - 1)
+        selectedAppID = apps[nextIndex].id
+    }
+
+    private func selectFirstAppOnCurrentPage(_ apps: [LaunchableApp]) {
+        let pageSize = max(1, settings.launchpadGridColumns * settings.launchpadGridRows)
+        let index = min(currentPage * pageSize, apps.count - 1)
+        selectedAppID = apps[index].id
     }
 
     private func selectedApp(in apps: [LaunchableApp]) -> LaunchableApp? {
@@ -294,28 +464,38 @@ struct LaunchpadOverlayView: View {
 private struct OverlayAppTile: View {
     let app: LaunchableApp
     let isSelected: Bool
+    let tileSize: CGSize
+    let iconSize: CGFloat
 
     var body: some View {
-        VStack(spacing: 9) {
+        VStack(spacing: max(4, min(9, tileSize.height * 0.08))) {
             ZStack(alignment: .bottomTrailing) {
-                Image(nsImage: app.icon)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 64, height: 64)
+                if let commandSymbolName = app.commandSymbolName {
+                    Image(systemName: commandSymbolName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .foregroundStyle(.white)
+                        .frame(width: iconSize, height: iconSize)
+                } else {
+                    Image(nsImage: app.icon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: iconSize, height: iconSize)
+                }
                 if let shortcut = app.shortcut {
-                    ShortcutKeyBadge(shortcut: shortcut)
-                        .offset(x: 18, y: 12)
+                    ShortcutKeyBadge(shortcut: shortcut, compact: iconSize < 52)
+                        .offset(x: iconSize * 0.25, y: iconSize * 0.18)
                 }
             }
-            .frame(width: 80, height: 80)
+            .frame(width: tileSize.width, height: iconSize + 8)
             Text(app.name)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: iconSize < 48 ? 10 : 12, weight: .semibold))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .frame(width: 104, height: 31, alignment: .top)
+                .lineLimit(tileSize.height < 90 ? 1 : 2)
+                .frame(width: tileSize.width, alignment: .top)
         }
-        .frame(width: 104, height: 116)
+        .frame(width: tileSize.width, height: tileSize.height)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(.white.opacity(isSelected ? 0.16 : 0))
@@ -327,6 +507,17 @@ private struct OverlayAppTile: View {
         .scaleEffect(isSelected ? 1.04 : 1)
         .animation(.easeOut(duration: 0.12), value: isSelected)
     }
+}
+
+private struct LaunchpadGridMetrics {
+    let columns: [GridItem]
+    let rowSpacing: CGFloat
+    let horizontalPadding: CGFloat
+    let verticalPadding: CGFloat
+    let viewportWidth: CGFloat
+    let viewportHeight: CGFloat
+    let tileSize: CGSize
+    let iconSize: CGFloat
 }
 
 private struct LaunchpadKeyEventMonitor: NSViewRepresentable {
@@ -359,7 +550,7 @@ private struct LaunchpadKeyEventMonitor: NSViewRepresentable {
 
         func start() {
             guard monitor == nil else { return }
-            monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .scrollWheel]) { [weak self] event in
                 self?.handle(event) == true ? nil : event
             }
         }

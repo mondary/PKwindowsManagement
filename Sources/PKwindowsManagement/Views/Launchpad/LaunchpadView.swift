@@ -1,14 +1,21 @@
+import AppKit
+import UniformTypeIdentifiers
 import SwiftUI
 
 struct LaunchpadView: View {
     @ObservedObject var settings: AppSettings
     @State private var query = ""
     @State private var shortcutTarget: LaunchableApp?
+    @State private var backupMessage: String?
     private let launcher = AppLauncherService()
 
     var body: some View {
         let apps = filteredApps
         VStack(alignment: .leading, spacing: 16) {
+            activationSettings
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+
             VStack(alignment: .leading, spacing: 8) {
                 Text("Launchpad")
                     .font(.title2.weight(.semibold))
@@ -16,7 +23,6 @@ struct LaunchpadView: View {
                     .textFieldStyle(.roundedBorder)
             }
             .padding(.horizontal, 24)
-            .padding(.top, 20)
 
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 14)], spacing: 14) {
@@ -43,7 +49,189 @@ struct LaunchpadView: View {
             LaunchShortcutEditor(app: app, settings: settings)
                 .frame(width: 420, height: 220)
         }
+        .alert("Settings Backup", isPresented: backupMessagePresented) {
+            Button("OK", role: .cancel) {
+                backupMessage = nil
+            }
+        } message: {
+            Text(backupMessage ?? "")
+        }
         .task(id: settings.recentBundleIDs) { }
+    }
+
+    private var activationSettings: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Launchpad Activation")
+                .font(.headline)
+
+            HStack(spacing: 12) {
+                Text("Global shortcut")
+                    .frame(width: 110, alignment: .leading)
+
+                Picker("", selection: $settings.launchpadShortcut.modifier) {
+                    ForEach(ShortcutModifierPreset.allCases) { modifier in
+                        Text(modifier.displayName).tag(modifier)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 190)
+
+                TextField("Key", text: launchpadKeyBinding)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 100)
+
+                ShortcutKeyBadge(shortcut: settings.launchpadShortcut, compact: true)
+
+                Spacer()
+            }
+
+            HStack(spacing: 12) {
+                Text("Hot corner")
+                    .frame(width: 110, alignment: .leading)
+
+                Picker("", selection: $settings.launchpadHotCorner) {
+                    ForEach(LaunchpadHotCorner.allCases) { corner in
+                        Text(corner.title).tag(corner)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 190)
+
+                Text("Move pointer into selected corner to open Launchpad.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+            }
+
+            Divider()
+
+            HStack(spacing: 28) {
+                Text("Grid layout")
+                    .frame(width: 110, alignment: .leading)
+
+                Stepper(value: $settings.launchpadGridColumns, in: 4...14) {
+                    HStack(spacing: 6) {
+                        Text("Columns")
+                        Text("\(settings.launchpadGridColumns)")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Stepper(value: $settings.launchpadGridRows, in: 3...10) {
+                    HStack(spacing: 6) {
+                        Text("Rows")
+                        Text("\(settings.launchpadGridRows)")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Text("\(settings.launchpadGridColumns * settings.launchpadGridRows) applications visible")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+            }
+
+            HStack(spacing: 12) {
+                Text("Navigation")
+                    .frame(width: 110, alignment: .leading)
+
+                Picker("", selection: $settings.launchpadGridNavigation) {
+                    ForEach(LaunchpadGridNavigation.allCases) { navigation in
+                        Text(navigation.title).tag(navigation)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 280)
+
+                Text(settings.launchpadGridNavigation == .horizontalPages
+                     ? "Swipe horizontally to move page by page."
+                     : "Scroll vertically through all applications.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+            }
+
+            Divider()
+
+            HStack(spacing: 12) {
+                Text("Backup")
+                    .frame(width: 110, alignment: .leading)
+
+                Button("Export Settings...") {
+                    exportSettings()
+                }
+
+                Button("Import Settings...") {
+                    importSettings()
+                }
+
+                Text("Save or restore shortcuts, activation, grid, and navigation settings.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+            }
+        }
+        .padding(14)
+        .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var launchpadKeyBinding: Binding<String> {
+        Binding(
+            get: {
+                settings.launchpadShortcut.key == "space"
+                    ? "Space"
+                    : settings.launchpadShortcut.key.uppercased()
+            },
+            set: { value in
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                guard !trimmed.isEmpty else { return }
+                settings.launchpadShortcut.key = trimmed == "space"
+                    ? "space"
+                    : String(trimmed.suffix(1))
+            }
+        )
+    }
+
+    private var backupMessagePresented: Binding<Bool> {
+        Binding(
+            get: { backupMessage != nil },
+            set: { if !$0 { backupMessage = nil } }
+        )
+    }
+
+    private func exportSettings() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = "PKwindowsManagement-settings.json"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            try settings.exportBackup().write(to: url, options: .atomic)
+            backupMessage = "Settings exported successfully."
+        } catch {
+            backupMessage = error.localizedDescription
+        }
+    }
+
+    private func importSettings() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            try settings.importBackup(Data(contentsOf: url))
+            backupMessage = "Settings imported successfully."
+        } catch {
+            backupMessage = error.localizedDescription
+        }
     }
 
     private var filteredApps: [LaunchableApp] {
