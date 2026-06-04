@@ -10,6 +10,9 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Raccourcis clavier configurables depuis une interface SwiftUI.
 - Contrôle de la fenêtre focalisée via les API d'accessibilité macOS.
 - Launchpad plein écran avec recherche, applications récentes et raccourcis personnalisés.
+- Navigation du Launchpad au clavier : saisie pour filtrer, flèches pour sélectionner et `Entrée` pour lancer.
+- Raccourcis globaux par application, actifs partout sur macOS même quand le Launchpad est fermé.
+- Menu contextuel sur chaque application pour attribuer un raccourci ou la déplacer vers la Corbeille.
 - Ouverture du Launchpad avec `Option + Espace`, le coin supérieur gauche ou un clic sur l'icône de barre de menu.
 - Icône d'application dédiée et menu contextuel pour ouvrir les préférences ou quitter.
 
@@ -18,6 +21,10 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Autorise l'accès à l'accessibilité quand macOS le demande.
 - Utilise les raccourcis par défaut pour déplacer la fenêtre active.
 - Utilise `Option + Espace` pour afficher ou masquer le Launchpad.
+- Dans le Launchpad, commence à saisir puis appuie sur `Entrée` pour lancer le premier résultat.
+- Utilise les flèches pour changer de sélection.
+- Appuie sur `Échap` une fois pour vider une recherche, puis une seconde fois pour fermer le Launchpad.
+- Clique sur `•••` en haut à droite pour ouvrir les réglages.
 
 ### Raccourcis par défaut
 - `Ctrl + Option + H` : moitié gauche
@@ -38,7 +45,8 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 
 ## ⚙️ Réglages
 - Les raccourcis sont modifiables dans l'écran de préférences.
-- Les applications peuvent recevoir un raccourci de lancement dédié depuis l'écran Launchpad.
+- Un clic droit sur une application permet d'attribuer ou modifier son raccourci global.
+- Les raccourcis attribués apparaissent sur les icônes sous forme de touches.
 - Les changements sont sauvegardés dans `UserDefaults`.
 - L'edge du drawer clipboard est aussi conservé via les réglages de l'app.
 
@@ -69,7 +77,7 @@ script/release.sh
 
 ## 🧪 Installation
 - Lance `script/release.sh` pour compiler et installer `/Applications/PKwindowsManagement.app`.
-- Au premier usage, valide l'accès à l'accessibilité dans `Réglages Système > Confidentialité et sécurité > Accessibilité`.
+- Au premier usage, valide l'accès à l'accessibilité dans `Réglages Système > Confidentialité et sécurité > Accessibilité`. Cette permission est nécessaire pour gérer les fenêtres et écouter les raccourcis globaux.
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
 ## 🧾 Changelog

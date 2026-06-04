@@ -24,6 +24,22 @@ struct LaunchableApp: Identifiable {
 }
 
 final class AppLauncherService {
+    func canUninstall(_ app: LaunchableApp) -> Bool {
+        let path = app.url.standardizedFileURL.path
+        guard app.url.pathExtension == "app",
+              !path.hasPrefix("/System/"),
+              path != Bundle.main.bundleURL.standardizedFileURL.path
+        else { return false }
+        return path.hasPrefix("/Applications/") || path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path + "/")
+    }
+
+    func moveToTrash(_ app: LaunchableApp) throws {
+        guard canUninstall(app) else {
+            throw AppLauncherError.uninstallNotAllowed
+        }
+        try FileManager.default.trashItem(at: app.url, resultingItemURL: nil)
+    }
+
     func loadApps(settings: AppSettings) -> [LaunchableApp] {
         let items = installedApplications()
         return items.map { app in
@@ -137,6 +153,17 @@ final class AppLauncherService {
         let icon = NSImage(systemSymbolName: iconName, accessibilityDescription: name) ?? NSImage()
         icon.size = NSSize(width: 64, height: 64)
         return LaunchableApp(id: id, name: name, bundleID: id, url: URL(fileURLWithPath: "/"), icon: icon, shortcut: nil)
+    }
+}
+
+enum AppLauncherError: LocalizedError {
+    case uninstallNotAllowed
+
+    var errorDescription: String? {
+        switch self {
+        case .uninstallNotAllowed:
+            "This application cannot be moved to the Trash."
+        }
     }
 }
 

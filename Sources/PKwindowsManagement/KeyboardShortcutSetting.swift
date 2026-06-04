@@ -57,6 +57,19 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
         case .fnShift: UInt32(shiftKey | alphaLock)
         }
     }
+
+    var keySymbols: [String] {
+        switch self {
+        case .controlOption: ["⌃", "⌥"]
+        case .command: ["⌘"]
+        case .leftCommand: ["⌘L"]
+        case .rightCommand: ["⌘R"]
+        case .option: ["⌥"]
+        case .leftOption: ["⌥L"]
+        case .rightOption: ["⌥R"]
+        case .fnShift: ["fn", "⇧"]
+        }
+    }
 }
 
 struct KeyboardShortcutSetting: Codable, Equatable, Hashable {

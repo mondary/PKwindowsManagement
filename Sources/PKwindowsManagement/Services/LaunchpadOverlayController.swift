@@ -57,6 +57,15 @@ final class LaunchpadOverlayController {
         host = nil
     }
 
+    func openSettings() {
+        hide()
+        DispatchQueue.main.async {
+            guard let settingsWindow = NSApp.windows.first(where: { !($0 is LaunchpadPanel) }) else { return }
+            settingsWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
     private func screenForCurrentPointer() -> NSScreen? {
         let point = NSEvent.mouseLocation
         return NSScreen.screens.first { $0.frame.contains(point) }

@@ -4,7 +4,10 @@ struct LaunchpadOverlayView: View {
     @ObservedObject var settings: AppSettings
     @State private var query = ""
     @State private var selectedAppID: String?
-    @Environment(\.dismiss) private var dismiss
+    @State private var shortcutTarget: LaunchableApp?
+    @State private var uninstallTarget: LaunchableApp?
+    @State private var uninstallError: String?
+    @State private var appCatalogRevision = 0
     @FocusState private var searchFocused: Bool
     private let launcher = AppLauncherService()
 
@@ -29,6 +32,9 @@ struct LaunchpadOverlayView: View {
                                         OverlayAppTile(app: app, isSelected: app.id == selectedAppID)
                                     }
                                     .buttonStyle(.plain)
+                                    .contextMenu {
+                                        appContextMenu(for: app)
+                                    }
                                     .id(app.id)
                                 }
                             }
@@ -45,10 +51,7 @@ struct LaunchpadOverlayView: View {
                     }
 
                     Spacer(minLength: 0)
-                }
 
-                VStack {
-                    Spacer()
                     dockStrip(apps: Array(launcher.loadApps(settings: settings).prefix(16)))
                         .padding(.bottom, 28)
                 }
@@ -56,7 +59,8 @@ struct LaunchpadOverlayView: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
             .background {
                 LaunchpadKeyEventMonitor { event in
-                    handleKeyEvent(event, apps: apps, columnCount: gridColumns(for: geometry.size).count)
+                    guard shortcutTarget == nil, uninstallTarget == nil, uninstallError == nil else { return false }
+                    return handleKeyEvent(event, apps: apps, columnCount: gridColumns(for: geometry.size).count)
                 }
             }
         }
@@ -72,13 +76,40 @@ struct LaunchpadOverlayView: View {
         .onExitCommand {
             LaunchpadOverlayController.shared.hide()
         }
+        .sheet(item: $shortcutTarget) { app in
+            LaunchShortcutEditor(app: app, settings: settings)
+                .frame(width: 420, height: 220)
+        }
+        .alert(
+            "Move \(uninstallTarget?.name ?? "Application") to Trash?",
+            isPresented: uninstallConfirmationPresented
+        ) {
+            Button("Cancel", role: .cancel) {
+                uninstallTarget = nil
+            }
+            Button("Move to Trash", role: .destructive) {
+                moveTargetToTrash()
+            }
+        } message: {
+            Text("The application will be removed from its Applications folder.")
+        }
+        .alert(
+            "Unable to Move Application",
+            isPresented: uninstallErrorPresented
+        ) {
+            Button("OK", role: .cancel) {
+                uninstallError = nil
+            }
+        } message: {
+            Text(uninstallError ?? "")
+        }
     }
 
     private var topBar: some View {
         HStack {
             Spacer()
             Button {
-                LaunchpadOverlayController.shared.hide()
+                LaunchpadOverlayController.shared.openSettings()
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 18, weight: .semibold))
@@ -122,6 +153,9 @@ struct LaunchpadOverlayView: View {
                         .frame(width: 40, height: 40)
                 }
                 .buttonStyle(.plain)
+                .contextMenu {
+                    appContextMenu(for: app)
+                }
             }
         }
         .padding(.horizontal, 18)
@@ -146,6 +180,16 @@ struct LaunchpadOverlayView: View {
     }
 
     private func handleKeyEvent(_ event: NSEvent, apps: [LaunchableApp], columnCount: Int) -> Bool {
+        if event.keyCode == 53 {
+            if query.isEmpty {
+                LaunchpadOverlayController.shared.hide()
+            } else {
+                query = ""
+                searchFocused = true
+            }
+            return true
+        }
+
         guard !apps.isEmpty else { return false }
 
         if event.keyCode == 36 || event.keyCode == 76 {
@@ -177,7 +221,48 @@ struct LaunchpadOverlayView: View {
         LaunchpadOverlayController.shared.hide()
     }
 
+    @ViewBuilder
+    private func appContextMenu(for app: LaunchableApp) -> some View {
+        Button(app.shortcut == nil ? "Assign Shortcut..." : "Edit Shortcut...") {
+            shortcutTarget = app
+        }
+
+        if launcher.canUninstall(app) {
+            Divider()
+            Button("Move to Trash...", role: .destructive) {
+                uninstallTarget = app
+            }
+        }
+    }
+
+    private var uninstallConfirmationPresented: Binding<Bool> {
+        Binding(
+            get: { uninstallTarget != nil },
+            set: { if !$0 { uninstallTarget = nil } }
+        )
+    }
+
+    private var uninstallErrorPresented: Binding<Bool> {
+        Binding(
+            get: { uninstallError != nil },
+            set: { if !$0 { uninstallError = nil } }
+        )
+    }
+
+    private func moveTargetToTrash() {
+        guard let app = uninstallTarget else { return }
+        uninstallTarget = nil
+        do {
+            try launcher.moveToTrash(app)
+            appCatalogRevision += 1
+            selectFirstApp()
+        } catch {
+            uninstallError = error.localizedDescription
+        }
+    }
+
     private var filteredApps: [LaunchableApp] {
+        _ = appCatalogRevision
         let all = launcher.launcherCommands() + launcher.loadApps(settings: settings)
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return all }
@@ -218,13 +303,8 @@ private struct OverlayAppTile: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 64, height: 64)
                 if let shortcut = app.shortcut {
-                    Text(shortcut.modifier.symbolPrefix + shortcut.key.uppercased())
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 4)
-                        .background(.black.opacity(0.78), in: Capsule())
-                        .foregroundStyle(.white)
-                        .offset(x: 11, y: 7)
+                    ShortcutKeyBadge(shortcut: shortcut)
+                        .offset(x: 18, y: 12)
                 }
             }
             .frame(width: 80, height: 80)

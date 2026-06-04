@@ -10,6 +10,9 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Customize keyboard shortcuts from a SwiftUI preferences screen.
 - Control the focused window through macOS Accessibility APIs.
 - Full-screen Launchpad with search, recent applications, and custom shortcuts.
+- Keyboard Launchpad navigation: type to filter, use arrows to select, and press `Enter` to launch.
+- Global per-application shortcuts that work anywhere on macOS while Launchpad is closed.
+- Application context menu for assigning shortcuts or moving applications to Trash.
 - Open Launchpad with `Option + Space`, the top-left hot corner, or a menu bar icon click.
 - Dedicated application icon and context menu for preferences and quit.
 
@@ -18,6 +21,10 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Grant Accessibility permission when macOS asks for it.
 - Use the default shortcuts to manage the active window.
 - Use `Option + Space` to show or hide Launchpad.
+- In Launchpad, start typing and press `Enter` to launch the first result.
+- Use arrow keys to change selection.
+- Press `Escape` once to clear a search, then again to close Launchpad.
+- Click `•••` in the top-right corner to open settings.
 
 ### Default shortcuts
 - `Ctrl + Option + H` : left half
@@ -38,7 +45,8 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 
 ## ⚙️ Settings
 - Shortcuts can be edited in the preferences window.
-- Applications can receive dedicated launch shortcuts from the Launchpad screen.
+- Right-click an application to assign or edit its global shortcut.
+- Assigned shortcuts appear as key badges over application icons.
 - Changes are persisted in `UserDefaults`.
 - The app also stores the clipboard drawer edge setting.
 
@@ -69,7 +77,7 @@ script/release.sh
 
 ## 🧪 Install
 - Run `script/release.sh` to build and install `/Applications/PKwindowsManagement.app`.
-- On first launch, grant Accessibility access in `System Settings > Privacy & Security > Accessibility`.
+- On first launch, grant Accessibility access in `System Settings > Privacy & Security > Accessibility`. This permission is required for window management and global shortcuts.
 - If the app cannot control windows, check the target app permissions as well.
 
 ## 🧾 Changelog

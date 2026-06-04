@@ -80,22 +80,6 @@ final class WindowSnapService {
         setFrame(targetFrame, for: focusedWindow)
     }
 
-    func snapToColumns(total: Int, index: Int) {
-        guard total >= 1, index >= 0, index < total else { return }
-        guard ensureAccessibilityPermission() else { return }
-        guard let focusedWindow = focusedAXWindow(),
-              let currentFrame = frame(of: focusedWindow)
-        else { return }
-        guard let targetScreen = screen(for: currentFrame) ?? NSScreen.main else { return }
-
-        let visible = targetScreen.visibleFrame
-        let segmentWidth = floor(visible.width / CGFloat(total))
-        let x = visible.minX + segmentWidth * CGFloat(index)
-        let width: CGFloat = (index == total - 1) ? (visible.maxX - x) : segmentWidth
-        let target = CGRect(x: x, y: visible.minY, width: width, height: visible.height)
-        setFrame(target, for: focusedWindow)
-    }
-
     private func ensureAccessibilityPermission() -> Bool {
         if AXIsProcessTrusted() { return true }
         let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]

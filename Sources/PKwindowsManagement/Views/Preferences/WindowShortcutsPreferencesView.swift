@@ -2,7 +2,6 @@ import SwiftUI
 
 struct WindowShortcutsPreferencesView: View {
     @ObservedObject var settings: AppSettings
-    private let snapService = WindowSnapService()
 
     private let quickActions: [WindowCommandSpec] = [
         .bound("Almost Maximize", "arrow.up.left.and.arrow.down.right", .windowMaximize),
@@ -68,40 +67,12 @@ struct WindowShortcutsPreferencesView: View {
                 Text("Window Management")
                     .font(.title3.weight(.semibold))
 
-                quickSplitPanel
-
                 sectionCard(title: "Active Shortcuts", entries: quickActions, showEditor: true)
                 sectionCard(title: "Extended Catalog", entries: fullCatalog, showEditor: false)
             }
             .padding(24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var quickSplitPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Quick Splits (4 → 9)")
-                .font(.headline)
-            ForEach(4...9, id: \.self) { columns in
-                HStack(spacing: 10) {
-                    Text("\(columns)")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 20, alignment: .leading)
-                    ForEach(0..<columns, id: \.self) { idx in
-                        Button {
-                            snapService.snapToColumns(total: columns, index: idx)
-                        } label: {
-                            ColumnGlyph(total: columns, index: idx)
-                                .frame(width: 22, height: 18)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-        }
-        .padding(12)
-        .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     @ViewBuilder
@@ -204,32 +175,5 @@ private struct WindowCommandSpec: Identifiable {
 
     static func unbound(_ title: String, _ symbol: String) -> Self {
         .init(id: title, title: title, symbol: symbol, boundAction: nil)
-    }
-}
-
-private struct ColumnGlyph: View {
-    let total: Int
-    let index: Int
-
-    var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            let segment = w / CGFloat(max(total, 1))
-            ZStack {
-                RoundedRectangle(cornerRadius: 3)
-                    .stroke(Color.secondary.opacity(0.55), lineWidth: 1)
-                ForEach(1..<total, id: \.self) { i in
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.3))
-                        .frame(width: 0.7)
-                        .position(x: segment * CGFloat(i), y: h / 2)
-                }
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.accentColor.opacity(0.75))
-                    .frame(width: max(2, segment - 1), height: max(2, h - 4))
-                    .position(x: segment * (CGFloat(index) + 0.5), y: h / 2)
-            }
-        }
     }
 }

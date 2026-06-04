@@ -72,7 +72,7 @@ struct LaunchpadView: View {
     }
 }
 
-private struct LaunchShortcutEditor: View {
+struct LaunchShortcutEditor: View {
     let app: LaunchableApp
     @ObservedObject var settings: AppSettings
     @Environment(\.dismiss) private var dismiss
@@ -140,13 +140,8 @@ private struct LaunchpadAppTile: View {
                     .padding(12)
                     .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 if let shortcut = app.shortcut {
-                    Text(shortcut.modifier.symbolPrefix + shortcut.key.uppercased())
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(.black.opacity(0.75), in: Capsule())
-                        .foregroundStyle(.white)
-                        .padding(6)
+                    ShortcutKeyBadge(shortcut: shortcut, compact: true)
+                        .offset(x: 8, y: 8)
                 }
             }
             Text(app.name)

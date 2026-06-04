@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import CoreGraphics
 
 final class LaunchShortcutMonitor {
@@ -9,17 +10,21 @@ final class LaunchShortcutMonitor {
     private var settings: AppSettings?
     private var launchHandler: ((LaunchableApp) -> Void)?
     private var modifierState = ModifierState()
-    private var appsByShortcut: [ShortcutSignature: LaunchableApp] = [:]
+    private var appsByBundleID: [String: LaunchableApp] = [:]
+    private var retryTimer: Timer?
 
     func start(settings: AppSettings, apps: [LaunchableApp], launchHandler: @escaping (LaunchableApp) -> Void) {
         self.settings = settings
         self.launchHandler = launchHandler
-        self.appsByShortcut = Dictionary(uniqueKeysWithValues: apps.compactMap { app in
-            guard let shortcut = app.shortcut else { return nil }
-            return (ShortcutSignature(shortcut: shortcut), app)
-        })
+        refreshApps(apps)
 
+        installEventTap()
+    }
+
+    private func installEventTap() {
         guard eventTap == nil else { return }
+        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+        _ = AXIsProcessTrustedWithOptions(options)
         let mask = CGEventMask((1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.flagsChanged.rawValue))
         let callback: CGEventTapCallBack = { _, type, event, refcon in
             guard let refcon else { return Unmanaged.passUnretained(event) }
@@ -29,8 +34,11 @@ final class LaunchShortcutMonitor {
 
         let refcon = Unmanaged.passUnretained(self).toOpaque()
         guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap, eventsOfInterest: mask, callback: callback, userInfo: refcon) else {
+            scheduleRetry()
             return
         }
+        retryTimer?.invalidate()
+        retryTimer = nil
         eventTap = tap
         runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         if let runLoopSource {
@@ -39,11 +47,15 @@ final class LaunchShortcutMonitor {
         CGEvent.tapEnable(tap: tap, enable: true)
     }
 
+    private func scheduleRetry() {
+        guard retryTimer == nil else { return }
+        retryTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            self?.installEventTap()
+        }
+    }
+
     func refreshApps(_ apps: [LaunchableApp]) {
-        appsByShortcut = Dictionary(uniqueKeysWithValues: apps.compactMap { app in
-            guard let shortcut = app.shortcut else { return nil }
-            return (ShortcutSignature(shortcut: shortcut), app)
-        })
+        appsByBundleID = Dictionary(uniqueKeysWithValues: apps.map { ($0.bundleID, $0) })
     }
 
     private func handle(eventType: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -61,36 +73,16 @@ final class LaunchShortcutMonitor {
     }
 
     private func match(event: CGEvent) -> LaunchableApp? {
+        guard let settings else { return nil }
         guard let char = NSEvent(cgEvent: event)?.charactersIgnoringModifiers?.lowercased().first else { return nil }
-        let signature = ShortcutSignature(character: char, modifiers: modifierState)
-        return appsByShortcut.first(where: { $0.key.matches(signature) })?.value
-    }
-}
+        let flags = event.flags
 
-private struct ShortcutSignature: Hashable {
-    let character: Character
-    let modifier: ShortcutModifierPreset
+        guard let bundleID = settings.launchShortcuts.first(where: { _, shortcut in
+            guard shortcut.key.lowercased().first == char else { return false }
+            return modifierState.matches(shortcut.modifier, flags: flags)
+        })?.key else { return nil }
 
-    init(shortcut: KeyboardShortcutSetting) {
-        character = Character(shortcut.key.lowercased())
-        modifier = shortcut.modifier
-    }
-
-    init(character: Character, modifiers: ModifierState) {
-        self.character = character
-        self.modifier = modifiers.preferredPreset
-    }
-
-    func matches(_ other: ShortcutSignature) -> Bool {
-        guard character == other.character else { return false }
-        switch modifier {
-        case .command:
-            return other.modifier == .command || other.modifier == .leftCommand || other.modifier == .rightCommand
-        case .option:
-            return other.modifier == .option || other.modifier == .leftOption || other.modifier == .rightOption
-        default:
-            return modifier == other.modifier
-        }
+        return appsByBundleID[bundleID]
     }
 }
 
@@ -102,24 +94,47 @@ private struct ModifierState {
     var shift = false
     var fn = false
 
-    var preferredPreset: ShortcutModifierPreset {
-        if leftCommand { return .leftCommand }
-        if rightCommand { return .rightCommand }
-        if leftOption { return .leftOption }
-        if rightOption { return .rightOption }
-        if fn && shift { return .fnShift }
-        return .command
+    mutating func update(with event: CGEvent) {
+        let isPressed = event.flags.contains(flag(for: event.getIntegerValueField(.keyboardEventKeycode)))
+        switch event.getIntegerValueField(.keyboardEventKeycode) {
+        case 54: rightCommand = isPressed
+        case 55: leftCommand = isPressed
+        case 58: leftOption = isPressed
+        case 61: rightOption = isPressed
+        case 56, 60: shift = event.flags.contains(.maskShift)
+        case 63: fn = event.flags.contains(.maskSecondaryFn)
+        default: break
+        }
     }
 
-    mutating func update(with event: CGEvent) {
-        switch event.getIntegerValueField(.keyboardEventKeycode) {
-        case 54: rightCommand.toggle()
-        case 55: leftCommand.toggle()
-        case 58: leftOption.toggle()
-        case 61: rightOption.toggle()
-        case 56, 60: shift.toggle()
-        case 63: fn.toggle()
-        default: break
+    func matches(_ preset: ShortcutModifierPreset, flags: CGEventFlags) -> Bool {
+        switch preset {
+        case .controlOption:
+            return flags.contains(.maskControl) && flags.contains(.maskAlternate)
+        case .command:
+            return flags.contains(.maskCommand)
+        case .leftCommand:
+            return leftCommand
+        case .rightCommand:
+            return rightCommand
+        case .option:
+            return flags.contains(.maskAlternate)
+        case .leftOption:
+            return leftOption
+        case .rightOption:
+            return rightOption
+        case .fnShift:
+            return flags.contains(.maskSecondaryFn) && flags.contains(.maskShift)
+        }
+    }
+
+    private func flag(for keyCode: Int64) -> CGEventFlags {
+        switch keyCode {
+        case 54, 55: .maskCommand
+        case 58, 61: .maskAlternate
+        case 56, 60: .maskShift
+        case 63: .maskSecondaryFn
+        default: []
         }
     }
 }
