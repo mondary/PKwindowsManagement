@@ -3,6 +3,7 @@ import SwiftUI
 struct LaunchpadOverlayView: View {
     @ObservedObject var settings: AppSettings
     @State private var query = ""
+    @State private var selectedAppID: String?
     @Environment(\.dismiss) private var dismiss
     @FocusState private var searchFocused: Bool
     private let launcher = AppLauncherService()
@@ -11,8 +12,6 @@ struct LaunchpadOverlayView: View {
         let apps = filteredApps
         GeometryReader { geometry in
             ZStack {
-                glassPanel(in: geometry.size)
-
                 VStack(spacing: 24) {
                     topBar
                         .padding(.horizontal, 42)
@@ -20,21 +19,29 @@ struct LaunchpadOverlayView: View {
 
                     searchField
 
-                    ScrollView {
-                        LazyVGrid(columns: gridColumns(for: geometry.size), spacing: 28) {
-                            ForEach(apps) { app in
-                                Button {
-                                    launcher.launch(app, settings: settings)
-                                    LaunchpadOverlayController.shared.hide()
-                                } label: {
-                                    OverlayAppTile(app: app)
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVGrid(columns: gridColumns(for: geometry.size), spacing: 28) {
+                                ForEach(apps) { app in
+                                    Button {
+                                        launch(app)
+                                    } label: {
+                                        OverlayAppTile(app: app, isSelected: app.id == selectedAppID)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .id(app.id)
                                 }
-                                .buttonStyle(.plain)
+                            }
+                            .padding(.horizontal, max(54, geometry.size.width * 0.1))
+                            .padding(.top, 34)
+                            .padding(.bottom, 126)
+                        }
+                        .onChange(of: selectedAppID) { id in
+                            guard let id else { return }
+                            withAnimation(.easeOut(duration: 0.12)) {
+                                proxy.scrollTo(id, anchor: .center)
                             }
                         }
-                        .padding(.horizontal, max(54, geometry.size.width * 0.1))
-                        .padding(.top, 34)
-                        .padding(.bottom, 126)
                     }
 
                     Spacer(minLength: 0)
@@ -47,11 +54,20 @@ struct LaunchpadOverlayView: View {
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
+            .background {
+                LaunchpadKeyEventMonitor { event in
+                    handleKeyEvent(event, apps: apps, columnCount: gridColumns(for: geometry.size).count)
+                }
+            }
         }
         .onAppear {
+            selectFirstApp()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
                 searchFocused = true
             }
+        }
+        .onChange(of: query) { _ in
+            selectFirstApp()
         }
         .onExitCommand {
             LaunchpadOverlayController.shared.hide()
@@ -94,23 +110,11 @@ struct LaunchpadOverlayView: View {
         )
     }
 
-    private func glassPanel(in size: CGSize) -> some View {
-        RoundedRectangle(cornerRadius: 28, style: .continuous)
-            .fill(.white.opacity(0.055))
-            .overlay(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(.white.opacity(0.12), lineWidth: 1)
-            )
-            .padding(.horizontal, max(22, size.width * 0.035))
-            .padding(.vertical, max(18, size.height * 0.035))
-    }
-
     private func dockStrip(apps: [LaunchableApp]) -> some View {
         HStack(spacing: 14) {
             ForEach(apps.prefix(14)) { app in
                 Button {
-                    launcher.launch(app, settings: settings)
-                    LaunchpadOverlayController.shared.hide()
+                    launch(app)
                 } label: {
                     Image(nsImage: app.icon)
                         .resizable()
@@ -135,6 +139,42 @@ struct LaunchpadOverlayView: View {
         let itemWidth: CGFloat = 112
         let count = max(4, min(10, Int(availableWidth / itemWidth)))
         return Array(repeating: GridItem(.fixed(104), spacing: 34), count: count)
+    }
+
+    private func selectFirstApp() {
+        selectedAppID = filteredApps.first?.id
+    }
+
+    private func handleKeyEvent(_ event: NSEvent, apps: [LaunchableApp], columnCount: Int) -> Bool {
+        guard !apps.isEmpty else { return false }
+
+        if event.keyCode == 36 || event.keyCode == 76 {
+            launch(selectedApp(in: apps) ?? apps[0])
+            return true
+        }
+
+        let movement: Int
+        switch event.keyCode {
+        case 123: movement = -1
+        case 124: movement = 1
+        case 125: movement = columnCount
+        case 126: movement = -columnCount
+        default: return false
+        }
+
+        let currentIndex = apps.firstIndex { $0.id == selectedAppID } ?? 0
+        let nextIndex = min(max(currentIndex + movement, 0), apps.count - 1)
+        selectedAppID = apps[nextIndex].id
+        return true
+    }
+
+    private func selectedApp(in apps: [LaunchableApp]) -> LaunchableApp? {
+        apps.first { $0.id == selectedAppID }
+    }
+
+    private func launch(_ app: LaunchableApp) {
+        launcher.launch(app, settings: settings)
+        LaunchpadOverlayController.shared.hide()
     }
 
     private var filteredApps: [LaunchableApp] {
@@ -168,6 +208,7 @@ struct LaunchpadOverlayView: View {
 
 private struct OverlayAppTile: View {
     let app: LaunchableApp
+    let isSelected: Bool
 
     var body: some View {
         VStack(spacing: 9) {
@@ -195,5 +236,62 @@ private struct OverlayAppTile: View {
                 .frame(width: 104, height: 31, alignment: .top)
         }
         .frame(width: 104, height: 116)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.white.opacity(isSelected ? 0.16 : 0))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(.white.opacity(isSelected ? 0.32 : 0), lineWidth: 1)
+        )
+        .scaleEffect(isSelected ? 1.04 : 1)
+        .animation(.easeOut(duration: 0.12), value: isSelected)
+    }
+}
+
+private struct LaunchpadKeyEventMonitor: NSViewRepresentable {
+    let handle: (NSEvent) -> Bool
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(handle: handle)
+    }
+
+    func makeNSView(context: Context) -> NSView {
+        context.coordinator.start()
+        return NSView()
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.handle = handle
+    }
+
+    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+        coordinator.stop()
+    }
+
+    final class Coordinator {
+        var handle: (NSEvent) -> Bool
+        private var monitor: Any?
+
+        init(handle: @escaping (NSEvent) -> Bool) {
+            self.handle = handle
+        }
+
+        func start() {
+            guard monitor == nil else { return }
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                self?.handle(event) == true ? nil : event
+            }
+        }
+
+        func stop() {
+            guard let monitor else { return }
+            NSEvent.removeMonitor(monitor)
+            self.monitor = nil
+        }
+
+        deinit {
+            stop()
+        }
     }
 }
