@@ -17,6 +17,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Fine-grained Launchpad grid customization: icon size, column spacing, and row spacing.
 - Top-aligned pages in horizontal navigation mode.
 - Accessibility status indicator with grant-access button.
+- Automatic backup export to a user-chosen folder (e.g. Google Drive) on every settings change.
 - Application context menu for assigning shortcuts or moving applications to Trash.
 - Open Launchpad with `Option + Space`, the top-left hot corner, or a menu bar icon click.
 - Dedicated application icon and context menu for preferences and quit.
@@ -56,6 +57,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Launchpad grid customization: columns/rows count, icon size, column and row spacing.
 - Changes are persisted in `UserDefaults`.
 - Settings import/export in JSON format.
+- Auto-backup: choose a folder (e.g. Google Drive) and export a timestamped JSON backup on every settings change.
 
 ## 🧾 Commands
 - Left-click the menu bar icon to open or close Launchpad.
@@ -88,12 +90,13 @@ script/release.sh
 - If the app cannot control windows, check the target app permissions as well.
 
 ## 🧾 Changelog
-- `0.11` - 2026-06-04
+- `0.12` - 2026-06-04
   - Left/right modifier key distinction for Command, Option, and Shift.
   - Fn + Shift modifier support.
   - Fine-grained grid settings: icon size, column and row spacing.
   - Top-aligned pages in horizontal navigation mode.
   - Accessibility status indicator with grant-access button.
+  - Auto-backup to a user-chosen folder on every settings change.
   - Fixed search bar text color (white on dark background).
 - `0.10` - 2026-06-03
   - Initial project scaffold.

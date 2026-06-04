@@ -15,9 +15,12 @@ final class AppSettings: ObservableObject {
         static let launchpadIconSize = "launchpad-icon-size"
         static let launchpadColumnSpacing = "launchpad-column-spacing"
         static let launchpadRowSpacing = "launchpad-row-spacing"
+        static let autoBackupFolder = "auto-backup-folder"
+        static let autoBackupEnabled = "auto-backup-enabled"
     }
 
     private let defaults: UserDefaults
+    private var backupDebounceTimer: Timer?
 
     @Published private(set) var shortcuts: [ShortcutAction: KeyboardShortcutSetting]
 
@@ -89,6 +92,18 @@ final class AppSettings: ObservableObject {
             defaults.set(launchpadRowSpacing, forKey: Keys.launchpadRowSpacing)
         }
     }
+    @Published var autoBackupFolder: URL? {
+        didSet {
+            if let url = autoBackupFolder {
+                defaults.set(url.path, forKey: Keys.autoBackupFolder)
+            } else {
+                defaults.removeObject(forKey: Keys.autoBackupFolder)
+            }
+        }
+    }
+    @Published var autoBackupEnabled: Bool {
+        didSet { defaults.set(autoBackupEnabled, forKey: Keys.autoBackupEnabled) }
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -107,6 +122,12 @@ final class AppSettings: ObservableObject {
         launchpadIconSize = min(max(defaults.object(forKey: Keys.launchpadIconSize) as? Int ?? 48, 28), 96)
         launchpadColumnSpacing = min(max(defaults.object(forKey: Keys.launchpadColumnSpacing) as? Int ?? 16, 4), 48)
         launchpadRowSpacing = min(max(defaults.object(forKey: Keys.launchpadRowSpacing) as? Int ?? 12, 4), 48)
+        if let folderPath = defaults.string(forKey: Keys.autoBackupFolder) {
+            autoBackupFolder = URL(fileURLWithPath: folderPath)
+        } else {
+            autoBackupFolder = nil
+        }
+        autoBackupEnabled = defaults.bool(forKey: Keys.autoBackupEnabled)
     }
 
     func shortcut(for action: ShortcutAction) -> KeyboardShortcutSetting {
@@ -164,6 +185,27 @@ final class AppSettings: ObservableObject {
         return try encoder.encode(backup)
     }
 
+    func performAutoBackup() {
+        guard autoBackupEnabled, let folder = autoBackupFolder else { return }
+        do {
+            let data = try exportBackup()
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+            let filename = "PKwindowsManagement-backup-\(formatter.string(from: Date())).json"
+            let url = folder.appendingPathComponent(filename)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            NSLog("PKwindowsManagement: auto-backup failed: %@", error.localizedDescription)
+        }
+    }
+
+    func scheduleAutoBackup() {
+        backupDebounceTimer?.invalidate()
+        backupDebounceTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { [weak self] _ in
+            self?.performAutoBackup()
+        }
+    }
+
     func importBackup(_ data: Data) throws {
         let backup = try JSONDecoder().decode(SettingsBackup.self, from: data)
         guard backup.version == 1 else { throw SettingsBackupError.unsupportedVersion }
@@ -192,6 +234,7 @@ final class AppSettings: ObservableObject {
         let rawShortcuts = Dictionary(uniqueKeysWithValues: shortcuts.map { ($0.key.rawValue, $0.value) })
         guard let data = try? JSONEncoder().encode(rawShortcuts) else { return }
         defaults.set(data, forKey: Keys.shortcuts)
+        scheduleAutoBackup()
     }
 
     private static func loadShortcuts(from defaults: UserDefaults) -> [ShortcutAction: KeyboardShortcutSetting] {
@@ -209,11 +252,13 @@ final class AppSettings: ObservableObject {
     private func saveLaunchShortcuts() {
         guard let data = try? JSONEncoder().encode(launchShortcuts) else { return }
         defaults.set(data, forKey: Keys.launchShortcuts)
+        scheduleAutoBackup()
     }
 
     private func saveLaunchpadShortcut() {
         guard let data = try? JSONEncoder().encode(launchpadShortcut) else { return }
         defaults.set(data, forKey: Keys.launchpadShortcut)
+        scheduleAutoBackup()
     }
 
     private static func loadLaunchpadShortcut(from defaults: UserDefaults) -> KeyboardShortcutSetting {

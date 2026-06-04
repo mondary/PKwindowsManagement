@@ -17,6 +17,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Paramétrage fin de la grille du Launchpad : taille des icônes, espacement des colonnes et des lignes.
 - Alignement en haut des pages en mode navigation horizontale.
 - Indicateur de statut d'accessibilité avec bouton pour autoriser l'accès.
+- Export automatique des backups vers un dossier au choix (ex : Google Drive) à chaque modification des réglages.
 - Menu contextuel sur chaque application pour attribuer un raccourci ou la déplacer vers la Corbeille.
 - Ouverture du Launchpad avec `Option + Espace`, le coin supérieur gauche ou un clic sur l'icône de barre de menu.
 - Icône d'application dédiée et menu contextuel pour ouvrir les préférences ou quitter.
@@ -56,6 +57,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Paramétrage de la grille du Launchpad : nombre de colonnes/lignes, taille des icônes, espacement des colonnes et des lignes.
 - Les changements sont sauvegardés dans `UserDefaults`.
 - Import/export des réglages au format JSON.
+- Auto-backup : choisis un dossier (ex : Google Drive) et exporte un backup JSON horodaté à chaque modification des réglages.
 
 ## 🧾 Commandes
 - Clic gauche sur l'icône de barre de menu : ouvre ou ferme le Launchpad.
@@ -88,12 +90,13 @@ script/release.sh
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
 ## 🧾 Changelog
-- `0.11` - 2026-06-04
+- `0.12` - 2026-06-04
   - Distinction gauche/droite pour Command, Option et Shift dans les raccourcis.
   - Support du modificateur Fn + Shift.
   - Paramétrage fin de la grille : taille des icônes, espacement colonnes/lignes.
   - Alignement en haut des pages en navigation horizontale.
   - Indicateur de statut d'accessibilité avec bouton d'autorisation.
+  - Auto-backup vers un dossier au choix à chaque modification des réglages.
   - Correction du texte de la barre de recherche (blanc sur fond sombre).
 - `0.10` - 2026-06-03
   - Initial project scaffold.

@@ -254,6 +254,38 @@ struct LaunchpadView: View {
 
                 Spacer()
             }
+
+            Divider()
+
+            HStack(spacing: 12) {
+                Text("Auto-backup")
+                    .frame(width: 110, alignment: .leading)
+
+                Toggle("", isOn: $settings.autoBackupEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+
+                if settings.autoBackupEnabled {
+                    Button(settings.autoBackupFolder?.lastPathComponent ?? "Choose folder...") {
+                        chooseAutoBackupFolder()
+                    }
+
+                    if let folder = settings.autoBackupFolder {
+                        Text(folder.path)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+                } else {
+                    Text("Automatically export settings to a folder on every change.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+                }
+            }
         }
         .padding(14)
         .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -309,6 +341,20 @@ struct LaunchpadView: View {
         } catch {
             backupMessage = error.localizedDescription
         }
+    }
+
+    private func chooseAutoBackupFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
+        if let current = settings.autoBackupFolder {
+            panel.directoryURL = current
+        }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        settings.autoBackupFolder = url
+        settings.performAutoBackup()
     }
 
     private var filteredApps: [LaunchableApp] {
