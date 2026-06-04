@@ -12,6 +12,9 @@ final class AppSettings: ObservableObject {
         static let launchpadGridColumns = "launchpad-grid-columns"
         static let launchpadGridRows = "launchpad-grid-rows"
         static let launchpadGridNavigation = "launchpad-grid-navigation"
+        static let launchpadIconSize = "launchpad-icon-size"
+        static let launchpadColumnSpacing = "launchpad-column-spacing"
+        static let launchpadRowSpacing = "launchpad-row-spacing"
     }
 
     private let defaults: UserDefaults
@@ -56,6 +59,36 @@ final class AppSettings: ObservableObject {
     @Published var launchpadGridNavigation: LaunchpadGridNavigation {
         didSet { defaults.set(launchpadGridNavigation.rawValue, forKey: Keys.launchpadGridNavigation) }
     }
+    @Published var launchpadIconSize: Int {
+        didSet {
+            let clamped = min(max(launchpadIconSize, 28), 96)
+            guard launchpadIconSize == clamped else {
+                launchpadIconSize = clamped
+                return
+            }
+            defaults.set(launchpadIconSize, forKey: Keys.launchpadIconSize)
+        }
+    }
+    @Published var launchpadColumnSpacing: Int {
+        didSet {
+            let clamped = min(max(launchpadColumnSpacing, 4), 48)
+            guard launchpadColumnSpacing == clamped else {
+                launchpadColumnSpacing = clamped
+                return
+            }
+            defaults.set(launchpadColumnSpacing, forKey: Keys.launchpadColumnSpacing)
+        }
+    }
+    @Published var launchpadRowSpacing: Int {
+        didSet {
+            let clamped = min(max(launchpadRowSpacing, 4), 48)
+            guard launchpadRowSpacing == clamped else {
+                launchpadRowSpacing = clamped
+                return
+            }
+            defaults.set(launchpadRowSpacing, forKey: Keys.launchpadRowSpacing)
+        }
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -71,6 +104,9 @@ final class AppSettings: ObservableObject {
         launchpadGridRows = min(max(defaults.object(forKey: Keys.launchpadGridRows) as? Int ?? 5, 3), 10)
         let navigationRaw = defaults.string(forKey: Keys.launchpadGridNavigation) ?? LaunchpadGridNavigation.vertical.rawValue
         launchpadGridNavigation = LaunchpadGridNavigation(rawValue: navigationRaw) ?? .vertical
+        launchpadIconSize = min(max(defaults.object(forKey: Keys.launchpadIconSize) as? Int ?? 48, 28), 96)
+        launchpadColumnSpacing = min(max(defaults.object(forKey: Keys.launchpadColumnSpacing) as? Int ?? 16, 4), 48)
+        launchpadRowSpacing = min(max(defaults.object(forKey: Keys.launchpadRowSpacing) as? Int ?? 12, 4), 48)
     }
 
     func shortcut(for action: ShortcutAction) -> KeyboardShortcutSetting {
@@ -118,7 +154,10 @@ final class AppSettings: ObservableObject {
             launchpadHotCorner: launchpadHotCorner,
             launchpadGridColumns: launchpadGridColumns,
             launchpadGridRows: launchpadGridRows,
-            launchpadGridNavigation: launchpadGridNavigation
+            launchpadGridNavigation: launchpadGridNavigation,
+            launchpadIconSize: launchpadIconSize,
+            launchpadColumnSpacing: launchpadColumnSpacing,
+            launchpadRowSpacing: launchpadRowSpacing
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -140,6 +179,9 @@ final class AppSettings: ObservableObject {
         launchpadGridColumns = backup.launchpadGridColumns
         launchpadGridRows = backup.launchpadGridRows
         launchpadGridNavigation = backup.launchpadGridNavigation
+        launchpadIconSize = backup.launchpadIconSize ?? 48
+        launchpadColumnSpacing = backup.launchpadColumnSpacing ?? 16
+        launchpadRowSpacing = backup.launchpadRowSpacing ?? 12
 
         saveShortcuts()
         saveLaunchShortcuts()
@@ -200,6 +242,9 @@ private struct SettingsBackup: Codable {
     let launchpadGridColumns: Int
     let launchpadGridRows: Int
     let launchpadGridNavigation: LaunchpadGridNavigation
+    let launchpadIconSize: Int?
+    let launchpadColumnSpacing: Int?
+    let launchpadRowSpacing: Int?
 }
 
 enum SettingsBackupError: LocalizedError {

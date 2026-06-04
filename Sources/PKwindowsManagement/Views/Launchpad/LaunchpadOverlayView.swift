@@ -112,9 +112,10 @@ struct LaunchpadOverlayView: View {
             )
                 .textFieldStyle(.plain)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.white)
                 .focused($searchFocused)
         }
+        .foregroundStyle(.white)
+        .tint(.white)
         .padding(.horizontal, 14)
         .frame(width: 390, height: 38)
         .background(.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -122,6 +123,7 @@ struct LaunchpadOverlayView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(.white.opacity(0.16), lineWidth: 1)
         )
+        .environment(\.colorScheme, .dark)
     }
 
     private func dockStrip(apps: [LaunchableApp]) -> some View {
@@ -176,11 +178,14 @@ struct LaunchpadOverlayView: View {
                     ScrollView(.horizontal) {
                         LazyHStack(spacing: 0) {
                             ForEach(Array(pages.enumerated()), id: \.offset) { page, pageApps in
-                                appGrid(apps: pageApps, metrics: metrics)
-                                    .padding(.horizontal, metrics.horizontalPadding)
-                                    .padding(.vertical, metrics.verticalPadding)
-                                    .frame(width: metrics.viewportWidth, height: metrics.viewportHeight)
-                                    .id(page)
+                                VStack {
+                                    appGrid(apps: pageApps, metrics: metrics)
+                                        .padding(.horizontal, metrics.horizontalPadding)
+                                        .padding(.top, metrics.verticalPadding)
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(width: metrics.viewportWidth, height: metrics.viewportHeight)
+                                .id(page)
                             }
                         }
                     }
@@ -261,18 +266,18 @@ struct LaunchpadOverlayView: View {
     private func gridMetrics(for size: CGSize) -> LaunchpadGridMetrics {
         let horizontalInset = max(54, size.width * 0.1) * 2
         let viewportHeight = max(300, size.height - 260)
-        let columnSpacing = max(8, min(28, size.width / CGFloat(settings.launchpadGridColumns) * 0.16))
-        let rowSpacing = max(6, min(28, viewportHeight / CGFloat(settings.launchpadGridRows) * 0.14))
+        let columnSpacing = CGFloat(settings.launchpadColumnSpacing)
+        let rowSpacing = CGFloat(settings.launchpadRowSpacing)
         let verticalPadding = max(6, min(20, rowSpacing))
         let availableWidth = size.width - horizontalInset - columnSpacing * CGFloat(settings.launchpadGridColumns - 1)
         let availableHeight = viewportHeight - verticalPadding * 2 - rowSpacing * CGFloat(settings.launchpadGridRows - 1)
-        let tileWidth = min(104, availableWidth / CGFloat(settings.launchpadGridColumns))
-        let tileHeight = min(116, availableHeight / CGFloat(settings.launchpadGridRows))
-        let iconSize = max(28, min(64, tileWidth - 16, tileHeight - 30))
+        let tileWidth = availableWidth / CGFloat(settings.launchpadGridColumns)
+        let tileHeight = availableHeight / CGFloat(settings.launchpadGridRows)
+        let iconSize = CGFloat(settings.launchpadIconSize)
 
         return LaunchpadGridMetrics(
             columns: Array(
-                repeating: GridItem(.flexible(minimum: tileWidth, maximum: 104), spacing: columnSpacing),
+                repeating: GridItem(.flexible(minimum: tileWidth, maximum: tileWidth + 20), spacing: columnSpacing),
                 count: settings.launchpadGridColumns
             ),
             rowSpacing: rowSpacing,

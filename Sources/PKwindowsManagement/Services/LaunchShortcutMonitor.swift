@@ -98,7 +98,8 @@ private struct ModifierState {
     var rightCommand = false
     var leftOption = false
     var rightOption = false
-    var shift = false
+    var leftShift = false
+    var rightShift = false
     var fn = false
 
     mutating func update(with event: CGEvent) {
@@ -108,7 +109,8 @@ private struct ModifierState {
         case 55: leftCommand = isPressed
         case 58: leftOption = isPressed
         case 61: rightOption = isPressed
-        case 56, 60: shift = event.flags.contains(.maskShift)
+        case 56: leftShift = isPressed
+        case 60: rightShift = isPressed
         case 63: fn = event.flags.contains(.maskSecondaryFn)
         default: break
         }
@@ -130,6 +132,12 @@ private struct ModifierState {
             return leftOption
         case .rightOption:
             return rightOption
+        case .shift:
+            return flags.contains(.maskShift)
+        case .leftShift:
+            return leftShift
+        case .rightShift:
+            return rightShift
         case .fnShift:
             return flags.contains(.maskSecondaryFn) && flags.contains(.maskShift)
         }

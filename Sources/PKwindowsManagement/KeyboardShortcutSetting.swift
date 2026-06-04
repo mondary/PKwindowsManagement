@@ -10,6 +10,9 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
     case option
     case leftOption
     case rightOption
+    case shift
+    case leftShift
+    case rightShift
     case fnShift
 
     var id: String { rawValue }
@@ -23,6 +26,9 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
         case .option: "Option"
         case .leftOption: "Left Option"
         case .rightOption: "Right Option"
+        case .shift: "Shift"
+        case .leftShift: "Left Shift"
+        case .rightShift: "Right Shift"
         case .fnShift: "Fn + Shift"
         }
     }
@@ -36,6 +42,9 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
         case .option: "⌥"
         case .leftOption: "⌥L"
         case .rightOption: "⌥R"
+        case .shift: "⇧"
+        case .leftShift: "⇧L"
+        case .rightShift: "⇧R"
         case .fnShift: "Fn⇧"
         }
     }
@@ -45,6 +54,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
         case .controlOption: [.control, .option]
         case .command, .leftCommand, .rightCommand: [.command]
         case .option, .leftOption, .rightOption: [.option]
+        case .shift, .leftShift, .rightShift: [.shift]
         case .fnShift: [.function, .shift]
         }
     }
@@ -54,6 +64,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
         case .controlOption: UInt32(controlKey | optionKey)
         case .command, .leftCommand, .rightCommand: UInt32(cmdKey)
         case .option, .leftOption, .rightOption: UInt32(optionKey)
+        case .shift, .leftShift, .rightShift: UInt32(shiftKey)
         case .fnShift: UInt32(shiftKey | alphaLock)
         }
     }
@@ -67,6 +78,9 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
         case .option: ["⌥"]
         case .leftOption: ["⌥L"]
         case .rightOption: ["⌥R"]
+        case .shift: ["⇧"]
+        case .leftShift: ["⇧L"]
+        case .rightShift: ["⇧R"]
         case .fnShift: ["fn", "⇧"]
         }
     }

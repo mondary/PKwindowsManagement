@@ -12,6 +12,11 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Full-screen Launchpad with search, recent applications, and custom shortcuts.
 - Keyboard Launchpad navigation: type to filter, use arrows to select, and press `Enter` to launch.
 - Global per-application shortcuts that work anywhere on macOS while Launchpad is closed.
+- Left/right modifier key distinction: Command, Option, and Shift (e.g. Right Command + A ≠ Left Command + A).
+- `Fn + Shift` modifier support for launch shortcuts.
+- Fine-grained Launchpad grid customization: icon size, column spacing, and row spacing.
+- Top-aligned pages in horizontal navigation mode.
+- Accessibility status indicator with grant-access button.
 - Application context menu for assigning shortcuts or moving applications to Trash.
 - Open Launchpad with `Option + Space`, the top-left hot corner, or a menu bar icon click.
 - Dedicated application icon and context menu for preferences and quit.
@@ -45,10 +50,12 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 
 ## ⚙️ Settings
 - Shortcuts can be edited in the preferences window.
+- Available modifiers: Control+Option, Command, Left/Right Command, Option, Left/Right Option, Shift, Left/Right Shift, Fn+Shift.
 - Right-click an application to assign or edit its global shortcut.
 - Assigned shortcuts appear as key badges over application icons.
+- Launchpad grid customization: columns/rows count, icon size, column and row spacing.
 - Changes are persisted in `UserDefaults`.
-- The app also stores the clipboard drawer edge setting.
+- Settings import/export in JSON format.
 
 ## 🧾 Commands
 - Left-click the menu bar icon to open or close Launchpad.
@@ -81,6 +88,13 @@ script/release.sh
 - If the app cannot control windows, check the target app permissions as well.
 
 ## 🧾 Changelog
+- `0.11` - 2026-06-04
+  - Left/right modifier key distinction for Command, Option, and Shift.
+  - Fn + Shift modifier support.
+  - Fine-grained grid settings: icon size, column and row spacing.
+  - Top-aligned pages in horizontal navigation mode.
+  - Accessibility status indicator with grant-access button.
+  - Fixed search bar text color (white on dark background).
 - `0.10` - 2026-06-03
   - Initial project scaffold.
 

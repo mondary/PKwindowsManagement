@@ -7,14 +7,19 @@ struct LaunchpadView: View {
     @State private var query = ""
     @State private var shortcutTarget: LaunchableApp?
     @State private var backupMessage: String?
+    @State private var accessibilityGranted = AXIsProcessTrusted()
     private let launcher = AppLauncherService()
+    private let statusTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         let apps = filteredApps
         VStack(alignment: .leading, spacing: 16) {
-            activationSettings
+            accessibilityCard
                 .padding(.horizontal, 24)
                 .padding(.top, 20)
+
+            activationSettings
+                .padding(.horizontal, 24)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Launchpad")
@@ -57,6 +62,44 @@ struct LaunchpadView: View {
             Text(backupMessage ?? "")
         }
         .task(id: settings.recentBundleIDs) { }
+        .onReceive(statusTimer) { _ in
+            accessibilityGranted = AXIsProcessTrusted()
+        }
+    }
+
+    private var accessibilityCard: some View {
+        HStack(spacing: 12) {
+            Image(systemName: accessibilityGranted ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(accessibilityGranted ? .green : .red)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(accessibilityGranted ? "Accessibility Granted" : "Accessibility Required")
+                    .font(.headline)
+                Text("Keyboard shortcuts need accessibility access to work.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            if !accessibilityGranted {
+                Button("Grant Access") {
+                    let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+                    AXIsProcessTrustedWithOptions(options)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(accessibilityGranted ? Color.green.opacity(0.08) : Color.red.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(accessibilityGranted ? Color.green.opacity(0.3) : Color.red.opacity(0.3), lineWidth: 1)
+        )
     }
 
     private var activationSettings: some View {
@@ -131,6 +174,40 @@ struct LaunchpadView: View {
                 Text("\(settings.launchpadGridColumns * settings.launchpadGridRows) applications visible")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                Spacer()
+            }
+
+            HStack(spacing: 28) {
+                Text("Sizing")
+                    .frame(width: 110, alignment: .leading)
+
+                Stepper(value: $settings.launchpadIconSize, in: 28...96, step: 4) {
+                    HStack(spacing: 6) {
+                        Text("Icon size")
+                        Text("\(settings.launchpadIconSize)")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Stepper(value: $settings.launchpadColumnSpacing, in: 4...48, step: 2) {
+                    HStack(spacing: 6) {
+                        Text("Column gap")
+                        Text("\(settings.launchpadColumnSpacing)")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Stepper(value: $settings.launchpadRowSpacing, in: 4...48, step: 2) {
+                    HStack(spacing: 6) {
+                        Text("Row gap")
+                        Text("\(settings.launchpadRowSpacing)")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
 
                 Spacer()
             }
