@@ -2,19 +2,22 @@
 
 [🇬🇧 EN](README_en.md) · [🇫🇷 FR](README.md)
 
-PKwindowsManagement is a macOS menu bar app for keyboard-driven window management. It snaps active windows to halves, thirds, quarters, corners, center, full screen, or another display.
+PKwindowsManagement is a macOS menu bar app for keyboard-driven window management and fast application launching.
 
 ## ✅ Features
 - Snap active windows to halves, thirds, quarters, and corners.
 - Move a window to the next or previous display.
 - Customize keyboard shortcuts from a SwiftUI preferences screen.
 - Control the focused window through macOS Accessibility APIs.
-- Menu bar icon with quick access to preferences and quit.
+- Full-screen Launchpad with search, recent applications, and custom shortcuts.
+- Open Launchpad with `Option + Space`, the top-left hot corner, or a menu bar icon click.
+- Dedicated application icon and context menu for preferences and quit.
 
 ## 🧠 Usage
 - Launch the app.
 - Grant Accessibility permission when macOS asks for it.
 - Use the default shortcuts to manage the active window.
+- Use `Option + Space` to show or hide Launchpad.
 
 ### Default shortcuts
 - `Ctrl + Option + H` : left half
@@ -35,12 +38,13 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 
 ## ⚙️ Settings
 - Shortcuts can be edited in the preferences window.
+- Applications can receive dedicated launch shortcuts from the Launchpad screen.
 - Changes are persisted in `UserDefaults`.
 - The app also stores the clipboard drawer edge setting.
 
 ## 🧾 Commands
-- `Open Preferences` : opens the configuration window.
-- `Quit` : exits the app.
+- Left-click the menu bar icon to open or close Launchpad.
+- Right-click the menu bar icon to show `Open Launchpad`, `Open Preferences`, and `Quit`.
 
 ## 📦 Build & Package
 - Requirements: macOS 13 or later.
@@ -49,13 +53,22 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 ```bash
 swift build
 ```
-- Local run:
+- Build the debug app bundle and launch it:
 ```bash
-swift run PKwindowsManagement
+script/build_and_run.sh
+```
+- Build an app bundle without launching:
+```bash
+script/package_app.sh debug
+script/package_app.sh release
+```
+- Build a release and copy it to `/Applications`:
+```bash
+script/release.sh
 ```
 
 ## 🧪 Install
-- Open the project in Xcode or run `swift run PKwindowsManagement`.
+- Run `script/release.sh` to build and install `/Applications/PKwindowsManagement.app`.
 - On first launch, grant Accessibility access in `System Settings > Privacy & Security > Accessibility`.
 - If the app cannot control windows, check the target app permissions as well.
 

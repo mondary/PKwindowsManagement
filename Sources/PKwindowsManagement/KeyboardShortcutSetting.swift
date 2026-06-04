@@ -4,19 +4,62 @@ import Foundation
 
 enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
     case controlOption
+    case command
+    case leftCommand
+    case rightCommand
+    case option
+    case leftOption
+    case rightOption
+    case fnShift
 
     var id: String { rawValue }
 
-    var displayName: String { "Control + Option" }
+    var displayName: String {
+        switch self {
+        case .controlOption: "Control + Option"
+        case .command: "Command"
+        case .leftCommand: "Left Command"
+        case .rightCommand: "Right Command"
+        case .option: "Option"
+        case .leftOption: "Left Option"
+        case .rightOption: "Right Option"
+        case .fnShift: "Fn + Shift"
+        }
+    }
 
-    var symbolPrefix: String { "⌃⌥" }
+    var symbolPrefix: String {
+        switch self {
+        case .controlOption: "⌃⌥"
+        case .command: "⌘"
+        case .leftCommand: "⌘L"
+        case .rightCommand: "⌘R"
+        case .option: "⌥"
+        case .leftOption: "⌥L"
+        case .rightOption: "⌥R"
+        case .fnShift: "Fn⇧"
+        }
+    }
 
-    var flags: NSEvent.ModifierFlags { [.control, .option] }
+    var flags: NSEvent.ModifierFlags {
+        switch self {
+        case .controlOption: [.control, .option]
+        case .command, .leftCommand, .rightCommand: [.command]
+        case .option, .leftOption, .rightOption: [.option]
+        case .fnShift: [.function, .shift]
+        }
+    }
 
-    var carbonFlags: UInt32 { UInt32(controlKey | optionKey) }
+    var carbonFlags: UInt32 {
+        switch self {
+        case .controlOption: UInt32(controlKey | optionKey)
+        case .command, .leftCommand, .rightCommand: UInt32(cmdKey)
+        case .option, .leftOption, .rightOption: UInt32(optionKey)
+        case .fnShift: UInt32(shiftKey | alphaLock)
+        }
+    }
 }
 
-struct KeyboardShortcutSetting: Codable, Equatable {
+struct KeyboardShortcutSetting: Codable, Equatable, Hashable {
     var key: String
     var modifier: ShortcutModifierPreset
 }

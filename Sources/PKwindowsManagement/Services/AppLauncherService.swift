@@ -1,0 +1,148 @@
+import AppKit
+
+enum LauncherCommand: String, CaseIterable, Identifiable {
+    case emptyTrash = "empty trash"
+    case eject = "eject"
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .emptyTrash: "Empty Trash"
+        case .eject: "Eject"
+        }
+    }
+}
+
+struct LaunchableApp: Identifiable {
+    let id: String
+    let name: String
+    let bundleID: String
+    let url: URL
+    let icon: NSImage
+    let shortcut: KeyboardShortcutSetting?
+}
+
+final class AppLauncherService {
+    func loadApps(settings: AppSettings) -> [LaunchableApp] {
+        let items = installedApplications()
+        return items.map { app in
+            LaunchableApp(
+                id: app.bundleID ?? app.url.path,
+                name: app.displayName,
+                bundleID: app.bundleID ?? app.url.path,
+                url: app.url,
+                icon: app.icon,
+                shortcut: shortcut(for: app.bundleID, settings: settings)
+            )
+        }
+        .sorted {
+            if settings.recentBundleIDs.firstIndex(of: $0.bundleID) != nil,
+               settings.recentBundleIDs.firstIndex(of: $1.bundleID) == nil { return true }
+            if settings.recentBundleIDs.firstIndex(of: $0.bundleID) == nil,
+               settings.recentBundleIDs.firstIndex(of: $1.bundleID) != nil { return false }
+            return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+
+    func launcherCommands() -> [LaunchableApp] {
+        [
+            makeCommand(id: LauncherCommand.emptyTrash.rawValue, name: LauncherCommand.emptyTrash.title, iconName: "trash"),
+            makeCommand(id: LauncherCommand.eject.rawValue, name: LauncherCommand.eject.title, iconName: "eject")
+        ]
+    }
+
+    func launch(_ app: LaunchableApp, settings: AppSettings) {
+        if handleCommandLaunch(app) { return }
+        let configuration = NSWorkspace.OpenConfiguration()
+        NSWorkspace.shared.openApplication(at: app.url, configuration: configuration) { _, _ in }
+        settings.markLaunched(bundleID: app.bundleID)
+    }
+
+    private func shortcut(for bundleID: String?, settings: AppSettings) -> KeyboardShortcutSetting? {
+        guard let bundleID else { return nil }
+        return settings.launchShortcut(for: bundleID)
+    }
+
+    private func installedApplications() -> [InstalledApp] {
+        let urls = [
+            URL(fileURLWithPath: "/Applications"),
+            URL(fileURLWithPath: "/Applications/Utilities"),
+            URL(fileURLWithPath: "/System/Applications"),
+            URL(fileURLWithPath: "/System/Applications/Utilities"),
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications")
+        ]
+
+        var seen = Set<String>()
+        return urls.flatMap { folder -> [InstalledApp] in
+            applications(in: folder)
+        }
+        .filter { app in
+            guard !seen.contains(app.bundleID ?? app.url.path) else { return false }
+            seen.insert(app.bundleID ?? app.url.path)
+            return true
+        }
+    }
+
+    private func applications(in folder: URL) -> [InstalledApp] {
+        guard let enumerator = FileManager.default.enumerator(
+            at: folder,
+            includingPropertiesForKeys: [.localizedNameKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        ) else { return [] }
+
+        return enumerator.compactMap { item in
+            guard let url = item as? URL, url.pathExtension == "app" else { return nil }
+            let values = try? url.resourceValues(forKeys: [.localizedNameKey])
+            let name = values?.localizedName ?? url.deletingPathExtension().lastPathComponent
+            let bundleID = Bundle(url: url)?.bundleIdentifier ?? url.deletingPathExtension().lastPathComponent
+            let icon = NSWorkspace.shared.icon(forFile: url.path)
+            icon.size = NSSize(width: 96, height: 96)
+            return InstalledApp(url: url, displayName: name, bundleID: bundleID, icon: icon)
+        }
+    }
+
+    private func handleCommandLaunch(_ app: LaunchableApp) -> Bool {
+        switch app.id {
+        case LauncherCommand.emptyTrash.rawValue:
+            emptyTrash()
+            return true
+        case LauncherCommand.eject.rawValue:
+            ejectMountedVolumes()
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func ejectMountedVolumes() {
+        let mounted = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: [.volumeURLForRemountingKey], options: [.skipHiddenVolumes]) ?? []
+        for volume in mounted {
+            guard volume.path != "/" else { continue }
+            try? NSWorkspace.shared.unmountAndEjectDevice(at: volume)
+        }
+    }
+
+    private func emptyTrash() {
+        let script = """
+        tell application "Finder"
+            empty trash
+        end tell
+        """
+        let appleScript = NSAppleScript(source: script)
+        appleScript?.executeAndReturnError(nil)
+    }
+
+    private func makeCommand(id: String, name: String, iconName: String) -> LaunchableApp {
+        let icon = NSImage(systemSymbolName: iconName, accessibilityDescription: name) ?? NSImage()
+        icon.size = NSSize(width: 64, height: 64)
+        return LaunchableApp(id: id, name: name, bundleID: id, url: URL(fileURLWithPath: "/"), icon: icon, shortcut: nil)
+    }
+}
+
+private struct InstalledApp {
+    let url: URL
+    let displayName: String
+    let bundleID: String?
+    let icon: NSImage
+}

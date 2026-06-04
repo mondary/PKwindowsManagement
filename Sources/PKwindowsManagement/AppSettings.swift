@@ -5,6 +5,8 @@ final class AppSettings: ObservableObject {
     private enum Keys {
         static let shortcuts = "keyboard-shortcuts"
         static let clipboardDrawerEdge = "clipboard-drawer-edge"
+        static let launchRecents = "launch-recents"
+        static let launchShortcuts = "launch-shortcuts"
     }
 
     private let defaults: UserDefaults
@@ -15,11 +17,16 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(clipboardDrawerEdge.rawValue, forKey: Keys.clipboardDrawerEdge) }
     }
 
+    @Published private(set) var recentBundleIDs: [String]
+    @Published private(set) var launchShortcuts: [String: KeyboardShortcutSetting]
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let edgeRaw = defaults.string(forKey: Keys.clipboardDrawerEdge) ?? ClipboardDrawerEdge.top.rawValue
         clipboardDrawerEdge = ClipboardDrawerEdge(rawValue: edgeRaw) ?? .top
         shortcuts = Self.loadShortcuts(from: defaults)
+        recentBundleIDs = defaults.stringArray(forKey: Keys.launchRecents) ?? []
+        launchShortcuts = Self.loadLaunchShortcuts(from: defaults)
     }
 
     func shortcut(for action: ShortcutAction) -> KeyboardShortcutSetting {
@@ -34,6 +41,26 @@ final class AppSettings: ObservableObject {
     func resetShortcut(for action: ShortcutAction) {
         shortcuts[action] = action.defaultShortcut
         saveShortcuts()
+    }
+
+    func markLaunched(bundleID: String) {
+        recentBundleIDs.removeAll { $0 == bundleID }
+        recentBundleIDs.insert(bundleID, at: 0)
+        recentBundleIDs = Array(recentBundleIDs.prefix(12))
+        defaults.set(recentBundleIDs, forKey: Keys.launchRecents)
+    }
+
+    func launchShortcut(for bundleID: String) -> KeyboardShortcutSetting? {
+        launchShortcuts[bundleID]
+    }
+
+    func setLaunchShortcut(_ shortcut: KeyboardShortcutSetting?, for bundleID: String) {
+        if let shortcut {
+            launchShortcuts[bundleID] = shortcut
+        } else {
+            launchShortcuts.removeValue(forKey: bundleID)
+        }
+        saveLaunchShortcuts()
     }
 
     private func saveShortcuts() {
@@ -51,6 +78,18 @@ final class AppSettings: ObservableObject {
             guard let action = ShortcutAction(rawValue: rawAction) else { continue }
             shortcuts[action] = shortcut
         }
+        return shortcuts
+    }
+
+    private func saveLaunchShortcuts() {
+        guard let data = try? JSONEncoder().encode(launchShortcuts) else { return }
+        defaults.set(data, forKey: Keys.launchShortcuts)
+    }
+
+    private static func loadLaunchShortcuts(from defaults: UserDefaults) -> [String: KeyboardShortcutSetting] {
+        guard let data = defaults.data(forKey: Keys.launchShortcuts),
+              let shortcuts = try? JSONDecoder().decode([String: KeyboardShortcutSetting].self, from: data)
+        else { return [:] }
         return shortcuts
     }
 }
