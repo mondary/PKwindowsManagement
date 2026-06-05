@@ -15,6 +15,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Distinction gauche/droite pour les modificateurs : Command, Option et Shift (ex : Right Command + A ≠ Left Command + A).
 - Support du modificateur `Fn + Shift` pour les raccourcis de lancement.
 - Paramétrage fin de la grille du Launchpad : taille des icônes, espacement des colonnes et des lignes.
+- Choix du mode de navigation du Launchpad : scroll vertical continu ou pages horizontales.
 - Alignement en haut des pages en mode navigation horizontale.
 - Indicateur de statut d'accessibilité avec bouton pour autoriser l'accès.
 - Export automatique des backups vers un dossier au choix (ex : Google Drive) à chaque modification des réglages.
@@ -29,8 +30,10 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Utilise `Option + Espace` pour afficher ou masquer le Launchpad.
 - Dans le Launchpad, commence à saisir puis appuie sur `Entrée` pour lancer le premier résultat.
 - Utilise les flèches pour changer de sélection.
+- Utilise la molette ou le trackpad pour naviguer dans le Launchpad.
 - Appuie sur `Échap` une fois pour vider une recherche, puis une seconde fois pour fermer le Launchpad.
 - Clique sur `•••` en haut à droite pour ouvrir les réglages.
+- Utilise `Cmd + ,` pour ouvrir les réglages depuis l'application.
 
 ### Raccourcis par défaut
 - `Ctrl + Option + H` : moitié gauche
@@ -55,13 +58,15 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Un clic droit sur une application permet d'attribuer ou modifier son raccourci global.
 - Les raccourcis attribués apparaissent sur les icônes sous forme de touches.
 - Paramétrage de la grille du Launchpad : nombre de colonnes/lignes, taille des icônes, espacement des colonnes et des lignes.
+- Choix du mode de navigation du Launchpad : scroll vertical ou pages horizontales.
 - Les changements sont sauvegardés dans `UserDefaults`.
-- Import/export des réglages au format JSON.
+- Import/export manuel des réglages au format JSON.
 - Auto-backup : choisis un dossier (ex : Google Drive) et exporte un backup JSON horodaté à chaque modification des réglages.
 
 ## 🧾 Commandes
 - Clic gauche sur l'icône de barre de menu : ouvre ou ferme le Launchpad.
 - Clic droit sur l'icône de barre de menu : affiche `Open Launchpad`, `Open Preferences` et `Quit`.
+- `Cmd + ,` : ouvre les réglages.
 
 ## 📦 Build & Package
 - Prérequis : macOS 13 ou plus.
@@ -91,6 +96,9 @@ script/release.sh
 
 ## 🧾 Changelog
 - `0.12` - 2026-06-04
+  - Choix du mode de navigation Launchpad : vertical continu ou pages horizontales.
+  - Import/export manuel des réglages en JSON.
+  - `Cmd + ,` pour ouvrir les réglages.
   - Distinction gauche/droite pour Command, Option et Shift dans les raccourcis.
   - Support du modificateur Fn + Shift.
   - Paramétrage fin de la grille : taille des icônes, espacement colonnes/lignes.

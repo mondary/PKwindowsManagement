@@ -15,6 +15,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Left/right modifier key distinction: Command, Option, and Shift (e.g. Right Command + A ≠ Left Command + A).
 - `Fn + Shift` modifier support for launch shortcuts.
 - Fine-grained Launchpad grid customization: icon size, column spacing, and row spacing.
+- Launchpad navigation mode: continuous vertical scroll or horizontal pages.
 - Top-aligned pages in horizontal navigation mode.
 - Accessibility status indicator with grant-access button.
 - Automatic backup export to a user-chosen folder (e.g. Google Drive) on every settings change.
@@ -29,8 +30,10 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Use `Option + Space` to show or hide Launchpad.
 - In Launchpad, start typing and press `Enter` to launch the first result.
 - Use arrow keys to change selection.
+- Use the mouse wheel or trackpad to navigate in Launchpad.
 - Press `Escape` once to clear a search, then again to close Launchpad.
 - Click `•••` in the top-right corner to open settings.
+- Use `Cmd + ,` to open settings from the app.
 
 ### Default shortcuts
 - `Ctrl + Option + H` : left half
@@ -55,13 +58,15 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Right-click an application to assign or edit its global shortcut.
 - Assigned shortcuts appear as key badges over application icons.
 - Launchpad grid customization: columns/rows count, icon size, column and row spacing.
+- Launchpad navigation mode: vertical scroll or horizontal pages.
 - Changes are persisted in `UserDefaults`.
-- Settings import/export in JSON format.
+- Manual settings import/export in JSON format.
 - Auto-backup: choose a folder (e.g. Google Drive) and export a timestamped JSON backup on every settings change.
 
 ## 🧾 Commands
 - Left-click the menu bar icon to open or close Launchpad.
 - Right-click the menu bar icon to show `Open Launchpad`, `Open Preferences`, and `Quit`.
+- `Cmd + ,`: open settings.
 
 ## 📦 Build & Package
 - Requirements: macOS 13 or later.
@@ -91,6 +96,9 @@ script/release.sh
 
 ## 🧾 Changelog
 - `0.12` - 2026-06-04
+  - Launchpad navigation mode: continuous vertical scroll or horizontal pages.
+  - Manual settings import/export in JSON.
+  - `Cmd + ,` shortcut to open settings.
   - Left/right modifier key distinction for Command, Option, and Shift.
   - Fn + Shift modifier support.
   - Fine-grained grid settings: icon size, column and row spacing.
