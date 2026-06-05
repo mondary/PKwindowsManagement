@@ -139,7 +139,7 @@ private struct ModifierState {
         case .rightShift:
             return rightShift
         case .fnShift:
-            return flags.contains(.maskSecondaryFn) && flags.contains(.maskShift)
+            return fn && (flags.contains(.maskShift) || leftShift || rightShift)
         }
     }
 

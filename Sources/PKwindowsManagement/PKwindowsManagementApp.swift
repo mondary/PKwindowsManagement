@@ -27,6 +27,11 @@ struct PKwindowsManagementApp: App {
                     let apps = launcher.launcherCommands() + launcher.loadSnippets(settings: settings) + launcher.loadApps(settings: settings)
                     LaunchShortcutMonitor.shared.refreshApps(apps)
                 }
+                .onChange(of: settings.launchShortcuts) { _ in
+                    let launcher = AppLauncherService()
+                    let apps = launcher.launcherCommands() + launcher.loadSnippets(settings: settings) + launcher.loadApps(settings: settings)
+                    LaunchShortcutMonitor.shared.refreshApps(apps)
+                }
         }
         .commands {
             CommandGroup(replacing: .appSettings) {
