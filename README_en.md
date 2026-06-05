@@ -15,6 +15,8 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Left/right modifier key distinction: Command, Option, and Shift (e.g. Right Command + A ≠ Left Command + A).
 - `Fn + Shift` modifier support for launch shortcuts.
 - Direct keyboard sequence recording for shortcuts.
+- Script snippets with global shortcuts and enable/disable support.
+- URL snippets with browser selection and global shortcuts.
 - Fine-grained Launchpad grid customization: columns, rows, icon size, column spacing, and row spacing.
 - Per-display Launchpad grid profiles to adapt the layout to each connected monitor.
 - Launchpad navigation mode: continuous vertical scroll or horizontal pages.
@@ -60,6 +62,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Right-click an application to assign or edit its global shortcut.
 - Assigned shortcuts appear as key badges over application icons.
 - Shortcuts can also be captured with a `Record` button.
+- `Scripts` and `URLs` are split into separate preferences sections.
 - Launchpad grid customization: columns/rows count, icon size, column and row spacing.
 - Per-display Launchpad grid profiles are available in Appearance settings.
 - Launchpad navigation mode: vertical scroll or horizontal pages.
@@ -99,6 +102,10 @@ script/release.sh
 - If the app cannot control windows, check the target app permissions as well.
 
 ## 🧾 Changelog
+- `0.15` - 2026-06-05
+  - Dedicated `URLs` section in preferences, separate from scripts.
+  - URL snippets with browser selection and global shortcuts.
+  - More readable Launchpad icons for scripts and URLs.
 - `0.14` - 2026-06-05
   - Script-based snippets with global shortcuts and enable/disable support.
   - Launchpad search bar can now handle simple calculations with units.

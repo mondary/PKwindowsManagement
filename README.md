@@ -15,6 +15,8 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Distinction gauche/droite pour les modificateurs : Command, Option et Shift (ex : Right Command + A ≠ Left Command + A).
 - Support du modificateur `Fn + Shift` pour les raccourcis de lancement.
 - Enregistrement direct des séquences clavier pour les raccourcis.
+- Gestionnaire de snippets avec scripts exécutables et raccourcis globaux.
+- Gestionnaire d'URLs avec choix du navigateur et raccourcis globaux.
 - Paramétrage fin de la grille du Launchpad : colonnes, lignes, taille des icônes, espacement des colonnes et des lignes.
 - Profils de grille par écran pour adapter le Launchpad à chaque moniteur connecté.
 - Choix du mode de navigation du Launchpad : scroll vertical continu ou pages horizontales.
@@ -60,6 +62,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Un clic droit sur une application permet d'attribuer ou modifier son raccourci global.
 - Les raccourcis attribués apparaissent sur les icônes sous forme de touches.
 - Enregistrement des raccourcis via un bouton `Record`.
+- Gestion des snippets `Scripts` et `URLs` dans des onglets séparés des réglages.
 - Paramétrage de la grille du Launchpad : nombre de colonnes/lignes, taille des icônes, espacement des colonnes et des lignes.
 - Possibilité de définir une grille spécifique par écran dans les réglages d'apparence.
 - Choix du mode de navigation du Launchpad : scroll vertical ou pages horizontales.
@@ -99,6 +102,10 @@ script/release.sh
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
 ## 🧾 Changelog
+- `0.15` - 2026-06-05
+  - Onglet `URLs` dédié dans les réglages, séparé des scripts.
+  - Snippets `URL` avec choix du navigateur et raccourcis globaux.
+  - Icônes Launchpad des scripts et URLs rendues plus lisibles.
 - `0.14` - 2026-06-05
   - Gestionnaire de snippets avec scripts exécutables, raccourcis globaux et activation/désactivation.
   - Barre de recherche Launchpad capable d'effectuer des calculs simples avec unités.
