@@ -105,6 +105,7 @@ script/release.sh
 - `0.15` - 2026-06-05
   - Onglet `URLs` dédié dans les réglages, séparé des scripts.
   - Snippets `URL` avec choix du navigateur et raccourcis globaux.
+  - Icône de favicon récupérée automatiquement pour les snippets `URL` quand le site en fournit une.
   - Icônes Launchpad des scripts et URLs rendues plus lisibles.
 - `0.14` - 2026-06-05
   - Gestionnaire de snippets avec scripts exécutables, raccourcis globaux et activation/désactivation.

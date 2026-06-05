@@ -105,6 +105,7 @@ script/release.sh
 - `0.15` - 2026-06-05
   - Dedicated `URLs` section in preferences, separate from scripts.
   - URL snippets with browser selection and global shortcuts.
+  - URL snippets now fetch and use the site favicon when available.
   - More readable Launchpad icons for scripts and URLs.
 - `0.14` - 2026-06-05
   - Script-based snippets with global shortcuts and enable/disable support.
