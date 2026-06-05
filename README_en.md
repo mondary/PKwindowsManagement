@@ -99,6 +99,10 @@ script/release.sh
 - If the app cannot control windows, check the target app permissions as well.
 
 ## 🧾 Changelog
+- `0.14` - 2026-06-05
+  - Script-based snippets with global shortcuts and enable/disable support.
+  - Launchpad search bar can now handle simple calculations with units.
+  - Refined snippet editor and tighter Launchpad rendering for system commands.
 - `0.13` - 2026-06-05
   - Per-display Launchpad grid profiles.
   - `Record` button for keyboard shortcut capture.

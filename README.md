@@ -99,6 +99,10 @@ script/release.sh
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
 ## 🧾 Changelog
+- `0.14` - 2026-06-05
+  - Gestionnaire de snippets avec scripts exécutables, raccourcis globaux et activation/désactivation.
+  - Barre de recherche Launchpad capable d'effectuer des calculs simples avec unités.
+  - Éditeur snippets refondu et Launchpad ajusté pour les commandes système.
 - `0.13` - 2026-06-05
   - Profils de grille Launchpad par écran connecté.
   - Bouton `Record` pour enregistrer les raccourcis au clavier.
