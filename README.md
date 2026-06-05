@@ -14,7 +14,9 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Raccourcis globaux par application, actifs partout sur macOS même quand le Launchpad est fermé.
 - Distinction gauche/droite pour les modificateurs : Command, Option et Shift (ex : Right Command + A ≠ Left Command + A).
 - Support du modificateur `Fn + Shift` pour les raccourcis de lancement.
-- Paramétrage fin de la grille du Launchpad : taille des icônes, espacement des colonnes et des lignes.
+- Enregistrement direct des séquences clavier pour les raccourcis.
+- Paramétrage fin de la grille du Launchpad : colonnes, lignes, taille des icônes, espacement des colonnes et des lignes.
+- Profils de grille par écran pour adapter le Launchpad à chaque moniteur connecté.
 - Choix du mode de navigation du Launchpad : scroll vertical continu ou pages horizontales.
 - Alignement en haut des pages en mode navigation horizontale.
 - Indicateur de statut d'accessibilité avec bouton pour autoriser l'accès.
@@ -57,7 +59,9 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Modificateurs disponibles : Control+Option, Command, Left/Right Command, Option, Left/Right Option, Shift, Left/Right Shift, Fn+Shift.
 - Un clic droit sur une application permet d'attribuer ou modifier son raccourci global.
 - Les raccourcis attribués apparaissent sur les icônes sous forme de touches.
+- Enregistrement des raccourcis via un bouton `Record`.
 - Paramétrage de la grille du Launchpad : nombre de colonnes/lignes, taille des icônes, espacement des colonnes et des lignes.
+- Possibilité de définir une grille spécifique par écran dans les réglages d'apparence.
 - Choix du mode de navigation du Launchpad : scroll vertical ou pages horizontales.
 - Les changements sont sauvegardés dans `UserDefaults`.
 - Import/export manuel des réglages au format JSON.
@@ -95,6 +99,10 @@ script/release.sh
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
 ## 🧾 Changelog
+- `0.13` - 2026-06-05
+  - Profils de grille Launchpad par écran connecté.
+  - Bouton `Record` pour enregistrer les raccourcis au clavier.
+  - Grille Launchpad étendue jusqu'à `20 × 20`.
 - `0.12` - 2026-06-04
   - Choix du mode de navigation Launchpad : vertical continu ou pages horizontales.
   - Import/export manuel des réglages en JSON.

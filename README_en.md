@@ -14,7 +14,9 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Global per-application shortcuts that work anywhere on macOS while Launchpad is closed.
 - Left/right modifier key distinction: Command, Option, and Shift (e.g. Right Command + A ≠ Left Command + A).
 - `Fn + Shift` modifier support for launch shortcuts.
-- Fine-grained Launchpad grid customization: icon size, column spacing, and row spacing.
+- Direct keyboard sequence recording for shortcuts.
+- Fine-grained Launchpad grid customization: columns, rows, icon size, column spacing, and row spacing.
+- Per-display Launchpad grid profiles to adapt the layout to each connected monitor.
 - Launchpad navigation mode: continuous vertical scroll or horizontal pages.
 - Top-aligned pages in horizontal navigation mode.
 - Accessibility status indicator with grant-access button.
@@ -57,7 +59,9 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Available modifiers: Control+Option, Command, Left/Right Command, Option, Left/Right Option, Shift, Left/Right Shift, Fn+Shift.
 - Right-click an application to assign or edit its global shortcut.
 - Assigned shortcuts appear as key badges over application icons.
+- Shortcuts can also be captured with a `Record` button.
 - Launchpad grid customization: columns/rows count, icon size, column and row spacing.
+- Per-display Launchpad grid profiles are available in Appearance settings.
 - Launchpad navigation mode: vertical scroll or horizontal pages.
 - Changes are persisted in `UserDefaults`.
 - Manual settings import/export in JSON format.
@@ -95,6 +99,10 @@ script/release.sh
 - If the app cannot control windows, check the target app permissions as well.
 
 ## 🧾 Changelog
+- `0.13` - 2026-06-05
+  - Per-display Launchpad grid profiles.
+  - `Record` button for keyboard shortcut capture.
+  - Launchpad grid extended up to `20 × 20`.
 - `0.12` - 2026-06-04
   - Launchpad navigation mode: continuous vertical scroll or horizontal pages.
   - Manual settings import/export in JSON.
