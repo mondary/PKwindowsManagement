@@ -23,9 +23,12 @@ final class LaunchpadOverlayController {
     func show(settings: AppSettings) {
         guard panel?.isVisible != true else { return }
 
-        let rootView = LaunchpadOverlayRootView(settings: settings)
-        let hosting = NSHostingController(rootView: rootView)
         let targetScreen = screenForCurrentPointer() ?? NSScreen.main
+        let rootView = LaunchpadOverlayRootView(
+            settings: settings,
+            displayID: targetScreen?.launchpadDisplayID
+        )
+        let hosting = NSHostingController(rootView: rootView)
         let screenFrame = targetScreen?.frame ?? NSScreen.main?.frame ?? .zero
         let panel = LaunchpadPanel(
             contentRect: screenFrame,
@@ -77,9 +80,10 @@ final class LaunchpadOverlayController {
 
 struct LaunchpadOverlayRootView: View {
     @ObservedObject var settings: AppSettings
+    let displayID: CGDirectDisplayID?
 
     var body: some View {
-        LaunchpadOverlayView(settings: settings)
+        LaunchpadOverlayView(settings: settings, displayID: displayID)
             .ignoresSafeArea()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(

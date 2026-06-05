@@ -1,0 +1,147 @@
+import Foundation
+
+enum SnippetKind: String, Codable, CaseIterable, Identifiable {
+    case script
+    case url
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .script: "Script"
+        case .url: "URL"
+        }
+    }
+}
+
+enum SnippetBrowserTarget: String, Codable, CaseIterable, Identifiable {
+    case defaultBrowser
+    case safari
+    case chrome
+    case firefox
+    case brave
+    case edge
+    case arc
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .defaultBrowser: "Default Browser"
+        case .safari: "Safari"
+        case .chrome: "Google Chrome"
+        case .firefox: "Firefox"
+        case .brave: "Brave"
+        case .edge: "Microsoft Edge"
+        case .arc: "Arc"
+        }
+    }
+
+    var bundleIdentifier: String? {
+        switch self {
+        case .defaultBrowser: nil
+        case .safari: "com.apple.Safari"
+        case .chrome: "com.google.Chrome"
+        case .firefox: "org.mozilla.firefox"
+        case .brave: "com.brave.Browser"
+        case .edge: "com.microsoft.edgemac"
+        case .arc: "company.thebrowser.Browser"
+        }
+    }
+}
+
+struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
+    let id: String
+    var title: String
+    var kind: SnippetKind
+    var body: String
+    var urlString: String
+    var browserBundleID: String?
+    var isEnabled: Bool
+
+    init(id: String = UUID().uuidString, title: String, body: String) {
+        self.id = id
+        self.title = title
+        self.kind = .script
+        self.body = body
+        self.urlString = ""
+        self.browserBundleID = nil
+        self.isEnabled = true
+    }
+
+    init(id: String = UUID().uuidString, title: String, body: String, isEnabled: Bool) {
+        self.id = id
+        self.title = title
+        self.kind = .script
+        self.body = body
+        self.urlString = ""
+        self.browserBundleID = nil
+        self.isEnabled = isEnabled
+    }
+
+    init(
+        id: String = UUID().uuidString,
+        title: String,
+        urlString: String,
+        browserBundleID: String? = nil,
+        isEnabled: Bool = true
+    ) {
+        self.id = id
+        self.title = title
+        self.kind = .url
+        self.body = ""
+        self.urlString = urlString
+        self.browserBundleID = browserBundleID
+        self.isEnabled = isEnabled
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case kind
+        case body
+        case urlString
+        case browserBundleID
+        case isEnabled
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        kind = try container.decodeIfPresent(SnippetKind.self, forKey: .kind) ?? .script
+        body = try container.decode(String.self, forKey: .body)
+        urlString = try container.decodeIfPresent(String.self, forKey: .urlString) ?? ""
+        browserBundleID = try container.decodeIfPresent(String.self, forKey: .browserBundleID)
+        isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(kind, forKey: .kind)
+        try container.encode(body, forKey: .body)
+        try container.encode(urlString, forKey: .urlString)
+        try container.encodeIfPresent(browserBundleID, forKey: .browserBundleID)
+        try container.encode(isEnabled, forKey: .isEnabled)
+    }
+
+    var summaryText: String {
+        switch kind {
+        case .script:
+            return body.isEmpty ? "Empty script" : body
+        case .url:
+            if urlString.isEmpty { return "Empty URL" }
+            if let browserBundleID {
+                let browserName = SnippetBrowserTarget.allCases.first(where: { $0.bundleIdentifier == browserBundleID })?.title ?? browserBundleID
+                return "\(urlString) • \(browserName)"
+            }
+            return urlString
+        }
+    }
+
+    var searchText: String {
+        [title, body, urlString, browserBundleID ?? ""].joined(separator: " ")
+    }
+}

@@ -1,4 +1,6 @@
 import AppKit
+import Carbon.HIToolbox
+import Foundation
 
 enum LauncherCommand: String, CaseIterable, Identifiable {
     case emptyTrash = "empty trash"
@@ -21,12 +23,24 @@ struct LaunchableApp: Identifiable {
     let url: URL
     let icon: NSImage
     let shortcut: KeyboardShortcutSetting?
+    let snippet: SnippetDefinition?
 
     var commandSymbolName: String? {
         switch id {
         case LauncherCommand.emptyTrash.rawValue: "trash"
         case LauncherCommand.eject.rawValue: "eject"
         default: nil
+        }
+    }
+
+    var launchpadSymbolName: String? {
+        if let commandSymbolName { return commandSymbolName }
+        guard let snippet else { return nil }
+        switch snippet.kind {
+        case .script:
+            return "terminal"
+        case .url:
+            return "globe"
         }
     }
 }
@@ -57,7 +71,8 @@ final class AppLauncherService {
                 bundleID: app.bundleID ?? app.url.path,
                 url: app.url,
                 icon: app.icon,
-                shortcut: shortcut(for: app.bundleID, settings: settings)
+                shortcut: shortcut(for: app.bundleID, settings: settings),
+                snippet: nil
             )
         }
         .sorted {
@@ -76,8 +91,33 @@ final class AppLauncherService {
         ]
     }
 
+    func loadSnippets(settings: AppSettings) -> [LaunchableApp] {
+        settings.snippets.filter(\.isEnabled).map { snippet in
+            let iconName = snippet.kind == .url ? "globe" : "terminal"
+            let icon = NSImage(systemSymbolName: iconName, accessibilityDescription: snippet.title) ?? NSImage()
+            icon.size = NSSize(width: 64, height: 64)
+            return LaunchableApp(
+                id: snippet.id,
+                name: snippet.title,
+                bundleID: snippet.id,
+                url: URL(fileURLWithPath: "/"),
+                icon: icon,
+                shortcut: settings.launchShortcut(for: snippet.id),
+                snippet: snippet
+            )
+        }
+        .sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+
     func launch(_ app: LaunchableApp, settings: AppSettings) {
         if handleCommandLaunch(app) { return }
+        if let snippet = app.snippet {
+            launch(snippet: snippet)
+            settings.markLaunched(bundleID: app.bundleID)
+            return
+        }
         let configuration = NSWorkspace.OpenConfiguration()
         NSWorkspace.shared.openApplication(at: app.url, configuration: configuration) { _, _ in }
         settings.markLaunched(bundleID: app.bundleID)
@@ -139,6 +179,44 @@ final class AppLauncherService {
         }
     }
 
+    private func launch(snippet: SnippetDefinition) {
+        switch snippet.kind {
+        case .script:
+            executeSnippet(snippet.body)
+        case .url:
+            openURL(snippet.urlString, inBrowserBundleID: snippet.browserBundleID)
+        }
+    }
+
+    private func executeSnippet(_ script: String) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        process.arguments = ["-lc", script]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        try? process.run()
+    }
+
+    private func openURL(_ rawURL: String, inBrowserBundleID browserBundleID: String?) {
+        guard let url = normalizedURL(rawURL) else { return }
+        if let browserBundleID,
+           let browserURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: browserBundleID) {
+            let configuration = NSWorkspace.OpenConfiguration()
+            NSWorkspace.shared.open([url], withApplicationAt: browserURL, configuration: configuration) { _, _ in }
+            return
+        }
+        NSWorkspace.shared.open(url)
+    }
+
+    private func normalizedURL(_ rawValue: String) -> URL? {
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        if let url = URL(string: trimmed), url.scheme != nil {
+            return url
+        }
+        return URL(string: "https://\(trimmed)")
+    }
+
     private func ejectMountedVolumes() {
         let mounted = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: [.volumeURLForRemountingKey], options: [.skipHiddenVolumes]) ?? []
         for volume in mounted {
@@ -160,7 +238,7 @@ final class AppLauncherService {
     private func makeCommand(id: String, name: String, iconName: String) -> LaunchableApp {
         let icon = NSImage(systemSymbolName: iconName, accessibilityDescription: name) ?? NSImage()
         icon.size = NSSize(width: 64, height: 64)
-        return LaunchableApp(id: id, name: name, bundleID: id, url: URL(fileURLWithPath: "/"), icon: icon, shortcut: nil)
+        return LaunchableApp(id: id, name: name, bundleID: id, url: URL(fileURLWithPath: "/"), icon: icon, shortcut: nil, snippet: nil)
     }
 }
 

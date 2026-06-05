@@ -99,18 +99,12 @@ struct WindowShortcutsPreferencesView: View {
             Spacer()
 
             if editable, let action = item.boundAction {
-                Picker("", selection: modifierBinding(for: action)) {
-                    ForEach(ShortcutModifierPreset.allCases) { modifier in
-                        Text(modifier.displayName).tag(modifier)
-                    }
-                }
-                .labelsHidden()
-                .frame(width: 190)
-
-                TextField(localizedString("key"), text: keyBinding(for: action))
-                    .textFieldStyle(.roundedBorder)
-                    .font(.body.monospaced())
-                    .frame(width: 72)
+                ShortcutRecorderField(
+                    shortcut: shortcutBinding(for: action),
+                    modifierWidth: 190,
+                    keyWidth: 72,
+                    recordWidth: 76
+                )
 
                 Button(localizedString("reset")) {
                     settings.resetShortcut(for: action)
@@ -138,25 +132,12 @@ struct WindowShortcutsPreferencesView: View {
         .frame(width: 20, height: 20)
     }
 
-    private func modifierBinding(for action: ShortcutAction) -> Binding<ShortcutModifierPreset> {
+    private func shortcutBinding(for action: ShortcutAction) -> Binding<KeyboardShortcutSetting> {
         Binding(
-            get: { settings.shortcut(for: action).modifier },
-            set: { modifier in
-                var shortcut = settings.shortcut(for: action)
-                shortcut.modifier = modifier
-                settings.setShortcut(shortcut, for: action)
-            }
-        )
-    }
-
-    private func keyBinding(for action: ShortcutAction) -> Binding<String> {
-        Binding(
-            get: { settings.shortcut(for: action).key.uppercased() },
-            set: { value in
-                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return }
-                var shortcut = settings.shortcut(for: action)
-                shortcut.key = String(trimmed.suffix(1)).lowercased()
+            get: {
+                settings.shortcut(for: action)
+            },
+            set: { shortcut in
                 settings.setShortcut(shortcut, for: action)
             }
         )
