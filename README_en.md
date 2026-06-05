@@ -102,6 +102,8 @@ script/release.sh
 - If the app cannot control windows, check the target app permissions as well.
 
 ## 🧾 Changelog
+- `0.16` - 2026-06-05
+  - Configurable Launchpad app ordering by name, last used, or dominant icon color.
 - `0.15` - 2026-06-05
   - Dedicated `URLs` section in preferences, separate from scripts.
   - URL snippets with browser selection and global shortcuts.

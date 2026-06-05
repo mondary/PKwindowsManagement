@@ -17,6 +17,7 @@ struct PKwindowsManagementApp: App {
                         NSApp.activate(ignoringOtherApps: true)
                     }
                     let launcher = AppLauncherService()
+                    launcher.refreshURLSnippetIcons(settings: settings)
                     let apps = launcher.launcherCommands() + launcher.loadSnippets(settings: settings) + launcher.loadApps(settings: settings)
                     LaunchShortcutMonitor.shared.start(settings: settings, apps: apps) { app in
                         launcher.launch(app, settings: settings)
@@ -24,6 +25,7 @@ struct PKwindowsManagementApp: App {
                 }
                 .onChange(of: settings.snippets) { _ in
                     let launcher = AppLauncherService()
+                    launcher.refreshURLSnippetIcons(settings: settings)
                     let apps = launcher.launcherCommands() + launcher.loadSnippets(settings: settings) + launcher.loadApps(settings: settings)
                     LaunchShortcutMonitor.shared.refreshApps(apps)
                 }

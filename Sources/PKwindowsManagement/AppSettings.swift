@@ -15,6 +15,7 @@ final class AppSettings: ObservableObject {
         static let launchpadGridRows = "launchpad-grid-rows"
         static let launchpadDisplayProfiles = "launchpad-display-profiles"
         static let launchpadGridNavigation = "launchpad-grid-navigation"
+        static let launchpadAppSortMode = "launchpad-app-sort-mode"
         static let launchpadIconSize = "launchpad-icon-size"
         static let launchpadColumnSpacing = "launchpad-column-spacing"
         static let launchpadRowSpacing = "launchpad-row-spacing"
@@ -35,6 +36,9 @@ final class AppSettings: ObservableObject {
     @Published private(set) var launchShortcuts: [String: KeyboardShortcutSetting]
     @Published private(set) var snippets: [SnippetDefinition]
     @Published private(set) var launchpadDisplayProfiles: [LaunchpadDisplayProfile]
+    @Published var launchpadAppSortMode: LaunchpadAppSortMode {
+        didSet { defaults.set(launchpadAppSortMode.rawValue, forKey: Keys.launchpadAppSortMode) }
+    }
     @Published var launchpadShortcut: KeyboardShortcutSetting {
         didSet {
             saveLaunchpadShortcut()
@@ -122,6 +126,8 @@ final class AppSettings: ObservableObject {
         let shouldSeedDefaultSnippets = !hadStoredSnippets && loadedSnippets.isEmpty
         snippets = shouldSeedDefaultSnippets ? Self.defaultSnippets() : loadedSnippets
         launchpadDisplayProfiles = Self.loadLaunchpadDisplayProfiles(from: defaults)
+        let sortModeRaw = defaults.string(forKey: Keys.launchpadAppSortMode) ?? LaunchpadAppSortMode.recent.rawValue
+        launchpadAppSortMode = LaunchpadAppSortMode(rawValue: sortModeRaw) ?? .recent
         launchpadShortcut = Self.loadLaunchpadShortcut(from: defaults)
         let hotCornerRaw = defaults.string(forKey: Keys.launchpadHotCorner) ?? LaunchpadHotCorner.topLeft.rawValue
         launchpadHotCorner = LaunchpadHotCorner(rawValue: hotCornerRaw) ?? .topLeft
@@ -238,7 +244,7 @@ final class AppSettings: ObservableObject {
 
     func exportBackup() throws -> Data {
         let backup = SettingsBackup(
-            version: 5,
+            version: 7,
             windowShortcuts: Dictionary(uniqueKeysWithValues: shortcuts.map { ($0.key.rawValue, $0.value) }),
             launchShortcuts: launchShortcuts,
             snippets: snippets,
@@ -250,6 +256,7 @@ final class AppSettings: ObservableObject {
             launchpadGridRows: launchpadGridRows,
             launchpadDisplayProfiles: launchpadDisplayProfiles,
             launchpadGridNavigation: launchpadGridNavigation,
+            launchpadAppSortMode: launchpadAppSortMode,
             launchpadIconSize: launchpadIconSize,
             launchpadColumnSpacing: launchpadColumnSpacing,
             launchpadRowSpacing: launchpadRowSpacing
@@ -282,7 +289,7 @@ final class AppSettings: ObservableObject {
 
     func importBackup(_ data: Data) throws {
         let backup = try JSONDecoder().decode(SettingsBackup.self, from: data)
-        guard backup.version == 1 || backup.version == 2 || backup.version == 3 || backup.version == 4 || backup.version == 5 else { throw SettingsBackupError.unsupportedVersion }
+        guard backup.version == 1 || backup.version == 2 || backup.version == 3 || backup.version == 4 || backup.version == 5 || backup.version == 6 || backup.version == 7 else { throw SettingsBackupError.unsupportedVersion }
 
         shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.map { action in
             (action, backup.windowShortcuts[action.rawValue] ?? action.defaultShortcut)
@@ -300,6 +307,7 @@ final class AppSettings: ObservableObject {
         launchpadGridRows = backup.launchpadGridRows
         launchpadDisplayProfiles = backup.launchpadDisplayProfiles?.map { $0.clamped() } ?? []
         launchpadGridNavigation = backup.launchpadGridNavigation
+        launchpadAppSortMode = backup.launchpadAppSortMode ?? .recent
         launchpadIconSize = backup.launchpadIconSize ?? 48
         launchpadColumnSpacing = backup.launchpadColumnSpacing ?? 16
         launchpadRowSpacing = backup.launchpadRowSpacing ?? 12
@@ -453,6 +461,7 @@ private struct SettingsBackup: Codable {
     let launchpadGridRows: Int
     let launchpadDisplayProfiles: [LaunchpadDisplayProfile]?
     let launchpadGridNavigation: LaunchpadGridNavigation
+    let launchpadAppSortMode: LaunchpadAppSortMode?
     let launchpadIconSize: Int?
     let launchpadColumnSpacing: Int?
     let launchpadRowSpacing: Int?
@@ -478,6 +487,22 @@ enum LaunchpadGridNavigation: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .vertical: "Vertical Scroll"
         case .horizontalPages: "Horizontal Pages"
+        }
+    }
+}
+
+enum LaunchpadAppSortMode: String, CaseIterable, Identifiable, Codable {
+    case recent
+    case name
+    case color
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .recent: "Last Used"
+        case .name: "Name"
+        case .color: "Icon Color"
         }
     }
 }

@@ -10,6 +10,7 @@ struct AppearanceSettingsView: View {
                 gridLayoutSection
                 perDisplayLayoutsSection
                 sizingSection
+                sortingSection
                 navigationSection
             }
             .padding(24)
@@ -98,6 +99,33 @@ struct AppearanceSettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                Spacer()
+            }
+        }
+    }
+
+    private var sortingSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("App Ordering")
+                .font(.headline)
+
+            HStack(spacing: 12) {
+                Picker("Sort apps by", selection: $settings.launchpadAppSortMode) {
+                    ForEach(LaunchpadAppSortMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 360)
+
+                Text(settings.launchpadAppSortMode == .color
+                     ? "Heuristic sort based on the dominant icon color."
+                     : settings.launchpadAppSortMode == .recent
+                     ? "Most recently used apps are shown first."
+                     : "Apps are sorted alphabetically.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 Spacer()
             }

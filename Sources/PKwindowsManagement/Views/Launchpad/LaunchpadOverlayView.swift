@@ -67,6 +67,11 @@ struct LaunchpadOverlayView: View {
             selectFirstApp()
         }
         .onChange(of: settings.snippets) { _ in
+            reloadAppCatalog()
+            selectFirstApp()
+        }
+        .onChange(of: settings.launchpadAppSortMode) { _ in
+            reloadAppCatalog()
             selectFirstApp()
         }
         .onChange(of: query) { _ in

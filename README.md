@@ -17,6 +17,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Enregistrement direct des séquences clavier pour les raccourcis.
 - Gestionnaire de snippets avec scripts exécutables et raccourcis globaux.
 - Gestionnaire d'URLs avec choix du navigateur et raccourcis globaux.
+- Tri configurable des applications du Launchpad par nom, dernière utilisation ou couleur dominante de l'icône.
 - Paramétrage fin de la grille du Launchpad : colonnes, lignes, taille des icônes, espacement des colonnes et des lignes.
 - Profils de grille par écran pour adapter le Launchpad à chaque moniteur connecté.
 - Choix du mode de navigation du Launchpad : scroll vertical continu ou pages horizontales.
@@ -63,6 +64,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Les raccourcis attribués apparaissent sur les icônes sous forme de touches.
 - Enregistrement des raccourcis via un bouton `Record`.
 - Gestion des snippets `Scripts` et `URLs` dans des onglets séparés des réglages.
+- Ordre des applications du Launchpad configurable dans `Appearance` : `Last Used`, `Name` ou `Icon Color`.
 - Paramétrage de la grille du Launchpad : nombre de colonnes/lignes, taille des icônes, espacement des colonnes et des lignes.
 - Possibilité de définir une grille spécifique par écran dans les réglages d'apparence.
 - Choix du mode de navigation du Launchpad : scroll vertical ou pages horizontales.
@@ -102,6 +104,8 @@ script/release.sh
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
 ## 🧾 Changelog
+- `0.16` - 2026-06-05
+  - Tri configurable des applications du Launchpad par nom, dernière utilisation ou couleur dominante de l'icône.
 - `0.15` - 2026-06-05
   - Onglet `URLs` dédié dans les réglages, séparé des scripts.
   - Snippets `URL` avec choix du navigateur et raccourcis globaux.

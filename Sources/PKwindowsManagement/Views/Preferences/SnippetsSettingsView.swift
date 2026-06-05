@@ -227,9 +227,16 @@ private func snippetRow(
             ZStack {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(Color.accentColor.opacity(0.14))
-                Image(systemName: snippet.kind == .url ? "link" : "doc.plaintext")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
+                if let faviconImage = snippet.faviconImage, snippet.kind == .url {
+                    Image(nsImage: faviconImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .padding(5)
+                } else {
+                    Image(systemName: snippet.kind == .url ? "link" : "doc.plaintext")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                }
             }
             .frame(width: 30, height: 30)
 
@@ -470,6 +477,7 @@ private struct SnippetEditorView: View {
                 title: title,
                 urlString: urlString,
                 browserBundleID: browserBundleID,
+                faviconData: urlString == snippet.urlString ? snippet.faviconData : nil,
                 isEnabled: snippet.isEnabled
             )
         }

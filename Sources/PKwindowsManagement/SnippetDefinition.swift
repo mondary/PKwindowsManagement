@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 enum SnippetKind: String, Codable, CaseIterable, Identifiable {
@@ -57,6 +58,7 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
     var body: String
     var urlString: String
     var browserBundleID: String?
+    var faviconData: Data?
     var isEnabled: Bool
 
     init(id: String = UUID().uuidString, title: String, body: String) {
@@ -66,6 +68,7 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
         self.body = body
         self.urlString = ""
         self.browserBundleID = nil
+        self.faviconData = nil
         self.isEnabled = true
     }
 
@@ -76,6 +79,7 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
         self.body = body
         self.urlString = ""
         self.browserBundleID = nil
+        self.faviconData = nil
         self.isEnabled = isEnabled
     }
 
@@ -84,6 +88,7 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
         title: String,
         urlString: String,
         browserBundleID: String? = nil,
+        faviconData: Data? = nil,
         isEnabled: Bool = true
     ) {
         self.id = id
@@ -92,6 +97,7 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
         self.body = ""
         self.urlString = urlString
         self.browserBundleID = browserBundleID
+        self.faviconData = faviconData
         self.isEnabled = isEnabled
     }
 
@@ -102,6 +108,7 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
         case body
         case urlString
         case browserBundleID
+        case faviconData
         case isEnabled
     }
 
@@ -113,6 +120,7 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
         body = try container.decode(String.self, forKey: .body)
         urlString = try container.decodeIfPresent(String.self, forKey: .urlString) ?? ""
         browserBundleID = try container.decodeIfPresent(String.self, forKey: .browserBundleID)
+        faviconData = try container.decodeIfPresent(Data.self, forKey: .faviconData)
         isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
     }
 
@@ -124,6 +132,7 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
         try container.encode(body, forKey: .body)
         try container.encode(urlString, forKey: .urlString)
         try container.encodeIfPresent(browserBundleID, forKey: .browserBundleID)
+        try container.encodeIfPresent(faviconData, forKey: .faviconData)
         try container.encode(isEnabled, forKey: .isEnabled)
     }
 
@@ -143,5 +152,11 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
 
     var searchText: String {
         [title, body, urlString, browserBundleID ?? ""].joined(separator: " ")
+    }
+
+    var faviconImage: NSImage? {
+        guard let faviconData, let image = NSImage(data: faviconData) else { return nil }
+        image.size = NSSize(width: 64, height: 64)
+        return image
     }
 }
