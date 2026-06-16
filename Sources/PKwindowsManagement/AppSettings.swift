@@ -426,6 +426,84 @@ final class AppSettings: ObservableObject {
                 title: "Documents",
                 body: "open -a Finder ~/Documents",
                 isEnabled: true
+            ),
+            SnippetDefinition(
+                id: "snippet.archive",
+                title: "Archive",
+                body: """
+                #!/bin/bash
+                set -euo pipefail
+
+                # ═══════════════════════════════════════════════════
+                # CONFIGURATION
+                # ═══════════════════════════════════════════════════
+                SOURCE_DIR="$HOME/Desktop"
+                DEST_BASE_DIR=""  # vide = auto-détection Google Drive
+                # ═══════════════════════════════════════════════════
+
+                SOURCE_NAME="$(basename "$SOURCE_DIR")"
+                LINK_NAME="${SOURCE_NAME}Archive"
+                LINK_PATH="${SOURCE_DIR}/${LINK_NAME}"
+                PREFERRED_MOUNT="$HOME/Cloud.noindex/Google Drive.localized"
+                LEGACY_MOUNT_ROOT="$HOME/Library/Application Support/Mountain Duck/Volumes.noindex"
+                BACKUP_SUBFOLDERS=("# BACKUPS" "My Drive/# BACKUPS" "Mon Drive/# BACKUPS")
+
+                if [[ -n "$DEST_BASE_DIR" ]]; then
+                  archive_path="$DEST_BASE_DIR"
+                elif [[ -n "${ARCHIVE_PATH:-}" ]]; then
+                  archive_path="$ARCHIVE_PATH"
+                else
+                  google_drive_mount=""
+                  if [[ -d "$PREFERRED_MOUNT" ]]; then
+                    google_drive_mount="$PREFERRED_MOUNT"
+                  elif [[ -d "$LEGACY_MOUNT_ROOT" ]]; then
+                    for candidate in "$LEGACY_MOUNT_ROOT"/*Google\\ Drive* "$LEGACY_MOUNT_ROOT"/*Drive* "$LEGACY_MOUNT_ROOT"/*/*.localized; do
+                      [[ -d "$candidate" ]] && google_drive_mount="$candidate" && break
+                    done
+                  fi
+                  if [[ -z "$google_drive_mount" ]]; then
+                    echo "Google Drive non accessible." >&2
+                    exit 1
+                  fi
+                  for sub in "${BACKUP_SUBFOLDERS[@]}"; do
+                    if [[ -d "${google_drive_mount}/${sub}" ]]; then
+                      archive_path="${google_drive_mount}/${sub}/${LINK_NAME}"
+                      break
+                    fi
+                  done
+                  if [[ -z "${archive_path:-}" ]]; then
+                    echo "Dossier '# BACKUPS' introuvable dans: ${google_drive_mount}" >&2
+                    exit 1
+                  fi
+                fi
+
+                [[ "$archive_path" == "~/"* ]] && archive_path="${HOME}/${archive_path#~/}"
+                mkdir -p "$archive_path"
+
+                if [[ -e "$LINK_PATH" && ! -L "$LINK_PATH" ]]; then
+                  mv "$LINK_PATH" "${LINK_PATH}.local-backup-$(date +%Y%m%d-%H%M%S)"
+                fi
+                [[ "$archive_path" != "$LINK_PATH" ]] && ln -sfn "$archive_path" "$LINK_PATH"
+
+                month_folder="${archive_path}/$(LC_TIME=fr_FR.UTF-8 date +%Y_%m_%B)"
+                mkdir -p "$month_folder"
+
+                shopt -s nullglob
+                for file in "${SOURCE_DIR}"/*; do
+                  [[ "$(basename "$file")" == "$LINK_NAME" ]] && continue
+                  tags=$(mdls -name kMDItemUserTags -raw "$file" 2>/dev/null || true)
+                  [[ -n "$tags" && "$tags" == *"Bureau"* ]] && continue
+                  dest="${month_folder}/$(basename "$file")"
+                  if [[ -e "$dest" ]]; then
+                    mv -i "$file" "$dest"
+                  else
+                    mv "$file" "$dest"
+                  fi
+                done
+
+                [[ "$archive_path" != "$LINK_PATH" ]] && ln -sfn "$archive_path" "$LINK_PATH"
+                """,
+                isEnabled: true
             )
         ]
     }
@@ -436,6 +514,7 @@ final class AppSettings: ObservableObject {
         case "snippet.applications": .init(key: "a", modifier: .rightCommand)
         case "snippet.home": .init(key: "h", modifier: .rightCommand)
         case "snippet.documents": .init(key: "d", modifier: .rightCommand)
+        case "snippet.archive": .init(key: "r", modifier: .rightCommand)
         default: .init(key: "s", modifier: .command)
         }
     }

@@ -2,6 +2,8 @@
 
 [🇫🇷 FR](README.md) · [🇬🇧 EN](README_en.md)
 
+<img src="icon.png" alt="Icône PKwindowsManagement" width="220">
+
 PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres au clavier et lancer rapidement les applications installées.
 
 ## ✅ Fonctionnalités
@@ -22,11 +24,13 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Profils de grille par écran pour adapter le Launchpad à chaque moniteur connecté.
 - Choix du mode de navigation du Launchpad : scroll vertical continu ou pages horizontales.
 - Alignement en haut des pages en mode navigation horizontale.
+- Vue `Big Year` plein écran depuis le menu, avec fermeture par bouton, `Échap` ou `Cmd + W`.
 - Indicateur de statut d'accessibilité avec bouton pour autoriser l'accès.
 - Export automatique des backups vers un dossier au choix (ex : Google Drive) à chaque modification des réglages.
 - Menu contextuel sur chaque application pour attribuer un raccourci ou la déplacer vers la Corbeille.
 - Ouverture du Launchpad avec `Option + Espace`, le coin supérieur gauche ou un clic sur l'icône de barre de menu.
 - Icône d'application dédiée et menu contextuel pour ouvrir les préférences ou quitter.
+- Chargement plus léger au démarrage : les raccourcis globaux n'ont plus besoin de charger toutes les icônes d'applications, et l'analyse couleur ne se fait que pour le tri `Icon Color`.
 
 ## 🧠 Utilisation
 - Ouvre l'application.
@@ -74,7 +78,8 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 
 ## 🧾 Commandes
 - Clic gauche sur l'icône de barre de menu : ouvre ou ferme le Launchpad.
-- Clic droit sur l'icône de barre de menu : affiche `Open Launchpad`, `Open Preferences` et `Quit`.
+- Clic droit sur l'icône de barre de menu : affiche `Open Launchpad`, `Open Big Year`, `Open Preferences` et `Quit`.
+- `Open Big Year` : ouvre la vue annuelle plein écran. `Échap` ou `Cmd + W` la ferment, `Cmd + Q` quitte l'app.
 - `Cmd + ,` : ouvre les réglages.
 
 ## 📦 Build & Package
@@ -93,6 +98,11 @@ script/build_and_run.sh
 script/package_app.sh debug
 script/package_app.sh release
 ```
+- Création d'une app testable sur le Bureau :
+```bash
+script/package_app.sh debug
+cp -R dist/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
+```
 - Création d'une release et copie dans `/Applications` :
 ```bash
 script/release.sh
@@ -104,6 +114,12 @@ script/release.sh
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
 ## 🧾 Changelog
+- `0.17` - 2026-06-16
+  - Ajout de `Big Year` depuis le menu de la barre de menu.
+  - Sécurisation de la fermeture de l'overlay annuel (`Échap`, `Cmd + W`, bouton fermer, niveau de fenêtre moins intrusif).
+  - Démarrage et refresh des raccourcis plus légers : le moniteur global ne charge plus toutes les icônes d'applications.
+  - Le tri par couleur ne calcule la couleur dominante des icônes que quand le mode `Icon Color` est actif.
+  - Nettoyage plus complet des timers, event taps et handlers globaux à la fermeture.
 - `0.16` - 2026-06-05
   - Tri configurable des applications du Launchpad par nom, dernière utilisation ou couleur dominante de l'icône.
 - `0.15` - 2026-06-05

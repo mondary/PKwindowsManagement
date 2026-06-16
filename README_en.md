@@ -2,6 +2,8 @@
 
 [🇬🇧 EN](README_en.md) · [🇫🇷 FR](README.md)
 
+<img src="icon.png" alt="PKwindowsManagement icon" width="220">
+
 PKwindowsManagement is a macOS menu bar app for keyboard-driven window management and fast application launching.
 
 ## ✅ Features
@@ -21,11 +23,13 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Per-display Launchpad grid profiles to adapt the layout to each connected monitor.
 - Launchpad navigation mode: continuous vertical scroll or horizontal pages.
 - Top-aligned pages in horizontal navigation mode.
+- Full-screen `Big Year` view from the menu, with close button, `Escape`, and `Cmd + W` exit paths.
 - Accessibility status indicator with grant-access button.
 - Automatic backup export to a user-chosen folder (e.g. Google Drive) on every settings change.
 - Application context menu for assigning shortcuts or moving applications to Trash.
 - Open Launchpad with `Option + Space`, the top-left hot corner, or a menu bar icon click.
 - Dedicated application icon and context menu for preferences and quit.
+- Lighter startup path: global shortcuts no longer need to load every application icon, and dominant-color analysis only runs for the `Icon Color` sort mode.
 
 ## 🧠 Usage
 - Launch the app.
@@ -72,7 +76,8 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 
 ## 🧾 Commands
 - Left-click the menu bar icon to open or close Launchpad.
-- Right-click the menu bar icon to show `Open Launchpad`, `Open Preferences`, and `Quit`.
+- Right-click the menu bar icon to show `Open Launchpad`, `Open Big Year`, `Open Preferences`, and `Quit`.
+- `Open Big Year`: opens the full-screen year view. `Escape` or `Cmd + W` closes it, `Cmd + Q` quits the app.
 - `Cmd + ,`: open settings.
 
 ## 📦 Build & Package
@@ -91,6 +96,11 @@ script/build_and_run.sh
 script/package_app.sh debug
 script/package_app.sh release
 ```
+- Build a testable app on the Desktop:
+```bash
+script/package_app.sh debug
+cp -R dist/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
+```
 - Build a release and copy it to `/Applications`:
 ```bash
 script/release.sh
@@ -102,6 +112,12 @@ script/release.sh
 - If the app cannot control windows, check the target app permissions as well.
 
 ## 🧾 Changelog
+- `0.17` - 2026-06-16
+  - Added `Big Year` from the menu bar menu.
+  - Safer annual overlay exits (`Escape`, `Cmd + W`, close button, less intrusive window level).
+  - Lighter global-shortcut startup and refresh path: the global monitor no longer loads all application icons.
+  - Dominant icon color is computed only when the `Icon Color` sort mode is active.
+  - More complete cleanup of timers, event taps, and global handlers on shutdown.
 - `0.16` - 2026-06-05
   - Configurable Launchpad app ordering by name, last used, or dominant icon color.
 - `0.15` - 2026-06-05

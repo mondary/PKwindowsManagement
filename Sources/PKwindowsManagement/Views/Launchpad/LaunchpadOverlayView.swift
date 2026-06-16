@@ -118,7 +118,8 @@ struct LaunchpadOverlayView: View {
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 18, weight: .semibold))
-                    .frame(width: 34, height: 34)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(.white.opacity(0.68))
@@ -326,11 +327,13 @@ struct LaunchpadOverlayView: View {
                     Circle()
                         .fill(.white.opacity(page == currentPage ? 0.9 : 0.3))
                         .frame(width: 7, height: 7)
+                        .frame(width: 20, height: 20)
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
             }
         }
-        .frame(height: 10)
+        .frame(height: 20)
     }
 
     private func appPages(_ apps: [LaunchableApp], configuration: LaunchpadGridConfiguration) -> [[LaunchableApp]] {
@@ -597,7 +600,7 @@ private struct OverlayAppTile: View {
                 }
                 if let shortcut = app.shortcut {
                     ShortcutKeyBadge(shortcut: shortcut, compact: iconSize < 52)
-                        .offset(x: displayIconSize * 0.25, y: displayIconSize * 0.18)
+                        .offset(x: displayIconSize * 0.18, y: displayIconSize * 0.12)
                 }
             }
             .frame(width: tileSize.width, height: displayIconSize + 8)

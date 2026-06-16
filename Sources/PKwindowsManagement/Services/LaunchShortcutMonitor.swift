@@ -17,10 +17,28 @@ final class LaunchShortcutMonitor {
     func start(settings: AppSettings, apps: [LaunchableApp], launchHandler: @escaping (LaunchableApp) -> Void) {
         self.settings = settings
         self.launchHandler = launchHandler
-        refreshApps(apps)
+        self.appsByBundleID = Dictionary(uniqueKeysWithValues: apps.map { ($0.bundleID, $0) })
 
         requestAccessibilityOnce()
         installEventTap()
+    }
+
+    func stop() {
+        retryTimer?.invalidate()
+        retryTimer = nil
+
+        if let runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
+            self.runLoopSource = nil
+        }
+        if let eventTap {
+            CGEvent.tapEnable(tap: eventTap, enable: false)
+            self.eventTap = nil
+        }
+    }
+
+    deinit {
+        stop()
     }
 
     private func requestAccessibilityOnce() {

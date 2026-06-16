@@ -37,7 +37,7 @@ if [[ -f "$ICON_SOURCE" ]]; then
   mkdir -p "$ICONSET_DIR"
 
   SQUARE_ICON="$DIST_DIR/AppIcon-1024.png"
-  sips --padToHeightWidth 1024 1024 "$ICON_SOURCE" --out "$SQUARE_ICON" >/dev/null
+  sips -z 1024 1024 "$ICON_SOURCE" --out "$SQUARE_ICON" >/dev/null
 
   for size in 16 32 128 256 512; do
     double_size=$((size * 2))

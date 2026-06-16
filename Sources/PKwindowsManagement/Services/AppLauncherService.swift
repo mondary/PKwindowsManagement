@@ -46,6 +46,16 @@ struct LaunchableApp: Identifiable {
 }
 
 final class AppLauncherService {
+    private static var cachedInstalledApps: [InstalledApp]?
+    private static var cachedInstalledAppsTimestamp: Date = .distantPast
+    private static let installedAppsCacheTTL: TimeInterval = 30
+    private static let placeholderIcon = NSImage(size: NSSize(width: 1, height: 1))
+
+    static func invalidateInstalledAppsCache() {
+        cachedInstalledApps = nil
+        cachedInstalledAppsTimestamp = .distantPast
+    }
+
     func canUninstall(_ app: LaunchableApp) -> Bool {
         let path = app.url.standardizedFileURL.path
         guard app.url.pathExtension == "app",
@@ -63,33 +73,36 @@ final class AppLauncherService {
     }
 
     func loadApps(settings: AppSettings) -> [LaunchableApp] {
-        let items = installedApplications().map { app -> SortableInstalledApp in
+        let apps = installedApplications(loadIcons: true).map { app -> LaunchableApp in
             let bundleID = app.bundleID ?? app.url.path
-            return SortableInstalledApp(
-                app: LaunchableApp(
-                    id: bundleID,
-                    name: app.displayName,
-                    bundleID: bundleID,
-                    url: app.url,
-                    icon: app.icon,
-                    shortcut: shortcut(for: app.bundleID, settings: settings),
-                    snippet: nil
-                ),
-                recentIndex: settings.recentBundleIDs.firstIndex(of: bundleID),
-                colorSignature: app.icon.launchpadColorSignature(name: app.displayName)
+            return LaunchableApp(
+                id: bundleID,
+                name: app.displayName,
+                bundleID: bundleID,
+                url: app.url,
+                icon: app.icon,
+                shortcut: shortcut(for: app.bundleID, settings: settings),
+                snippet: nil
             )
         }
 
         switch settings.launchpadAppSortMode {
         case .recent:
-            return items.sorted { lhs, rhs in
-                sortByRecent(lhs, rhs)
-            }.map(\.app)
+            return apps.sorted { lhs, rhs in
+                sortByRecent(lhs, rhs, settings: settings)
+            }
         case .name:
-            return items.sorted { lhs, rhs in
-                lhs.app.name.localizedCaseInsensitiveCompare(rhs.app.name) == .orderedAscending
-            }.map(\.app)
+            return apps.sorted { lhs, rhs in
+                lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
         case .color:
+            let items = apps.map { app in
+                SortableInstalledApp(
+                    app: app,
+                    recentIndex: settings.recentBundleIDs.firstIndex(of: app.bundleID),
+                    colorSignature: app.icon.launchpadColorSignature(name: app.name)
+                )
+            }
             return items.sorted { lhs, rhs in
                 if lhs.colorSignature != rhs.colorSignature {
                     return lhs.colorSignature < rhs.colorSignature
@@ -97,6 +110,27 @@ final class AppLauncherService {
                 return lhs.app.name.localizedCaseInsensitiveCompare(rhs.app.name) == .orderedAscending
             }.map(\.app)
         }
+    }
+
+    func loadShortcutTargets(settings: AppSettings) -> [LaunchableApp] {
+        let shortcutIDs = Set(settings.launchShortcuts.keys)
+        let shortcutApps = installedApplications(loadIcons: false).compactMap { app -> LaunchableApp? in
+            let bundleID = app.bundleID ?? app.url.path
+            guard shortcutIDs.contains(bundleID) else { return nil }
+            return LaunchableApp(
+                id: bundleID,
+                name: app.displayName,
+                bundleID: bundleID,
+                url: app.url,
+                icon: app.icon,
+                shortcut: shortcut(for: app.bundleID, settings: settings),
+                snippet: nil
+            )
+        }
+
+        return launcherCommands()
+            + loadSnippets(settings: settings).filter { shortcutIDs.contains($0.bundleID) }
+            + shortcutApps
     }
 
     func launcherCommands() -> [LaunchableApp] {
@@ -176,7 +210,14 @@ final class AppLauncherService {
         return icon
     }
 
-    private func installedApplications() -> [InstalledApp] {
+    private func installedApplications(loadIcons: Bool) -> [InstalledApp] {
+        if loadIcons {
+            if let cached = Self.cachedInstalledApps,
+               Date().timeIntervalSince(Self.cachedInstalledAppsTimestamp) < Self.installedAppsCacheTTL {
+                return cached
+            }
+        }
+
         let urls = [
             URL(fileURLWithPath: "/Applications"),
             URL(fileURLWithPath: "/Applications/Utilities"),
@@ -186,17 +227,23 @@ final class AppLauncherService {
         ]
 
         var seen = Set<String>()
-        return urls.flatMap { folder -> [InstalledApp] in
-            applications(in: folder)
+        let result = urls.flatMap { folder -> [InstalledApp] in
+            applications(in: folder, loadIcons: loadIcons)
         }
         .filter { app in
             guard !seen.contains(app.bundleID ?? app.url.path) else { return false }
             seen.insert(app.bundleID ?? app.url.path)
             return true
         }
+
+        if loadIcons {
+            Self.cachedInstalledApps = result
+            Self.cachedInstalledAppsTimestamp = Date()
+        }
+        return result
     }
 
-    private func applications(in folder: URL) -> [InstalledApp] {
+    private func applications(in folder: URL, loadIcons: Bool) -> [InstalledApp] {
         guard let enumerator = FileManager.default.enumerator(
             at: folder,
             includingPropertiesForKeys: [.localizedNameKey],
@@ -208,8 +255,13 @@ final class AppLauncherService {
             let values = try? url.resourceValues(forKeys: [.localizedNameKey])
             let name = values?.localizedName ?? url.deletingPathExtension().lastPathComponent
             let bundleID = Bundle(url: url)?.bundleIdentifier ?? url.deletingPathExtension().lastPathComponent
-            let icon = NSWorkspace.shared.icon(forFile: url.path)
-            icon.size = NSSize(width: 96, height: 96)
+            let icon: NSImage
+            if loadIcons {
+                icon = NSWorkspace.shared.icon(forFile: url.path)
+                icon.size = NSSize(width: 96, height: 96)
+            } else {
+                icon = Self.placeholderIcon
+            }
             return InstalledApp(url: url, displayName: name, bundleID: bundleID, icon: icon)
         }
     }
@@ -237,12 +289,27 @@ final class AppLauncherService {
     }
 
     private func executeSnippet(_ script: String) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = ["-lc", script]
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-        try? process.run()
+        let ext = script.hasPrefix("#!/bin/bash") ? "bash" : "sh"
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pk_snippet_\(UUID().uuidString).\(ext)")
+        do {
+            try script.write(to: tempURL, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o755], ofItemAtPath: tempURL.path
+            )
+            let process = Process()
+            process.executableURL = tempURL
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = FileHandle.nullDevice
+            process.terminationHandler = { proc in
+                try? FileManager.default.removeItem(at: tempURL)
+                proc.waitUntilExit()
+            }
+            try process.run()
+        } catch {
+            NSLog("PKwindowsManagement: snippet execution failed: \(error)")
+            try? FileManager.default.removeItem(at: tempURL)
+        }
     }
 
     private func openURL(_ rawURL: String, inBrowserBundleID browserBundleID: String?) {
@@ -368,8 +435,8 @@ final class AppLauncherService {
         return LaunchableApp(id: id, name: name, bundleID: id, url: URL(fileURLWithPath: "/"), icon: icon, shortcut: nil, snippet: nil)
     }
 
-    private func sortByRecent(_ lhs: SortableInstalledApp, _ rhs: SortableInstalledApp) -> Bool {
-        switch (lhs.recentIndex, rhs.recentIndex) {
+    private func sortByRecent(_ lhs: LaunchableApp, _ rhs: LaunchableApp, settings: AppSettings) -> Bool {
+        switch (settings.recentBundleIDs.firstIndex(of: lhs.bundleID), settings.recentBundleIDs.firstIndex(of: rhs.bundleID)) {
         case let (left?, right?):
             if left != right { return left < right }
         case (_?, nil):
@@ -379,7 +446,7 @@ final class AppLauncherService {
         default:
             break
         }
-        return lhs.app.name.localizedCaseInsensitiveCompare(rhs.app.name) == .orderedAscending
+        return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
     }
 }
 

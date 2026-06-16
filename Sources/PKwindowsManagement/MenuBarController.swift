@@ -9,10 +9,12 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var launchpadHotKeyObserver: NSObjectProtocol?
     private var hotCornerTimer: Timer?
     private var lastMouseLocation: CGPoint = .zero
+    private var lastHotCornerTrigger: Date?
+    private let hotCornerCooldown: TimeInterval = 1.5
     private let launchpadHotKeySignature = fourCharCode("PKLP")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        NSApp.setActivationPolicy(.regular)
 
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
@@ -30,6 +32,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "PKwindowsManagement", action: nil, keyEquivalent: ""))
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Open Launchpad", action: #selector(openLaunchpad), keyEquivalent: " "))
+        menu.addItem(NSMenuItem(title: "Open Big Year", action: #selector(openBigYear), keyEquivalent: "y"))
         menu.addItem(NSMenuItem(title: "Open Preferences", action: #selector(openPreferences), keyEquivalent: ","))
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q"))
         statusMenu = menu
@@ -39,7 +42,14 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        hotCornerTimer?.invalidate()
+        hotCornerTimer = nil
+        LaunchShortcutMonitor.shared.stop()
         unregisterLaunchpadHotKey()
+        if let launchpadHotKeyHandler {
+            RemoveEventHandler(launchpadHotKeyHandler)
+            self.launchpadHotKeyHandler = nil
+        }
         if let launchpadHotKeyObserver {
             NotificationCenter.default.removeObserver(launchpadHotKeyObserver)
         }
@@ -65,6 +75,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     @objc private func openLaunchpad() {
         guard let settings = AppRuntime.shared.settings else { return }
         LaunchpadOverlayController.shared.show(settings: settings)
+    }
+
+    @objc private func openBigYear() {
+        BigYearOverlayController.shared.toggle()
     }
 
     @objc private func quitApp() {
@@ -141,6 +155,11 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         guard mouseLocation != lastMouseLocation else { return }
         lastMouseLocation = mouseLocation
 
+        if let lastTrigger = lastHotCornerTrigger,
+           Date().timeIntervalSince(lastTrigger) < hotCornerCooldown {
+            return
+        }
+
         guard let settings = AppRuntime.shared.settings,
               settings.launchpadHotCorner != .disabled,
               let screen = NSScreen.screens.first(where: { $0.frame.contains(mouseLocation) })
@@ -161,6 +180,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             cornerFrame = CGRect(x: frame.maxX - inset, y: frame.minY, width: inset, height: inset)
         }
         if cornerFrame.contains(mouseLocation) {
+            lastHotCornerTrigger = Date()
             LaunchpadOverlayController.shared.show(settings: settings)
         }
     }
