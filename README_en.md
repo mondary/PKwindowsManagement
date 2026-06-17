@@ -18,6 +18,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - `Fn + Shift` modifier support for launch shortcuts.
 - Direct keyboard sequence recording for shortcuts.
 - Script snippets with global shortcuts and enable/disable support.
+- Default `Archive` snippet: clears the Desktop into a fast local archive, then mirrors it to Google Drive in the background, with a dedicated icon and a `Right Command + S` shortcut.
 - URL snippets with browser selection and global shortcuts.
 - Fine-grained Launchpad grid customization: columns, rows, icon size, column spacing, and row spacing.
 - Per-display Launchpad grid profiles to adapt the layout to each connected monitor.
@@ -28,7 +29,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Automatic backup export to a user-chosen folder (e.g. Google Drive) on every settings change.
 - Application context menu for assigning shortcuts or moving applications to Trash.
 - Open Launchpad with `Option + Space`, the top-left hot corner, or a menu bar icon click.
-- Dedicated application icon and context menu for preferences and quit.
+- The app's official icon is shown in the menu bar (full color); context menu to open preferences or quit.
 - Lighter startup path: global shortcuts no longer need to load every application icon, and dominant-color analysis only runs for the `Icon Color` sort mode.
 
 ## 🧠 Usage
@@ -112,6 +113,12 @@ script/release.sh
 - If the app cannot control windows, check the target app permissions as well.
 
 ## 🧾 Changelog
+- `0.18` - 2026-06-16
+  - The app's official icon is shown in the menu bar (full color) and in the settings header.
+  - Default `Archive` snippet with a dedicated icon and a `Right Command + S` shortcut.
+  - Archive keeps both files on name conflicts (`file 2.ext`).
+  - Archive moves to a fast local archive first, then mirrors to Google Drive in the background (throttled) — no more freeze on large folders.
+  - Duplicate `Archive` snippets merged into a single entry (existing shortcut preserved).
 - `0.17` - 2026-06-16
   - Added `Big Year` from the menu bar menu.
   - Safer annual overlay exits (`Escape`, `Cmd + W`, close button, less intrusive window level).

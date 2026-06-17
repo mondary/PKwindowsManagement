@@ -78,4 +78,12 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
 </plist>
 EOF
 
+# Signature stable : préférez une identité développeur (TCC/accessibilité
+# persiste entre les rebuilds), sinon repli ad-hoc avec identifiant stable.
+SIGN_IDENTITY="${SIGN_IDENTITY:-Apple Development: cleeement@gmail.com (8CZKU67BTY)}"
+BUNDLE_ID="com.mondary.PKwindowsManagement"
+if ! codesign --force --sign "$SIGN_IDENTITY" --identifier "$BUNDLE_ID" "$APP_DIR" 2>/dev/null; then
+  codesign --force --sign - --identifier "$BUNDLE_ID" "$APP_DIR" 2>/dev/null || true
+fi
+
 echo "$APP_DIR"

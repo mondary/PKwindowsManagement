@@ -52,6 +52,9 @@ enum SnippetBrowserTarget: String, Codable, CaseIterable, Identifiable {
 }
 
 struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
+    static let archiveID = "snippet.archive"
+    static let archiveSymbolName = "tray.and.arrow.down"
+
     let id: String
     var title: String
     var kind: SnippetKind
@@ -60,6 +63,24 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
     var browserBundleID: String?
     var faviconData: Data?
     var isEnabled: Bool
+
+    var launchpadSymbolName: String? {
+        switch kind {
+        case .script:
+            return id == Self.archiveID ? Self.archiveSymbolName : "terminal"
+        case .url:
+            return faviconData == nil ? "globe" : nil
+        }
+    }
+
+    var settingsListSymbolName: String {
+        switch kind {
+        case .script:
+            return id == Self.archiveID ? Self.archiveSymbolName : "doc.plaintext"
+        case .url:
+            return "link"
+        }
+    }
 
     init(id: String = UUID().uuidString, title: String, body: String) {
         self.id = id

@@ -18,6 +18,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Support du modificateur `Fn + Shift` pour les raccourcis de lancement.
 - Enregistrement direct des séquences clavier pour les raccourcis.
 - Gestionnaire de snippets avec scripts exécutables et raccourcis globaux.
+- Snippet `Archive` présent par défaut : range le Bureau dans une archive locale instantanée puis la recopie vers Google Drive en arrière-plan, avec icône dédiée et raccourci `Right Cmd + S`.
 - Gestionnaire d'URLs avec choix du navigateur et raccourcis globaux.
 - Tri configurable des applications du Launchpad par nom, dernière utilisation ou couleur dominante de l'icône.
 - Paramétrage fin de la grille du Launchpad : colonnes, lignes, taille des icônes, espacement des colonnes et des lignes.
@@ -29,7 +30,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Export automatique des backups vers un dossier au choix (ex : Google Drive) à chaque modification des réglages.
 - Menu contextuel sur chaque application pour attribuer un raccourci ou la déplacer vers la Corbeille.
 - Ouverture du Launchpad avec `Option + Espace`, le coin supérieur gauche ou un clic sur l'icône de barre de menu.
-- Icône d'application dédiée et menu contextuel pour ouvrir les préférences ou quitter.
+- L'icône officielle de l'app s'affiche dans la barre de menu (en couleur) ; menu contextuel pour ouvrir les préférences ou quitter.
 - Chargement plus léger au démarrage : les raccourcis globaux n'ont plus besoin de charger toutes les icônes d'applications, et l'analyse couleur ne se fait que pour le tri `Icon Color`.
 
 ## 🧠 Utilisation
@@ -114,6 +115,12 @@ script/release.sh
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
 ## 🧾 Changelog
+- `0.18` - 2026-06-16
+  - L'icône officielle de l'app s'affiche dans la barre de menu (en couleur) et dans l'en-tête des réglages.
+  - Snippet `Archive` présent par défaut avec icône dédiée et raccourci `Right Cmd + S`.
+  - Archive « Conserver les deux » en cas d'homonymes (`fichier 2.ext`).
+  - Archive locale d'abord (instantanée) puis recopie Google Drive en arrière-plan throthlée — plus de freeze sur les gros dossiers.
+  - Fusion des doublons `Archive` en une seule entrée (raccourci existant conservé).
 - `0.17` - 2026-06-16
   - Ajout de `Big Year` depuis le menu de la barre de menu.
   - Sécurisation de la fermeture de l'overlay annuel (`Échap`, `Cmd + W`, bouton fermer, niveau de fenêtre moins intrusif).

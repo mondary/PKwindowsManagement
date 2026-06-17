@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18] - 2026-06-16
+### Added
+- Menu bar now displays the app's official icon (full color) instead of a generic SF Symbol
+- Settings sidebar header shows the official app icon alongside the app name
+- Archive snippet available by default for every install, with a dedicated icon and a `Right Command + S` shortcut
+- Archive keeps both files on name conflicts (Finder-style `file 2.ext`, `file 3.ext`)
+- Archive moves Desktop items to a fast local archive first, then mirrors them to Google Drive in the background (throttled, non-blocking) — no more Mac freeze on large folders
+### Changed
+- Archive no longer overwrites or prompts on duplicate names
+### Fixed
+- Duplicate Archive snippets (manual + default) collapsed into a single canonical entry, preserving the existing shortcut
+
 ## [0.17] - 2026-06-16
 ### Added
 - Full-screen Big Year view from the menu bar menu

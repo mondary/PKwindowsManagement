@@ -18,9 +18,9 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
-            let image = NSImage(systemSymbolName: "rectangle.3.group", accessibilityDescription: "PKwindowsManagement")
-            image?.isTemplate = true
-            image?.size = NSSize(width: 18, height: 18)
+            let image = Self.loadMenuBarIcon()
+            image.isTemplate = false
+            image.size = NSSize(width: 18, height: 18)
             button.image = image
             button.imagePosition = .imageOnly
             button.action = #selector(statusItemClicked(_:))
@@ -183,6 +183,17 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             lastHotCornerTrigger = Date()
             LaunchpadOverlayController.shared.show(settings: settings)
         }
+    }
+
+    private static func loadMenuBarIcon() -> NSImage {
+        if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let icon = NSImage(contentsOf: url) {
+            return icon
+        }
+        if let named = NSImage(named: "AppIcon") {
+            return named
+        }
+        return NSImage(systemSymbolName: "rectangle.3.group", accessibilityDescription: "PKwindowsManagement") ?? NSImage()
     }
 
     private func carbonKeyCode(for key: String) -> UInt32? {

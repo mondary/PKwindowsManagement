@@ -13,6 +13,7 @@ struct PKwindowsManagementApp: App {
                 .onAppear {
                     AppRuntime.shared.settings = settings
                     AppRuntime.shared.openSettings = {
+                        LaunchpadOverlayController.shared.hide()
                         openWindow(id: "settings")
                         NSApp.activate(ignoringOtherApps: true)
                     }
@@ -50,13 +51,36 @@ private struct RootDashboardView: View {
     @ObservedObject var settings: AppSettings
     @State private var selection: SettingsSection? = .general
 
+    static var appIcon: NSImage? {
+        if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns") {
+            return NSImage(contentsOf: url)
+        }
+        return NSImage(named: "AppIcon")
+    }
+
     var body: some View {
         NavigationSplitView {
             List(SettingsSection.allCases, selection: $selection) { section in
                 Label(section.title, systemImage: section.icon)
                     .tag(section)
             }
-            .navigationTitle("PKwindowsManagement")
+            .safeAreaInset(edge: .top, spacing: 0) {
+                HStack(spacing: 10) {
+                    if let icon = Self.appIcon {
+                        Image(nsImage: icon)
+                            .resizable()
+                            .interpolation(.high)
+                            .frame(width: 26, height: 26)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
+                    Text("PKwindowsManagement")
+                        .font(.headline)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(.regularMaterial)
+            }
             .listStyle(.sidebar)
             .frame(minWidth: 200)
         } detail: {

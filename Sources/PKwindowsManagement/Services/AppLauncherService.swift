@@ -36,12 +36,7 @@ struct LaunchableApp: Identifiable {
     var launchpadSymbolName: String? {
         if let commandSymbolName { return commandSymbolName }
         guard let snippet else { return nil }
-        switch snippet.kind {
-        case .script:
-            return "terminal"
-        case .url:
-            return snippet.faviconData == nil ? "globe" : nil
-        }
+        return snippet.launchpadSymbolName
     }
 }
 
@@ -204,7 +199,7 @@ final class AppLauncherService {
             return faviconImage
         }
 
-        let iconName = snippet.kind == .url ? "globe" : "terminal"
+        let iconName = snippet.launchpadSymbolName ?? "terminal"
         let icon = NSImage(systemSymbolName: iconName, accessibilityDescription: snippet.title) ?? NSImage()
         icon.size = NSSize(width: 64, height: 64)
         return icon
@@ -425,8 +420,18 @@ final class AppLauncherService {
             empty trash
         end tell
         """
-        let appleScript = NSAppleScript(source: script)
-        appleScript?.executeAndReturnError(nil)
+        var errorInfo: NSDictionary?
+        NSAppleScript(source: script)?.executeAndReturnError(&errorInfo)
+        guard let errorInfo else { return }
+
+        let number = (errorInfo[NSAppleScript.errorNumber] as? Int) ?? 0
+        NSLog("PKwindowsManagement: empty trash failed (%d): %@", number, errorInfo)
+        // -1743 errAEEventNotPermitted : permission Automation manquante pour le Finder.
+        if number == -1743 || number == -1719 {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
 
     private func makeCommand(id: String, name: String, iconName: String) -> LaunchableApp {

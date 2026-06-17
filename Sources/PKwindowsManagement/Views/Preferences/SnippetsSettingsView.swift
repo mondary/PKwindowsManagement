@@ -233,7 +233,7 @@ private func snippetRow(
                         .aspectRatio(contentMode: .fit)
                         .padding(5)
                 } else {
-                    Image(systemName: snippet.kind == .url ? "link" : "doc.plaintext")
+                    Image(systemName: snippet.settingsListSymbolName)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.accentColor)
                 }

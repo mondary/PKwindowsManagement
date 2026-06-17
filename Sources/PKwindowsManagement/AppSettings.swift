@@ -21,6 +21,9 @@ final class AppSettings: ObservableObject {
         static let launchpadRowSpacing = "launchpad-row-spacing"
         static let autoBackupFolder = "auto-backup-folder"
         static let autoBackupEnabled = "auto-backup-enabled"
+        static let archiveSnippetMigration = "migrated-snippet-archive-v1"
+        static let archiveSnippetBodyMigration = "migrated-snippet-archive-body-v5"
+        static let archiveDuplicateMigration = "migrated-snippet-archive-dedup-v3"
     }
 
     private let defaults: UserDefaults
@@ -120,11 +123,30 @@ final class AppSettings: ObservableObject {
         clipboardDrawerEdge = ClipboardDrawerEdge(rawValue: edgeRaw) ?? .top
         shortcuts = Self.loadShortcuts(from: defaults)
         recentBundleIDs = defaults.stringArray(forKey: Keys.launchRecents) ?? []
-        launchShortcuts = Self.loadLaunchShortcuts(from: defaults)
+        let loadedLaunchShortcuts = Self.loadLaunchShortcuts(from: defaults)
+        launchShortcuts = loadedLaunchShortcuts
         let hadStoredSnippets = defaults.object(forKey: Keys.snippets) != nil
         let loadedSnippets = Self.loadSnippets(from: defaults)
         let shouldSeedDefaultSnippets = !hadStoredSnippets && loadedSnippets.isEmpty
-        snippets = shouldSeedDefaultSnippets ? Self.defaultSnippets() : loadedSnippets
+        var migratedSnippets = shouldSeedDefaultSnippets ? Self.defaultSnippets() : loadedSnippets
+        var migratedLaunchShortcuts = loadedLaunchShortcuts
+        let archiveResult = Self.ensureArchiveSnippet(
+            in: migratedSnippets,
+            defaults: defaults,
+            launchShortcuts: &migratedLaunchShortcuts
+        )
+        migratedSnippets = archiveResult.snippets
+        let archiveMergeResult = Self.mergeArchiveDuplicates(
+            in: migratedSnippets,
+            defaults: defaults,
+            launchShortcuts: &migratedLaunchShortcuts
+        )
+        migratedSnippets = archiveMergeResult.snippets
+        snippets = migratedSnippets
+        let launchShortcutsChanged = migratedLaunchShortcuts != loadedLaunchShortcuts
+        if launchShortcutsChanged {
+            launchShortcuts = migratedLaunchShortcuts
+        }
         launchpadDisplayProfiles = Self.loadLaunchpadDisplayProfiles(from: defaults)
         let sortModeRaw = defaults.string(forKey: Keys.launchpadAppSortMode) ?? LaunchpadAppSortMode.recent.rawValue
         launchpadAppSortMode = LaunchpadAppSortMode(rawValue: sortModeRaw) ?? .recent
@@ -145,10 +167,114 @@ final class AppSettings: ObservableObject {
         }
         autoBackupEnabled = defaults.bool(forKey: Keys.autoBackupEnabled)
 
-        if shouldSeedDefaultSnippets {
+        if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange {
             saveSnippets()
         }
+        if launchShortcutsChanged {
+            saveLaunchShortcuts()
+        }
         seedDefaultSnippetShortcuts()
+    }
+
+    private static func ensureArchiveSnippet(
+        in snippets: [SnippetDefinition],
+        defaults: UserDefaults,
+        launchShortcuts: inout [String: KeyboardShortcutSetting]
+    ) -> (snippets: [SnippetDefinition], didChange: Bool) {
+        guard let archiveDefault = defaultSnippets().first(where: { $0.id == SnippetDefinition.archiveID }) else {
+            return (snippets, false)
+        }
+        let canonicalID = SnippetDefinition.archiveID
+
+        if let index = snippets.firstIndex(where: { $0.id == canonicalID }) {
+            guard !defaults.bool(forKey: Keys.archiveSnippetBodyMigration) else {
+                return (snippets, false)
+            }
+            var result = snippets
+            let didChangeBody = result[index].body != archiveDefault.body
+            if didChangeBody {
+                result[index].body = archiveDefault.body
+            }
+            defaults.set(true, forKey: Keys.archiveSnippetBodyMigration)
+            return (result, didChangeBody)
+        }
+
+        if let manualIndex = snippets.firstIndex(where: {
+            $0.kind == .script
+                && $0.id != canonicalID
+                && $0.title.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare("Archive") == .orderedSame
+        }) {
+            var result = snippets
+            let oldID = result[manualIndex].id
+            var adopted = archiveDefault
+            adopted.isEnabled = result[manualIndex].isEnabled
+            result[manualIndex] = adopted
+            if let sc = launchShortcuts[oldID] {
+                launchShortcuts[canonicalID] = sc
+                launchShortcuts.removeValue(forKey: oldID)
+            } else if launchShortcuts[canonicalID] == nil {
+                launchShortcuts[canonicalID] = defaultShortcut(forSnippetID: canonicalID)
+            }
+            defaults.set(true, forKey: Keys.archiveSnippetMigration)
+            defaults.set(true, forKey: Keys.archiveSnippetBodyMigration)
+            return (result, true)
+        }
+
+        guard !defaults.bool(forKey: Keys.archiveSnippetMigration) else {
+            return (snippets, false)
+        }
+
+        var result = snippets
+        if let documentsIndex = result.lastIndex(where: { $0.id == "snippet.documents" && $0.kind == .script }) {
+            result.insert(archiveDefault, at: documentsIndex + 1)
+        } else {
+            result.append(archiveDefault)
+        }
+        defaults.set(true, forKey: Keys.archiveSnippetMigration)
+        defaults.set(true, forKey: Keys.archiveSnippetBodyMigration)
+        if launchShortcuts[canonicalID] == nil {
+            launchShortcuts[canonicalID] = defaultShortcut(forSnippetID: canonicalID)
+        }
+        return (result, true)
+    }
+
+    private static func mergeArchiveDuplicates(
+        in snippets: [SnippetDefinition],
+        defaults: UserDefaults,
+        launchShortcuts: inout [String: KeyboardShortcutSetting]
+    ) -> (snippets: [SnippetDefinition], didChange: Bool) {
+        guard !defaults.bool(forKey: Keys.archiveDuplicateMigration) else {
+            return (snippets, false)
+        }
+        defaults.set(true, forKey: Keys.archiveDuplicateMigration)
+
+        let canonicalID = SnippetDefinition.archiveID
+        guard snippets.contains(where: { $0.id == canonicalID }) else {
+            return (snippets, false)
+        }
+
+        var result = snippets
+        var indexesToRemove: [Int] = []
+        var didChange = false
+
+        for (index, snippet) in result.enumerated() {
+            guard snippet.kind == .script,
+                  snippet.id != canonicalID,
+                  snippet.title.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare("Archive") == .orderedSame
+            else { continue }
+            if let dupShortcut = launchShortcuts[snippet.id] {
+                launchShortcuts[canonicalID] = dupShortcut
+            }
+            launchShortcuts.removeValue(forKey: snippet.id)
+            indexesToRemove.append(index)
+            didChange = true
+        }
+
+        guard !indexesToRemove.isEmpty else { return (result, didChange) }
+        for index in indexesToRemove.sorted(by: >) {
+            result.remove(at: index)
+        }
+        return (result, didChange)
     }
 
     func shortcut(for action: ShortcutAction) -> KeyboardShortcutSetting {
@@ -438,70 +564,102 @@ final class AppSettings: ObservableObject {
                 # CONFIGURATION
                 # ═══════════════════════════════════════════════════
                 SOURCE_DIR="$HOME/Desktop"
-                DEST_BASE_DIR=""  # vide = auto-détection Google Drive
+                # Archive locale : un mv sur le même disque est instantané (renommage),
+                # même pour de gros dossiers. Rien n'est jamais ignoré, le Mac ne fige pas.
+                LOCAL_ARCHIVE_BASE="$HOME/.pk-desktoparchive"
+                # Recopie en arrière-plan vers le cloud (0 = désactivée).
+                CLOUD_SYNC_ENABLED=1
+                CLOUD_BWLIMIT_KB=4000          # débit max (Ko/s) pour ménager le montage cloud
+                DEST_BASE_DIR=""               # vide = auto-détection Google Drive
                 # ═══════════════════════════════════════════════════
+
+                unique_dest() {
+                  local dir="$1" filename="$2" base ext counter=2 candidate
+                  if [[ "$filename" == *.* ]]; then
+                    base="${filename%.*}"
+                    ext=".${filename##*.}"
+                  else
+                    base="$filename"
+                    ext=""
+                  fi
+                  candidate="${dir}/${filename}"
+                  while [[ -e "$candidate" || -L "$candidate" ]]; do
+                    candidate="${dir}/${base} ${counter}${ext}"
+                    counter=$((counter + 1))
+                  done
+                  printf '%s' "$candidate"
+                }
+
+                resolve_cloud_path() {
+                  local preferred legacy subs mount sub out=""
+                  if [[ -n "$DEST_BASE_DIR" ]]; then
+                    out="$DEST_BASE_DIR"
+                  elif [[ -n "${ARCHIVE_PATH:-}" ]]; then
+                    out="$ARCHIVE_PATH"
+                  else
+                    preferred="$HOME/Cloud.noindex/Google Drive.localized"
+                    legacy="$HOME/Library/Application Support/Mountain Duck/Volumes.noindex"
+                    subs=("# BACKUPS" "My Drive/# BACKUPS" "Mon Drive/# BACKUPS")
+                    mount=""
+                    if [[ -d "$preferred" ]]; then
+                      mount="$preferred"
+                    elif [[ -d "$legacy" ]]; then
+                      for c in "$legacy"/*Google\\ Drive* "$legacy"/*Drive* "$legacy"/*/*.localized; do
+                        [[ -d "$c" ]] && mount="$c" && break
+                      done
+                    fi
+                    if [[ -n "$mount" ]]; then
+                      for sub in "${subs[@]}"; do
+                        if [[ -d "${mount}/${sub}" ]]; then
+                          out="${mount}/${sub}/DesktopArchive"
+                          break
+                        fi
+                      done
+                    fi
+                  fi
+                  printf '%s' "$out"
+                }
 
                 SOURCE_NAME="$(basename "$SOURCE_DIR")"
                 LINK_NAME="${SOURCE_NAME}Archive"
                 LINK_PATH="${SOURCE_DIR}/${LINK_NAME}"
-                PREFERRED_MOUNT="$HOME/Cloud.noindex/Google Drive.localized"
-                LEGACY_MOUNT_ROOT="$HOME/Library/Application Support/Mountain Duck/Volumes.noindex"
-                BACKUP_SUBFOLDERS=("# BACKUPS" "My Drive/# BACKUPS" "Mon Drive/# BACKUPS")
+                month_label="$(LC_TIME=fr_FR.UTF-8 date +%Y_%m_%B)"
 
-                if [[ -n "$DEST_BASE_DIR" ]]; then
-                  archive_path="$DEST_BASE_DIR"
-                elif [[ -n "${ARCHIVE_PATH:-}" ]]; then
-                  archive_path="$ARCHIVE_PATH"
-                else
-                  google_drive_mount=""
-                  if [[ -d "$PREFERRED_MOUNT" ]]; then
-                    google_drive_mount="$PREFERRED_MOUNT"
-                  elif [[ -d "$LEGACY_MOUNT_ROOT" ]]; then
-                    for candidate in "$LEGACY_MOUNT_ROOT"/*Google\\ Drive* "$LEGACY_MOUNT_ROOT"/*Drive* "$LEGACY_MOUNT_ROOT"/*/*.localized; do
-                      [[ -d "$candidate" ]] && google_drive_mount="$candidate" && break
-                    done
-                  fi
-                  if [[ -z "$google_drive_mount" ]]; then
-                    echo "Google Drive non accessible." >&2
-                    exit 1
-                  fi
-                  for sub in "${BACKUP_SUBFOLDERS[@]}"; do
-                    if [[ -d "${google_drive_mount}/${sub}" ]]; then
-                      archive_path="${google_drive_mount}/${sub}/${LINK_NAME}"
-                      break
-                    fi
-                  done
-                  if [[ -z "${archive_path:-}" ]]; then
-                    echo "Dossier '# BACKUPS' introuvable dans: ${google_drive_mount}" >&2
-                    exit 1
-                  fi
-                fi
+                mkdir -p "$LOCAL_ARCHIVE_BASE"
+                local_month="$LOCAL_ARCHIVE_BASE/$month_label"
+                mkdir -p "$local_month"
 
-                [[ "$archive_path" == "~/"* ]] && archive_path="${HOME}/${archive_path#~/}"
-                mkdir -p "$archive_path"
-
-                if [[ -e "$LINK_PATH" && ! -L "$LINK_PATH" ]]; then
-                  mv "$LINK_PATH" "${LINK_PATH}.local-backup-$(date +%Y%m%d-%H%M%S)"
-                fi
-                [[ "$archive_path" != "$LINK_PATH" ]] && ln -sfn "$archive_path" "$LINK_PATH"
-
-                month_folder="${archive_path}/$(LC_TIME=fr_FR.UTF-8 date +%Y_%m_%B)"
-                mkdir -p "$month_folder"
-
+                # 1) ARCHIVAGE LOCAL — instantané (même volume = renommage), rien ignoré.
+                moved=0
                 shopt -s nullglob
                 for file in "${SOURCE_DIR}"/*; do
                   [[ "$(basename "$file")" == "$LINK_NAME" ]] && continue
                   tags=$(mdls -name kMDItemUserTags -raw "$file" 2>/dev/null || true)
                   [[ -n "$tags" && "$tags" == *"Bureau"* ]] && continue
-                  dest="${month_folder}/$(basename "$file")"
-                  if [[ -e "$dest" ]]; then
-                    mv -i "$file" "$dest"
-                  else
-                    mv "$file" "$dest"
-                  fi
+                  filename="$(basename "$file")"
+                  dest="$(unique_dest "$local_month" "$filename")"
+                  mv "$file" "$dest"
+                  moved=$((moved + 1))
                 done
 
-                [[ "$archive_path" != "$LINK_PATH" ]] && ln -sfn "$archive_path" "$LINK_PATH"
+                # 2) Raccourci Bureau -> archive locale (navigable immédiatement).
+                if [[ -e "$LINK_PATH" && ! -L "$LINK_PATH" ]]; then
+                  mv "$LINK_PATH" "${LINK_PATH}.local-backup-$(date +%Y%m%d-%H%M%S)"
+                fi
+                ln -sfn "$LOCAL_ARCHIVE_BASE" "$LINK_PATH"
+
+                # 3) Recopie en arrière-plan vers Google Drive (throttée, non bloquante).
+                if [[ "$CLOUD_SYNC_ENABLED" == "1" ]]; then
+                  cloud_path="$(resolve_cloud_path)"
+                  if [[ -n "$cloud_path" ]]; then
+                    mkdir -p "$cloud_path"
+                    nohup nice -n 19 rsync -a --update --bwlimit="$CLOUD_BWLIMIT_KB" \
+                      "$LOCAL_ARCHIVE_BASE/" "$cloud_path/" >/dev/null 2>&1 &
+                    disown 2>/dev/null || true
+                  fi
+                fi
+
+                echo "Archivé : ${moved} élément(s) -> ${local_month}"
                 """,
                 isEnabled: true
             )
