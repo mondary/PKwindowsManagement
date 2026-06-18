@@ -24,6 +24,7 @@ final class AppSettings: ObservableObject {
         static let archiveSnippetMigration = "migrated-snippet-archive-v1"
         static let archiveSnippetBodyMigration = "migrated-snippet-archive-body-v5"
         static let archiveDuplicateMigration = "migrated-snippet-archive-dedup-v3"
+        static let downloadsToDesktopSnippetMigration = "migrated-snippet-dl2desk-v1"
     }
 
     private let defaults: UserDefaults
@@ -142,6 +143,12 @@ final class AppSettings: ObservableObject {
             launchShortcuts: &migratedLaunchShortcuts
         )
         migratedSnippets = archiveMergeResult.snippets
+        let downloadsResult = Self.ensureDownloadsToDesktopSnippet(
+            in: migratedSnippets,
+            defaults: defaults,
+            launchShortcuts: &migratedLaunchShortcuts
+        )
+        migratedSnippets = downloadsResult.snippets
         snippets = migratedSnippets
         let launchShortcutsChanged = migratedLaunchShortcuts != loadedLaunchShortcuts
         if launchShortcutsChanged {
@@ -167,7 +174,7 @@ final class AppSettings: ObservableObject {
         }
         autoBackupEnabled = defaults.bool(forKey: Keys.autoBackupEnabled)
 
-        if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange {
+        if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()
         }
         if launchShortcutsChanged {
@@ -275,6 +282,31 @@ final class AppSettings: ObservableObject {
             result.remove(at: index)
         }
         return (result, didChange)
+    }
+
+    private static func ensureDownloadsToDesktopSnippet(
+        in snippets: [SnippetDefinition],
+        defaults: UserDefaults,
+        launchShortcuts: inout [String: KeyboardShortcutSetting]
+    ) -> (snippets: [SnippetDefinition], didChange: Bool) {
+        guard !defaults.bool(forKey: Keys.downloadsToDesktopSnippetMigration),
+              let defaultSnippet = defaultSnippets().first(where: { $0.id == SnippetDefinition.downloadsToDesktopID }),
+              !snippets.contains(where: { $0.id == SnippetDefinition.downloadsToDesktopID })
+        else {
+            return (snippets, false)
+        }
+
+        var result = snippets
+        if let archiveIndex = result.firstIndex(where: { $0.id == SnippetDefinition.archiveID }) {
+            result.insert(defaultSnippet, at: archiveIndex + 1)
+        } else {
+            result.append(defaultSnippet)
+        }
+        defaults.set(true, forKey: Keys.downloadsToDesktopSnippetMigration)
+        if launchShortcuts[SnippetDefinition.downloadsToDesktopID] == nil {
+            launchShortcuts[SnippetDefinition.downloadsToDesktopID] = defaultShortcut(forSnippetID: SnippetDefinition.downloadsToDesktopID)
+        }
+        return (result, true)
     }
 
     func shortcut(for action: ShortcutAction) -> KeyboardShortcutSetting {
@@ -554,6 +586,48 @@ final class AppSettings: ObservableObject {
                 isEnabled: true
             ),
             SnippetDefinition(
+                id: SnippetDefinition.downloadsToDesktopID,
+                title: "DL2desk",
+                body: """
+                #!/bin/bash
+                set -euo pipefail
+
+                SOURCE_DIR="$HOME/Downloads"
+                DEST_DIR="$HOME/Desktop"
+
+                unique_dest() {
+                  local dir="$1" filename="$2" base ext counter=2 candidate
+                  if [[ "$filename" == *.* ]]; then
+                    base="${filename%.*}"
+                    ext=".${filename##*.}"
+                  else
+                    base="$filename"
+                    ext=""
+                  fi
+                  candidate="${dir}/${filename}"
+                  while [[ -e "$candidate" || -L "$candidate" ]]; do
+                    candidate="${dir}/${base} ${counter}${ext}"
+                    counter=$((counter + 1))
+                  done
+                  printf '%s' "$candidate"
+                }
+
+                moved=0
+                shopt -s nullglob dotglob
+                for item in "$SOURCE_DIR"/*; do
+                  name="$(basename "$item")"
+                  [[ "$name" == ".DS_Store" ]] && continue
+                  [[ "$name" == *.tmp || "$name" == *.crdownload || "$name" == *.download ]] && continue
+                  dest="$(unique_dest "$DEST_DIR" "$name")"
+                  mv "$item" "$dest"
+                  moved=$((moved + 1))
+                done
+
+                echo "Déplacé : ${moved} élément(s) -> ${DEST_DIR}"
+                """,
+                isEnabled: true
+            ),
+            SnippetDefinition(
                 id: "snippet.archive",
                 title: "Archive",
                 body: """
@@ -672,6 +746,7 @@ final class AppSettings: ObservableObject {
         case "snippet.applications": .init(key: "a", modifier: .rightCommand)
         case "snippet.home": .init(key: "h", modifier: .rightCommand)
         case "snippet.documents": .init(key: "d", modifier: .rightCommand)
+        case SnippetDefinition.downloadsToDesktopID: .init(key: "l", modifier: .rightCommand)
         case "snippet.archive": .init(key: "r", modifier: .rightCommand)
         default: .init(key: "s", modifier: .command)
         }

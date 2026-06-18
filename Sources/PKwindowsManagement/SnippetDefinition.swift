@@ -54,6 +54,13 @@ enum SnippetBrowserTarget: String, Codable, CaseIterable, Identifiable {
 struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
     static let archiveID = "snippet.archive"
     static let archiveSymbolName = "tray.and.arrow.down"
+    static let downloadsToDesktopID = "snippet.downloads-to-desktop"
+    static let downloadsToDesktopSymbolName = "tray.and.arrow.up"
+    private static let finderFolderIDs: Set<String> = [
+        "snippet.applications",
+        "snippet.home",
+        "snippet.documents"
+    ]
 
     let id: String
     var title: String
@@ -67,6 +74,8 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
     var launchpadSymbolName: String? {
         switch kind {
         case .script:
+            if isFinderFolderShortcut { return "folder" }
+            if id == Self.downloadsToDesktopID { return Self.downloadsToDesktopSymbolName }
             return id == Self.archiveID ? Self.archiveSymbolName : "terminal"
         case .url:
             return faviconData == nil ? "globe" : nil
@@ -76,10 +85,24 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
     var settingsListSymbolName: String {
         switch kind {
         case .script:
+            if isFinderFolderShortcut { return "folder" }
+            if id == Self.downloadsToDesktopID { return Self.downloadsToDesktopSymbolName }
             return id == Self.archiveID ? Self.archiveSymbolName : "doc.plaintext"
         case .url:
             return "link"
         }
+    }
+
+    private var isFinderFolderShortcut: Bool {
+        guard kind == .script else { return false }
+        if Self.finderFolderIDs.contains(id) { return true }
+
+        let normalizedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard normalizedBody.hasPrefix("open ") else { return false }
+        return normalizedBody.contains("~")
+            || normalizedBody.contains("$HOME")
+            || normalizedBody.contains("/Applications")
+            || normalizedBody.contains("/Documents")
     }
 
     init(id: String = UUID().uuidString, title: String, body: String) {

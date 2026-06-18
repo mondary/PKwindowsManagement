@@ -19,6 +19,8 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Enregistrement direct des séquences clavier pour les raccourcis.
 - Gestionnaire de snippets avec scripts exécutables et raccourcis globaux.
 - Snippet `Archive` présent par défaut : range le Bureau dans une archive locale instantanée puis la recopie vers Google Drive en arrière-plan, avec icône dédiée et raccourci `Right Cmd + S`.
+- Snippet `DL2desk` présent par défaut : déplace le contenu de `Downloads` vers le Bureau, avec renommage automatique en cas de conflit et raccourci `Right Cmd + L`.
+- Icône dossier pour les snippets Finder qui ouvrent `Applications`, `Home` ou `Documents`.
 - Gestionnaire d'URLs avec choix du navigateur et raccourcis globaux.
 - Tri configurable des applications du Launchpad par nom, dernière utilisation ou couleur dominante de l'icône.
 - Paramétrage fin de la grille du Launchpad : colonnes, lignes, taille des icônes, espacement des colonnes et des lignes.
@@ -44,6 +46,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Utilise la molette ou le trackpad pour naviguer dans le Launchpad.
 - Appuie sur `Échap` une fois pour vider une recherche, puis une seconde fois pour fermer le Launchpad.
 - Clique sur `•••` en haut à droite pour ouvrir les réglages.
+- Utilise `Right Cmd + L` pour déplacer les éléments de `Downloads` vers le Bureau avec `DL2desk`.
 - Lance `Empty Trash` depuis le Launchpad pour vider la Corbeille. Au premier usage, macOS peut demander l'autorisation d'automatiser Finder.
 - Utilise `Cmd + ,` pour ouvrir les réglages depuis l'application.
 
@@ -123,6 +126,8 @@ script/release.sh
 - `0.18` - 2026-06-16
   - L'icône officielle de l'app s'affiche dans la barre de menu (en couleur) et dans l'en-tête des réglages.
   - Snippet `Archive` présent par défaut avec icône dédiée et raccourci `Right Cmd + S`.
+  - Snippet `DL2desk` ajouté par défaut pour déplacer `Downloads` vers le Bureau avec le raccourci `Right Cmd + L`.
+  - Icônes dossier pour les snippets Finder personnalisés ou par défaut qui ouvrent des dossiers.
   - Commande `Empty Trash` fonctionnelle via l'automatisation Finder, avec feedback lisible si macOS bloque l'autorisation.
   - Packaging documenté pour conserver un bundle signé stable et éviter les redemandes d'autorisations macOS à chaque mise à jour.
   - Archive « Conserver les deux » en cas d'homonymes (`fichier 2.ext`).
