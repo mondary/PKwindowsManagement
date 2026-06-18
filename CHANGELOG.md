@@ -9,6 +9,8 @@
 - Archive moves Desktop items to a fast local archive first, then mirrors them to Google Drive in the background (throttled, non-blocking) — no more Mac freeze on large folders
 ### Changed
 - Archive no longer overwrites or prompts on duplicate names
+- Archive monthly folders now use deterministic French names (`2026_06_juin`) instead of relying on the process locale
+- `DesktopArchive` now points to the Google Drive archive when detected, while keeping the fast local archive as the initial write target
 ### Fixed
 - Duplicate Archive snippets (manual + default) collapsed into a single canonical entry, preserving the existing shortcut
 

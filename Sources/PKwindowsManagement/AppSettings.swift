@@ -22,7 +22,7 @@ final class AppSettings: ObservableObject {
         static let autoBackupFolder = "auto-backup-folder"
         static let autoBackupEnabled = "auto-backup-enabled"
         static let archiveSnippetMigration = "migrated-snippet-archive-v1"
-        static let archiveSnippetBodyMigration = "migrated-snippet-archive-body-v5"
+        static let archiveSnippetBodyMigration = "migrated-snippet-archive-body-v7"
         static let archiveDuplicateMigration = "migrated-snippet-archive-dedup-v3"
         static let downloadsToDesktopSnippetMigration = "migrated-snippet-dl2desk-v1"
     }
@@ -697,11 +697,33 @@ final class AppSettings: ObservableObject {
                 SOURCE_NAME="$(basename "$SOURCE_DIR")"
                 LINK_NAME="${SOURCE_NAME}Archive"
                 LINK_PATH="${SOURCE_DIR}/${LINK_NAME}"
-                month_label="$(LC_TIME=fr_FR.UTF-8 date +%Y_%m_%B)"
+                month_number="$(date +%m)"
+                year_number="$(date +%Y)"
+                case "$month_number" in
+                  01) month_name="janvier" ;;
+                  02) month_name="février" ;;
+                  03) month_name="mars" ;;
+                  04) month_name="avril" ;;
+                  05) month_name="mai" ;;
+                  06) month_name="juin" ;;
+                  07) month_name="juillet" ;;
+                  08) month_name="août" ;;
+                  09) month_name="septembre" ;;
+                  10) month_name="octobre" ;;
+                  11) month_name="novembre" ;;
+                  12) month_name="décembre" ;;
+                esac
+                month_label="${year_number}_${month_number}_${month_name}"
 
                 mkdir -p "$LOCAL_ARCHIVE_BASE"
                 local_month="$LOCAL_ARCHIVE_BASE/$month_label"
                 mkdir -p "$local_month"
+
+                cloud_path=""
+                if [[ "$CLOUD_SYNC_ENABLED" == "1" ]]; then
+                  cloud_path="$(resolve_cloud_path)"
+                  [[ -n "$cloud_path" ]] && mkdir -p "$cloud_path"
+                fi
 
                 # 1) ARCHIVAGE LOCAL — instantané (même volume = renommage), rien ignoré.
                 moved=0
@@ -716,21 +738,19 @@ final class AppSettings: ObservableObject {
                   moved=$((moved + 1))
                 done
 
-                # 2) Raccourci Bureau -> archive locale (navigable immédiatement).
+                # 2) Raccourci Bureau -> archive cloud si détectée, sinon archive locale.
                 if [[ -e "$LINK_PATH" && ! -L "$LINK_PATH" ]]; then
                   mv "$LINK_PATH" "${LINK_PATH}.local-backup-$(date +%Y%m%d-%H%M%S)"
                 fi
-                ln -sfn "$LOCAL_ARCHIVE_BASE" "$LINK_PATH"
+                link_target="$LOCAL_ARCHIVE_BASE"
+                [[ -n "$cloud_path" ]] && link_target="$cloud_path"
+                ln -sfn "$link_target" "$LINK_PATH"
 
                 # 3) Recopie en arrière-plan vers Google Drive (throttée, non bloquante).
-                if [[ "$CLOUD_SYNC_ENABLED" == "1" ]]; then
-                  cloud_path="$(resolve_cloud_path)"
-                  if [[ -n "$cloud_path" ]]; then
-                    mkdir -p "$cloud_path"
-                    nohup nice -n 19 rsync -a --update --bwlimit="$CLOUD_BWLIMIT_KB" \
-                      "$LOCAL_ARCHIVE_BASE/" "$cloud_path/" >/dev/null 2>&1 &
-                    disown 2>/dev/null || true
-                  fi
+                if [[ -n "$cloud_path" ]]; then
+                  nohup nice -n 19 rsync -a --update --bwlimit="$CLOUD_BWLIMIT_KB" \
+                    "$LOCAL_ARCHIVE_BASE/" "$cloud_path/" >/dev/null 2>&1 &
+                  disown 2>/dev/null || true
                 fi
 
                 echo "Archivé : ${moved} élément(s) -> ${local_month}"

@@ -18,7 +18,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Support du modificateur `Fn + Shift` pour les raccourcis de lancement.
 - Enregistrement direct des séquences clavier pour les raccourcis.
 - Gestionnaire de snippets avec scripts exécutables et raccourcis globaux.
-- Snippet `Archive` présent par défaut : range le Bureau dans une archive locale instantanée puis la recopie vers Google Drive en arrière-plan, avec icône dédiée et raccourci `Right Cmd + S`.
+- Snippet `Archive` présent par défaut : range le Bureau dans une archive locale instantanée, utilise des dossiers mensuels en français (`2026_06_juin`), puis recopie vers Google Drive en arrière-plan, avec icône dédiée et raccourci `Right Cmd + S`.
 - Snippet `DL2desk` présent par défaut : déplace le contenu de `Downloads` vers le Bureau, avec renommage automatique en cas de conflit et raccourci `Right Cmd + L`.
 - Icône dossier pour les snippets Finder qui ouvrent `Applications`, `Home` ou `Documents`.
 - Gestionnaire d'URLs avec choix du navigateur et raccourcis globaux.
@@ -131,7 +131,9 @@ script/release.sh
   - Commande `Empty Trash` fonctionnelle via l'automatisation Finder, avec feedback lisible si macOS bloque l'autorisation.
   - Packaging documenté pour conserver un bundle signé stable et éviter les redemandes d'autorisations macOS à chaque mise à jour.
   - Archive « Conserver les deux » en cas d'homonymes (`fichier 2.ext`).
-  - Archive locale d'abord (instantanée) puis recopie Google Drive en arrière-plan throthlée — plus de freeze sur les gros dossiers.
+  - Archive locale d'abord (instantanée) puis recopie Google Drive en arrière-plan limitée — plus de freeze sur les gros dossiers.
+  - Dossiers mensuels Archive forcés en français (`2026_06_juin`) même si macOS lance le script avec une locale anglaise.
+  - Raccourci `DesktopArchive` pointant vers l'archive Google Drive quand elle est détectée, sinon vers l'archive locale.
   - Fusion des doublons `Archive` en une seule entrée (raccourci existant conservé).
 - `0.17` - 2026-06-16
   - Ajout de `Big Year` depuis le menu de la barre de menu.

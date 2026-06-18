@@ -18,7 +18,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - `Fn + Shift` modifier support for launch shortcuts.
 - Direct keyboard sequence recording for shortcuts.
 - Script snippets with global shortcuts and enable/disable support.
-- Default `Archive` snippet: clears the Desktop into a fast local archive, then mirrors it to Google Drive in the background, with a dedicated icon and a `Right Command + S` shortcut.
+- Default `Archive` snippet: clears the Desktop into a fast local archive, uses deterministic French monthly folders (`2026_06_juin`), then mirrors it to Google Drive in the background, with a dedicated icon and a `Right Command + S` shortcut.
 - URL snippets with browser selection and global shortcuts.
 - Fine-grained Launchpad grid customization: columns, rows, icon size, column spacing, and row spacing.
 - Per-display Launchpad grid profiles to adapt the layout to each connected monitor.
@@ -118,6 +118,8 @@ script/release.sh
   - Default `Archive` snippet with a dedicated icon and a `Right Command + S` shortcut.
   - Archive keeps both files on name conflicts (`file 2.ext`).
   - Archive moves to a fast local archive first, then mirrors to Google Drive in the background (throttled) — no more freeze on large folders.
+  - Archive monthly folders are forced to French names (`2026_06_juin`) even when macOS launches the script with an English locale.
+  - `DesktopArchive` points to the Google Drive archive when detected, otherwise to the local archive.
   - Duplicate `Archive` snippets merged into a single entry (existing shortcut preserved).
 - `0.17` - 2026-06-16
   - Added `Big Year` from the menu bar menu.
