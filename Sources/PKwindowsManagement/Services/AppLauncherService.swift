@@ -293,7 +293,8 @@ final class AppLauncherService {
                 [.posixPermissions: 0o755], ofItemAtPath: tempURL.path
             )
             let process = Process()
-            process.executableURL = tempURL
+            process.executableURL = URL(fileURLWithPath: ext == "bash" ? "/bin/bash" : "/bin/sh")
+            process.arguments = [tempURL.path]
             process.standardOutput = FileHandle.nullDevice
             process.standardError = FileHandle.nullDevice
             process.terminationHandler = { proc in
