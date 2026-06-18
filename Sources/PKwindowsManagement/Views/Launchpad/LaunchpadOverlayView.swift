@@ -9,6 +9,7 @@ struct LaunchpadOverlayView: View {
     @State private var shortcutTarget: LaunchableApp?
     @State private var uninstallTarget: LaunchableApp?
     @State private var uninstallError: String?
+    @State private var commandFeedbackMessage: String?
     @State private var appCatalogRevision = 0
     @State private var appCatalog: [LaunchableApp] = []
     @State private var currentPage = 0
@@ -107,6 +108,14 @@ struct LaunchpadOverlayView: View {
             }
         } message: {
             Text(uninstallError ?? "")
+        }
+        .alert("Action Result", isPresented: commandFeedbackPresented) {
+            Button("OK", role: .cancel) {
+                commandFeedbackMessage = nil
+                LaunchpadOverlayController.shared.hide()
+            }
+        } message: {
+            Text(commandFeedbackMessage ?? "")
         }
     }
 
@@ -490,7 +499,10 @@ struct LaunchpadOverlayView: View {
     }
 
     private func launch(_ app: LaunchableApp) {
-        launcher.launch(app, settings: settings)
+        if let message = launcher.launch(app, settings: settings) {
+            commandFeedbackMessage = message
+            return
+        }
         LaunchpadOverlayController.shared.hide()
     }
 
@@ -525,6 +537,13 @@ struct LaunchpadOverlayView: View {
         Binding(
             get: { uninstallError != nil },
             set: { if !$0 { uninstallError = nil } }
+        )
+    }
+
+    private var commandFeedbackPresented: Binding<Bool> {
+        Binding(
+            get: { commandFeedbackMessage != nil },
+            set: { if !$0 { commandFeedbackMessage = nil } }
         )
     }
 

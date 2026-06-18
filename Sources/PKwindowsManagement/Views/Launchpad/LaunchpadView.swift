@@ -5,6 +5,7 @@ struct LaunchpadView: View {
     @ObservedObject var settings: AppSettings
     @State private var query = ""
     @State private var shortcutTarget: LaunchableApp?
+    @State private var commandFeedbackMessage: String?
     private let launcher = AppLauncherService()
 
     var body: some View {
@@ -27,7 +28,7 @@ struct LaunchpadView: View {
                     ForEach(apps) { app in
                         VStack(spacing: 8) {
                             Button {
-                                launcher.launch(app, settings: settings)
+                                commandFeedbackMessage = launcher.launch(app, settings: settings)
                             } label: {
                                 LaunchpadAppTile(app: app)
                             }
@@ -46,6 +47,13 @@ struct LaunchpadView: View {
         .sheet(item: $shortcutTarget) { app in
             LaunchShortcutEditor(app: app, settings: settings)
                 .frame(width: 420, height: 220)
+        }
+        .alert("Action Result", isPresented: commandFeedbackPresented) {
+            Button("OK", role: .cancel) {
+                commandFeedbackMessage = nil
+            }
+        } message: {
+            Text(commandFeedbackMessage ?? "")
         }
         .task(id: settings.recentBundleIDs) { }
     }
@@ -120,6 +128,13 @@ struct LaunchpadView: View {
     private func shortcutLabel(for shortcut: KeyboardShortcutSetting?) -> String {
         guard let shortcut else { return "Assign shortcut" }
         return "\(shortcut.modifier.symbolPrefix) \(shortcut.key.uppercased())"
+    }
+
+    private var commandFeedbackPresented: Binding<Bool> {
+        Binding(
+            get: { commandFeedbackMessage != nil },
+            set: { if !$0 { commandFeedbackMessage = nil } }
+        )
     }
 }
 

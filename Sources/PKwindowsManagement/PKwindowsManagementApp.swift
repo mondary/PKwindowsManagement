@@ -21,7 +21,7 @@ struct PKwindowsManagementApp: App {
                     launcher.refreshURLSnippetIcons(settings: settings)
                     let apps = launcher.loadShortcutTargets(settings: settings)
                     LaunchShortcutMonitor.shared.start(settings: settings, apps: apps) { app in
-                        launcher.launch(app, settings: settings)
+                        _ = launcher.launch(app, settings: settings)
                     }
                 }
                 .onChange(of: settings.snippets) { _ in

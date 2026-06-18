@@ -29,6 +29,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Indicateur de statut d'accessibilité avec bouton pour autoriser l'accès.
 - Export automatique des backups vers un dossier au choix (ex : Google Drive) à chaque modification des réglages.
 - Menu contextuel sur chaque application pour attribuer un raccourci ou la déplacer vers la Corbeille.
+- Commande `Empty Trash` dans le Launchpad pour vider la Corbeille via Finder.
 - Ouverture du Launchpad avec `Option + Espace`, le coin supérieur gauche ou un clic sur l'icône de barre de menu.
 - L'icône officielle de l'app s'affiche dans la barre de menu (en couleur) ; menu contextuel pour ouvrir les préférences ou quitter.
 - Chargement plus léger au démarrage : les raccourcis globaux n'ont plus besoin de charger toutes les icônes d'applications, et l'analyse couleur ne se fait que pour le tri `Icon Color`.
@@ -43,6 +44,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Utilise la molette ou le trackpad pour naviguer dans le Launchpad.
 - Appuie sur `Échap` une fois pour vider une recherche, puis une seconde fois pour fermer le Launchpad.
 - Clique sur `•••` en haut à droite pour ouvrir les réglages.
+- Lance `Empty Trash` depuis le Launchpad pour vider la Corbeille. Au premier usage, macOS peut demander l'autorisation d'automatiser Finder.
 - Utilise `Cmd + ,` pour ouvrir les réglages depuis l'application.
 
 ### Raccourcis par défaut
@@ -102,7 +104,8 @@ script/package_app.sh release
 - Création d'une app testable sur le Bureau :
 ```bash
 script/package_app.sh debug
-cp -R dist/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
+rm -rf ~/Desktop/PKwindowsManagement.app
+ditto dist/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
 ```
 - Création d'une release et copie dans `/Applications` :
 ```bash
@@ -111,13 +114,17 @@ script/release.sh
 
 ## 🧪 Installation
 - Lance `script/release.sh` pour compiler et installer `/Applications/PKwindowsManagement.app`.
+- Garde l'app installée au même chemin (`/Applications/PKwindowsManagement.app`) et construis-la toujours avec `script/package_app.sh` ou `script/release.sh` pour conserver le même identifiant, la même signature et éviter que macOS redemande inutilement les autorisations.
 - Au premier usage, valide l'accès à l'accessibilité dans `Réglages Système > Confidentialité et sécurité > Accessibilité`. Cette permission est nécessaire pour gérer les fenêtres et écouter les raccourcis globaux.
+- Pour `Empty Trash`, valide aussi l'autorisation d'automatisation Finder quand macOS la demande. Cette commande passe par Finder car macOS bloque l'accès direct au dossier `~/.Trash`.
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
 ## 🧾 Changelog
 - `0.18` - 2026-06-16
   - L'icône officielle de l'app s'affiche dans la barre de menu (en couleur) et dans l'en-tête des réglages.
   - Snippet `Archive` présent par défaut avec icône dédiée et raccourci `Right Cmd + S`.
+  - Commande `Empty Trash` fonctionnelle via l'automatisation Finder, avec feedback lisible si macOS bloque l'autorisation.
+  - Packaging documenté pour conserver un bundle signé stable et éviter les redemandes d'autorisations macOS à chaque mise à jour.
   - Archive « Conserver les deux » en cas d'homonymes (`fichier 2.ext`).
   - Archive locale d'abord (instantanée) puis recopie Google Drive en arrière-plan throthlée — plus de freeze sur les gros dossiers.
   - Fusion des doublons `Archive` en une seule entrée (raccourci existant conservé).

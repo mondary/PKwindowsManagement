@@ -74,6 +74,8 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
   <string>13.0</string>
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
+  <key>NSAppleEventsUsageDescription</key>
+  <string>PKwindowsManagement needs Finder automation to empty the Trash from the Launchpad button.</string>
 </dict>
 </plist>
 EOF

@@ -177,16 +177,17 @@ final class AppLauncherService {
         }
     }
 
-    func launch(_ app: LaunchableApp, settings: AppSettings) {
-        if handleCommandLaunch(app) { return }
+    func launch(_ app: LaunchableApp, settings: AppSettings) -> String? {
+        if let feedback = handleCommandLaunch(app) { return feedback }
         if let snippet = app.snippet {
             launch(snippet: snippet)
             settings.markLaunched(bundleID: app.bundleID)
-            return
+            return nil
         }
         let configuration = NSWorkspace.OpenConfiguration()
         NSWorkspace.shared.openApplication(at: app.url, configuration: configuration) { _, _ in }
         settings.markLaunched(bundleID: app.bundleID)
+        return nil
     }
 
     private func shortcut(for bundleID: String?, settings: AppSettings) -> KeyboardShortcutSetting? {
@@ -261,16 +262,15 @@ final class AppLauncherService {
         }
     }
 
-    private func handleCommandLaunch(_ app: LaunchableApp) -> Bool {
+    private func handleCommandLaunch(_ app: LaunchableApp) -> String? {
         switch app.id {
         case LauncherCommand.emptyTrash.rawValue:
-            emptyTrash()
-            return true
+            return emptyTrash()
         case LauncherCommand.eject.rawValue:
             ejectMountedVolumes()
-            return true
+            return nil
         default:
-            return false
+            return nil
         }
     }
 
@@ -414,24 +414,31 @@ final class AppLauncherService {
         }
     }
 
-    private func emptyTrash() {
+    private func emptyTrash() -> String? {
         let script = """
-        tell application "Finder"
-            empty trash
-        end tell
+        ignoring application responses
+            tell application "Finder"
+                empty trash
+            end tell
+        end ignoring
         """
         var errorInfo: NSDictionary?
         NSAppleScript(source: script)?.executeAndReturnError(&errorInfo)
-        guard let errorInfo else { return }
+        guard let errorInfo else { return nil }
 
         let number = (errorInfo[NSAppleScript.errorNumber] as? Int) ?? 0
         NSLog("PKwindowsManagement: empty trash failed (%d): %@", number, errorInfo)
-        // -1743 errAEEventNotPermitted : permission Automation manquante pour le Finder.
+
         if number == -1743 || number == -1719 {
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
-                NSWorkspace.shared.open(url)
-            }
+            return "macOS blocked Finder automation. Relaunch this packaged app and allow PKwindowsManagement to control Finder when prompted."
         }
+        if number == -128 {
+            return nil
+        }
+        let message = (errorInfo[NSAppleScript.errorBriefMessage] as? String)
+            ?? (errorInfo[NSAppleScript.errorMessage] as? String)
+            ?? "Finder returned error \(number)."
+        return "Trash could not be emptied: \(message)"
     }
 
     private func makeCommand(id: String, name: String, iconName: String) -> LaunchableApp {
