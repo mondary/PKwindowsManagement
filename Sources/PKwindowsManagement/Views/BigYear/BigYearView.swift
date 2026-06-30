@@ -38,6 +38,7 @@ struct BigYearRootView: View {
                 }
             }
         }
+        .environment(\.locale, AppLocalization.locale)
     }
 
     private var header: some View {
@@ -63,7 +64,7 @@ struct BigYearRootView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.black.opacity(0.72))
-        .accessibilityLabel("Close Big Year")
+        .accessibilityLabel(localizedString("Close Big Year"))
     }
 
     private func navButton(_ symbol: String, action: @escaping () -> Void) -> some View {
@@ -227,13 +228,13 @@ private struct BigYearDay {
 private enum BigYearCalendar {
     static var cal: Calendar {
         var c = Calendar(identifier: .gregorian)
-        c.locale = .current
+        c.locale = AppLocalization.locale
         c.timeZone = .current
         return c
     }
 
     static var weekdaySymbols: [String] {
-        ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+        cal.veryShortWeekdaySymbols.map { $0.uppercased(with: AppLocalization.locale) }
     }
 
     static func days(in year: Int) -> [BigYearDay] {

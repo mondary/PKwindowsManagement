@@ -84,6 +84,8 @@ struct LaunchpadOverlayRootView: View {
 
     var body: some View {
         LaunchpadOverlayView(settings: settings, displayID: displayID)
+            .environment(\.locale, settings.appLanguage.locale)
+            .id(settings.appLanguage)
             .ignoresSafeArea()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(

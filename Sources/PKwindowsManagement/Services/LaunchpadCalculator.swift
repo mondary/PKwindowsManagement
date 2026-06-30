@@ -32,7 +32,7 @@ enum LaunchpadCalculator {
         } catch let error as CalculatorError {
             return .error(error.message)
         } catch {
-            return .error("Unable to evaluate expression.")
+            return .error(localizedString("Unable to evaluate expression."))
         }
     }
 
@@ -80,11 +80,11 @@ private enum CalculatorError: Error {
 
     var message: String {
         switch self {
-        case .invalidToken(let token): "Unknown token: \(token)"
-        case .unexpectedEnd: "Incomplete expression."
-        case .expectedClosingParen: "Missing closing parenthesis."
-        case .incompatibleUnits: "Units must be compatible."
-        case .invalidOperation: "Unsupported operation."
+        case .invalidToken(let token): localizedFormat("Unknown token: %@", token)
+        case .unexpectedEnd: localizedString("Incomplete expression.")
+        case .expectedClosingParen: localizedString("Missing closing parenthesis.")
+        case .incompatibleUnits: localizedString("Units must be compatible.")
+        case .invalidOperation: localizedString("Unsupported operation.")
         }
     }
 }

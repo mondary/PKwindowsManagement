@@ -34,7 +34,7 @@ struct LaunchpadView: View {
                             }
                             .buttonStyle(.plain)
 
-                            Button(app.shortcut == nil ? "Assign shortcut" : shortcutLabel(for: app.shortcut)) {
+                            Button(app.shortcut == nil ? localizedString("Assign shortcut") : shortcutLabel(for: app.shortcut)) {
                                 shortcutTarget = app
                             }
                             .font(.system(size: 11, weight: .semibold))
@@ -126,7 +126,7 @@ struct LaunchpadView: View {
     }
 
     private func shortcutLabel(for shortcut: KeyboardShortcutSetting?) -> String {
-        guard let shortcut else { return "Assign shortcut" }
+        guard let shortcut else { return localizedString("Assign shortcut") }
         return "\(shortcut.modifier.symbolPrefix) \(shortcut.key.uppercased())"
     }
 
@@ -215,7 +215,7 @@ struct LaunchShortcutEditor: View {
     }
 
     private func displayKey(_ value: String) -> String {
-        value == "space" ? "Space" : value.uppercased()
+        value == "space" ? localizedString("Space") : value.uppercased()
     }
 }
 

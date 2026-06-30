@@ -43,7 +43,7 @@ struct AppearanceSettingsView: View {
 
                 Spacer()
 
-                Text("\(settings.launchpadGridColumns * settings.launchpadGridRows) apps visible")
+                Text(localizedFormat("%d apps visible", settings.launchpadGridColumns * settings.launchpadGridRows))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -119,11 +119,11 @@ struct AppearanceSettingsView: View {
                 .pickerStyle(.segmented)
                 .frame(width: 360)
 
-                Text(settings.launchpadAppSortMode == .color
+                Text(localizedString(settings.launchpadAppSortMode == .color
                      ? "Heuristic sort based on the dominant icon color."
                      : settings.launchpadAppSortMode == .recent
                      ? "Most recently used apps are shown first."
-                     : "Apps are sorted alphabetically.")
+                     : "Apps are sorted alphabetically."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -146,9 +146,9 @@ struct AppearanceSettingsView: View {
                 .pickerStyle(.segmented)
                 .frame(width: 280)
 
-                Text(settings.launchpadGridNavigation == .horizontalPages
+                Text(localizedString(settings.launchpadGridNavigation == .horizontalPages
                      ? "Swipe horizontally to move page by page."
-                     : "Scroll vertically through all applications.")
+                     : "Scroll vertically through all applications."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -197,14 +197,14 @@ struct AppearanceSettingsView: View {
                         }
                     }
 
-                    Text("\(profile.columns * profile.rows) apps visible")
+                    Text(localizedFormat("%d apps visible", profile.columns * profile.rows))
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     Spacer()
                 }
             } else {
-                Text("Uses global \(settings.launchpadGridColumns) × \(settings.launchpadGridRows)")
+                Text(localizedFormat("Uses global %d × %d", settings.launchpadGridColumns, settings.launchpadGridRows))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -21,6 +21,7 @@ final class AppSettings: ObservableObject {
         static let launchpadRowSpacing = "launchpad-row-spacing"
         static let autoBackupFolder = "auto-backup-folder"
         static let autoBackupEnabled = "auto-backup-enabled"
+        static let appLanguage = AppLocalization.defaultsKey
         static let archiveSnippetMigration = "migrated-snippet-archive-v1"
         static let archiveSnippetBodyMigration = "migrated-snippet-archive-body-v7"
         static let archiveDuplicateMigration = "migrated-snippet-archive-dedup-v3"
@@ -50,7 +51,10 @@ final class AppSettings: ObservableObject {
         }
     }
     @Published var launchpadHotCorner: LaunchpadHotCorner {
-        didSet { defaults.set(launchpadHotCorner.rawValue, forKey: Keys.launchpadHotCorner) }
+        didSet {
+            defaults.set(launchpadHotCorner.rawValue, forKey: Keys.launchpadHotCorner)
+            NotificationCenter.default.post(name: .launchpadHotCornerDidChange, object: nil)
+        }
     }
     @Published var launchpadGridColumns: Int {
         didSet {
@@ -117,6 +121,13 @@ final class AppSettings: ObservableObject {
     @Published var autoBackupEnabled: Bool {
         didSet { defaults.set(autoBackupEnabled, forKey: Keys.autoBackupEnabled) }
     }
+    @Published var appLanguage: AppLanguage {
+        didSet {
+            defaults.set(appLanguage.rawValue, forKey: Keys.appLanguage)
+            NotificationCenter.default.post(name: .appLanguageDidChange, object: appLanguage)
+            scheduleAutoBackup()
+        }
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -173,6 +184,8 @@ final class AppSettings: ObservableObject {
             autoBackupFolder = nil
         }
         autoBackupEnabled = defaults.bool(forKey: Keys.autoBackupEnabled)
+        let languageRaw = defaults.string(forKey: Keys.appLanguage) ?? AppLanguage.system.rawValue
+        appLanguage = AppLanguage(rawValue: languageRaw) ?? .system
 
         if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()
@@ -347,7 +360,7 @@ final class AppSettings: ObservableObject {
         snippets.first { $0.id == id }
     }
 
-    func addSnippet(_ snippet: SnippetDefinition = SnippetDefinition(title: "New Snippet", body: "")) -> SnippetDefinition {
+    func addSnippet(_ snippet: SnippetDefinition = SnippetDefinition(title: localizedString("New Snippet"), body: "")) -> SnippetDefinition {
         snippets.insert(snippet, at: 0)
         saveSnippets()
         return snippet
@@ -417,7 +430,8 @@ final class AppSettings: ObservableObject {
             launchpadAppSortMode: launchpadAppSortMode,
             launchpadIconSize: launchpadIconSize,
             launchpadColumnSpacing: launchpadColumnSpacing,
-            launchpadRowSpacing: launchpadRowSpacing
+            launchpadRowSpacing: launchpadRowSpacing,
+            appLanguage: appLanguage
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -469,6 +483,7 @@ final class AppSettings: ObservableObject {
         launchpadIconSize = backup.launchpadIconSize ?? 48
         launchpadColumnSpacing = backup.launchpadColumnSpacing ?? 16
         launchpadRowSpacing = backup.launchpadRowSpacing ?? 12
+        appLanguage = backup.appLanguage ?? appLanguage
 
         saveShortcuts()
         saveLaunchShortcuts()
@@ -797,6 +812,7 @@ private struct SettingsBackup: Codable {
     let launchpadIconSize: Int?
     let launchpadColumnSpacing: Int?
     let launchpadRowSpacing: Int?
+    let appLanguage: AppLanguage?
 }
 
 enum SettingsBackupError: LocalizedError {
@@ -804,7 +820,7 @@ enum SettingsBackupError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unsupportedVersion: "This settings backup version is not supported."
+        case .unsupportedVersion: localizedString("This settings backup version is not supported.")
         }
     }
 }
@@ -817,8 +833,8 @@ enum LaunchpadGridNavigation: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .vertical: "Vertical Scroll"
-        case .horizontalPages: "Horizontal Pages"
+        case .vertical: localizedString("Vertical Scroll")
+        case .horizontalPages: localizedString("Horizontal Pages")
         }
     }
 }
@@ -832,9 +848,9 @@ enum LaunchpadAppSortMode: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .recent: "Last Used"
-        case .name: "Name"
-        case .color: "Icon Color"
+        case .recent: localizedString("Last Used")
+        case .name: localizedString("Name")
+        case .color: localizedString("Icon Color")
         }
     }
 }
@@ -850,11 +866,11 @@ enum LaunchpadHotCorner: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .disabled: "Disabled"
-        case .topLeft: "Top Left"
-        case .topRight: "Top Right"
-        case .bottomLeft: "Bottom Left"
-        case .bottomRight: "Bottom Right"
+        case .disabled: localizedString("Disabled")
+        case .topLeft: localizedString("Top Left")
+        case .topRight: localizedString("Top Right")
+        case .bottomLeft: localizedString("Bottom Left")
+        case .bottomRight: localizedString("Bottom Right")
         }
     }
 }

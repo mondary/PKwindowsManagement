@@ -78,7 +78,7 @@ struct WindowShortcutsPreferencesView: View {
     @ViewBuilder
     private func sectionCard(title: String, entries: [WindowCommandSpec], showEditor: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
+            Text(localizedString(title))
                 .font(.headline)
             VStack(spacing: 0) {
                 ForEach(entries) { item in
@@ -94,7 +94,7 @@ struct WindowShortcutsPreferencesView: View {
     private func windowRow(_ item: WindowCommandSpec, editable: Bool) -> some View {
         HStack(spacing: 10) {
             iconPill(symbol: item.symbol)
-            Text(item.title)
+            Text(localizedString(item.title))
                 .font(.body)
             Spacer()
 
@@ -106,7 +106,7 @@ struct WindowShortcutsPreferencesView: View {
                     recordWidth: 76
                 )
 
-                Button(localizedString("reset")) {
+                Button(localizedString("Reset")) {
                     settings.resetShortcut(for: action)
                 }
                 .frame(width: 64)

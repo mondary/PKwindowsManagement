@@ -7,6 +7,8 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var launchpadHotKey: EventHotKeyRef?
     private var launchpadHotKeyHandler: EventHandlerRef?
     private var launchpadHotKeyObserver: NSObjectProtocol?
+    private var hotCornerObserver: NSObjectProtocol?
+    private var languageObserver: NSObjectProtocol?
     private var hotCornerTimer: Timer?
     private var lastMouseLocation: CGPoint = .zero
     private var lastHotCornerTrigger: Date?
@@ -28,15 +30,13 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
 
-        let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "PKwindowsManagement", action: nil, keyEquivalent: ""))
-        menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Open Launchpad", action: #selector(openLaunchpad), keyEquivalent: " "))
-        menu.addItem(NSMenuItem(title: "Open Big Year", action: #selector(openBigYear), keyEquivalent: "y"))
-        menu.addItem(NSMenuItem(title: "Open Preferences", action: #selector(openPreferences), keyEquivalent: ","))
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q"))
-        statusMenu = menu
         statusItem = item
+        rebuildStatusMenu()
+        languageObserver = NotificationCenter.default.addObserver(
+            forName: .appLanguageDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in self?.rebuildStatusMenu() }
 
         registerLaunchpadTriggers()
     }
@@ -52,6 +52,12 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         }
         if let launchpadHotKeyObserver {
             NotificationCenter.default.removeObserver(launchpadHotKeyObserver)
+        }
+        if let hotCornerObserver {
+            NotificationCenter.default.removeObserver(hotCornerObserver)
+        }
+        if let languageObserver {
+            NotificationCenter.default.removeObserver(languageObserver)
         }
     }
 
@@ -85,6 +91,17 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         NSApp.terminate(nil)
     }
 
+    private func rebuildStatusMenu() {
+        let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "PKwindowsManagement", action: nil, keyEquivalent: ""))
+        menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: localizedString("Open Launchpad"), action: #selector(openLaunchpad), keyEquivalent: " "))
+        menu.addItem(NSMenuItem(title: localizedString("Open Big Year"), action: #selector(openBigYear), keyEquivalent: "y"))
+        menu.addItem(NSMenuItem(title: localizedString("Open Preferences"), action: #selector(openPreferences), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: localizedString("Quit"), action: #selector(quitApp), keyEquivalent: "q"))
+        statusMenu = menu
+    }
+
     private func registerLaunchpadTriggers() {
         launchpadHotKeyObserver = NotificationCenter.default.addObserver(
             forName: .launchpadHotKeyDidChange,
@@ -95,6 +112,20 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         }
         registerLaunchpadHotKey()
 
+        hotCornerObserver = NotificationCenter.default.addObserver(
+            forName: .launchpadHotCornerDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.configureHotCornerMonitoring()
+        }
+        configureHotCornerMonitoring()
+    }
+
+    private func configureHotCornerMonitoring() {
+        hotCornerTimer?.invalidate()
+        hotCornerTimer = nil
+        guard let corner = AppRuntime.shared.settings?.launchpadHotCorner, corner != .disabled else { return }
         hotCornerTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
             self?.handleHotCorner()
         }

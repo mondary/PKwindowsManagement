@@ -19,17 +19,17 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .controlOption: "Control + Option"
-        case .command: "Command"
-        case .leftCommand: "Left Command"
-        case .rightCommand: "Right Command"
-        case .option: "Option"
-        case .leftOption: "Left Option"
-        case .rightOption: "Right Option"
-        case .shift: "Shift"
-        case .leftShift: "Left Shift"
-        case .rightShift: "Right Shift"
-        case .fnShift: "Fn + Shift"
+        case .controlOption: localizedString("Control + Option")
+        case .command: localizedString("Command")
+        case .leftCommand: localizedString("Left Command")
+        case .rightCommand: localizedString("Right Command")
+        case .option: localizedString("Option")
+        case .leftOption: localizedString("Left Option")
+        case .rightOption: localizedString("Right Option")
+        case .shift: localizedString("Shift")
+        case .leftShift: localizedString("Left Shift")
+        case .rightShift: localizedString("Right Shift")
+        case .fnShift: localizedString("Fn + Shift")
         }
     }
 
@@ -112,25 +112,25 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .windowLeftHalf: "Left Half"
-        case .windowRightHalf: "Right Half"
-        case .windowTopHalf: "Top Half"
-        case .windowBottomHalf: "Bottom Half"
-        case .windowMaximize: "Maximize"
-        case .windowCenter: "Center"
-        case .windowTopLeft: "Top Left"
-        case .windowTopRight: "Top Right"
-        case .windowBottomLeft: "Bottom Left"
-        case .windowBottomRight: "Bottom Right"
-        case .windowFirstThird: "First Third"
-        case .windowCenterThird: "Center Third"
-        case .windowLastThird: "Last Third"
-        case .windowNextDisplay: "Next Display"
-        case .windowPreviousDisplay: "Previous Display"
+        case .windowLeftHalf: localizedString("Left Half")
+        case .windowRightHalf: localizedString("Right Half")
+        case .windowTopHalf: localizedString("Top Half")
+        case .windowBottomHalf: localizedString("Bottom Half")
+        case .windowMaximize: localizedString("Maximize")
+        case .windowCenter: localizedString("Center")
+        case .windowTopLeft: localizedString("Top Left")
+        case .windowTopRight: localizedString("Top Right")
+        case .windowBottomLeft: localizedString("Bottom Left")
+        case .windowBottomRight: localizedString("Bottom Right")
+        case .windowFirstThird: localizedString("First Third")
+        case .windowCenterThird: localizedString("Center Third")
+        case .windowLastThird: localizedString("Last Third")
+        case .windowNextDisplay: localizedString("Next Display")
+        case .windowPreviousDisplay: localizedString("Previous Display")
         }
     }
 
-    var group: String { "Window" }
+    var group: String { localizedString("Window") }
 
     var defaultShortcut: KeyboardShortcutSetting {
         switch self {

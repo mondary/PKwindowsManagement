@@ -26,7 +26,7 @@ struct ShortcutRecorderField: View {
                 .font(.body.monospaced())
                 .frame(width: keyWidth)
 
-            Button(isRecording ? "Stop" : "Record") {
+            Button(localizedString(isRecording ? "Stop" : "Record")) {
                 isRecording ? stopRecording() : startRecording()
             }
             .frame(width: recordWidth)
@@ -92,7 +92,7 @@ struct ShortcutRecorderField: View {
     }
 
     private func displayKey(_ key: String) -> String {
-        key == "space" ? "Space" : key.uppercased()
+        key == "space" ? localizedString("Space") : key.uppercased()
     }
 
     private func normalizedKey(from value: String) -> String {

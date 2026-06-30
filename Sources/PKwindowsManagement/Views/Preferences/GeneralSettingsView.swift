@@ -9,6 +9,7 @@ struct GeneralSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                languageSection
                 accessibilitySection
                 backupSection
                 autoBackupSection
@@ -25,6 +26,28 @@ struct GeneralSettingsView: View {
         }
     }
 
+    private var languageSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Language")
+                .font(.headline)
+
+            HStack(spacing: 12) {
+                Picker("Application language", selection: $settings.appLanguage) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName).tag(language)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 240)
+
+                Text("The interface language changes immediately.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+        }
+    }
+
     private var accessibilitySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Accessibility")
@@ -36,7 +59,7 @@ struct GeneralSettingsView: View {
                     .foregroundStyle(accessibilityGranted ? .green : .red)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(accessibilityGranted ? "Accessibility Granted" : "Accessibility Required")
+                    Text(localizedString(accessibilityGranted ? "Accessibility Granted" : "Accessibility Required"))
                         .font(.subheadline.weight(.medium))
                     Text("Keyboard shortcuts need accessibility access to control windows.")
                         .font(.caption)
@@ -140,7 +163,7 @@ struct GeneralSettingsView: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             try settings.exportBackup().write(to: url, options: .atomic)
-            backupMessage = "Settings exported successfully."
+            backupMessage = localizedString("Settings exported successfully.")
         } catch {
             backupMessage = error.localizedDescription
         }
@@ -153,7 +176,7 @@ struct GeneralSettingsView: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             try settings.importBackup(Data(contentsOf: url))
-            backupMessage = "Settings imported successfully."
+            backupMessage = localizedString("Settings imported successfully.")
         } catch {
             backupMessage = error.localizedDescription
         }

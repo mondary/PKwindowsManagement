@@ -32,6 +32,14 @@ mkdir -p "$APP_DIR/Contents/MacOS" "$RESOURCES_DIR"
 cp "$ROOT_DIR/.build/$BUILD_CONFIGURATION/$PRODUCT_NAME" "$EXECUTABLE"
 chmod +x "$EXECUTABLE"
 
+# SwiftPM keeps localized resources in a generated bundle. Copy the language
+# folders into the app resources as well so SwiftUI and AppKit both resolve them.
+RESOURCE_BUNDLE="$ROOT_DIR/.build/$BUILD_CONFIGURATION/PKwindowsManagement_PKwindowsManagement.bundle"
+if [[ -d "$RESOURCE_BUNDLE" ]]; then
+  cp -R "$RESOURCE_BUNDLE" "$RESOURCES_DIR/"
+  find "$RESOURCE_BUNDLE" -maxdepth 1 -type d -name '*.lproj' -exec cp -R {} "$RESOURCES_DIR/" \;
+fi
+
 if [[ -f "$ICON_SOURCE" ]]; then
   rm -rf "$ICONSET_DIR"
   mkdir -p "$ICONSET_DIR"

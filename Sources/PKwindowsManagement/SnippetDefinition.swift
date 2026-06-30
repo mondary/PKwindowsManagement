@@ -9,7 +9,7 @@ enum SnippetKind: String, Codable, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .script: "Script"
+        case .script: localizedString("Script")
         case .url: "URL"
         }
     }
@@ -28,7 +28,7 @@ enum SnippetBrowserTarget: String, Codable, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .defaultBrowser: "Default Browser"
+        case .defaultBrowser: localizedString("Default Browser")
         case .safari: "Safari"
         case .chrome: "Google Chrome"
         case .firefox: "Firefox"
@@ -183,9 +183,9 @@ struct SnippetDefinition: Codable, Identifiable, Equatable, Hashable {
     var summaryText: String {
         switch kind {
         case .script:
-            return body.isEmpty ? "Empty script" : body
+            return body.isEmpty ? localizedString("Empty script") : body
         case .url:
-            if urlString.isEmpty { return "Empty URL" }
+            if urlString.isEmpty { return localizedString("Empty URL") }
             if let browserBundleID {
                 let browserName = SnippetBrowserTarget.allCases.first(where: { $0.bundleIdentifier == browserBundleID })?.title ?? browserBundleID
                 return "\(urlString) • \(browserName)"

@@ -10,6 +10,8 @@ struct PKwindowsManagementApp: App {
         WindowGroup("PKwindowsManagement", id: "settings") {
             RootDashboardView(settings: settings)
                 .frame(minWidth: 900, minHeight: 620)
+                .environment(\.locale, settings.appLanguage.locale)
+                .id(settings.appLanguage)
                 .onAppear {
                     AppRuntime.shared.settings = settings
                     AppRuntime.shared.openSettings = {
@@ -38,7 +40,7 @@ struct PKwindowsManagementApp: App {
         }
         .commands {
             CommandGroup(replacing: .appSettings) {
-                Button("Settings...") {
+                Button(localizedString("Settings...")) {
                     AppRuntime.shared.openSettings?()
                 }
                 .keyboardShortcut(",", modifiers: .command)
@@ -117,11 +119,11 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .general: "General"
-        case .windows: "Windows"
+        case .general: localizedString("General")
+        case .windows: localizedString("Windows")
         case .launchpad: "Launchpad"
-        case .appearance: "Appearance"
-        case .snippets: "Snippets"
+        case .appearance: localizedString("Appearance")
+        case .snippets: localizedString("Snippets")
         case .urls: "URLs"
         }
     }

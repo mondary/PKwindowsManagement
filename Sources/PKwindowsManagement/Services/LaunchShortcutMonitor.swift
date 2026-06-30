@@ -58,7 +58,9 @@ final class LaunchShortcutMonitor {
         }
 
         let refcon = Unmanaged.passUnretained(self).toOpaque()
-        guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap, eventsOfInterest: mask, callback: callback, userInfo: refcon) else {
+        // A passive tap must never hold up the system-wide keyboard event stream.
+        // Global shortcuts still fire, but the original keystroke is not consumed.
+        guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .tailAppendEventTap, options: .listenOnly, eventsOfInterest: mask, callback: callback, userInfo: refcon) else {
             scheduleRetry()
             return
         }
@@ -91,7 +93,7 @@ final class LaunchShortcutMonitor {
         case .keyDown:
             guard let app = match(event: event) else { return .passUnretained(event) }
             launchHandler?(app)
-            return nil
+            return .passUnretained(event)
         default:
             return .passUnretained(event)
         }

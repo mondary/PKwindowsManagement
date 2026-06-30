@@ -87,7 +87,7 @@ struct LaunchpadOverlayView: View {
                 .frame(width: 420, height: 220)
         }
         .alert(
-            "Move \(uninstallTarget?.name ?? "Application") to Trash?",
+            localizedFormat("Move %@ to Trash?", uninstallTarget?.name ?? localizedString("Application")),
             isPresented: uninstallConfirmationPresented
         ) {
             Button("Cancel", role: .cancel) {
@@ -514,7 +514,7 @@ struct LaunchpadOverlayView: View {
 
     @ViewBuilder
     private func appContextMenu(for app: LaunchableApp) -> some View {
-        Button(app.shortcut == nil ? "Assign Shortcut..." : "Edit Shortcut...") {
+        Button(localizedString(app.shortcut == nil ? "Assign Shortcut..." : "Edit Shortcut...")) {
             shortcutTarget = app
         }
 

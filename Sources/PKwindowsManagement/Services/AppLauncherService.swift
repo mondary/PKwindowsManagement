@@ -10,8 +10,8 @@ enum LauncherCommand: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .emptyTrash: "Empty Trash"
-        case .eject: "Eject"
+        case .emptyTrash: localizedString("Empty Trash")
+        case .eject: localizedString("Eject")
         }
     }
 }
@@ -43,7 +43,9 @@ struct LaunchableApp: Identifiable {
 final class AppLauncherService {
     private static var cachedInstalledApps: [InstalledApp]?
     private static var cachedInstalledAppsTimestamp: Date = .distantPast
-    private static let installedAppsCacheTTL: TimeInterval = 30
+    // Rebuilding NSWorkspace icons repeatedly grows IconServices' internal
+    // caches. Installed applications change rarely, so keep this cache stable.
+    private static let installedAppsCacheTTL: TimeInterval = 6 * 60 * 60
     private static let placeholderIcon = NSImage(size: NSSize(width: 1, height: 1))
 
     static func invalidateInstalledAppsCache() {
@@ -65,6 +67,7 @@ final class AppLauncherService {
             throw AppLauncherError.uninstallNotAllowed
         }
         try FileManager.default.trashItem(at: app.url, resultingItemURL: nil)
+        Self.invalidateInstalledAppsCache()
     }
 
     func loadApps(settings: AppSettings) -> [LaunchableApp] {
@@ -247,18 +250,19 @@ final class AppLauncherService {
         ) else { return [] }
 
         return enumerator.compactMap { item in
-            guard let url = item as? URL, url.pathExtension == "app" else { return nil }
-            let values = try? url.resourceValues(forKeys: [.localizedNameKey])
-            let name = values?.localizedName ?? url.deletingPathExtension().lastPathComponent
-            let bundleID = Bundle(url: url)?.bundleIdentifier ?? url.deletingPathExtension().lastPathComponent
-            let icon: NSImage
-            if loadIcons {
-                icon = NSWorkspace.shared.icon(forFile: url.path)
-                icon.size = NSSize(width: 96, height: 96)
-            } else {
-                icon = Self.placeholderIcon
+            autoreleasepool {
+                guard let url = item as? URL, url.pathExtension == "app" else { return nil }
+                let values = try? url.resourceValues(forKeys: [.localizedNameKey])
+                let name = values?.localizedName ?? url.deletingPathExtension().lastPathComponent
+                let bundleID = Bundle(url: url)?.bundleIdentifier ?? url.deletingPathExtension().lastPathComponent
+                let icon: NSImage
+                if loadIcons {
+                    icon = NSWorkspace.shared.icon(forFile: url.path).rasterized(to: NSSize(width: 96, height: 96))
+                } else {
+                    icon = Self.placeholderIcon
+                }
+                return InstalledApp(url: url, displayName: name, bundleID: bundleID, icon: icon)
             }
-            return InstalledApp(url: url, displayName: name, bundleID: bundleID, icon: icon)
         }
     }
 
@@ -431,15 +435,15 @@ final class AppLauncherService {
         NSLog("PKwindowsManagement: empty trash failed (%d): %@", number, errorInfo)
 
         if number == -1743 || number == -1719 {
-            return "macOS blocked Finder automation. Relaunch this packaged app and allow PKwindowsManagement to control Finder when prompted."
+            return localizedString("macOS blocked Finder automation. Relaunch this packaged app and allow PKwindowsManagement to control Finder when prompted.")
         }
         if number == -128 {
             return nil
         }
         let message = (errorInfo[NSAppleScript.errorBriefMessage] as? String)
             ?? (errorInfo[NSAppleScript.errorMessage] as? String)
-            ?? "Finder returned error \(number)."
-        return "Trash could not be emptied: \(message)"
+            ?? localizedFormat("Finder returned error %d.", number)
+        return localizedFormat("Trash could not be emptied: %@", message)
     }
 
     private func makeCommand(id: String, name: String, iconName: String) -> LaunchableApp {
@@ -484,6 +488,20 @@ private struct LaunchpadColorSignature: Equatable, Comparable {
 }
 
 private extension NSImage {
+    func rasterized(to targetSize: NSSize) -> NSImage {
+        let result = NSImage(size: targetSize)
+        result.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .high
+        draw(
+            in: NSRect(origin: .zero, size: targetSize),
+            from: NSRect(origin: .zero, size: size),
+            operation: .copy,
+            fraction: 1
+        )
+        result.unlockFocus()
+        return result
+    }
+
     func launchpadColorSignature(name: String) -> LaunchpadColorSignature {
         guard let color = averageLaunchpadColor()?.usingColorSpace(.deviceRGB) else {
             return LaunchpadColorSignature(hue: 1, saturation: 0, brightness: 1, name: name)
@@ -568,7 +586,7 @@ enum AppLauncherError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .uninstallNotAllowed:
-            "This application cannot be moved to the Trash."
+            localizedString("This application cannot be moved to the Trash.")
         }
     }
 }

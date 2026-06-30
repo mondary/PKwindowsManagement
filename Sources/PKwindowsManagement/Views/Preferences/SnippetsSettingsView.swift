@@ -9,10 +9,10 @@ struct SnippetsSettingsView: View {
 
     var body: some View {
         snippetListView(
-            title: "Scripts",
-            subtitle: "Reusable scripts with keyboard shortcuts and Launchpad access.",
-            emptyTitle: "No scripts yet",
-            emptySubtitle: "Add a script to run commands from Launchpad or a shortcut.",
+            title: localizedString("Scripts"),
+            subtitle: localizedString("Reusable scripts with keyboard shortcuts and Launchpad access."),
+            emptyTitle: localizedString("No scripts yet"),
+            emptySubtitle: localizedString("Add a script to run commands from Launchpad or a shortcut."),
             iconName: "doc.plaintext",
             makeNewSnippet: {
                 SnippetDefinition(title: "New Script", body: "", isEnabled: true)
@@ -47,10 +47,10 @@ struct URLSnippetsSettingsView: View {
 
     var body: some View {
         snippetListView(
-            title: "URLs",
-            subtitle: "Reusable URLs with a browser target and keyboard shortcuts.",
-            emptyTitle: "No URLs yet",
-            emptySubtitle: "Add a URL to open it quickly in the browser of your choice.",
+            title: localizedString("URLs"),
+            subtitle: localizedString("Reusable URLs with a browser target and keyboard shortcuts."),
+            emptyTitle: localizedString("No URLs yet"),
+            emptySubtitle: localizedString("Add a URL to open it quickly in the browser of your choice."),
             iconName: "link",
             makeNewSnippet: {
                 SnippetDefinition(title: "New URL", urlString: "", browserBundleID: nil, isEnabled: true)
@@ -289,7 +289,7 @@ private func snippetRow(
     }
     .buttonStyle(.plain)
     .contextMenu {
-        Button(snippet.isEnabled ? "Disable" : "Enable") {
+        Button(localizedString(snippet.isEnabled ? "Disable" : "Enable")) {
             settings.setSnippetEnabled(!snippet.isEnabled, for: snippet.id)
         }
         Button("Delete", role: .destructive) {
@@ -447,9 +447,9 @@ private struct SnippetEditorView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(snippet.kind == .script ? "Script Editor" : "URL Editor")
+            Text(localizedString(snippet.kind == .script ? "Script Editor" : "URL Editor"))
                 .font(.title3.weight(.semibold))
-            Text(snippet.kind == .script ? "Use this to edit the script and shortcut." : "Use this to edit the URL, browser target, and shortcut.")
+            Text(localizedString(snippet.kind == .script ? "Use this to edit the script and shortcut." : "Use this to edit the URL, browser target, and shortcut."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -457,8 +457,8 @@ private struct SnippetEditorView: View {
 
     private var defaultTitle: String {
         switch snippet.kind {
-        case .script: "New Script"
-        case .url: "New URL"
+        case .script: localizedString("New Script")
+        case .url: localizedString("New URL")
         }
     }
 
