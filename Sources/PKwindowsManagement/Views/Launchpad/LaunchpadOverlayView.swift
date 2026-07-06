@@ -591,7 +591,7 @@ struct LaunchpadOverlayView: View {
 
     private func shortcutLabel(for shortcut: KeyboardShortcutSetting?) -> String {
         guard let shortcut else { return "" }
-        return "\(shortcut.modifier.symbolPrefix) \(shortcut.key.uppercased())"
+        return "\(shortcut.modifier.symbolPrefix) \(shortcut.keyDisplayName)"
     }
 }
 

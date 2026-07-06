@@ -95,7 +95,16 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "PKwindowsManagement", action: nil, keyEquivalent: ""))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: localizedString("Open Launchpad"), action: #selector(openLaunchpad), keyEquivalent: " "))
+
+        let launchpadShortcut = AppRuntime.shared.settings?.launchpadShortcut
+        let launchpadItem = NSMenuItem(
+            title: localizedString("Open Launchpad"),
+            action: #selector(openLaunchpad),
+            keyEquivalent: launchpadShortcut?.menuKeyEquivalent ?? ""
+        )
+        launchpadItem.keyEquivalentModifierMask = launchpadShortcut?.modifier.flags ?? []
+        menu.addItem(launchpadItem)
+
         menu.addItem(NSMenuItem(title: localizedString("Open Big Year"), action: #selector(openBigYear), keyEquivalent: "y"))
         menu.addItem(NSMenuItem(title: localizedString("Open Preferences"), action: #selector(openPreferences), keyEquivalent: ","))
         menu.addItem(NSMenuItem(title: localizedString("Quit"), action: #selector(quitApp), keyEquivalent: "q"))
@@ -109,6 +118,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             queue: .main
         ) { [weak self] _ in
             self?.registerLaunchpadHotKey()
+            self?.rebuildStatusMenu()
         }
         registerLaunchpadHotKey()
 
@@ -230,6 +240,13 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private func carbonKeyCode(for key: String) -> UInt32? {
         let keyCodes: [String: UInt32] = [
             "space": UInt32(kVK_Space),
+            "return": UInt32(kVK_Return),
+            "tab": UInt32(kVK_Tab),
+            "delete": UInt32(kVK_Delete),
+            "left": UInt32(kVK_LeftArrow),
+            "right": UInt32(kVK_RightArrow),
+            "up": UInt32(kVK_UpArrow),
+            "down": UInt32(kVK_DownArrow),
             "a": UInt32(kVK_ANSI_A), "b": UInt32(kVK_ANSI_B), "c": UInt32(kVK_ANSI_C),
             "d": UInt32(kVK_ANSI_D), "e": UInt32(kVK_ANSI_E), "f": UInt32(kVK_ANSI_F),
             "g": UInt32(kVK_ANSI_G), "h": UInt32(kVK_ANSI_H), "i": UInt32(kVK_ANSI_I),

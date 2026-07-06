@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import Carbon.HIToolbox
 import CoreGraphics
 
 final class LaunchShortcutMonitor {
@@ -101,15 +102,32 @@ final class LaunchShortcutMonitor {
 
     private func match(event: CGEvent) -> LaunchableApp? {
         guard let settings else { return nil }
-        guard let char = NSEvent(cgEvent: event)?.charactersIgnoringModifiers?.lowercased().first else { return nil }
+        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
         let flags = event.flags
 
+        guard let eventKey = keyString(from: event, keyCode: keyCode) else { return nil }
+
         guard let bundleID = settings.launchShortcuts.first(where: { _, shortcut in
-            guard shortcut.key.lowercased().first == char else { return false }
-            return modifierState.matches(shortcut.modifier, flags: flags)
+            shortcut.key.lowercased() == eventKey && modifierState.matches(shortcut.modifier, flags: flags)
         })?.key else { return nil }
 
         return appsByBundleID[bundleID]
+    }
+
+    private func keyString(from event: CGEvent, keyCode: Int64) -> String? {
+        switch keyCode {
+        case Int64(kVK_Space): return "space"
+        case Int64(kVK_Return): return "return"
+        case Int64(kVK_Tab): return "tab"
+        case Int64(kVK_Delete): return "delete"
+        case Int64(kVK_LeftArrow): return "left"
+        case Int64(kVK_RightArrow): return "right"
+        case Int64(kVK_UpArrow): return "up"
+        case Int64(kVK_DownArrow): return "down"
+        default: break
+        }
+        guard let char = NSEvent(cgEvent: event)?.charactersIgnoringModifiers?.lowercased().first else { return nil }
+        return String(char)
     }
 }
 

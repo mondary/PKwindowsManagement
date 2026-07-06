@@ -89,6 +89,34 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
 struct KeyboardShortcutSetting: Codable, Equatable, Hashable {
     var key: String
     var modifier: ShortcutModifierPreset
+
+    var keyDisplayName: String {
+        switch key {
+        case "space": return localizedString("Space")
+        case "return": return "\u{21B5}"
+        case "tab": return "\u{21E5}"
+        case "delete": return "\u{232B}"
+        case "left": return "\u{2190}"
+        case "right": return "\u{2192}"
+        case "up": return "\u{2191}"
+        case "down": return "\u{2193}"
+        default: return key.uppercased()
+        }
+    }
+
+    var menuKeyEquivalent: String {
+        switch key {
+        case "space": return " "
+        case "return": return "\r"
+        case "tab": return "\t"
+        case "delete": return "\u{8}"
+        case "left": return String(NSLeftArrowFunctionKey)
+        case "right": return String(NSRightArrowFunctionKey)
+        case "up": return String(NSUpArrowFunctionKey)
+        case "down": return String(NSDownArrowFunctionKey)
+        default: return key
+        }
+    }
 }
 
 enum ShortcutAction: String, CaseIterable, Identifiable {

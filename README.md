@@ -16,7 +16,8 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Raccourcis globaux par application, actifs partout sur macOS même quand le Launchpad est fermé.
 - Distinction gauche/droite pour les modificateurs : Command, Option et Shift (ex : Right Command + A ≠ Left Command + A).
 - Support du modificateur `Fn + Shift` pour les raccourcis de lancement.
-- Enregistrement direct des séquences clavier pour les raccourcis.
+- Enregistrement des séquences clavier pour les raccourcis.
+- Boutons dédiés pour les touches spéciales (Space, Return, Tab, Delete, flèches).
 - Gestionnaire de snippets avec scripts exécutables et raccourcis globaux.
 - Snippet `Archive` présent par défaut : range le Bureau dans une archive locale instantanée, utilise des dossiers mensuels en français (`2026_06_juin`), puis recopie vers Google Drive en arrière-plan, avec icône dédiée et raccourci `Right Cmd + S`.
 - Snippet `DL2desk` présent par défaut : déplace le contenu de `Downloads` vers le Bureau, avec renommage automatique en cas de conflit et raccourci `Right Cmd + L`.
@@ -123,7 +124,16 @@ script/release.sh
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
 ## 🧾 Changelog
-- `0.18` - 2026-06-16
+- `0.19` - 2026-07-06
+  - Correction enregistrement : détection de la barre d'espace par keyCode physique (kVK_Space) au lieu de `charactersIgnoringModifiers`.
+  - Remplacement du moniteur NSEvent local par un CGEvent tap (évite l'interception système des touches comme CMD+Espace).
+  - Correction frappe « space » dans le champ texte : buffer local au lieu d'un binding qui tronquait le mot lettre à lettre.
+  - Correction du matching runtime (LaunchShortcutMonitor) : comparaison par keyCode pour Space, Return, Tab, Delete, flèches.
+  - Correction bug localisation français : `normalizedKey("Espace")` échouait → stockait « e » au lieu de « space ».
+  - Menu barre : affichage du vrai raccourci Launchpad au lieu de « CMD+Espace » en dur.
+  - Nouvelles touches spéciales dans l'éditeur de raccourci : boutons Space ␣, Return ↵, Tab ⇥, Delete ⌫, flèches ←→↑↓.
+  - Affichage unifié des touches spéciales dans les badges et labels.
+  - `0.18` - 2026-06-16
   - L'icône officielle de l'app s'affiche dans la barre de menu (en couleur) et dans l'en-tête des réglages.
   - Snippet `Archive` présent par défaut avec icône dédiée et raccourci `Right Cmd + S`.
   - Snippet `DL2desk` ajouté par défaut pour déplacer `Downloads` vers le Bureau avec le raccourci `Right Cmd + L`.

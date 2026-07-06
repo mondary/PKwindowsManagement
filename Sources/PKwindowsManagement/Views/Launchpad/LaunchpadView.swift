@@ -127,7 +127,7 @@ struct LaunchpadView: View {
 
     private func shortcutLabel(for shortcut: KeyboardShortcutSetting?) -> String {
         guard let shortcut else { return localizedString("Assign shortcut") }
-        return "\(shortcut.modifier.symbolPrefix) \(shortcut.key.uppercased())"
+        return "\(shortcut.modifier.symbolPrefix) \(shortcut.keyDisplayName)"
     }
 
     private var commandFeedbackPresented: Binding<Bool> {
@@ -199,7 +199,7 @@ struct LaunchShortcutEditor: View {
                 )
             },
             set: { shortcut in
-                key = displayKey(shortcut.key)
+                key = shortcut.key
                 modifier = shortcut.modifier
             }
         )
@@ -208,7 +208,8 @@ struct LaunchShortcutEditor: View {
     private func normalizedKey(_ value: String) -> String {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return "" }
-        if trimmed.caseInsensitiveCompare("space") == .orderedSame {
+        if trimmed.caseInsensitiveCompare("space") == .orderedSame
+            || trimmed.caseInsensitiveCompare("espace") == .orderedSame {
             return "space"
         }
         return String(trimmed.suffix(1)).lowercased()

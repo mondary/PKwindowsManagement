@@ -5,7 +5,7 @@ struct ShortcutKeyBadge: View {
     var compact = false
 
     private var keys: [String] {
-        shortcut.modifier.keySymbols + [shortcut.key.uppercased()]
+        shortcut.modifier.keySymbols + [shortcut.keyDisplayName]
     }
 
     private var keyFontSize: CGFloat { compact ? 9 : 10 }
