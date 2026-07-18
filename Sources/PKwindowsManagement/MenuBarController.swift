@@ -9,6 +9,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var launchpadHotKeyObserver: NSObjectProtocol?
     private var hotCornerObserver: NSObjectProtocol?
     private var languageObserver: NSObjectProtocol?
+    private var automaticTerminationActivity: NSObjectProtocol?
     private var hotCornerTimer: Timer?
     private var lastMouseLocation: CGPoint = .zero
     private var lastHotCornerTrigger: Date?
@@ -16,6 +17,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private let launchpadHotKeySignature = fourCharCode("PKLP")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        automaticTerminationActivity = ProcessInfo.processInfo.beginActivity(
+            options: .automaticTerminationDisabled,
+            reason: "Keep menu bar controls and global shortcuts active"
+        )
         NSApp.setActivationPolicy(.regular)
 
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -41,7 +46,15 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         registerLaunchpadTriggers()
     }
 
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
+        if let automaticTerminationActivity {
+            ProcessInfo.processInfo.endActivity(automaticTerminationActivity)
+            self.automaticTerminationActivity = nil
+        }
         hotCornerTimer?.invalidate()
         hotCornerTimer = nil
         LaunchShortcutMonitor.shared.stop()

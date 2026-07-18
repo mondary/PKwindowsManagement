@@ -25,7 +25,9 @@ APP_ICON="$RESOURCES_DIR/AppIcon.icns"
 VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
 
 cd "$ROOT_DIR"
-swift build -c "$BUILD_CONFIGURATION"
+# Package.swift declares macOS 13 as the minimum supported system. Without an
+# explicit deployment target, Swift uses the host macOS version instead.
+MACOSX_DEPLOYMENT_TARGET=13.0 swift build -c "$BUILD_CONFIGURATION"
 
 rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$RESOURCES_DIR"
