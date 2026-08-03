@@ -240,8 +240,8 @@ final class ShortcutRecorderController: ObservableObject {
                 return nil
             }
 
-            if keyCode == Int64(kVK_Space) {
-                recordShortcut(key: "space")
+            if let special = Self.keyName(for: keyCode) {
+                recordShortcut(key: special)
                 return nil
             }
 
@@ -270,8 +270,8 @@ final class ShortcutRecorderController: ObservableObject {
                 stop()
                 return nil
             }
-            if event.keyCode == UInt16(kVK_Space) {
-                recordShortcut(key: "space")
+            if let special = Self.keyName(for: Int64(event.keyCode)) {
+                recordShortcut(key: special)
                 return nil
             }
             if let chars = event.charactersIgnoringModifiers, !chars.isEmpty {
@@ -290,6 +290,30 @@ final class ShortcutRecorderController: ObservableObject {
         let modifier = captureState.resolvedModifier(fallback: binding.wrappedValue.modifier)
         binding.wrappedValue = KeyboardShortcutSetting(key: key, modifier: modifier)
         stop()
+    }
+
+    private static func keyName(for keyCode: Int64) -> String? {
+        switch keyCode {
+        case Int64(kVK_Space): return "space"
+        case Int64(kVK_Return): return "return"
+        case Int64(kVK_Tab): return "tab"
+        case Int64(kVK_Delete): return "delete"
+        case Int64(kVK_LeftArrow): return "left"
+        case Int64(kVK_RightArrow): return "right"
+        case Int64(kVK_UpArrow): return "up"
+        case Int64(kVK_DownArrow): return "down"
+        case Int64(kVK_ANSI_1): return "1"
+        case Int64(kVK_ANSI_2): return "2"
+        case Int64(kVK_ANSI_3): return "3"
+        case Int64(kVK_ANSI_4): return "4"
+        case Int64(kVK_ANSI_5): return "5"
+        case Int64(kVK_ANSI_6): return "6"
+        case Int64(kVK_ANSI_7): return "7"
+        case Int64(kVK_ANSI_8): return "8"
+        case Int64(kVK_ANSI_9): return "9"
+        case Int64(kVK_ANSI_0): return "0"
+        default: return nil
+        }
     }
 }
 

@@ -133,6 +133,13 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case windowFirstThird
     case windowCenterThird
     case windowLastThird
+    case windowTopFirstSixth
+    case windowTopCenterSixth
+    case windowTopLastSixth
+    case windowBottomFirstSixth
+    case windowBottomCenterSixth
+    case windowBottomLastSixth
+    case windowFullScreen
     case windowNextDisplay
     case windowPreviousDisplay
 
@@ -153,6 +160,13 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowFirstThird: localizedString("First Third")
         case .windowCenterThird: localizedString("Center Third")
         case .windowLastThird: localizedString("Last Third")
+        case .windowTopFirstSixth: localizedString("Top Left Sixth")
+        case .windowTopCenterSixth: localizedString("Top Center Sixth")
+        case .windowTopLastSixth: localizedString("Top Right Sixth")
+        case .windowBottomFirstSixth: localizedString("Bottom Left Sixth")
+        case .windowBottomCenterSixth: localizedString("Bottom Center Sixth")
+        case .windowBottomLastSixth: localizedString("Bottom Right Sixth")
+        case .windowFullScreen: localizedString("Fullscreen")
         case .windowNextDisplay: localizedString("Next Display")
         case .windowPreviousDisplay: localizedString("Previous Display")
         }
@@ -162,20 +176,27 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
 
     var defaultShortcut: KeyboardShortcutSetting {
         switch self {
-        case .windowLeftHalf: .init(key: "h", modifier: .controlOption)
-        case .windowRightHalf: .init(key: "l", modifier: .controlOption)
-        case .windowTopHalf: .init(key: "k", modifier: .controlOption)
-        case .windowBottomHalf: .init(key: "j", modifier: .controlOption)
-        case .windowMaximize: .init(key: "m", modifier: .controlOption)
+        case .windowLeftHalf: .init(key: "left", modifier: .controlOption)
+        case .windowRightHalf: .init(key: "right", modifier: .controlOption)
+        case .windowTopHalf: .init(key: "up", modifier: .controlOption)
+        case .windowBottomHalf: .init(key: "down", modifier: .controlOption)
+        case .windowMaximize: .init(key: "f", modifier: .controlOption)
         case .windowCenter: .init(key: "c", modifier: .controlOption)
-        case .windowTopLeft: .init(key: "u", modifier: .controlOption)
-        case .windowTopRight: .init(key: "i", modifier: .controlOption)
-        case .windowBottomLeft: .init(key: "n", modifier: .controlOption)
-        case .windowBottomRight: .init(key: "o", modifier: .controlOption)
+        case .windowTopLeft: .init(key: "y", modifier: .controlOption)
+        case .windowTopRight: .init(key: "p", modifier: .controlOption)
+        case .windowBottomLeft: .init(key: "h", modifier: .controlOption)
+        case .windowBottomRight: .init(key: "m", modifier: .controlOption)
         case .windowFirstThird: .init(key: "1", modifier: .controlOption)
         case .windowCenterThird: .init(key: "2", modifier: .controlOption)
         case .windowLastThird: .init(key: "3", modifier: .controlOption)
-        case .windowNextDisplay: .init(key: "]", modifier: .controlOption)
+        case .windowTopFirstSixth: .init(key: "u", modifier: .controlOption)
+        case .windowTopCenterSixth: .init(key: "i", modifier: .controlOption)
+        case .windowTopLastSixth: .init(key: "o", modifier: .controlOption)
+        case .windowBottomFirstSixth: .init(key: "j", modifier: .controlOption)
+        case .windowBottomCenterSixth: .init(key: "k", modifier: .controlOption)
+        case .windowBottomLastSixth: .init(key: "l", modifier: .controlOption)
+        case .windowFullScreen: .init(key: "return", modifier: .controlOption)
+        case .windowNextDisplay: .init(key: "space", modifier: .controlOption)
         case .windowPreviousDisplay: .init(key: "[", modifier: .controlOption)
         }
     }

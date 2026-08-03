@@ -22,16 +22,22 @@ final class AppSettings: ObservableObject {
         static let autoBackupFolder = "auto-backup-folder"
         static let autoBackupEnabled = "auto-backup-enabled"
         static let appLanguage = AppLocalization.defaultsKey
+        static let windowMarginGeneral = "window-margin-general"
+        static let windowMarginAlmost = "window-margin-almost"
+        static let windowMarginCenter = "window-margin-center"
+        static let clearedWindowShortcuts = "cleared-window-shortcuts"
         static let archiveSnippetMigration = "migrated-snippet-archive-v1"
         static let archiveSnippetBodyMigration = "migrated-snippet-archive-body-v7"
         static let archiveDuplicateMigration = "migrated-snippet-archive-dedup-v3"
         static let downloadsToDesktopSnippetMigration = "migrated-snippet-dl2desk-v1"
+        static let windowShortcutDefaultsVersion = "window-shortcut-defaults-v5"
     }
 
     private let defaults: UserDefaults
     private var backupDebounceTimer: Timer?
 
     @Published private(set) var shortcuts: [ShortcutAction: KeyboardShortcutSetting]
+    @Published private(set) var clearedWindowShortcuts: [String]
 
     @Published var clipboardDrawerEdge: ClipboardDrawerEdge {
         didSet { defaults.set(clipboardDrawerEdge.rawValue, forKey: Keys.clipboardDrawerEdge) }
@@ -129,11 +135,28 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var generalMargins: WindowMargins {
+        didSet { saveMargins(generalMargins, forKey: Keys.windowMarginGeneral) }
+    }
+
+    @Published var almostFullMargins: WindowMargins {
+        didSet { saveMargins(almostFullMargins, forKey: Keys.windowMarginAlmost) }
+    }
+
+    @Published var centerMargins: WindowMargins {
+        didSet { saveMargins(centerMargins, forKey: Keys.windowMarginCenter) }
+    }
+
+    var windowMarginPreset: WindowMarginPreset {
+        .init(general: generalMargins, almostFull: almostFullMargins, center: centerMargins)
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let edgeRaw = defaults.string(forKey: Keys.clipboardDrawerEdge) ?? ClipboardDrawerEdge.top.rawValue
         clipboardDrawerEdge = ClipboardDrawerEdge(rawValue: edgeRaw) ?? .top
         shortcuts = Self.loadShortcuts(from: defaults)
+        clearedWindowShortcuts = defaults.stringArray(forKey: Keys.clearedWindowShortcuts) ?? []
         recentBundleIDs = defaults.stringArray(forKey: Keys.launchRecents) ?? []
         let loadedLaunchShortcuts = Self.loadLaunchShortcuts(from: defaults)
         launchShortcuts = loadedLaunchShortcuts
@@ -186,6 +209,9 @@ final class AppSettings: ObservableObject {
         autoBackupEnabled = defaults.bool(forKey: Keys.autoBackupEnabled)
         let languageRaw = defaults.string(forKey: Keys.appLanguage) ?? AppLanguage.system.rawValue
         appLanguage = AppLanguage(rawValue: languageRaw) ?? .system
+        generalMargins = Self.loadMargins(Keys.windowMarginGeneral, from: defaults, fallback: .init(top: 1, bottom: 1, left: 1, right: 1))
+        almostFullMargins = Self.loadMargins(Keys.windowMarginAlmost, from: defaults, fallback: .init(top: 10, bottom: 10, left: 10, right: 10))
+        centerMargins = Self.loadMargins(Keys.windowMarginCenter, from: defaults, fallback: .zero)
 
         if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()
@@ -194,6 +220,12 @@ final class AppSettings: ObservableObject {
             saveLaunchShortcuts()
         }
         seedDefaultSnippetShortcuts()
+
+        if defaults.bool(forKey: Keys.windowShortcutDefaultsVersion) == false {
+            shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.map { ($0, $0.defaultShortcut) })
+            saveShortcuts()
+            defaults.set(true, forKey: Keys.windowShortcutDefaultsVersion)
+        }
     }
 
     private static func ensureArchiveSnippet(
@@ -322,18 +354,34 @@ final class AppSettings: ObservableObject {
         return (result, true)
     }
 
-    func shortcut(for action: ShortcutAction) -> KeyboardShortcutSetting {
-        shortcuts[action] ?? action.defaultShortcut
+    func shortcut(for action: ShortcutAction) -> KeyboardShortcutSetting? {
+        if clearedWindowShortcuts.contains(action.rawValue) { return nil }
+        return shortcuts[action] ?? action.defaultShortcut
     }
 
     func setShortcut(_ shortcut: KeyboardShortcutSetting, for action: ShortcutAction) {
         shortcuts[action] = shortcut
+        clearedWindowShortcuts.removeAll { $0 == action.rawValue }
         saveShortcuts()
+        saveClearedShortcuts()
     }
 
     func resetShortcut(for action: ShortcutAction) {
         shortcuts[action] = action.defaultShortcut
+        clearedWindowShortcuts.removeAll { $0 == action.rawValue }
         saveShortcuts()
+        saveClearedShortcuts()
+    }
+
+    func clearShortcut(for action: ShortcutAction) {
+        if !clearedWindowShortcuts.contains(action.rawValue) {
+            clearedWindowShortcuts.append(action.rawValue)
+            saveClearedShortcuts()
+        }
+    }
+
+    private func saveClearedShortcuts() {
+        defaults.set(clearedWindowShortcuts, forKey: Keys.clearedWindowShortcuts)
     }
 
     func markLaunched(bundleID: String) {
@@ -486,6 +534,8 @@ final class AppSettings: ObservableObject {
         appLanguage = backup.appLanguage ?? appLanguage
 
         saveShortcuts()
+        clearedWindowShortcuts = []
+        saveClearedShortcuts()
         saveLaunchShortcuts()
         saveSnippets()
         saveLaunchpadDisplayProfiles()
@@ -532,6 +582,20 @@ final class AppSettings: ObservableObject {
     private func saveLaunchpadShortcut() {
         guard let data = try? JSONEncoder().encode(launchpadShortcut) else { return }
         defaults.set(data, forKey: Keys.launchpadShortcut)
+        scheduleAutoBackup()
+    }
+
+    private static func loadMargins(_ key: String, from defaults: UserDefaults, fallback: WindowMargins) -> WindowMargins {
+        guard let data = defaults.data(forKey: key),
+              let margins = try? JSONDecoder().decode(WindowMargins.self, from: data)
+        else { return fallback }
+        return margins
+    }
+
+    private func saveMargins(_ margins: WindowMargins, forKey key: String) {
+        if let data = try? JSONEncoder().encode(margins) {
+            defaults.set(data, forKey: key)
+        }
         scheduleAutoBackup()
     }
 

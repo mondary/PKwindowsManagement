@@ -10,14 +10,16 @@ final class LaunchShortcutMonitor {
     private var runLoopSource: CFRunLoopSource?
     private var settings: AppSettings?
     private var launchHandler: ((LaunchableApp) -> Void)?
+    private var windowHandler: ((WindowSnapAction) -> Void)?
     private var modifierState = ModifierState()
     private var appsByBundleID: [String: LaunchableApp] = [:]
     private var retryTimer: Timer?
     private var didRequestAccessibility = false
 
-    func start(settings: AppSettings, apps: [LaunchableApp], launchHandler: @escaping (LaunchableApp) -> Void) {
+    func start(settings: AppSettings, apps: [LaunchableApp], launchHandler: @escaping (LaunchableApp) -> Void, windowHandler: @escaping (WindowSnapAction) -> Void) {
         self.settings = settings
         self.launchHandler = launchHandler
+        self.windowHandler = windowHandler
         self.appsByBundleID = Dictionary(uniqueKeysWithValues: apps.map { ($0.bundleID, $0) })
 
         requestAccessibilityOnce()
@@ -59,9 +61,9 @@ final class LaunchShortcutMonitor {
         }
 
         let refcon = Unmanaged.passUnretained(self).toOpaque()
-        // A passive tap must never hold up the system-wide keyboard event stream.
-        // Global shortcuts still fire, but the original keystroke is not consumed.
-        guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .tailAppendEventTap, options: .listenOnly, eventsOfInterest: mask, callback: callback, userInfo: refcon) else {
+        // Active tap: lets us consume matched shortcuts so the focused app
+        // (e.g. Chrome) doesn't also receive them and interfere with cycling.
+        guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .tailAppendEventTap, options: .defaultTap, eventsOfInterest: mask, callback: callback, userInfo: refcon) else {
             scheduleRetry()
             return
         }
@@ -92,9 +94,15 @@ final class LaunchShortcutMonitor {
             modifierState.update(with: event)
             return .passUnretained(event)
         case .keyDown:
-            guard let app = match(event: event) else { return .passUnretained(event) }
-            launchHandler?(app)
-            return .passUnretained(event)
+            var consumed = false
+            if let app = match(event: event) {
+                launchHandler?(app)
+                consumed = true
+            } else if let windowAction = matchWindowShortcut(event: event) {
+                windowHandler?(windowAction)
+                consumed = true
+            }
+            return consumed ? nil : .passUnretained(event)
         default:
             return .passUnretained(event)
         }
@@ -114,6 +122,24 @@ final class LaunchShortcutMonitor {
         return appsByBundleID[bundleID]
     }
 
+    private func matchWindowShortcut(event: CGEvent) -> WindowSnapAction? {
+        guard let settings else { return nil }
+        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+        let flags = event.flags
+
+        guard let eventKey = keyString(from: event, keyCode: keyCode) else { return nil }
+
+        for action in ShortcutAction.allCases {
+            guard let shortcut = settings.shortcut(for: action) else { continue }
+            guard shortcut.key.lowercased() == eventKey,
+                  modifierState.matches(shortcut.modifier, flags: flags),
+                  let snapAction = action.windowSnapAction
+            else { continue }
+            return snapAction
+        }
+        return nil
+    }
+
     private func keyString(from event: CGEvent, keyCode: Int64) -> String? {
         switch keyCode {
         case Int64(kVK_Space): return "space"
@@ -124,6 +150,16 @@ final class LaunchShortcutMonitor {
         case Int64(kVK_RightArrow): return "right"
         case Int64(kVK_UpArrow): return "up"
         case Int64(kVK_DownArrow): return "down"
+        case Int64(kVK_ANSI_1): return "1"
+        case Int64(kVK_ANSI_2): return "2"
+        case Int64(kVK_ANSI_3): return "3"
+        case Int64(kVK_ANSI_4): return "4"
+        case Int64(kVK_ANSI_5): return "5"
+        case Int64(kVK_ANSI_6): return "6"
+        case Int64(kVK_ANSI_7): return "7"
+        case Int64(kVK_ANSI_8): return "8"
+        case Int64(kVK_ANSI_9): return "9"
+        case Int64(kVK_ANSI_0): return "0"
         default: break
         }
         guard let char = NSEvent(cgEvent: event)?.charactersIgnoringModifiers?.lowercased().first else { return nil }

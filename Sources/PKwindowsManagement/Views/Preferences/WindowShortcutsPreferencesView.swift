@@ -3,142 +3,252 @@ import SwiftUI
 struct WindowShortcutsPreferencesView: View {
     @ObservedObject var settings: AppSettings
 
-    private let quickActions: [WindowCommandSpec] = [
-        .bound("Almost Maximize", "arrow.up.left.and.arrow.down.right", .windowMaximize),
-        .bound("Center", "circle.grid.cross", .windowCenter),
-        .bound("Left Half", "rectangle.lefthalf.inset.filled", .windowLeftHalf),
-        .bound("Right Half", "rectangle.righthalf.inset.filled", .windowRightHalf),
-        .bound("Top Half", "rectangle.tophalf.inset.filled", .windowTopHalf),
-        .bound("Bottom Half", "rectangle.bottomhalf.inset.filled", .windowBottomHalf),
-        .bound("Top Left", "uiwindow.split.2x1", .windowTopLeft),
-        .bound("Top Right", "uiwindow.split.2x1", .windowTopRight),
-        .bound("Bottom Left", "uiwindow.split.2x1", .windowBottomLeft),
-        .bound("Bottom Right", "uiwindow.split.2x1", .windowBottomRight),
-        .bound("First Third", "rectangle.split.3x1", .windowFirstThird),
-        .bound("Center Third", "rectangle.split.3x1", .windowCenterThird),
-        .bound("Last Third", "rectangle.split.3x1", .windowLastThird),
-        .bound("Next Display", "arrow.right.to.line.compact", .windowNextDisplay),
-        .bound("Previous Display", "arrow.left.to.line.compact", .windowPreviousDisplay)
-    ]
+    private var halvesEntries: [WindowCommandSpec] {
+        [
+            .bound("Left Half", "rectangle.lefthalf.inset.filled", .windowLeftHalf),
+            .bound("Right Half", "rectangle.righthalf.inset.filled", .windowRightHalf),
+            .bound("Top Half", "rectangle.tophalf.inset.filled", .windowTopHalf),
+            .bound("Bottom Half", "rectangle.bottomhalf.inset.filled", .windowBottomHalf),
+        ]
+    }
 
-    // Catalog inspired by your screenshots (Rectangle-like breadth).
-    // Bound entries are active now; unbound entries are visible as roadmap "Record Hotkey" rows.
-    private let fullCatalog: [WindowCommandSpec] = [
-        .unbound("Maximize Height", "arrow.up.and.down"),
-        .unbound("Maximize Width", "arrow.left.and.right"),
-        .unbound("Make Smaller", "minus"),
-        .unbound("Make Larger", "plus"),
-        .unbound("Reasonable Size", "square.resize"),
-        .unbound("Restore", "arrow.counterclockwise"),
-        .unbound("First Fourth", "rectangle.split.4x1"),
-        .unbound("Second Fourth", "rectangle.split.4x1"),
-        .unbound("Third Fourth", "rectangle.split.4x1"),
-        .unbound("Last Fourth", "rectangle.split.4x1"),
-        .unbound("First Two Thirds", "rectangle.split.3x1"),
-        .unbound("Center Two Thirds", "rectangle.split.3x1"),
-        .unbound("Last Two Thirds", "rectangle.split.3x1"),
-        .unbound("First Three Fourths", "rectangle.split.4x1"),
-        .unbound("Center Three Fourths", "rectangle.split.4x1"),
-        .unbound("Last Three Fourths", "rectangle.split.4x1"),
-        .unbound("Top Third", "rectangle.topthird.inset.filled"),
-        .unbound("Bottom Third", "rectangle.bottomthird.inset.filled"),
-        .unbound("Top Two Thirds", "rectangle.split.3x1.fill"),
-        .unbound("Bottom Two Thirds", "rectangle.split.3x1.fill"),
-        .unbound("Top Left Quarter", "rectangle.inset.topleft.filled"),
-        .unbound("Top Right Quarter", "rectangle.inset.topright.filled"),
-        .unbound("Bottom Left Quarter", "rectangle.inset.bottomleft.filled"),
-        .unbound("Bottom Right Quarter", "rectangle.inset.bottomright.filled"),
-        .unbound("Top Left Sixth", "rectangle.3.group.bubble.left.fill"),
-        .unbound("Top Center Sixth", "rectangle.3.group.bubble.middle.fill"),
-        .unbound("Top Right Sixth", "rectangle.3.group.bubble.right.fill"),
-        .unbound("Bottom Left Sixth", "rectangle.3.group.bubble.left.fill"),
-        .unbound("Bottom Center Sixth", "rectangle.3.group.bubble.middle.fill"),
-        .unbound("Bottom Right Sixth", "rectangle.3.group.bubble.right.fill"),
-        .unbound("Move Left", "arrow.left"),
-        .unbound("Move Right", "arrow.right"),
-        .unbound("Move Up", "arrow.up"),
-        .unbound("Move Down", "arrow.down"),
-        .unbound("Toggle Fullscreen", "arrow.up.left.and.arrow.down.right")
-    ]
+    private var quartersEntries: [WindowCommandSpec] {
+        [
+            .bound("Top Left", nil, .windowTopLeft, fraction: CGRect(x: 0, y: 0, width: 0.5, height: 0.5)),
+            .bound("Top Right", nil, .windowTopRight, fraction: CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5)),
+            .bound("Bottom Left", nil, .windowBottomLeft, fraction: CGRect(x: 0, y: 0.5, width: 0.5, height: 0.5)),
+            .bound("Bottom Right", nil, .windowBottomRight, fraction: CGRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5)),
+        ]
+    }
+
+    private var thirdsEntries: [WindowCommandSpec] {
+        [
+            .bound("First Third", nil, .windowFirstThird, fraction: CGRect(x: 0, y: 0, width: 1 / 3, height: 1)),
+            .bound("Center Third", nil, .windowCenterThird, fraction: CGRect(x: 1 / 3, y: 0, width: 1 / 3, height: 1)),
+            .bound("Last Third", nil, .windowLastThird, fraction: CGRect(x: 2 / 3, y: 0, width: 1 / 3, height: 1)),
+        ]
+    }
+
+    private var sixthsEntries: [WindowCommandSpec] {
+        [
+            .bound("Top Left Sixth", nil, .windowTopFirstSixth, fraction: CGRect(x: 0, y: 0, width: 1 / 3, height: 0.5)),
+            .bound("Top Center Sixth", nil, .windowTopCenterSixth, fraction: CGRect(x: 1 / 3, y: 0, width: 1 / 3, height: 0.5)),
+            .bound("Top Right Sixth", nil, .windowTopLastSixth, fraction: CGRect(x: 2 / 3, y: 0, width: 1 / 3, height: 0.5)),
+            .bound("Bottom Left Sixth", nil, .windowBottomFirstSixth, fraction: CGRect(x: 0, y: 0.5, width: 1 / 3, height: 0.5)),
+            .bound("Bottom Center Sixth", nil, .windowBottomCenterSixth, fraction: CGRect(x: 1 / 3, y: 0.5, width: 1 / 3, height: 0.5)),
+            .bound("Bottom Right Sixth", nil, .windowBottomLastSixth, fraction: CGRect(x: 2 / 3, y: 0.5, width: 1 / 3, height: 0.5)),
+        ]
+    }
+
+    private var displaysEntries: [WindowCommandSpec] {
+        [
+            .bound("Next Display", "arrow.right.to.line.compact", .windowNextDisplay),
+            .bound("Previous Display", "arrow.left.to.line.compact", .windowPreviousDisplay),
+        ]
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Window Management")
-                    .font(.title3.weight(.semibold))
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Window Management")
+                        .font(.title3.weight(.semibold))
 
-                sectionCard(title: "Active Shortcuts", entries: quickActions, showEditor: true)
-                sectionCard(title: "Extended Catalog", entries: fullCatalog, showEditor: false)
+                    if geometry.size.width >= 760 {
+                        wideLayout
+                    } else {
+                        narrowLayout
+                    }
+                }
+                .padding(24)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .padding(24)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
-    private func sectionCard(title: String, entries: [WindowCommandSpec], showEditor: Bool) -> some View {
+    private var wideLayout: some View {
+        generalMarginSection()
+
+        HStack(alignment: .top, spacing: 16) {
+            sectionCard(title: "Halves", entries: halvesEntries)
+            sectionCard(title: "Quarters", entries: quartersEntries)
+        }
+
+        HStack(alignment: .top, spacing: 16) {
+            maximizeSection()
+            sectionCard(title: "Sixths", entries: sixthsEntries)
+        }
+
+        HStack(alignment: .top, spacing: 16) {
+            sectionCard(title: "Thirds", entries: thirdsEntries)
+            sectionCard(title: "Displays", entries: displaysEntries)
+        }
+    }
+
+    @ViewBuilder
+    private var narrowLayout: some View {
+        generalMarginSection()
+        maximizeSection()
+        sectionCard(title: "Halves", entries: halvesEntries)
+        sectionCard(title: "Quarters", entries: quartersEntries)
+        sectionCard(title: "Thirds", entries: thirdsEntries)
+        sectionCard(title: "Sixths", entries: sixthsEntries)
+        sectionCard(title: "Displays", entries: displaysEntries)
+    }
+
+    private func sectionCard(title: String, entries: [WindowCommandSpec]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(localizedString(title))
                 .font(.headline)
             VStack(spacing: 0) {
                 ForEach(entries) { item in
-                    windowRow(item, editable: showEditor)
+                    windowRow(item)
                     if item.id != entries.last?.id { Divider() }
                 }
             }
             .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    @ViewBuilder
-    private func windowRow(_ item: WindowCommandSpec, editable: Bool) -> some View {
+    private func maximizeSection() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(localizedString("Maximize"))
+                .font(.headline)
+            VStack(spacing: 0) {
+                windowRow(.bound("Fullscreen", "arrow.up.left.and.arrow.down.right", .windowFullScreen))
+                Divider()
+                windowRow(.bound("Almost Maximize", "arrow.up.left.and.arrow.down.right", .windowMaximize))
+                Divider()
+                marginEditor($settings.almostFullMargins)
+                Divider()
+                windowRow(.bound("Center", "circle.grid.cross", .windowCenter))
+                Divider()
+                marginEditor($settings.centerMargins)
+            }
+            .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func generalMarginSection() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(localizedString("General Margins"))
+                .font(.headline)
+            VStack(spacing: 0) {
+                Text(localizedString("Applied to every window position."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+                marginEditor($settings.generalMargins)
+            }
+            .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+    }
+
+    private func windowRow(_ item: WindowCommandSpec) -> some View {
         HStack(spacing: 10) {
-            iconPill(symbol: item.symbol)
+            iconPill(item)
             Text(localizedString(item.title))
                 .font(.body)
             Spacer()
 
-            if editable, let action = item.boundAction {
-                ShortcutRecorderField(
-                    shortcut: shortcutBinding(for: action),
-                    modifierWidth: 190,
-                    keyWidth: 72,
-                    recordWidth: 76
-                )
+            CompactShortcutField(shortcut: shortcutBinding(for: item.action))
 
-                Button(localizedString("Reset")) {
-                    settings.resetShortcut(for: action)
-                }
-                .frame(width: 64)
-            } else {
-                Text("Record Hotkey")
+            Button {
+                settings.clearShortcut(for: item.action)
+            } label: {
+                Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.secondary)
-                    .font(.system(size: 13, weight: .medium))
-                    .frame(width: 180, alignment: .trailing)
             }
+            .buttonStyle(.plain)
+            .help(localizedString("Clear"))
+
+            Button {
+                settings.resetShortcut(for: item.action)
+            } label: {
+                Image(systemName: "arrow.counterclockwise")
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help(localizedString("Reset"))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
     }
 
-    private func iconPill(symbol: String) -> some View {
+    private func iconPill(_ item: WindowCommandSpec) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color.accentColor.opacity(0.15))
-            Image(systemName: symbol)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
+            if let fraction = item.fraction {
+                splitIcon(fraction)
+            } else {
+                Image(systemName: item.symbol)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+            }
         }
         .frame(width: 20, height: 20)
     }
 
-    private func shortcutBinding(for action: ShortcutAction) -> Binding<KeyboardShortcutSetting> {
+    private func splitIcon(_ fraction: CGRect) -> some View {
+        let size: CGFloat = 12
+        return ZStack {
+            RoundedRectangle(cornerRadius: 1.5)
+                .stroke(Color.accentColor, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(Color.accentColor)
+                .frame(width: max(1, size * fraction.width), height: max(1, size * fraction.height))
+                .offset(x: (fraction.midX - 0.5) * size, y: (fraction.midY - 0.5) * size)
+        }
+        .frame(width: size, height: size)
+    }
+
+    private func marginEditor(_ margins: Binding<WindowMargins>) -> some View {
+        HStack(spacing: 16) {
+            marginField("T", margins.top)
+            marginField("B", margins.bottom)
+            marginField("L", margins.left)
+            marginField("R", margins.right)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+    }
+
+    private func marginField(_ label: String, _ value: Binding<CGFloat>) -> some View {
+        HStack(spacing: 5) {
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 10)
+            TextField("", value: Binding(
+                get: { value.wrappedValue },
+                set: { newValue in
+                    guard let raw = newValue else { return }
+                    value.wrappedValue = min(max(raw, 0), 25)
+                }
+            ), format: .number)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: 46)
+            Text("%")
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func shortcutBinding(for action: ShortcutAction) -> Binding<KeyboardShortcutSetting?> {
         Binding(
-            get: {
-                settings.shortcut(for: action)
-            },
+            get: { settings.shortcut(for: action) },
             set: { shortcut in
-                settings.setShortcut(shortcut, for: action)
+                if let shortcut {
+                    settings.setShortcut(shortcut, for: action)
+                } else {
+                    settings.clearShortcut(for: action)
+                }
             }
         )
     }
@@ -148,13 +258,10 @@ private struct WindowCommandSpec: Identifiable {
     let id: String
     let title: String
     let symbol: String
-    let boundAction: ShortcutAction?
+    let fraction: CGRect?
+    let action: ShortcutAction
 
-    static func bound(_ title: String, _ symbol: String, _ action: ShortcutAction) -> Self {
-        .init(id: title, title: title, symbol: symbol, boundAction: action)
-    }
-
-    static func unbound(_ title: String, _ symbol: String) -> Self {
-        .init(id: title, title: title, symbol: symbol, boundAction: nil)
+    static func bound(_ title: String, _ symbol: String?, _ action: ShortcutAction, fraction: CGRect? = nil) -> Self {
+        .init(id: title, title: title, symbol: symbol ?? "", fraction: fraction, action: action)
     }
 }

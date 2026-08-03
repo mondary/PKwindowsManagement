@@ -1,5 +1,21 @@
 # Changelog
 
+## [2026.08.05] - 2026-08-03
+### Added
+- Window snapping service wired to global shortcuts (halves, quarters, thirds, sixths, fullscreen, center, almost-maximize, display cycling)
+- Compact shortcut recorder with badge + Record/Stop and clear/reset per row; special keys (arrows, return, tab, space, delete) captured by keycode
+- Per-preset margins (general / almost-full / center) as numeric fields, 1% default gap between windows
+- True fraction icons for quarters, thirds, and sixths
+- Launchpad overlay now shows the app version (bottom-right)
+### Changed
+- Migrated to CalVer versioning `YYYY.MM.PATCH` (pk-COMMIT convention)
+- Default shortcuts: halves `⌃⌥Q/W/E/R`, quarters `⌃⌥Y/P/H/M`, sixths `⌃⌥U/I/O/J/K/L`
+- Settings window sidebar toggle moved from system top-right to a left-placed button; custom 2-column layout replaces NavigationSplitView
+- Window-shortcuts preferences use a responsive 2-column layout (1 column when narrow)
+### Fixed
+- Window snapping on external displays no longer jumps back to the MacBook (AX↔NSScreen coordinate flip corrected in screen detection)
+- One-time migration resets stale window-shortcut overrides so new defaults apply
+
 ## [0.18] - 2026-06-16
 ### Added
 - Menu bar now displays the app's official icon (full color) instead of a generic SF Symbol

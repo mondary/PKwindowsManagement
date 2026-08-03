@@ -122,6 +122,9 @@ struct LaunchpadOverlayView: View {
     private var topBar: some View {
         HStack {
             Spacer()
+            Text(appVersionLabel)
+                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.45))
             Button {
                 LaunchpadOverlayController.shared.openSettings()
             } label: {
@@ -592,6 +595,11 @@ struct LaunchpadOverlayView: View {
     private func shortcutLabel(for shortcut: KeyboardShortcutSetting?) -> String {
         guard let shortcut else { return "" }
         return "\(shortcut.modifier.symbolPrefix) \(shortcut.keyDisplayName)"
+    }
+
+    private var appVersionLabel: String {
+        let raw = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        return "v\(raw)"
     }
 }
 

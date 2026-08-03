@@ -24,6 +24,8 @@ struct PKwindowsManagementApp: App {
                     let apps = launcher.loadShortcutTargets(settings: settings)
                     LaunchShortcutMonitor.shared.start(settings: settings, apps: apps) { app in
                         _ = launcher.launch(app, settings: settings)
+                    } windowHandler: { action in
+                        WindowSnapService().perform(action, preset: settings.windowMarginPreset)
                     }
                 }
                 .onChange(of: settings.snippets) { _ in
@@ -52,6 +54,7 @@ struct PKwindowsManagementApp: App {
 private struct RootDashboardView: View {
     @ObservedObject var settings: AppSettings
     @State private var selection: SettingsSection? = .general
+    @State private var isSidebarVisible = true
 
     static var appIcon: NSImage? {
         if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns") {
@@ -61,49 +64,104 @@ private struct RootDashboardView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
-            List(SettingsSection.allCases, selection: $selection) { section in
-                Label(section.title, systemImage: section.icon)
-                    .tag(section)
+        HStack(spacing: 0) {
+            if isSidebarVisible {
+                sidebar
+                    .frame(width: 210)
+                Divider()
+            } else {
+                sidebarRevealStrip
+                Divider()
             }
-            .safeAreaInset(edge: .top, spacing: 0) {
-                HStack(spacing: 10) {
-                    if let icon = Self.appIcon {
-                        Image(nsImage: icon)
-                            .resizable()
-                            .interpolation(.high)
-                            .frame(width: 26, height: 26)
-                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    }
-                    Text("PKwindowsManagement")
-                        .font(.headline)
-                    Spacer(minLength: 0)
+            detail
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var sidebar: some View {
+        List(SettingsSection.allCases, selection: $selection) { section in
+            Label(section.title, systemImage: section.icon)
+                .tag(section)
+        }
+        .listStyle(.sidebar)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            HStack(spacing: 10) {
+                sidebarToggleButton
+                if let icon = Self.appIcon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 26, height: 26)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 }
+                Text("PKwindowsManagement")
+                    .font(.headline)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.regularMaterial)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Text(appVersionLabel)
+                .font(.system(size: 11, weight: .regular, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(.regularMaterial)
-            }
-            .listStyle(.sidebar)
-            .frame(minWidth: 200)
-        } detail: {
-            Group {
-                switch selection ?? .general {
-                case .general:
-                    GeneralSettingsView(settings: settings)
-                case .windows:
-                    WindowShortcutsPreferencesView(settings: settings)
-                case .launchpad:
-                    LaunchpadView(settings: settings)
-                case .appearance:
-                    AppearanceSettingsView(settings: settings)
-                case .snippets:
-                    SnippetsSettingsView(settings: settings)
-                case .urls:
-                    URLSnippetsSettingsView(settings: settings)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+
+    private var appVersionLabel: String {
+        let raw = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        return "v\(raw)"
+    }
+
+    private var sidebarRevealStrip: some View {
+        VStack {
+            sidebarToggleButton
+                .padding(.top, 10)
+            Spacer(minLength: 0)
+        }
+        .frame(width: 24)
+        .background(.regularMaterial)
+    }
+
+    private var sidebarToggleButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                isSidebarVisible.toggle()
+            }
+        } label: {
+            Image(systemName: "sidebar.left")
+                .font(.system(size: 13, weight: .medium))
+                .frame(width: 24, height: 24)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .help(localizedString("Show / Hide Sidebar"))
+    }
+
+    private var detail: some View {
+        Group {
+            switch selection ?? .general {
+            case .general:
+                GeneralSettingsView(settings: settings)
+            case .windows:
+                WindowShortcutsPreferencesView(settings: settings)
+            case .launchpad:
+                LaunchpadView(settings: settings)
+            case .appearance:
+                AppearanceSettingsView(settings: settings)
+            case .snippets:
+                SnippetsSettingsView(settings: settings)
+            case .urls:
+                URLSnippetsSettingsView(settings: settings)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

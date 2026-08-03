@@ -35,6 +35,14 @@
 "Settings imported successfully." = "Einstellungen erfolgreich importiert.";
 "This settings backup version is not supported." = "Diese Version der Einstellungssicherung wird nicht unterstützt.";
 "Window Management" = "Fensterverwaltung";
+"Halves" = "Hälften";
+"Quarters" = "Viertel";
+"Thirds" = "Drittel";
+"Sixths" = "Sechstel";
+"Displays" = "Bildschirme";
+"General Margins" = "Allgemeine Ränder";
+"Applied to every window position." = "Auf jede Fensterposition angewendet.";
+"Show / Hide Sidebar" = "Seitenleiste ein-/ausblenden";
 "Active Shortcuts" = "Aktive Kurzbefehle";
 "Extended Catalog" = "Erweiterter Katalog";
 "Record Hotkey" = "Tastenkürzel aufnehmen";
@@ -106,6 +114,7 @@
 "Move Up" = "Nach oben bewegen";
 "Move Down" = "Nach unten bewegen";
 "Toggle Fullscreen" = "Vollbild umschalten";
+"Fullscreen" = "Vollbild";
 "Search apps or recent launches" = "Apps oder letzte Starts suchen";
 "Launchpad Activation" = "Launchpad-Aktivierung";
 "Global shortcut" = "Globales Tastenkürzel";
