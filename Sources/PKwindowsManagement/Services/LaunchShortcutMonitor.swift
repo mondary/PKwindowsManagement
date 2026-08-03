@@ -10,13 +10,13 @@ final class LaunchShortcutMonitor {
     private var runLoopSource: CFRunLoopSource?
     private var settings: AppSettings?
     private var launchHandler: ((LaunchableApp) -> Void)?
-    private var windowHandler: ((ShortcutAction) -> Void)?
+    private var windowHandler: ((WindowSnapAction) -> Void)?
     private var modifierState = ModifierState()
     private var appsByBundleID: [String: LaunchableApp] = [:]
     private var retryTimer: Timer?
     private var didRequestAccessibility = false
 
-    func start(settings: AppSettings, apps: [LaunchableApp], launchHandler: @escaping (LaunchableApp) -> Void, windowHandler: @escaping (ShortcutAction) -> Void) {
+    func start(settings: AppSettings, apps: [LaunchableApp], launchHandler: @escaping (LaunchableApp) -> Void, windowHandler: @escaping (WindowSnapAction) -> Void) {
         self.settings = settings
         self.launchHandler = launchHandler
         self.windowHandler = windowHandler
@@ -94,11 +94,6 @@ final class LaunchShortcutMonitor {
             modifierState.update(with: event)
             return .passUnretained(event)
         case .keyDown:
-            // Ignorer l'autorepeat macOS : maintenir une touche ne doit pas
-            // déclencher la commande en boucle (le cycle ½→⅔→⅓ partait en vrille).
-            if event.getIntegerValueField(.keyboardEventAutorepeat) == 1 {
-                return .passUnretained(event)
-            }
             var consumed = false
             if let app = match(event: event) {
                 launchHandler?(app)
@@ -127,7 +122,7 @@ final class LaunchShortcutMonitor {
         return appsByBundleID[bundleID]
     }
 
-    private func matchWindowShortcut(event: CGEvent) -> ShortcutAction? {
+    private func matchWindowShortcut(event: CGEvent) -> WindowSnapAction? {
         guard let settings else { return nil }
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
         let flags = event.flags
@@ -135,11 +130,12 @@ final class LaunchShortcutMonitor {
         guard let eventKey = keyString(from: event, keyCode: keyCode) else { return nil }
 
         for action in ShortcutAction.allCases {
-            guard let shortcut = settings.shortcut(for: action),
-                  shortcut.key.lowercased() == eventKey,
-                  modifierState.matches(shortcut.modifier, flags: flags)
+            guard let shortcut = settings.shortcut(for: action) else { continue }
+            guard shortcut.key.lowercased() == eventKey,
+                  modifierState.matches(shortcut.modifier, flags: flags),
+                  let snapAction = action.windowSnapAction
             else { continue }
-            return action
+            return snapAction
         }
         return nil
     }

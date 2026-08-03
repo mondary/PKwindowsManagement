@@ -2,17 +2,13 @@
 
 ## [2026.08.06] - 2026-08-03
 ### Added
-- New window actions matching Raycast's window management: Maximize Height/Width, Move Up/Down/Left/Right (to screen edge), Restore, Reasonable Size, Make Larger/Smaller, Toggle Fullscreen, vertical Fourth columns (First/Second/Third/Last), First/Center/Last Two Thirds, First/Center/Last Three Fourths, Top/Bottom Third and Top/Bottom Two Thirds — all with icons and per-language labels
-### Changed
-- Rebuilt window snapping core around a single AX coordinate space and screen detection by window↔screen intersection (more reliable multi-monitor)
-- Left/Right Half cycling (½→⅔→⅓) keeps its 3-second timer, now ignores key autorepeat so holding a shortcut no longer runs away
-- Focused-window lookup falls back to Main Window / first window when an app exposes no focused window
+- New window actions matching Raycast's window management: Maximize Height/Width, Move Up/Down/Left/Right, Restore, Reasonable Size, Make Larger/Smaller, Toggle Fullscreen, vertical Fourth columns (First/Second/Third/Last), First/Center/Last Two Thirds, First/Center/Last Three Fourths, Top/Bottom Third and Top/Bottom Two Thirds — all with icons and per-language labels
 - New window actions are unbound by default (bind them in Settings → Windows), like Raycast
+### Changed
+- Snapping core restored to the proven version from 2026.08.05; the new actions are layered additively on top, leaving the original geometry untouched
 ### Fixed
-- Window management now works with Chrome/Chromium/Electron (the app's accessibility tree is primed via `AXManualAccessibility` + `AXEnhancedUserInterface` before manipulating the window — the same approach Raycast and Rectangle use)
-- Holding a shortcut key no longer loops the command (autorepeat is ignored)
+- Window management no longer broken: the earlier core rewrite made snapping fail for every app — reverted it and re-integrated the new actions additively
 - Restore and Toggle Fullscreen remember the window's previous frame
-- Window positioning no longer silently fails when accessibility access is missing
 - Removed dead `SimpleWindowManager` and unused SVG assets
 
 ## [2026.08.05] - 2026-08-03
