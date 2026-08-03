@@ -222,7 +222,7 @@ final class AppSettings: ObservableObject {
         seedDefaultSnippetShortcuts()
 
         if defaults.bool(forKey: Keys.windowShortcutDefaultsVersion) == false {
-            shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.map { ($0, $0.defaultShortcut) })
+            shortcuts = Self.defaultShortcuts()
             saveShortcuts()
             defaults.set(true, forKey: Keys.windowShortcutDefaultsVersion)
         }
@@ -367,7 +367,11 @@ final class AppSettings: ObservableObject {
     }
 
     func resetShortcut(for action: ShortcutAction) {
-        shortcuts[action] = action.defaultShortcut
+        if let defaultShortcut = action.defaultShortcut {
+            shortcuts[action] = defaultShortcut
+        } else {
+            shortcuts.removeValue(forKey: action)
+        }
         clearedWindowShortcuts.removeAll { $0 == action.rawValue }
         saveShortcuts()
         saveClearedShortcuts()
@@ -511,8 +515,8 @@ final class AppSettings: ObservableObject {
         let backup = try JSONDecoder().decode(SettingsBackup.self, from: data)
         guard backup.version == 1 || backup.version == 2 || backup.version == 3 || backup.version == 4 || backup.version == 5 || backup.version == 6 || backup.version == 7 else { throw SettingsBackupError.unsupportedVersion }
 
-        shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.map { action in
-            (action, backup.windowShortcuts[action.rawValue] ?? action.defaultShortcut)
+        shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.compactMap { action in
+            backup.windowShortcuts[action.rawValue].map { (action, $0) } ?? action.defaultShortcut.map { (action, $0) }
         })
         launchShortcuts = backup.launchShortcuts
         snippets = backup.snippets ?? []
@@ -549,8 +553,14 @@ final class AppSettings: ObservableObject {
         scheduleAutoBackup()
     }
 
+    private static func defaultShortcuts() -> [ShortcutAction: KeyboardShortcutSetting] {
+        Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.compactMap { action in
+            action.defaultShortcut.map { (action, $0) }
+        })
+    }
+
     private static func loadShortcuts(from defaults: UserDefaults) -> [ShortcutAction: KeyboardShortcutSetting] {
-        var shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.map { ($0, $0.defaultShortcut) })
+        var shortcuts = Self.defaultShortcuts()
         guard let data = defaults.data(forKey: Keys.shortcuts),
               let rawShortcuts = try? JSONDecoder().decode([String: KeyboardShortcutSetting].self, from: data)
         else { return shortcuts }

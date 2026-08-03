@@ -316,7 +316,6 @@ private func selectedSnippet(for snippets: [SnippetDefinition], selectedSnippetI
 
 private struct SnippetEditorView: View {
     @ObservedObject var settings: AppSettings
-    @Environment(\.dismiss) private var dismiss
 
     let snippet: SnippetDefinition
     var onDelete: (() -> Void)? = nil
@@ -375,15 +374,10 @@ private struct SnippetEditorView: View {
                 if let onDelete {
                     Button("Delete", role: .destructive) {
                         onDelete()
-                        dismiss()
                     }
                 }
 
                 Spacer()
-
-                Button("Cancel", role: .cancel) {
-                    dismiss()
-                }
 
                 Button("Save") {
                     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? defaultTitle : title
@@ -394,14 +388,13 @@ private struct SnippetEditorView: View {
                     } else {
                         settings.setLaunchShortcut(nil, for: updated.id)
                     }
-                    dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
             }
         }
         .padding(24)
-        .frame(minWidth: 860, minHeight: 700, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(NSColor.controlBackgroundColor))
     }
 

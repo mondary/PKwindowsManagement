@@ -140,8 +140,33 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case windowBottomCenterSixth
     case windowBottomLastSixth
     case windowFullScreen
+    case windowToggleFullScreen
     case windowNextDisplay
     case windowPreviousDisplay
+    case windowMaximizeHeight
+    case windowMaximizeWidth
+    case windowMakeLarger
+    case windowMakeSmaller
+    case windowReasonableSize
+    case windowRestore
+    case windowMoveLeft
+    case windowMoveRight
+    case windowMoveUp
+    case windowMoveDown
+    case windowTopThird
+    case windowBottomThird
+    case windowTopTwoThirds
+    case windowBottomTwoThirds
+    case windowFirstTwoThirds
+    case windowCenterTwoThirds
+    case windowLastTwoThirds
+    case windowFirstFourth
+    case windowSecondFourth
+    case windowThirdFourth
+    case windowLastFourth
+    case windowFirstThreeFourths
+    case windowCenterThreeFourths
+    case windowLastThreeFourths
 
     var id: String { rawValue }
 
@@ -167,14 +192,39 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowBottomCenterSixth: localizedString("Bottom Center Sixth")
         case .windowBottomLastSixth: localizedString("Bottom Right Sixth")
         case .windowFullScreen: localizedString("Fullscreen")
+        case .windowToggleFullScreen: localizedString("Toggle Fullscreen")
         case .windowNextDisplay: localizedString("Next Display")
         case .windowPreviousDisplay: localizedString("Previous Display")
+        case .windowMaximizeHeight: localizedString("Maximize Height")
+        case .windowMaximizeWidth: localizedString("Maximize Width")
+        case .windowMakeLarger: localizedString("Make Larger")
+        case .windowMakeSmaller: localizedString("Make Smaller")
+        case .windowReasonableSize: localizedString("Reasonable Size")
+        case .windowRestore: localizedString("Restore")
+        case .windowMoveLeft: localizedString("Move Left")
+        case .windowMoveRight: localizedString("Move Right")
+        case .windowMoveUp: localizedString("Move Up")
+        case .windowMoveDown: localizedString("Move Down")
+        case .windowTopThird: localizedString("Top Third")
+        case .windowBottomThird: localizedString("Bottom Third")
+        case .windowTopTwoThirds: localizedString("Top Two Thirds")
+        case .windowBottomTwoThirds: localizedString("Bottom Two Thirds")
+        case .windowFirstTwoThirds: localizedString("First Two Thirds")
+        case .windowCenterTwoThirds: localizedString("Center Two Thirds")
+        case .windowLastTwoThirds: localizedString("Last Two Thirds")
+        case .windowFirstFourth: localizedString("First Fourth")
+        case .windowSecondFourth: localizedString("Second Fourth")
+        case .windowThirdFourth: localizedString("Third Fourth")
+        case .windowLastFourth: localizedString("Last Fourth")
+        case .windowFirstThreeFourths: localizedString("First Three Fourths")
+        case .windowCenterThreeFourths: localizedString("Center Three Fourths")
+        case .windowLastThreeFourths: localizedString("Last Three Fourths")
         }
     }
 
     var group: String { localizedString("Window") }
 
-    var defaultShortcut: KeyboardShortcutSetting {
+    var defaultShortcut: KeyboardShortcutSetting? {
         switch self {
         case .windowLeftHalf: .init(key: "left", modifier: .controlOption)
         case .windowRightHalf: .init(key: "right", modifier: .controlOption)
@@ -198,6 +248,14 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowFullScreen: .init(key: "return", modifier: .controlOption)
         case .windowNextDisplay: .init(key: "space", modifier: .controlOption)
         case .windowPreviousDisplay: .init(key: "[", modifier: .controlOption)
+        case .windowToggleFullScreen, .windowMaximizeHeight, .windowMaximizeWidth,
+             .windowMakeLarger, .windowMakeSmaller, .windowReasonableSize, .windowRestore,
+             .windowMoveLeft, .windowMoveRight, .windowMoveUp, .windowMoveDown,
+             .windowTopThird, .windowBottomThird, .windowTopTwoThirds, .windowBottomTwoThirds,
+             .windowFirstTwoThirds, .windowCenterTwoThirds, .windowLastTwoThirds,
+             .windowFirstFourth, .windowSecondFourth, .windowThirdFourth, .windowLastFourth,
+             .windowFirstThreeFourths, .windowCenterThreeFourths, .windowLastThreeFourths:
+            nil
         }
     }
 }

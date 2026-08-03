@@ -117,6 +117,7 @@ struct AppearanceSettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .labelsHidden()
                 .frame(width: 360)
 
                 Text(localizedString(settings.launchpadAppSortMode == .color
@@ -144,6 +145,7 @@ struct AppearanceSettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .labelsHidden()
                 .frame(width: 280)
 
                 Text(localizedString(settings.launchpadGridNavigation == .horizontalPages

@@ -12,6 +12,15 @@ struct WindowShortcutsPreferencesView: View {
         ]
     }
 
+    private var moveEntries: [WindowCommandSpec] {
+        [
+            .bound("Move Left", "arrow.left.to.line.compact", .windowMoveLeft),
+            .bound("Move Right", "arrow.right.to.line.compact", .windowMoveRight),
+            .bound("Move Up", "arrow.up.to.line.compact", .windowMoveUp),
+            .bound("Move Down", "arrow.down.to.line.compact", .windowMoveDown),
+        ]
+    }
+
     private var quartersEntries: [WindowCommandSpec] {
         [
             .bound("Top Left", nil, .windowTopLeft, fraction: CGRect(x: 0, y: 0, width: 0.5, height: 0.5)),
@@ -21,11 +30,45 @@ struct WindowShortcutsPreferencesView: View {
         ]
     }
 
+    private var fourthsEntries: [WindowCommandSpec] {
+        [
+            .bound("First Fourth", nil, .windowFirstFourth, fraction: CGRect(x: 0, y: 0, width: 1 / 4, height: 1)),
+            .bound("Second Fourth", nil, .windowSecondFourth, fraction: CGRect(x: 1 / 4, y: 0, width: 1 / 4, height: 1)),
+            .bound("Third Fourth", nil, .windowThirdFourth, fraction: CGRect(x: 2 / 4, y: 0, width: 1 / 4, height: 1)),
+            .bound("Last Fourth", nil, .windowLastFourth, fraction: CGRect(x: 3 / 4, y: 0, width: 1 / 4, height: 1)),
+        ]
+    }
+
     private var thirdsEntries: [WindowCommandSpec] {
         [
             .bound("First Third", nil, .windowFirstThird, fraction: CGRect(x: 0, y: 0, width: 1 / 3, height: 1)),
             .bound("Center Third", nil, .windowCenterThird, fraction: CGRect(x: 1 / 3, y: 0, width: 1 / 3, height: 1)),
             .bound("Last Third", nil, .windowLastThird, fraction: CGRect(x: 2 / 3, y: 0, width: 1 / 3, height: 1)),
+        ]
+    }
+
+    private var twoThirdsEntries: [WindowCommandSpec] {
+        [
+            .bound("First Two Thirds", nil, .windowFirstTwoThirds, fraction: CGRect(x: 0, y: 0, width: 2 / 3, height: 1)),
+            .bound("Center Two Thirds", nil, .windowCenterTwoThirds, fraction: CGRect(x: 1 / 3, y: 0, width: 1 / 3, height: 1)),
+            .bound("Last Two Thirds", nil, .windowLastTwoThirds, fraction: CGRect(x: 1 / 3, y: 0, width: 2 / 3, height: 1)),
+        ]
+    }
+
+    private var threeFourthsEntries: [WindowCommandSpec] {
+        [
+            .bound("First Three Fourths", nil, .windowFirstThreeFourths, fraction: CGRect(x: 0, y: 0, width: 3 / 4, height: 1)),
+            .bound("Center Three Fourths", nil, .windowCenterThreeFourths, fraction: CGRect(x: 1 / 4, y: 0, width: 2 / 4, height: 1)),
+            .bound("Last Three Fourths", nil, .windowLastThreeFourths, fraction: CGRect(x: 1 / 4, y: 0, width: 3 / 4, height: 1)),
+        ]
+    }
+
+    private var horizontalEntries: [WindowCommandSpec] {
+        [
+            .bound("Top Third", nil, .windowTopThird, fraction: CGRect(x: 0, y: 0, width: 1, height: 1 / 3)),
+            .bound("Bottom Third", nil, .windowBottomThird, fraction: CGRect(x: 0, y: 2 / 3, width: 1, height: 1 / 3)),
+            .bound("Top Two Thirds", nil, .windowTopTwoThirds, fraction: CGRect(x: 0, y: 0, width: 1, height: 2 / 3)),
+            .bound("Bottom Two Thirds", nil, .windowBottomTwoThirds, fraction: CGRect(x: 0, y: 1 / 3, width: 1, height: 2 / 3)),
         ]
     }
 
@@ -72,29 +115,46 @@ struct WindowShortcutsPreferencesView: View {
 
         HStack(alignment: .top, spacing: 16) {
             sectionCard(title: "Halves", entries: halvesEntries)
+            sectionCard(title: "Move", entries: moveEntries)
+        }
+
+        HStack(alignment: .top, spacing: 16) {
             sectionCard(title: "Quarters", entries: quartersEntries)
+            sectionCard(title: "Fourth Columns", entries: fourthsEntries)
         }
 
         HStack(alignment: .top, spacing: 16) {
-            maximizeSection()
+            sectionCard(title: "Third Columns", entries: thirdsEntries)
+            sectionCard(title: "Two Thirds", entries: twoThirdsEntries)
+        }
+
+        HStack(alignment: .top, spacing: 16) {
+            sectionCard(title: "Three Fourths", entries: threeFourthsEntries)
+            sectionCard(title: "Horizontal", entries: horizontalEntries)
+        }
+
+        HStack(alignment: .top, spacing: 16) {
             sectionCard(title: "Sixths", entries: sixthsEntries)
-        }
-
-        HStack(alignment: .top, spacing: 16) {
-            sectionCard(title: "Thirds", entries: thirdsEntries)
             sectionCard(title: "Displays", entries: displaysEntries)
         }
+
+        sizeSection()
     }
 
     @ViewBuilder
     private var narrowLayout: some View {
         generalMarginSection()
-        maximizeSection()
+        sectionCard(title: "Move", entries: moveEntries)
         sectionCard(title: "Halves", entries: halvesEntries)
         sectionCard(title: "Quarters", entries: quartersEntries)
-        sectionCard(title: "Thirds", entries: thirdsEntries)
+        sectionCard(title: "Fourth Columns", entries: fourthsEntries)
+        sectionCard(title: "Third Columns", entries: thirdsEntries)
+        sectionCard(title: "Two Thirds", entries: twoThirdsEntries)
+        sectionCard(title: "Three Fourths", entries: threeFourthsEntries)
+        sectionCard(title: "Horizontal", entries: horizontalEntries)
         sectionCard(title: "Sixths", entries: sixthsEntries)
         sectionCard(title: "Displays", entries: displaysEntries)
+        sizeSection()
     }
 
     private func sectionCard(title: String, entries: [WindowCommandSpec]) -> some View {
@@ -112,16 +172,30 @@ struct WindowShortcutsPreferencesView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func maximizeSection() -> some View {
+    private func sizeSection() -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(localizedString("Maximize"))
+            Text(localizedString("Size & Position"))
                 .font(.headline)
             VStack(spacing: 0) {
                 windowRow(.bound("Fullscreen", "arrow.up.left.and.arrow.down.right", .windowFullScreen))
                 Divider()
-                windowRow(.bound("Almost Maximize", "arrow.up.left.and.arrow.down.right", .windowMaximize))
+                windowRow(.bound("Toggle Fullscreen", "rectangle.inset.fill", .windowToggleFullScreen))
+                Divider()
+                windowRow(.bound("Almost Maximize", "rectangle.inset.filled", .windowMaximize))
                 Divider()
                 marginEditor($settings.almostFullMargins)
+                Divider()
+                windowRow(.bound("Maximize Height", "arrow.up.and.down", .windowMaximizeHeight))
+                Divider()
+                windowRow(.bound("Maximize Width", "arrow.left.and.right", .windowMaximizeWidth))
+                Divider()
+                windowRow(.bound("Reasonable Size", nil, .windowReasonableSize, fraction: CGRect(x: 0.2, y: 0.2, width: 0.6, height: 0.6)))
+                Divider()
+                windowRow(.bound("Restore", "arrow.uturn.backward", .windowRestore))
+                Divider()
+                windowRow(.bound("Make Larger", "arrow.up.left.and.arrow.down.right", .windowMakeLarger))
+                Divider()
+                windowRow(.bound("Make Smaller", "arrow.down.right.and.arrow.up.left", .windowMakeSmaller))
                 Divider()
                 windowRow(.bound("Center", "circle.grid.cross", .windowCenter))
                 Divider()

@@ -40,6 +40,13 @@
 "Thirds" = "Tiers";
 "Sixths" = "Sixièmes";
 "Displays" = "Écrans";
+"Move" = "Déplacer";
+"Fourth Columns" = "Colonnes de quarts";
+"Third Columns" = "Colonnes de tiers";
+"Two Thirds" = "Deux tiers";
+"Three Fourths" = "Trois quarts";
+"Horizontal" = "Horizontal";
+"Size & Position" = "Taille et position";
 "General Margins" = "Marges générales";
 "Applied to every window position." = "Appliquée à chaque position de fenêtre.";
 "Show / Hide Sidebar" = "Afficher / Masquer la barre latérale";

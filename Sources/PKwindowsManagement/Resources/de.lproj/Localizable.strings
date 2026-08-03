@@ -40,6 +40,13 @@
 "Thirds" = "Drittel";
 "Sixths" = "Sechstel";
 "Displays" = "Bildschirme";
+"Move" = "Bewegen";
+"Fourth Columns" = "Viertel-Spalten";
+"Third Columns" = "Drittel-Spalten";
+"Two Thirds" = "Zwei Drittel";
+"Three Fourths" = "Drei Viertel";
+"Horizontal" = "Horizontal";
+"Size & Position" = "Größe & Position";
 "General Margins" = "Allgemeine Ränder";
 "Applied to every window position." = "Auf jede Fensterposition angewendet.";
 "Show / Hide Sidebar" = "Seitenleiste ein-/ausblenden";
