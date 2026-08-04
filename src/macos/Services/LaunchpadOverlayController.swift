@@ -85,6 +85,7 @@ final class LaunchpadOverlayController {
         panel.hasShadow = true
         panel.hidesOnDeactivate = true
         panel.isMovable = false
+
         hosting.view.frame = NSRect(origin: .zero, size: compactSize)
         hosting.view.autoresizingMask = [.width, .height]
         panel.contentView = hosting.view

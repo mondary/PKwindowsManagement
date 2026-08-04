@@ -16,6 +16,7 @@ final class AppSettings: ObservableObject {
         static let launchpadDisplayProfiles = "launchpad-display-profiles"
         static let launchpadGridNavigation = "launchpad-grid-navigation"
         static let launchpadStyle = "launchpad-style"
+        static let compactLaunchpadTheme = "compact-launchpad-theme"
         static let launchpadAppSortMode = "launchpad-app-sort-mode"
         static let launchpadIconSize = "launchpad-icon-size"
         static let launchpadColumnSpacing = "launchpad-column-spacing"
@@ -88,6 +89,9 @@ final class AppSettings: ObservableObject {
     }
     @Published var launchpadStyle: LaunchpadStyle {
         didSet { defaults.set(launchpadStyle.rawValue, forKey: Keys.launchpadStyle) }
+    }
+    @Published var compactLaunchpadTheme: CompactLaunchpadTheme {
+        didSet { defaults.set(compactLaunchpadTheme.rawValue, forKey: Keys.compactLaunchpadTheme) }
     }
     @Published var launchpadIconSize: Int {
         didSet {
@@ -204,6 +208,8 @@ final class AppSettings: ObservableObject {
         launchpadGridNavigation = LaunchpadGridNavigation(rawValue: navigationRaw) ?? .vertical
         let styleRaw = defaults.string(forKey: Keys.launchpadStyle) ?? LaunchpadStyle.fullscreen.rawValue
         launchpadStyle = LaunchpadStyle(rawValue: styleRaw) ?? .fullscreen
+        let themeRaw = defaults.string(forKey: Keys.compactLaunchpadTheme) ?? CompactLaunchpadTheme.dark.rawValue
+        compactLaunchpadTheme = CompactLaunchpadTheme(rawValue: themeRaw) ?? .dark
         launchpadIconSize = min(max(defaults.object(forKey: Keys.launchpadIconSize) as? Int ?? 48, 28), 96)
         launchpadColumnSpacing = min(max(defaults.object(forKey: Keys.launchpadColumnSpacing) as? Int ?? 16, 4), 48)
         launchpadRowSpacing = min(max(defaults.object(forKey: Keys.launchpadRowSpacing) as? Int ?? 12, 4), 48)
@@ -929,6 +935,24 @@ enum LaunchpadStyle: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .fullscreen: localizedString("Fullscreen")
         case .compact: localizedString("Compact")
+        }
+    }
+}
+
+enum CompactLaunchpadTheme: String, CaseIterable, Identifiable, Codable {
+    case light
+    case dark
+    case catpuccin
+    case glass
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .light: localizedString("Light")
+        case .dark: localizedString("Dark")
+        case .catpuccin: localizedString("Catpuccin")
+        case .glass: localizedString("Glass")
         }
     }
 }

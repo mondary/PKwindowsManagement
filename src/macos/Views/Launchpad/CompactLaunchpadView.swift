@@ -8,6 +8,40 @@ struct CompactLaunchpadRootView: View {
         CompactLaunchpadView(settings: settings)
             .environment(\.locale, settings.appLanguage.locale)
             .id(settings.appLanguage)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(themeBackground)
+            .foregroundColor(themeForeground)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var themeBackground: some View {
+        switch settings.compactLaunchpadTheme {
+        case .light:
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(red: 0.96, green: 0.96, blue: 0.97))
+                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 8)
+        case .dark:
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(red: 0.11, green: 0.11, blue: 0.12))
+                .shadow(color: .black.opacity(0.4), radius: 20, x: 0, y: 8)
+        case .catpuccin:
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(red: 0.12, green: 0.11, blue: 0.16))
+                .shadow(color: Color(red: 0.55, green: 0.34, blue: 0.65).opacity(0.2), radius: 20, x: 0, y: 8)
+        case .glass:
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.ultraThinMaterial)
+        }
+    }
+
+    private var themeForeground: Color {
+        switch settings.compactLaunchpadTheme {
+        case .light: return .black
+        case .dark: return .white
+        case .catpuccin: return Color(red: 0.95, green: 0.92, blue: 0.97)
+        case .glass: return .primary
+        }
     }
 }
 

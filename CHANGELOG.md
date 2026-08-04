@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.08.10] - 2026-08-04
+### Added
+- Compact Launchpad themes: Light, Dark, Catpuccin, Glass — selectable in Settings → Launchpad when Style is Compact
+### Fixed
+- Light theme text now readable: black text on light gray background instead of white on white
+
 ## [2026.08.09] - 2026-08-04
 ### Added
 - Compact Launchpad mode: Spotlight-style centered window (600×460) instead of fullscreen grid, with search, keyboard navigation (↑↓ enter esc) and calculator; switchable via the Style picker in Settings → Launchpad and persisted

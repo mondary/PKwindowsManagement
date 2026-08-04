@@ -126,6 +126,10 @@
 "Fullscreen" = "Pantalla completa";
 "Compact" = "Compacto";
 "Compact shows a centered Spotlight-style window." = "Compacto muestra una ventana centrada estilo Spotlight.";
+"Theme" = "Tema";
+"Light" = "Claro";
+"Dark" = "Oscuro";
+"Glass" = "Cristal";
 "About" = "Acerca de";
 "Search apps or recent launches" = "Buscar apps o aperturas recientes";
 "Launchpad Activation" = "Activación de Launchpad";

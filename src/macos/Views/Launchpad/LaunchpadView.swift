@@ -116,6 +116,23 @@ struct LaunchpadView: View {
 
                 Spacer()
             }
+
+            if settings.launchpadStyle == .compact {
+                HStack(spacing: 12) {
+                    Text("Theme")
+                        .frame(width: 110, alignment: .leading)
+
+                    Picker("", selection: $settings.compactLaunchpadTheme) {
+                        ForEach(CompactLaunchpadTheme.allCases) { theme in
+                            Text(theme.title).tag(theme)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 190)
+
+                    Spacer()
+                }
+            }
         }
         .padding(14)
         .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
