@@ -14,7 +14,7 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "PKwindowsManagement",
-            path: "Sources/PKwindowsManagement",
+            path: "src/macos",
             resources: [.process("Resources")]
         )
     ]

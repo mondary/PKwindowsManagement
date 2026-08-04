@@ -13,7 +13,7 @@
 - [ ] Assignation de raccourcis par app.
 - [ ] Filtres FR / EN.
 
-## KeyboardCowboy-like shortcuts
+## Raccourcis clavier avancés
 - [ ] Modèle de profils de raccourcis.
 - [ ] Enregistrement d’actions par app.
 - [ ] Affichage du raccourci sur l’icône.
@@ -27,10 +27,9 @@
 - [ ] Raccourcis avancés pour layouts.
 
 ## Inspirations
-- [ ] LaunchNext
-- [ ] LaunchpadPlus
-- [ ] KeyboardCowboy
-- [ ] Raycast
+- [ ] Recherche Spotlight intégrée.
+- [ ] Grids d’apps configurables.
+- [ ] Gestion de profils de raccourcis.
 
 ## Product
 - [ ] Refaire le README avec vision produit.

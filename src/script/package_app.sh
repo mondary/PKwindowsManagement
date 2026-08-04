@@ -14,8 +14,8 @@ esac
 APP_NAME="PKwindowsManagement"
 PRODUCT_NAME="PKwindowsManagement"
 BUNDLE_ID="com.mondary.PKwindowsManagement"
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-DIST_DIR="$ROOT_DIR/dist"
+ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+DIST_DIR="$ROOT_DIR/release"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
 EXECUTABLE="$APP_DIR/Contents/MacOS/$APP_NAME"
 RESOURCES_DIR="$APP_DIR/Contents/Resources"
@@ -27,16 +27,16 @@ VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
 cd "$ROOT_DIR"
 # Package.swift declares macOS 13 as the minimum supported system. Without an
 # explicit deployment target, Swift uses the host macOS version instead.
-MACOSX_DEPLOYMENT_TARGET=13.0 swift build -c "$BUILD_CONFIGURATION"
+MACOSX_DEPLOYMENT_TARGET=13.0 swift build -c "$BUILD_CONFIGURATION" --scratch-path release/build
 
 rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$RESOURCES_DIR"
-cp "$ROOT_DIR/.build/$BUILD_CONFIGURATION/$PRODUCT_NAME" "$EXECUTABLE"
+cp "$ROOT_DIR/release/build/$BUILD_CONFIGURATION/$PRODUCT_NAME" "$EXECUTABLE"
 chmod +x "$EXECUTABLE"
 
 # SwiftPM keeps localized resources in a generated bundle. Copy the language
 # folders into the app resources as well so SwiftUI and AppKit both resolve them.
-RESOURCE_BUNDLE="$ROOT_DIR/.build/$BUILD_CONFIGURATION/PKwindowsManagement_PKwindowsManagement.bundle"
+RESOURCE_BUNDLE="$ROOT_DIR/release/build/$BUILD_CONFIGURATION/PKwindowsManagement_PKwindowsManagement.bundle"
 if [[ -d "$RESOURCE_BUNDLE" ]]; then
   cp -R "$RESOURCE_BUNDLE" "$RESOURCES_DIR/"
   find "$RESOURCE_BUNDLE" -maxdepth 1 -type d -name '*.lproj' -exec cp -R {} "$RESOURCES_DIR/" \;

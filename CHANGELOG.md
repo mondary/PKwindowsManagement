@@ -1,8 +1,19 @@
 # Changelog
 
+## [2026.08.08] - 2026-08-04
+### Changed
+- Restructured the project layout: sources moved to `src/macos/` (room for future `src/linux/`), scripts moved to `src/script/`, build artifacts and packaged app moved from `dist/` + `.build/` into `release/` (via `--scratch-path release/build`)
+- Removed the GPL-3 `LaunchNext` reference submodule and the cleanroom note — the app is now 100% independent, no external code references
+- `Resources/` root folder (empty localization vestige) removed; real localizations stay in `src/macos/Resources/`
+- Scripts now compute the project root two levels up; `.gitignore` updated for `release/`
+### Added
+- `src/script/`, `src/macos/` directory structure; `src/linux/` placeholder intent
+### Removed
+- `submodules/LaunchNext`, `CLEANROOM.md`, `Resources/`, `dist/`, `.build/`
+
 ## [2026.08.07] - 2026-08-04 🔥
 ### Fixed
-- **Window management now works on Electron apps (Chrome, VS Code, Slack, etc.)** — the root cause was `AXEnhancedUserInterface`: when enabled (default on Electron), these apps silently ignore AX frame changes. Now disabled before setting position/size, re-enabled after — same technique as Rectangle
+- **Window management now works on Electron apps (Chrome, VS Code, Slack, etc.)** — the root cause was `AXEnhancedUserInterface`: when enabled (default on Electron), these apps silently ignore AX frame changes. Now disabled before setting position/size, re-enabled after
 - Window frame is now set in `size → position → size` order (was `position → size`), preventing macOS from rejecting moves when the window is too large for the destination screen
 - Focused window lookup now uses `NSWorkspace.frontmostApplication` PID instead of `AXUIElementCreateSystemWide`, with fallback to `kAXWindowsAttribute[0]` — more reliable across all app types
 - AX window operations deferred to next run-loop iteration instead of running synchronously inside the CGEvent tap callback (was causing silent failures on non-native apps)
@@ -13,8 +24,8 @@
 
 ## [2026.08.06] - 2026-08-03
 ### Added
-- New window actions matching Raycast's window management: Maximize Height/Width, Move Up/Down/Left/Right, Restore, Reasonable Size, Make Larger/Smaller, Toggle Fullscreen, vertical Fourth columns (First/Second/Third/Last), First/Center/Last Two Thirds, First/Center/Last Three Fourths, Top/Bottom Third and Top/Bottom Two Thirds — all with icons and per-language labels
-- New window actions are unbound by default (bind them in Settings → Windows), like Raycast
+- New window actions: Maximize Height/Width, Move Up/Down/Left/Right, Restore, Reasonable Size, Make Larger/Smaller, Toggle Fullscreen, vertical Fourth columns (First/Second/Third/Last), First/Center/Last Two Thirds, First/Center/Last Three Fourths, Top/Bottom Third and Top/Bottom Two Thirds — all with icons and per-language labels
+- New window actions are unbound by default (bind them in Settings → Windows)
 ### Changed
 - Snapping core restored to the proven version from 2026.08.05; the new actions are layered additively on top, leaving the original geometry untouched
 ### Fixed

@@ -90,25 +90,25 @@ swift build
 ```
 - Build the debug app bundle and launch it:
 ```bash
-script/build_and_run.sh
+src/script/build_and_run.sh
 ```
 - Build an app bundle without launching:
 ```bash
-script/package_app.sh debug
-script/package_app.sh release
+src/script/package_app.sh debug
+src/script/package_app.sh release
 ```
 - Build a testable app on the Desktop:
 ```bash
-script/package_app.sh debug
-cp -R dist/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
+src/script/package_app.sh debug
+cp -R release/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
 ```
 - Build a release and copy it to `/Applications`:
 ```bash
-script/release.sh
+src/script/release.sh
 ```
 
 ## 🧪 Install
-- Run `script/release.sh` to build and install `/Applications/PKwindowsManagement.app`.
+- Run `src/script/release.sh` to build and install `/Applications/PKwindowsManagement.app`.
 - On first launch, grant Accessibility access in `System Settings > Privacy & Security > Accessibility`. This permission is required for window management and global shortcuts.
 - If the app cannot control windows, check the target app permissions as well.
 

@@ -98,27 +98,27 @@ swift build
 ```
 - Création du bundle debug et lancement :
 ```bash
-script/build_and_run.sh
+src/script/build_and_run.sh
 ```
 - Création du bundle sans lancement :
 ```bash
-script/package_app.sh debug
-script/package_app.sh release
+src/script/package_app.sh debug
+src/script/package_app.sh release
 ```
 - Création d'une app testable sur le Bureau :
 ```bash
-script/package_app.sh debug
+src/script/package_app.sh debug
 rm -rf ~/Desktop/PKwindowsManagement.app
-ditto dist/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
+ditto release/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
 ```
 - Création d'une release et copie dans `/Applications` :
 ```bash
-script/release.sh
+src/script/release.sh
 ```
 
 ## 🧪 Installation
-- Lance `script/release.sh` pour compiler et installer `/Applications/PKwindowsManagement.app`.
-- Garde l'app installée au même chemin (`/Applications/PKwindowsManagement.app`) et construis-la toujours avec `script/package_app.sh` ou `script/release.sh` pour conserver le même identifiant, la même signature et éviter que macOS redemande inutilement les autorisations.
+- Lance `src/script/release.sh` pour compiler et installer `/Applications/PKwindowsManagement.app`.
+- Garde l'app installée au même chemin (`/Applications/PKwindowsManagement.app`) et construis-la toujours avec `src/script/package_app.sh` ou `src/script/release.sh` pour conserver le même identifiant, la même signature et éviter que macOS redemande inutilement les autorisations.
 - Au premier usage, valide l'accès à l'accessibilité dans `Réglages Système > Confidentialité et sécurité > Accessibilité`. Cette permission est nécessaire pour gérer les fenêtres et écouter les raccourcis globaux.
 - Pour `Empty Trash`, valide aussi l'autorisation d'automatisation Finder quand macOS la demande. Cette commande passe par Finder car macOS bloque l'accès direct au dossier `~/.Trash`.
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
