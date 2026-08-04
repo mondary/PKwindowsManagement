@@ -47,8 +47,7 @@ final class LaunchShortcutMonitor {
     private func requestAccessibilityOnce() {
         guard !didRequestAccessibility else { return }
         didRequestAccessibility = true
-        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        _ = AXIsProcessTrustedWithOptions(options)
+        _ = AXIsProcessTrusted()
     }
 
     private func installEventTap() {
