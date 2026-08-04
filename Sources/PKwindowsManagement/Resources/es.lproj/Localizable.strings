@@ -22,6 +22,8 @@
 "Accessibility Required" = "Accesibilidad necesaria";
 "Keyboard shortcuts need accessibility access to control windows." = "Los atajos de teclado necesitan acceso de accesibilidad para controlar ventanas.";
 "Grant Access" = "Conceder acceso";
+"Re-request Access" = "Volver a solicitar acceso";
+"Open System Settings" = "Abrir ajustes del sistema";
 "Backup" = "Copia de seguridad";
 "Settings Backup" = "Copia de los ajustes";
 "Export Settings..." = "Exportar ajustes…";

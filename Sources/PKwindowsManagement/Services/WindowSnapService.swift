@@ -87,13 +87,13 @@ private enum WindowCycleFamily {
 final class WindowSnapService {
     func perform(_ action: WindowSnapAction, preset: WindowMarginPreset = WindowMarginPreset()) {
         guard ensureAccessibilityPermission() else { return }
-        guard let focusedWindow = focusedAXWindow(),
+        guard let (focusedWindow, appElement) = focusedAXWindow(),
               let currentFrame = frame(of: focusedWindow)
         else { return }
 
         if action == .restore {
             if let restored = Self.restoreStore.removeValue(forKey: Self.windowKey(for: focusedWindow)) {
-                setFrame(restored, for: focusedWindow)
+                setFrame(restored, for: focusedWindow, on: appElement)
             }
             return
         }
@@ -259,7 +259,7 @@ final class WindowSnapService {
             targetFrame = moved
         }
 
-        setFrame(targetFrame, for: focusedWindow)
+        setFrame(targetFrame, for: focusedWindow, on: appElement)
     }
 
     private func insetFrame(_ rect: CGRect, by margins: WindowMargins) -> CGRect {
@@ -339,16 +339,25 @@ final class WindowSnapService {
         return AXIsProcessTrustedWithOptions(options)
     }
 
-    private func focusedAXWindow() -> AXUIElement? {
-        let system = AXUIElementCreateSystemWide()
-        var appRef: AnyObject?
-        let appStatus = AXUIElementCopyAttributeValue(system, kAXFocusedApplicationAttribute as CFString, &appRef)
-        guard appStatus == .success, let appElement = appRef else { return nil }
+    private func focusedAXWindow() -> (AXUIElement, AXUIElement)? {
+        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
 
         var windowRef: AnyObject?
-        let windowStatus = AXUIElementCopyAttributeValue(appElement as! AXUIElement, kAXFocusedWindowAttribute as CFString, &windowRef)
-        guard windowStatus == .success, let windowElement = windowRef else { return nil }
-        return (windowElement as! AXUIElement)
+        let windowStatus = AXUIElementCopyAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, &windowRef)
+        if windowStatus == .success, let windowElement = windowRef {
+            return (windowElement as! AXUIElement, appElement)
+        }
+
+        var windowsRef: AnyObject?
+        let windowsStatus = AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef)
+        if windowsStatus == .success,
+           let windows = windowsRef as? [AXUIElement],
+           let firstWindow = windows.first
+        {
+            return (firstWindow, appElement)
+        }
+        return nil
     }
 
     private func frame(of window: AXUIElement) -> CGRect? {
@@ -360,16 +369,31 @@ final class WindowSnapService {
         return CGRect(origin: position, size: size)
     }
 
-    private func setFrame(_ frame: CGRect, for window: AXUIElement) {
-        var point = frame.origin
-        var size = frame.size
+    private func setFrame(_ frame: CGRect, for window: AXUIElement, on appElement: AXUIElement) {
+        let enhancedKey = "AXEnhancedUserInterface" as CFString
+        var enhancedWasOn = false
+        var prev: AnyObject?
+        if AXUIElementCopyAttributeValue(appElement, enhancedKey, &prev) == .success,
+           let flag = prev as? Bool, flag
+        {
+            enhancedWasOn = true
+            AXUIElementSetAttributeValue(appElement, enhancedKey, kCFBooleanFalse)
+        }
 
-        guard let pointValue = AXValueCreate(.cgPoint, &point),
-              let sizeValue = AXValueCreate(.cgSize, &size)
+        var sz = frame.size
+        var pt = frame.origin
+        guard let sizeValue1 = AXValueCreate(.cgSize, &sz),
+              let pointValue = AXValueCreate(.cgPoint, &pt),
+              let sizeValue2 = AXValueCreate(.cgSize, &sz)
         else { return }
 
-        AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
+        AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue1)
         AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, pointValue)
+        AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue2)
+
+        if enhancedWasOn {
+            AXUIElementSetAttributeValue(appElement, enhancedKey, kCFBooleanTrue)
+        }
     }
 
     private static var restoreStore: [CFHashCode: CGRect] = [:]

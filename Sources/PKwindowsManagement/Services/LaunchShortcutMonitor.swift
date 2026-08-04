@@ -96,10 +96,16 @@ final class LaunchShortcutMonitor {
         case .keyDown:
             var consumed = false
             if let app = match(event: event) {
-                launchHandler?(app)
+                let captured = app
+                DispatchQueue.main.async { [weak self] in
+                    self?.launchHandler?(captured)
+                }
                 consumed = true
             } else if let windowAction = matchWindowShortcut(event: event) {
-                windowHandler?(windowAction)
+                let captured = windowAction
+                DispatchQueue.main.async { [weak self] in
+                    self?.windowHandler?(captured)
+                }
                 consumed = true
             }
             return consumed ? nil : .passUnretained(event)

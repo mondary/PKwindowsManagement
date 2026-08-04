@@ -68,12 +68,17 @@ struct GeneralSettingsView: View {
 
                 Spacer()
 
-                if !accessibilityGranted {
-                    Button("Grant Access") {
-                        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-                        AXIsProcessTrustedWithOptions(options)
-                    }
-                    .buttonStyle(.borderedProminent)
+                Button {
+                    requestAccess()
+                } label: {
+                    Label(accessibilityGranted ? localizedString("Re-request Access") : localizedString("Grant Access"), systemImage: "hand.raised.fill")
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button {
+                    openAccessibilitySystemSettings()
+                } label: {
+                    Label(localizedString("Open System Settings"), systemImage: "gearshape")
                 }
             }
             .padding(14)
@@ -85,6 +90,17 @@ struct GeneralSettingsView: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(accessibilityGranted ? Color.green.opacity(0.3) : Color.red.opacity(0.3), lineWidth: 1)
             )
+        }
+    }
+
+    private func requestAccess() {
+        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+        AXIsProcessTrustedWithOptions(options)
+    }
+
+    private func openAccessibilitySystemSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
         }
     }
 

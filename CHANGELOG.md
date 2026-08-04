@@ -1,5 +1,16 @@
 # Changelog
 
+## [2026.08.07] - 2026-08-04 🔥
+### Fixed
+- **Window management now works on Electron apps (Chrome, VS Code, Slack, etc.)** — the root cause was `AXEnhancedUserInterface`: when enabled (default on Electron), these apps silently ignore AX frame changes. Now disabled before setting position/size, re-enabled after — same technique as Rectangle
+- Window frame is now set in `size → position → size` order (was `position → size`), preventing macOS from rejecting moves when the window is too large for the destination screen
+- Focused window lookup now uses `NSWorkspace.frontmostApplication` PID instead of `AXUIElementCreateSystemWide`, with fallback to `kAXWindowsAttribute[0]` — more reliable across all app types
+- AX window operations deferred to next run-loop iteration instead of running synchronously inside the CGEvent tap callback (was causing silent failures on non-native apps)
+### Changed
+- Accessibility section in General settings now has "Re-request Access" and "Open System Settings" buttons for easier permission troubleshooting
+### Added
+- Localized strings for the new accessibility buttons (fr/de/es)
+
 ## [2026.08.06] - 2026-08-03
 ### Added
 - New window actions matching Raycast's window management: Maximize Height/Width, Move Up/Down/Left/Right, Restore, Reasonable Size, Make Larger/Smaller, Toggle Fullscreen, vertical Fourth columns (First/Second/Third/Last), First/Center/Last Two Thirds, First/Center/Last Three Fourths, Top/Bottom Third and Top/Bottom Two Thirds — all with icons and per-language labels
