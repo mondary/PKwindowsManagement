@@ -88,7 +88,7 @@ private func snippetListView(
     selectedSnippetID: Binding<String?>,
     settings: AppSettings
 ) -> some View {
-    HStack(spacing: 0) {
+    ResizableHSplit(defaultWidth: 380, minWidth: 260, maxWidth: 520) {
         leftPane(
             title: title,
             subtitle: subtitle,
@@ -100,11 +100,8 @@ private func snippetListView(
             selectedSnippetID: selectedSnippetID,
             settings: settings
         )
-        .frame(width: 360)
         .background(Color(NSColor.windowBackgroundColor))
-
-        Divider()
-
+    } right: {
         rightPane(
             emptyTitle: emptyTitle,
             emptySubtitle: emptySubtitle,
@@ -113,6 +110,67 @@ private func snippetListView(
             selectedSnippetID: selectedSnippetID,
             settings: settings
         )
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+}
+
+private struct ResizableHSplit<Left: View, Right: View>: View {
+    @State private var leftWidth: CGFloat
+    @State private var dragStartWidth: CGFloat = 0
+    let minWidth: CGFloat
+    let maxWidth: CGFloat
+    @ViewBuilder let left: () -> Left
+    @ViewBuilder let right: () -> Right
+
+    init(defaultWidth: CGFloat = 380, minWidth: CGFloat = 260, maxWidth: CGFloat = 520, @ViewBuilder left: @escaping () -> Left, @ViewBuilder right: @escaping () -> Right) {
+        _leftWidth = State(initialValue: defaultWidth)
+        self.minWidth = minWidth
+        self.maxWidth = maxWidth
+        self.left = left
+        self.right = right
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            left()
+                .frame(width: leftWidth)
+                .clipped()
+
+            divider
+
+            right()
+        }
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(Color(NSColor.separatorColor))
+            .frame(width: 1)
+            .overlay(
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(width: 6)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                if dragStartWidth == 0 {
+                                    dragStartWidth = leftWidth
+                                }
+                                leftWidth = min(maxWidth, max(minWidth, dragStartWidth + value.translation.width))
+                            }
+                            .onEnded { _ in
+                                dragStartWidth = 0
+                            }
+                    )
+                    .onHover { inside in
+                        if inside {
+                            NSCursor.resizeLeftRight.push()
+                        } else {
+                            NSCursor.pop()
+                        }
+                    }
+            )
     }
 }
 

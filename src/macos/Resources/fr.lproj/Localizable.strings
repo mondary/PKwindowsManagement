@@ -124,6 +124,9 @@
 "Move Down" = "Déplacer vers le bas";
 "Toggle Fullscreen" = "Basculer en plein écran";
 "Fullscreen" = "Plein écran";
+"Compact" = "Compact";
+"Compact shows a centered Spotlight-style window." = "Compact affiche une fenêtre centrée style Spotlight.";
+"About" = "À propos";
 "Applications" = "Applications";
 "Search apps or recent launches" = "Rechercher des apps ou des lancements récents";
 "Launchpad Activation" = "Activation de Launchpad";

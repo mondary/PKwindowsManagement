@@ -15,6 +15,7 @@ final class AppSettings: ObservableObject {
         static let launchpadGridRows = "launchpad-grid-rows"
         static let launchpadDisplayProfiles = "launchpad-display-profiles"
         static let launchpadGridNavigation = "launchpad-grid-navigation"
+        static let launchpadStyle = "launchpad-style"
         static let launchpadAppSortMode = "launchpad-app-sort-mode"
         static let launchpadIconSize = "launchpad-icon-size"
         static let launchpadColumnSpacing = "launchpad-column-spacing"
@@ -84,6 +85,9 @@ final class AppSettings: ObservableObject {
     }
     @Published var launchpadGridNavigation: LaunchpadGridNavigation {
         didSet { defaults.set(launchpadGridNavigation.rawValue, forKey: Keys.launchpadGridNavigation) }
+    }
+    @Published var launchpadStyle: LaunchpadStyle {
+        didSet { defaults.set(launchpadStyle.rawValue, forKey: Keys.launchpadStyle) }
     }
     @Published var launchpadIconSize: Int {
         didSet {
@@ -198,6 +202,8 @@ final class AppSettings: ObservableObject {
         launchpadGridRows = min(max(defaults.object(forKey: Keys.launchpadGridRows) as? Int ?? 5, 3), 20)
         let navigationRaw = defaults.string(forKey: Keys.launchpadGridNavigation) ?? LaunchpadGridNavigation.vertical.rawValue
         launchpadGridNavigation = LaunchpadGridNavigation(rawValue: navigationRaw) ?? .vertical
+        let styleRaw = defaults.string(forKey: Keys.launchpadStyle) ?? LaunchpadStyle.fullscreen.rawValue
+        launchpadStyle = LaunchpadStyle(rawValue: styleRaw) ?? .fullscreen
         launchpadIconSize = min(max(defaults.object(forKey: Keys.launchpadIconSize) as? Int ?? 48, 28), 96)
         launchpadColumnSpacing = min(max(defaults.object(forKey: Keys.launchpadColumnSpacing) as? Int ?? 16, 4), 48)
         launchpadRowSpacing = min(max(defaults.object(forKey: Keys.launchpadRowSpacing) as? Int ?? 12, 4), 48)
@@ -909,6 +915,20 @@ enum LaunchpadGridNavigation: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .vertical: localizedString("Vertical Scroll")
         case .horizontalPages: localizedString("Horizontal Pages")
+        }
+    }
+}
+
+enum LaunchpadStyle: String, CaseIterable, Identifiable, Codable {
+    case fullscreen
+    case compact
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .fullscreen: localizedString("Fullscreen")
+        case .compact: localizedString("Compact")
         }
     }
 }

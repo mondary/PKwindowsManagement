@@ -10,7 +10,7 @@ final class LaunchpadOverlayController {
     static let shared = LaunchpadOverlayController()
 
     private var panel: NSPanel?
-    private var host: NSHostingController<LaunchpadOverlayRootView>?
+    private var host: NSViewController?
 
     func toggle(settings: AppSettings) {
         if panel?.isVisible == true {
@@ -22,7 +22,14 @@ final class LaunchpadOverlayController {
 
     func show(settings: AppSettings) {
         guard panel?.isVisible != true else { return }
+        if settings.launchpadStyle == .compact {
+            showCompact(settings: settings)
+        } else {
+            showFullscreen(settings: settings)
+        }
+    }
 
+    private func showFullscreen(settings: AppSettings) {
         let targetScreen = screenForCurrentPointer() ?? NSScreen.main
         let rootView = LaunchpadOverlayRootView(
             settings: settings,
@@ -44,6 +51,41 @@ final class LaunchpadOverlayController {
         panel.hasShadow = false
         panel.hidesOnDeactivate = false
         hosting.view.frame = NSRect(origin: .zero, size: screenFrame.size)
+        hosting.view.autoresizingMask = [.width, .height]
+        panel.contentView = hosting.view
+
+        self.host = hosting
+        self.panel = panel
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
+        panel.orderFrontRegardless()
+    }
+
+    private func showCompact(settings: AppSettings) {
+        let targetScreen = screenForCurrentPointer() ?? NSScreen.main
+        let rootView = CompactLaunchpadRootView(settings: settings)
+        let hosting = NSHostingController(rootView: rootView)
+
+        let compactSize = NSSize(width: 600, height: 460)
+        let screenFrame = targetScreen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
+        let origin = NSPoint(
+            x: screenFrame.midX - compactSize.width / 2,
+            y: screenFrame.midY - compactSize.height / 2
+        )
+        let panel = LaunchpadPanel(
+            contentRect: NSRect(origin: origin, size: compactSize),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+        panel.hasShadow = true
+        panel.hidesOnDeactivate = true
+        panel.isMovable = false
+        hosting.view.frame = NSRect(origin: .zero, size: compactSize)
         hosting.view.autoresizingMask = [.width, .height]
         panel.contentView = hosting.view
 

@@ -97,6 +97,25 @@ struct LaunchpadView: View {
 
                 Spacer()
             }
+
+            HStack(spacing: 12) {
+                Text("Style")
+                    .frame(width: 110, alignment: .leading)
+
+                Picker("", selection: $settings.launchpadStyle) {
+                    ForEach(LaunchpadStyle.allCases) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 190)
+
+                Text("Compact shows a centered Spotlight-style window.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+            }
         }
         .padding(14)
         .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12, style: .continuous))

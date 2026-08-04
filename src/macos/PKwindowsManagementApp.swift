@@ -55,6 +55,8 @@ private struct RootDashboardView: View {
     @ObservedObject var settings: AppSettings
     @State private var selection: SettingsSection? = .general
     @State private var isSidebarVisible = true
+    @State private var sidebarWidth: CGFloat = 210
+    @State private var sidebarDragStart: CGFloat = 0
 
     static var appIcon: NSImage? {
         if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns") {
@@ -67,8 +69,10 @@ private struct RootDashboardView: View {
         HStack(spacing: 0) {
             if isSidebarVisible {
                 sidebar
-                    .frame(width: 210)
-                Divider()
+                    .frame(width: sidebarWidth)
+                    .clipped()
+
+                sidebarDivider
             } else {
                 sidebarRevealStrip
                 Divider()
@@ -76,6 +80,37 @@ private struct RootDashboardView: View {
             detail
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+
+    private var sidebarDivider: some View {
+        Rectangle()
+            .fill(Color(NSColor.separatorColor))
+            .frame(width: 1)
+            .overlay(
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(width: 6)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                if sidebarDragStart == 0 {
+                                    sidebarDragStart = sidebarWidth
+                                }
+                                sidebarWidth = min(320, max(170, sidebarDragStart + value.translation.width))
+                            }
+                            .onEnded { _ in
+                                sidebarDragStart = 0
+                            }
+                    )
+                    .onHover { inside in
+                        if inside {
+                            NSCursor.resizeLeftRight.push()
+                        } else {
+                            NSCursor.pop()
+                        }
+                    }
+            )
     }
 
     private var sidebar: some View {
@@ -159,6 +194,8 @@ private struct RootDashboardView: View {
                 SnippetsSettingsView(settings: settings)
             case .urls:
                 URLSnippetsSettingsView(settings: settings)
+            case .about:
+                AboutSettingsView()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -172,6 +209,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     case appearance
     case snippets
     case urls
+    case about
 
     var id: String { rawValue }
 
@@ -183,6 +221,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .appearance: localizedString("Appearance")
         case .snippets: localizedString("Snippets")
         case .urls: "URLs"
+        case .about: localizedString("About")
         }
     }
 
@@ -194,6 +233,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .appearance: "paintbrush"
         case .snippets: "doc.on.doc"
         case .urls: "link"
+        case .about: "info.circle"
         }
     }
 }

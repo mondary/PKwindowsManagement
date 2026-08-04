@@ -124,6 +124,9 @@
 "Move Down" = "Nach unten bewegen";
 "Toggle Fullscreen" = "Vollbild umschalten";
 "Fullscreen" = "Vollbild";
+"Compact" = "Kompakt";
+"Compact shows a centered Spotlight-style window." = "Kompakt zeigt ein zentriertes Spotlight-Fenster.";
+"About" = "Über";
 "Search apps or recent launches" = "Apps oder letzte Starts suchen";
 "Launchpad Activation" = "Launchpad-Aktivierung";
 "Global shortcut" = "Globales Tastenkürzel";

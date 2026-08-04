@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026.08.09] - 2026-08-04
+### Added
+- Compact Launchpad mode: Spotlight-style centered window (600×460) instead of fullscreen grid, with search, keyboard navigation (↑↓ enter esc) and calculator; switchable via the Style picker in Settings → Launchpad and persisted
+- About section in Settings: app icon, version, description, GitHub links, license and macOS version
+- Resizable left sidebar in Settings (default 210px, 170–320px range) with drag handle and resize cursor
+- Resizable Snippets/URLs left pane (default 380px, 260–520px range) with drag handle and resize cursor
+### Fixed
+- Snippets/URLs layout no longer overflows: content now fills available height instead of shifting when the list grows
+- Resizable split drag no longer jumps: drag start width is captured instead of accumulating translation
+
 ## [2026.08.08] - 2026-08-04
 ### Changed
 - Restructured the project layout: sources moved to `src/macos/` (room for future `src/linux/`), scripts moved to `src/script/`, build artifacts and packaged app moved from `dist/` + `.build/` into `release/` (via `--scratch-path release/build`)
