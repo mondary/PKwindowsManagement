@@ -93,6 +93,9 @@ final class LaunchShortcutMonitor {
             modifierState.update(with: event)
             return .passUnretained(event)
         case .keyDown:
+            if NSApp.isActive || NSWorkspace.shared.frontmostApplication?.processIdentifier == ProcessInfo.processInfo.processIdentifier {
+                return .passUnretained(event)
+            }
             var consumed = false
             if let app = match(event: event) {
                 let captured = app

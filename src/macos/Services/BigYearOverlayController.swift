@@ -52,7 +52,6 @@ final class BigYearOverlayController {
         panel.setFrame(screenFrame, display: true)
         panel.isOpaque = true
         panel.backgroundColor = .white
-        panel.appearance = NSAppearance(named: .aqua)
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         panel.hasShadow = false

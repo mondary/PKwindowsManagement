@@ -195,6 +195,8 @@ private struct RootDashboardView: View {
                 WindowShortcutsPreferencesView(settings: settings)
             case .launchpad:
                 LaunchpadView(settings: settings)
+            case .bigYear:
+                BigYearSettingsView(settings: settings)
             case .appearance:
                 AppearanceSettingsView(settings: settings)
             case .snippets:
@@ -213,6 +215,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     case general
     case windows
     case launchpad
+    case bigYear
     case appearance
     case snippets
     case urls
@@ -225,6 +228,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .general: localizedString("General")
         case .windows: localizedString("Windows")
         case .launchpad: "Launchpad"
+        case .bigYear: "Big Year"
         case .appearance: localizedString("Appearance")
         case .snippets: localizedString("Snippets")
         case .urls: "URLs"
@@ -237,6 +241,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .general: "gearshape"
         case .windows: "rectangle.split.2x1"
         case .launchpad: "rectangle.3.group"
+        case .bigYear: "calendar"
         case .appearance: "paintbrush"
         case .snippets: "doc.on.doc"
         case .urls: "link"

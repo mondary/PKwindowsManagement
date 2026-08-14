@@ -28,7 +28,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Profils de grille par écran pour adapter le Launchpad à chaque moniteur connecté.
 - Choix du mode de navigation du Launchpad : scroll vertical continu ou pages horizontales.
 - Alignement en haut des pages en mode navigation horizontale.
-- Vue `Big Year` plein écran sans scroll : thème pastel, week-ends, jours fériés français, vacances scolaires A/B/C et anniversaires avec `🎂`; fermeture par bouton, `Échap` ou `Cmd + W`.
+- Vue `Big Year` plein écran sans scroll : thèmes Pastel, Catppuccin Latte/Mocha ou Dracula, week-ends, jours fériés français, vacances scolaires A/B/C et anniversaires avec `🎂`; fermeture par bouton, `Échap` ou `Cmd + W`.
 - Indicateur de statut d'accessibilité avec bouton pour autoriser l'accès.
 - Export automatique des backups vers un dossier au choix (ex : Google Drive) à chaque modification des réglages.
 - Menu contextuel sur chaque application pour attribuer un raccourci ou la déplacer vers la Corbeille.
@@ -84,7 +84,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Les changements sont sauvegardés dans `UserDefaults`.
 - Import/export manuel des réglages au format JSON.
 - Auto-backup : choisis un dossier (ex : Google Drive) et exporte un backup JSON horodaté à chaque modification des réglages.
-- Dans Big Year, choisis la zone scolaire et saisis un anniversaire par ligne au format `MM-JJ,Prénom` (par exemple `11-02,Clément`).
+- Dans le calendrier ou sa section dédiée `Big Year` des réglages, utilise l’aperçu vivant, choisis la zone scolaire et le thème, puis saisis un anniversaire par ligne au format `JJ.MM,Prénom` ou `JJMM,Prénom` (par exemple `11.02,Clément` ou `0112,Marie`). Préfixe le prénom par `!` pour un événement important en gras.
 
 ## 🧾 Commandes
 - Clic gauche sur l'icône de barre de menu : ouvre ou ferme le Launchpad.

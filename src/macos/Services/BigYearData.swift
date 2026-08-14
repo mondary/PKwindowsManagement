@@ -93,11 +93,24 @@ enum BigYearData {
     }()
 
     private static func normalizedDay(_ raw: String) -> String {
-        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "/", with: "-")
-        let parts = value.split(separator: "-").compactMap { Int($0) }
-        guard parts.count >= 2 else { return value }
-        let month = parts.count == 2 ? parts[0] : parts[parts.count - 2]
-        let day = parts.last ?? 0
+        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let digits = value.filter(\.isNumber)
+        let day: Int
+        let month: Int
+        if digits.count == 4, let compactDay = Int(digits.prefix(2)), let compactMonth = Int(digits.suffix(2)) {
+            day = compactDay
+            month = compactMonth
+        } else {
+            let parts = value
+                .replacingOccurrences(of: "/", with: ".")
+                .replacingOccurrences(of: "-", with: ".")
+                .split(separator: ".")
+                .compactMap { Int($0) }
+            guard parts.count == 2 else { return value }
+            day = parts[0]
+            month = parts[1]
+        }
+        guard (1...31).contains(day), (1...12).contains(month) else { return value }
         return String(format: "%02d-%02d", month, day)
     }
 

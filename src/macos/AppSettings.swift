@@ -35,6 +35,7 @@ final class AppSettings: ObservableObject {
         static let windowShortcutDefaultsVersion = "window-shortcut-defaults-v5"
         static let bigYearBirthdays = "big-year-birthdays"
         static let bigYearSchoolZone = "big-year-school-zone"
+        static let bigYearTheme = "big-year-theme"
     }
 
     private let defaults: UserDefaults
@@ -165,6 +166,10 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(bigYearSchoolZone, forKey: Keys.bigYearSchoolZone) }
     }
 
+    @Published var bigYearTheme: BigYearTheme {
+        didSet { defaults.set(bigYearTheme.rawValue, forKey: Keys.bigYearTheme) }
+    }
+
     var windowMarginPreset: WindowMarginPreset {
         .init(general: generalMargins, almostFull: almostFullMargins, center: centerMargins)
     }
@@ -236,6 +241,7 @@ final class AppSettings: ObservableObject {
         centerMargins = Self.loadMargins(Keys.windowMarginCenter, from: defaults, fallback: .zero)
         bigYearBirthdays = defaults.string(forKey: Keys.bigYearBirthdays) ?? ""
         bigYearSchoolZone = defaults.string(forKey: Keys.bigYearSchoolZone) ?? "A"
+        bigYearTheme = BigYearTheme(rawValue: defaults.string(forKey: Keys.bigYearTheme) ?? "") ?? .pastel
 
         if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()
@@ -509,7 +515,8 @@ final class AppSettings: ObservableObject {
             launchpadRowSpacing: launchpadRowSpacing,
             appLanguage: appLanguage,
             bigYearBirthdays: bigYearBirthdays,
-            bigYearSchoolZone: bigYearSchoolZone
+            bigYearSchoolZone: bigYearSchoolZone,
+            bigYearTheme: bigYearTheme
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -564,6 +571,7 @@ final class AppSettings: ObservableObject {
         appLanguage = backup.appLanguage ?? appLanguage
         bigYearBirthdays = backup.bigYearBirthdays ?? bigYearBirthdays
         bigYearSchoolZone = backup.bigYearSchoolZone ?? bigYearSchoolZone
+        bigYearTheme = backup.bigYearTheme ?? bigYearTheme
 
         saveShortcuts()
         clearedWindowShortcuts = []
@@ -917,6 +925,7 @@ private struct SettingsBackup: Codable {
     let appLanguage: AppLanguage?
     let bigYearBirthdays: String?
     let bigYearSchoolZone: String?
+    let bigYearTheme: BigYearTheme?
 }
 
 enum SettingsBackupError: LocalizedError {

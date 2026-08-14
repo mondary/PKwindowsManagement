@@ -1,22 +1,88 @@
 import SwiftUI
 
-private enum BigYearPalette {
-    static let page = Color.white
-    static let cell = Color.white
-    static let weekend = Color(red: 0.93, green: 0.97, blue: 1.00)
-    static let empty = Color.white
-    static let border = Color(red: 0.95, green: 0.94, blue: 0.97)
-    static let holiday = Color(red: 0.73, green: 0.91, blue: 0.82)
-    static let birthday = Color(red: 0.95, green: 0.78, blue: 0.86)
-    static let today = Color(red: 1.00, green: 0.93, blue: 0.62)
-    static let todayBorder = Color(red: 0.98, green: 0.58, blue: 0.34)
+enum BigYearTheme: String, CaseIterable, Codable, Identifiable {
+    case pastel
+    case catppuccinLatte
+    case catppuccinMocha
+    case dracula
 
-    static func zone(_ zone: String) -> Color {
-        switch zone {
-        case "B": Color(red: 0.98, green: 0.83, blue: 0.69)
-        case "C": Color(red: 0.86, green: 0.80, blue: 0.95)
-        default: Color(red: 0.76, green: 0.87, blue: 0.98)
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .pastel: "Pastel clair"
+        case .catppuccinLatte: "Catppuccin Latte"
+        case .catppuccinMocha: "Catppuccin Mocha"
+        case .dracula: "Dracula"
         }
+    }
+    var isDark: Bool { self == .catppuccinMocha || self == .dracula }
+
+    var colors: BigYearColors {
+        switch self {
+        case .pastel:
+            BigYearColors(
+                page: .white, cell: .white,
+                weekend: Color(red: 0.93, green: 0.97, blue: 1),
+                empty: .white, border: Color(red: 0.95, green: 0.94, blue: 0.97),
+                holiday: Color(red: 0.73, green: 0.91, blue: 0.82),
+                birthday: Color(red: 0.95, green: 0.78, blue: 0.86),
+                today: Color(red: 1, green: 0.93, blue: 0.62),
+                todayBorder: Color(red: 0.98, green: 0.58, blue: 0.34),
+                text: Color.black.opacity(0.84), secondaryText: Color.black.opacity(0.62),
+                zones: [Color(red: 0.76, green: 0.87, blue: 0.98), Color(red: 0.98, green: 0.83, blue: 0.69), Color(red: 0.86, green: 0.80, blue: 0.95)]
+            )
+        case .catppuccinLatte:
+            BigYearColors(
+                page: Color(red: 0.94, green: 0.95, blue: 0.97), cell: Color(red: 0.98, green: 0.98, blue: 0.99),
+                weekend: Color(red: 0.90, green: 0.91, blue: 0.94),
+                empty: Color(red: 0.94, green: 0.95, blue: 0.97), border: Color(red: 0.86, green: 0.87, blue: 0.91),
+                holiday: Color(red: 0.65, green: 0.82, blue: 0.59), birthday: Color(red: 0.92, green: 0.70, blue: 0.78),
+                today: Color(red: 0.98, green: 0.89, blue: 0.62), todayBorder: Color(red: 0.88, green: 0.56, blue: 0.35),
+                text: Color(red: 0.30, green: 0.31, blue: 0.41), secondaryText: Color(red: 0.42, green: 0.44, blue: 0.56),
+                zones: [Color(red: 0.55, green: 0.70, blue: 0.91), Color(red: 0.94, green: 0.70, blue: 0.48), Color(red: 0.75, green: 0.65, blue: 0.89)]
+            )
+        case .catppuccinMocha:
+            BigYearColors(
+                page: Color(red: 0.12, green: 0.12, blue: 0.18), cell: Color(red: 0.12, green: 0.12, blue: 0.18),
+                weekend: Color(red: 0.18, green: 0.19, blue: 0.27), empty: Color(red: 0.10, green: 0.10, blue: 0.15),
+                border: Color(red: 0.24, green: 0.25, blue: 0.34), holiday: Color(red: 0.65, green: 0.89, blue: 0.63),
+                birthday: Color(red: 0.96, green: 0.76, blue: 0.91), today: Color(red: 0.39, green: 0.40, blue: 0.54),
+                todayBorder: Color(red: 0.98, green: 0.70, blue: 0.53), text: Color(red: 0.80, green: 0.84, blue: 0.96),
+                secondaryText: Color(red: 0.65, green: 0.68, blue: 0.78),
+                zones: [Color(red: 0.54, green: 0.71, blue: 0.98), Color(red: 0.98, green: 0.70, blue: 0.53), Color(red: 0.80, green: 0.65, blue: 0.97)]
+            )
+        case .dracula:
+            BigYearColors(
+                page: Color(red: 0.16, green: 0.16, blue: 0.21), cell: Color(red: 0.16, green: 0.16, blue: 0.21),
+                weekend: Color(red: 0.19, green: 0.20, blue: 0.27), empty: Color(red: 0.14, green: 0.14, blue: 0.19),
+                border: Color(red: 0.27, green: 0.28, blue: 0.35), holiday: Color(red: 0.55, green: 0.89, blue: 0.62),
+                birthday: Color(red: 0.95, green: 0.55, blue: 0.80), today: Color(red: 0.29, green: 0.30, blue: 0.40),
+                todayBorder: Color(red: 0.95, green: 0.77, blue: 0.48), text: Color(red: 0.97, green: 0.97, blue: 0.95),
+                secondaryText: Color(red: 0.74, green: 0.76, blue: 0.83),
+                zones: [Color(red: 0.55, green: 0.80, blue: 0.93), Color(red: 0.95, green: 0.65, blue: 0.45), Color(red: 0.74, green: 0.58, blue: 0.90)]
+            )
+        }
+    }
+}
+
+struct BigYearColors {
+    let page: Color
+    let cell: Color
+    let weekend: Color
+    let empty: Color
+    let border: Color
+    let holiday: Color
+    let birthday: Color
+    let today: Color
+    let todayBorder: Color
+    let text: Color
+    let secondaryText: Color
+    let zones: [Color]
+
+    var swatches: [Color] { [weekend, holiday, birthday, zones[2]] }
+
+    func zone(_ zone: String) -> Color {
+        zones[zone == "B" ? 1 : zone == "C" ? 2 : 0]
     }
 }
 
@@ -40,18 +106,21 @@ struct BigYearRootView: View {
             let headerHeight: CGFloat = 52
             ZStack(alignment: .leading) {
                 VStack(spacing: 0) {
-                    header.frame(height: headerHeight)
+                    header
+                        .frame(height: headerHeight)
+                        .background(colors.weekend)
                     BigYearGrid(
                         year: displayedYear,
                         size: CGSize(width: proxy.size.width, height: max(1, proxy.size.height - headerHeight)),
                         holidays: BigYearData.frenchHolidays(in: displayedYear),
                         vacations: vacations,
                         birthdays: BigYearData.birthdays(from: settings.bigYearBirthdays),
-                        selectedZone: settings.bigYearSchoolZone
+                        selectedZone: settings.bigYearSchoolZone,
+                        colors: colors
                     )
                 }
                 if optionsVisible {
-                    Color(red: 0.84, green: 0.80, blue: 0.92).opacity(0.22)
+                    colors.zone("C").opacity(0.22)
                         .ignoresSafeArea()
                         .onTapGesture { optionsVisible = false }
                     optionsPanel
@@ -60,14 +129,17 @@ struct BigYearRootView: View {
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
+            .background(colors.page)
         }
         .task(id: displayedYear) {
             vacations = [:]
             vacations = await BigYearData.schoolVacations(in: displayedYear)
         }
         .environment(\.locale, Locale(identifier: "fr_FR"))
-        .environment(\.colorScheme, .light)
+        .environment(\.colorScheme, settings.bigYearTheme.isDark ? .dark : .light)
     }
+
+    private var colors: BigYearColors { settings.bigYearTheme.colors }
 
     private var header: some View {
         ZStack {
@@ -78,6 +150,7 @@ struct BigYearRootView: View {
                         .frame(width: 30, height: 30)
                 }
                 .accessibilityLabel("Options Big Year")
+                .keyboardShortcut("e", modifiers: .command)
                 Spacer()
                 Button(action: onClose) {
                     Label("Quitter", systemImage: "xmark")
@@ -99,13 +172,12 @@ struct BigYearRootView: View {
             }
             .padding(.horizontal, 5)
             .padding(.vertical, 3)
-            .background(BigYearPalette.weekend, in: Capsule())
+            .background(colors.weekend, in: Capsule())
         }
         .padding(.horizontal, 14)
         .buttonStyle(.plain)
-        .foregroundStyle(Color.black.opacity(0.84))
-        .background(BigYearPalette.page)
-        .overlay(alignment: .bottom) { BigYearPalette.border.frame(height: 1) }
+        .foregroundStyle(colors.text)
+        .background(colors.weekend)
     }
 
     private var optionsPanel: some View {
@@ -123,6 +195,14 @@ struct BigYearRootView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     VStack(alignment: .leading, spacing: 10) {
+                        Text("Thème").font(.headline)
+                        VStack(spacing: 6) {
+                            ForEach(BigYearTheme.allCases) { theme in
+                                themeRow(theme)
+                            }
+                        }
+                    }
+                    VStack(alignment: .leading, spacing: 10) {
                         Text("Vacances scolaires").font(.headline)
                         Picker("Zone", selection: $settings.bigYearSchoolZone) {
                             Text("Zone A").tag("A")
@@ -135,25 +215,20 @@ struct BigYearRootView: View {
                     }
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Anniversaires").font(.headline)
-                        Text("Un anniversaire par ligne au format MM-JJ,Prénom. Les lignes vides sont ignorées.")
+                        Text("Un anniversaire par ligne au format JJ.MM,Prénom ou JJMM,Prénom. Préfixe le prénom par ! pour le mettre en gras.")
                             .font(.caption).foregroundStyle(.secondary)
-                        TextEditor(text: $settings.bigYearBirthdays)
-                            .font(.system(.body, design: .monospaced))
-                            .disableAutocorrection(true)
+                        BirthdayEditor(text: $settings.bigYearBirthdays, autoFocus: true)
                             .frame(minHeight: 150)
-                            .padding(6)
-                            .background(Color(red: 0.96, green: 0.96, blue: 0.96), in: RoundedRectangle(cornerRadius: 8))
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(BigYearPalette.border))
-                        Text("11-02,Clément\n03-18,Marie")
+                        Text("11.02,!Clément\n0112,Marie")
                             .font(.caption.monospaced())
                             .foregroundStyle(.tertiary)
                     }
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Légende").font(.headline)
-                        legend("Week-end", BigYearPalette.weekend)
-                        legend("Jour férié", BigYearPalette.holiday)
-                        legend("Anniversaire", BigYearPalette.birthday)
-                        legend("Vacances zone \(settings.bigYearSchoolZone)", BigYearPalette.zone(settings.bigYearSchoolZone))
+                        legend("Week-end", colors.weekend)
+                        legend("Jour férié", colors.holiday)
+                        legend("Anniversaire", colors.birthday)
+                        legend("Vacances zone \(settings.bigYearSchoolZone)", colors.zone(settings.bigYearSchoolZone))
                     }
                 }
                 .padding(18)
@@ -164,8 +239,8 @@ struct BigYearRootView: View {
                 .font(.caption).foregroundStyle(.secondary).padding(18)
         }
         .frame(maxHeight: .infinity)
-        .background(Color.white)
-        .foregroundStyle(Color.black.opacity(0.86))
+        .background(colors.page)
+        .foregroundStyle(colors.text)
         .shadow(color: .black.opacity(0.18), radius: 18, x: 5)
     }
 
@@ -175,15 +250,41 @@ struct BigYearRootView: View {
             Text(title).font(.caption)
         }
     }
+
+    private func themeRow(_ theme: BigYearTheme) -> some View {
+        Button { settings.bigYearTheme = theme } label: {
+            HStack(spacing: 10) {
+                Text(theme.title)
+                    .font(.system(size: 13, weight: settings.bigYearTheme == theme ? .semibold : .regular))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 4) {
+                    ForEach(Array(theme.colors.swatches.enumerated()), id: \.offset) { _, color in
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(color)
+                            .frame(width: 14, height: 14)
+                            .overlay(RoundedRectangle(cornerRadius: 3).stroke(Color.primary.opacity(0.12)))
+                    }
+                }
+                Image(systemName: settings.bigYearTheme == theme ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(settings.bigYearTheme == theme ? Color.accentColor : Color.secondary.opacity(0.45))
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 36)
+            .background(settings.bigYearTheme == theme ? colors.weekend : colors.cell, in: RoundedRectangle(cornerRadius: 7))
+            .overlay(RoundedRectangle(cornerRadius: 7).stroke(colors.border))
+        }
+        .buttonStyle(.plain)
+    }
 }
 
-private struct BigYearGrid: View {
+struct BigYearGrid: View {
     let year: Int
     let size: CGSize
     let holidays: [String: String]
     let vacations: [String: Set<String>]
     let birthdays: [String: [String]]
     let selectedZone: String
+    let colors: BigYearColors
 
     var body: some View {
         let days = yearDays
@@ -204,11 +305,12 @@ private struct BigYearGrid: View {
                             size: min(layout.cellWidth, layout.cellHeight),
                             holiday: holidays[BigYearData.key(date)],
                             isOnVacation: (vacations[BigYearData.key(date)] ?? []).contains(selectedZone),
-                            birthdays: birthdays[BigYearData.monthDayKey(date)] ?? []
+                            birthdays: birthdays[BigYearData.monthDayKey(date)] ?? [],
+                            colors: colors
                         )
                         .frame(width: layout.cellWidth, height: layout.cellHeight)
                     } else {
-                        BigYearPalette.empty.frame(width: layout.cellWidth, height: layout.cellHeight)
+                        colors.empty.frame(width: layout.cellWidth, height: layout.cellHeight)
                     }
                 }
             }
@@ -216,7 +318,7 @@ private struct BigYearGrid: View {
         }
         .padding(1)
         .frame(width: size.width, height: size.height, alignment: .topLeading)
-        .background(BigYearPalette.border)
+        .background(colors.border)
         .clipped()
     }
 
@@ -227,13 +329,14 @@ private struct BigYearGrid: View {
             holidays: holidays,
             vacations: vacations,
             birthdays: birthdays,
-            selectedZone: selectedZone
+            selectedZone: selectedZone,
+            colors: colors
         )
         return ZStack(alignment: .topLeading) {
             ForEach(segments) { segment in
                 Text(segment.title)
-                    .font(.system(size: min(9, max(7, min(layout.cellWidth, layout.cellHeight) * 0.11)), weight: .medium))
-                    .foregroundStyle(Color.black.opacity(0.68))
+                    .font(.system(size: min(10, max(7, min(layout.cellWidth, layout.cellHeight) * 0.12)), weight: segment.emphasized ? .bold : .medium))
+                    .foregroundStyle(Color(red: 0.18, green: 0.17, blue: 0.22).opacity(0.88))
                     .lineLimit(1)
                     .padding(.horizontal, 4)
                     .frame(width: segment.width(cell: layout.cellWidth), height: 14, alignment: .leading)
@@ -296,19 +399,22 @@ private struct BigYearEventSegment: Identifiable {
     let startColumn: Int
     let endColumn: Int
     let lane: Int
+    let emphasized: Bool
 
     func width(cell: CGFloat) -> CGFloat { max(8, CGFloat(endColumn - startColumn) * (cell + 1) - 5) }
 
     static func make(
         days: [Date], columns: Int, holidays: [String: String], vacations: [String: Set<String>],
-        birthdays: [String: [String]], selectedZone: String
+        birthdays: [String: [String]], selectedZone: String, colors: BigYearColors
     ) -> [BigYearEventSegment] {
-        var events: [(id: String, title: String, color: Color, start: Int, end: Int)] = []
+        var events: [(id: String, title: String, color: Color, start: Int, end: Int, emphasized: Bool)] = []
         for (index, date) in days.enumerated() {
             let key = BigYearData.key(date)
-            if let holiday = holidays[key] { events.append(("holiday-\(key)", holiday, BigYearPalette.holiday, index, index + 1)) }
+            if let holiday = holidays[key] { events.append(("holiday-\(key)", holiday, colors.holiday, index, index + 1, false)) }
             for (birthdayIndex, name) in (birthdays[BigYearData.monthDayKey(date)] ?? []).enumerated() {
-                events.append(("birthday-\(key)-\(birthdayIndex)", "🎂 \(name)", BigYearPalette.birthday, index, index + 1))
+                let emphasized = name.hasPrefix("!")
+                let displayName = emphasized ? String(name.dropFirst()).trimmingCharacters(in: .whitespaces) : name
+                events.append(("birthday-\(key)-\(birthdayIndex)", "🎂 \(displayName)", colors.birthday, index, index + 1, emphasized))
             }
         }
         var start: Int?
@@ -316,18 +422,18 @@ private struct BigYearEventSegment: Identifiable {
             let active = index < days.count && (vacations[BigYearData.key(days[index])] ?? []).contains(selectedZone)
             if active, start == nil { start = index }
             if !active, let rangeStart = start {
-                events.append(("vacation-\(selectedZone)-\(rangeStart)", "Vacances zone \(selectedZone)", BigYearPalette.zone(selectedZone), rangeStart, index))
+                events.append(("vacation-\(selectedZone)-\(rangeStart)", "Vacances zone \(selectedZone)", colors.zone(selectedZone), rangeStart, index, false))
                 start = nil
             }
         }
 
-        var raw: [(id: String, title: String, color: Color, row: Int, start: Int, end: Int)] = []
+        var raw: [(id: String, title: String, color: Color, row: Int, start: Int, end: Int, emphasized: Bool)] = []
         for event in events {
             var cursor = event.start
             while cursor < event.end {
                 let row = cursor / columns
                 let rowEnd = min(event.end, (row + 1) * columns)
-                raw.append((event.id + "-\(row)", event.title, event.color, row, cursor % columns, rowEnd - row * columns))
+                raw.append((event.id + "-\(row)", event.title, event.color, row, cursor % columns, rowEnd - row * columns, event.emphasized))
                 cursor = rowEnd
             }
         }
@@ -337,7 +443,7 @@ private struct BigYearEventSegment: Identifiable {
             let lane = ends.firstIndex(where: { $0 <= segment.start }) ?? ends.count
             if lane == ends.count { ends.append(segment.end) } else { ends[lane] = segment.end }
             laneEnds[segment.row] = ends
-            return BigYearEventSegment(id: segment.id, title: segment.title, color: segment.color, row: segment.row, startColumn: segment.start, endColumn: segment.end, lane: lane)
+            return BigYearEventSegment(id: segment.id, title: segment.title, color: segment.color, row: segment.row, startColumn: segment.start, endColumn: segment.end, lane: lane, emphasized: segment.emphasized)
         }
     }
 }
@@ -348,6 +454,7 @@ private struct BigYearDayCell: View {
     let holiday: String?
     let isOnVacation: Bool
     let birthdays: [String]
+    let colors: BigYearColors
 
     private var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
@@ -357,7 +464,7 @@ private struct BigYearDayCell: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            Rectangle().fill(isToday ? BigYearPalette.today : (isWeekend ? BigYearPalette.weekend : BigYearPalette.cell))
+            Rectangle().fill(cellBackground)
             if isFirstOfMonth, size > 42 {
                 Text(monthName.uppercased())
                     .font(.system(size: min(9, size * 0.12), weight: .semibold))
@@ -371,7 +478,7 @@ private struct BigYearDayCell: View {
             }
             Text(dayLabel)
                 .font(.system(size: min(11, max(7, size * 0.14)), weight: isToday ? .bold : .regular))
-                .foregroundStyle(isToday ? Color.black.opacity(0.9) : Color.black.opacity(0.62))
+                .foregroundStyle(isToday ? colors.text : colors.secondaryText)
                 .lineLimit(1)
                 .padding(.horizontal, isToday ? 6 : 4)
                 .padding(.vertical, 4)
@@ -379,21 +486,22 @@ private struct BigYearDayCell: View {
             if isToday {
                 Text("AUJOURD’HUI")
                     .font(.system(size: max(6, size * 0.09), weight: .bold))
-                    .foregroundStyle(Color.black.opacity(0.72))
+                    .foregroundStyle(colors.text.opacity(0.82))
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
-                    .background(Color.white.opacity(0.72), in: Capsule())
+                    .background(colors.page.opacity(0.78), in: Capsule())
                     .padding(4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             }
         }
-        .overlay { if isToday { Rectangle().stroke(BigYearPalette.todayBorder, lineWidth: 3) } }
-        .overlay(alignment: .leading) { if isFirstOfMonth { Rectangle().fill(BigYearPalette.border).frame(width: 2) } }
+        .overlay { if isToday { Rectangle().stroke(colors.todayBorder, lineWidth: 3) } }
+        .overlay(alignment: .leading) { if isFirstOfMonth { Rectangle().fill(colors.border).frame(width: 2) } }
         .help(helpText)
     }
 
     private var isToday: Bool { calendar.isDateInToday(date) }
     private var isWeekend: Bool { calendar.isDateInWeekend(date) }
+    private var hasImportantBirthday: Bool { birthdays.contains(where: { $0.hasPrefix("!") }) }
     private var isFirstOfMonth: Bool { calendar.component(.day, from: date) == 1 }
     private var monthName: String { calendar.monthSymbols[calendar.component(.month, from: date) - 1] }
     private var dayLabel: String {
@@ -402,11 +510,18 @@ private struct BigYearDayCell: View {
             .uppercased()
         return "\(weekday) \(calendar.component(.day, from: date))"
     }
+    private var cellBackground: Color {
+        if isToday { return colors.today }
+        if hasImportantBirthday { return colors.birthday.opacity(0.32) }
+        return isWeekend ? colors.weekend : colors.cell
+    }
     private var helpText: String {
         var parts = [BigYearData.fullDate(date)]
         if let holiday { parts.append(holiday) }
         if isOnVacation { parts.append("Vacances zone sélectionnée") }
-        if !birthdays.isEmpty { parts.append("🎂 Anniversaire : " + birthdays.joined(separator: ", ")) }
+        if !birthdays.isEmpty {
+            parts.append("🎂 Anniversaire : " + birthdays.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "! ")) }.joined(separator: ", "))
+        }
         return parts.joined(separator: "\n")
     }
 }

@@ -141,6 +141,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             self?.rebuildStatusMenu()
         }
         registerLaunchpadHotKey()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.registerLaunchpadHotKey()
+            self?.rebuildStatusMenu()
+        }
 
         hotCornerObserver = NotificationCenter.default.addObserver(
             forName: .launchpadHotCornerDidChange,

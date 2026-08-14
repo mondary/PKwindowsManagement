@@ -1,5 +1,67 @@
 # Changelog
 
+## [2026.08.24] - 2026-08-14
+### Fixed
+- Les raccourcis globaux ne capturent plus `Entrée`, les flèches ni la saisie lorsque PKwindowsManagement est au premier plan
+- L’éditeur d’anniversaires accepte de nouveau la souris, les déplacements du curseur et les sauts de ligne natifs
+- La barre d’année utilise entièrement la couleur du thème et n’affiche plus de bande blanche inférieure
+
+## [2026.08.23] - 2026-08-14
+### Changed
+- La liste des anniversaires utilise un éditeur AppKit natif plus grand dans les réglages Big Year
+
+### Fixed
+- Les flèches déplacent correctement le curseur dans les anniversaires sans perte de focus lors des mises à jour
+- L’éditeur conserve la sélection, l’undo, le scroll et désactive les corrections orthographiques rouges
+
+## [2026.08.22] - 2026-08-14
+### Changed
+- L’aperçu Big Year passe sous les contrôles et occupe toute la hauteur restante de sa page de réglages
+
+## [2026.08.21] - 2026-08-14
+### Added
+- La section de réglages Big Year affiche un aperçu vivant du calendrier courant
+
+### Changed
+- L’aperçu réagit immédiatement au thème, à la zone scolaire et aux anniversaires configurés
+
+## [2026.08.20] - 2026-08-14
+### Changed
+- Big Year dispose de sa propre section dans la sidebar des réglages
+- Thème, zone scolaire et anniversaires quittent Général pour une page dédiée sans changement de configuration
+
+## [2026.08.19] - 2026-08-14
+### Added
+- Les paramètres généraux exposent toutes les options Big Year : thème avec palettes, zone scolaire et liste des anniversaires
+
+### Changed
+- Les réglages Big Year du calendrier et des paramètres généraux restent synchronisés via la même configuration persistante
+
+## [2026.08.18] - 2026-08-14
+### Changed
+- Le champ anniversaires reçoit automatiquement le focus à l’ouverture des options et accepte immédiatement la navigation aux flèches
+- `Cmd + E` ouvre les options Big Year directement au clavier
+
+### Fixed
+- Catppuccin Mocha utilise un texte sombre dédié sur les barres pastel et ne subit plus l’apparence AppKit claire forcée
+
+## [2026.08.17] - 2026-08-14
+### Changed
+- La barre supérieure de Big Year est entièrement peinte avec le thème actif, sans bandes blanches au-dessus ni au-dessous
+- Le choix du thème devient une liste alignée à gauche avec quatre pastilles de prévisualisation pour chaque palette
+
+## [2026.08.16] - 2026-08-14
+### Added
+- Thèmes Big Year : Pastel clair, Catppuccin Latte, Catppuccin Mocha et Dracula
+- Marqueur `!` devant un prénom pour afficher un anniversaire important en gras
+
+### Changed
+- Les anniversaires utilisent désormais le format jour-mois `JJ.MM,Prénom` ou compact `JJMM,Prénom`, sans année
+- Les anniversaires importants renforcent aussi la couleur de leur journée dans la grille
+
+### Fixed
+- Le raccourci global du launcher est réenregistré après la stabilisation du démarrage macOS
+
 ## [2026.08.15] - 2026-08-14
 ### Added
 - Big Year affiche les week-ends, jours fériés français, vacances scolaires de la zone A/B/C choisie et anniversaires saisis à raison d'une entrée `MM-JJ,Prénom` par ligne

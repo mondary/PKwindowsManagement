@@ -24,7 +24,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Per-display Launchpad grid profiles to adapt the layout to each connected monitor.
 - Launchpad navigation mode: continuous vertical scroll or horizontal pages.
 - Top-aligned pages in horizontal navigation mode.
-- Scroll-free full-screen `Big Year`: pastel theme, weekends, French public holidays, school holidays for zones A/B/C, and birthdays marked with `🎂`; close button, `Escape`, and `Cmd + W` exit paths.
+- Scroll-free full-screen `Big Year`: Pastel, Catppuccin Latte/Mocha, and Dracula themes, weekends, French public holidays, school holidays for zones A/B/C, and birthdays marked with `🎂`; close button, `Escape`, and `Cmd + W` exit paths.
 - Accessibility status indicator with grant-access button.
 - Automatic backup export to a user-chosen folder (e.g. Google Drive) on every settings change.
 - Application context menu for assigning shortcuts or moving applications to Trash.
@@ -76,7 +76,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Changes are persisted in `UserDefaults`.
 - Manual settings import/export in JSON format.
 - Auto-backup: choose a folder (e.g. Google Drive) and export a timestamped JSON backup on every settings change.
-- In Big Year, choose the school zone and enter one birthday per line as `MM-DD,Name` (for example `11-02,Clément`).
+- In the calendar or its dedicated `Big Year` settings section, use the live preview, choose the school zone and theme, then enter one birthday per line as `DD.MM,Name` or `DDMM,Name` (for example `11.02,Clément` or `0112,Marie`). Prefix the name with `!` to emphasize an important event in bold.
 
 ## 🧾 Commands
 - Left-click the menu bar icon to open or close Launchpad.
