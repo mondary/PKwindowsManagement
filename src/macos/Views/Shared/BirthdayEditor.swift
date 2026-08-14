@@ -4,6 +4,7 @@ import SwiftUI
 struct BirthdayEditor: NSViewRepresentable {
     @Binding var text: String
     var autoFocus = false
+    var onEscape: (() -> Void)?
 
     func makeCoordinator() -> Coordinator { Coordinator(text: $text) }
 
@@ -14,7 +15,8 @@ struct BirthdayEditor: NSViewRepresentable {
         scrollView.borderType = .bezelBorder
         scrollView.drawsBackground = true
 
-        let textView = NSTextView()
+        let textView = BirthdayTextView()
+        textView.onEscape = onEscape
         textView.delegate = context.coordinator
         textView.string = text
         textView.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
@@ -58,5 +60,17 @@ struct BirthdayEditor: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             text = textView.string
         }
+    }
+}
+
+private final class BirthdayTextView: NSTextView {
+    var onEscape: (() -> Void)?
+
+    override func keyDown(with event: NSEvent) {
+        guard event.keyCode == 53, let onEscape else {
+            super.keyDown(with: event)
+            return
+        }
+        onEscape()
     }
 }

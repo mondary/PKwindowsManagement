@@ -3,6 +3,7 @@ import SwiftUI
 struct BigYearSettingsView: View {
     @ObservedObject var settings: AppSettings
     @State private var vacations: [String: Set<String>] = [:]
+    @State private var systemEvents: [String: [String]] = [:]
 
     private var year: Int { Calendar.current.component(.year, from: Date()) }
 
@@ -13,8 +14,12 @@ struct BigYearSettingsView: View {
                     .font(.title3.weight(.semibold))
 
                 HStack(alignment: .top, spacing: 18) {
-                    themeSection
-                        .frame(maxWidth: 320)
+                    VStack(alignment: .leading, spacing: 18) {
+                        themeSection
+                            .frame(maxWidth: 320)
+                        appearanceSection
+                            .frame(maxWidth: 320)
+                    }
                     calendarSection
                         .frame(maxWidth: .infinity)
                 }
@@ -28,10 +33,15 @@ struct BigYearSettingsView: View {
         .task {
             vacations = await BigYearData.schoolVacations(in: year)
         }
+        .task(id: settings.bigYearSystemCalendarEnabled) {
+            systemEvents = settings.bigYearSystemCalendarEnabled
+                ? await SystemCalendarService.allDayEvents(in: year)
+                : [:]
+        }
     }
 
     private var preview: some View {
-        let colors = settings.bigYearTheme.colors
+        let colors = settings.bigYearColors
         return VStack(spacing: 0) {
             ZStack {
                 HStack {
@@ -55,8 +65,12 @@ struct BigYearSettingsView: View {
                     holidays: BigYearData.frenchHolidays(in: year),
                     vacations: vacations,
                     birthdays: BigYearData.birthdays(from: settings.bigYearBirthdays),
+                    events: systemEvents.merging(BigYearData.eventCoverage(from: settings.bigYearEvents, in: year)) { $0 + $1 },
                     selectedZone: settings.bigYearSchoolZone,
-                    colors: colors
+                    colors: colors,
+                    posterMode: settings.bigYearTheme == .poster,
+                    emphasizeBirthdays: settings.bigYearEmphasizeBirthdays,
+                    emphasizeMonthNames: settings.bigYearEmphasizeMonthNames
                 )
             }
         }
@@ -93,6 +107,13 @@ struct BigYearSettingsView: View {
         }
     }
 
+    private var appearanceSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Apparence").font(.subheadline.weight(.medium))
+            BigYearAppearanceSection(settings: settings, colors: settings.bigYearColors)
+        }
+    }
+
     private var calendarSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Vacances scolaires").font(.subheadline.weight(.medium))
@@ -103,10 +124,22 @@ struct BigYearSettingsView: View {
             }
             .pickerStyle(.segmented)
 
+            Toggle("Calendriers macOS / Google", isOn: $settings.bigYearSystemCalendarEnabled)
+            Text("Importe les événements journée entière des comptes configurés dans Calendrier macOS.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
             Text("Anniversaires").font(.subheadline.weight(.medium))
             BirthdayEditor(text: $settings.bigYearBirthdays)
-                .frame(minHeight: 220)
+                .frame(minHeight: 140)
             Text("Un par ligne : 11.02,!Clément ou 0112,Marie")
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
+
+            Text("Événements").font(.subheadline.weight(.medium))
+            BirthdayEditor(text: $settings.bigYearEvents)
+                .frame(minHeight: 140)
+            Text("Jour ou plage : 08.02-15.02.2026,Ski · 03.11,Déplacement · ! pour gras")
                 .font(.caption.monospaced())
                 .foregroundStyle(.secondary)
         }

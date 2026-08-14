@@ -27,6 +27,84 @@ enum BigYearData {
             .mapValues { $0.map(\.name) }
     }
 
+    struct BigYearEvent {
+        let name: String
+        let emphasized: Bool
+        let startMonth: Int
+        let startDay: Int
+        let endMonth: Int
+        let endDay: Int
+        let startYear: Int?
+        let endYear: Int?
+
+        /// Une plage dont la fin précède le début traverse le nouvel an (ex : 28.12-03.01).
+        func covers(month: Int, day: Int, year: Int) -> Bool {
+            let ordinal = month * 100 + day
+            let start = startMonth * 100 + startDay
+            let end = endMonth * 100 + endDay
+            if let pinnedYear = startYear ?? endYear {
+                var endPinnedYear = endYear ?? pinnedYear
+                if end < start, endYear == nil { endPinnedYear += 1 }
+                var calendar = Calendar(identifier: .gregorian)
+                calendar.timeZone = .current
+                guard let candidate = calendar.date(from: DateComponents(year: year, month: month, day: day)),
+                      let startDate = calendar.date(from: DateComponents(year: startYear ?? pinnedYear, month: startMonth, day: startDay)),
+                      let endDate = calendar.date(from: DateComponents(year: endPinnedYear, month: endMonth, day: endDay)) else { return false }
+                return (startDate...endDate).contains(candidate)
+            }
+            if start <= end { return (start...end).contains(ordinal) }
+            return ordinal >= start || ordinal <= end
+        }
+    }
+
+    /// Formats acceptés, un événement par ligne :
+    /// `JJ.MM,Label` · `JJ.MM-JJ.MM,Label` · `JJ.MM.AAAA,Label` · `JJ.MM.AAAA-JJ.MM.AAAA,Label`
+    /// (`JJMM` compact accepté aussi ; `!` devant le label le met en gras).
+    static func events(from text: String) -> [BigYearEvent] {
+        text.split(whereSeparator: \.isNewline).compactMap { line in
+            let parts = line.split(separator: ",", maxSplits: 1).map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            guard parts.count == 2, !parts[1].isEmpty else { return nil }
+            let dateTokens = parts[0].split(separator: "-").map(String.init)
+            guard (1...2).contains(dateTokens.count),
+                  let start = parseEventDate(dateTokens[0]) else { return nil }
+            let end = dateTokens.count == 2 ? parseEventDate(dateTokens[1]) : start
+            guard let end else { return nil }
+
+            let emphasized = parts[1].hasPrefix("!")
+            let name = (emphasized ? String(parts[1].dropFirst()) : parts[1])
+                .trimmingCharacters(in: .whitespaces)
+            guard !name.isEmpty else { return nil }
+            return BigYearEvent(
+                name: name, emphasized: emphasized,
+                startMonth: start.month, startDay: start.day,
+                endMonth: end.month, endDay: end.day,
+                startYear: start.year, endYear: end.year
+            )
+        }
+    }
+
+    static func eventCoverage(from text: String, in year: Int) -> [String: [String]] {
+        let parsed = events(from: text)
+        guard !parsed.isEmpty else { return [:] }
+        var result: [String: [String]] = [:]
+        let calendar = self.calendar
+        guard let start = calendar.date(from: DateComponents(year: year, month: 1, day: 1)),
+              let end = calendar.date(from: DateComponents(year: year + 1, month: 1, day: 1)) else { return [:] }
+        var date = start
+        while date < end {
+            let components = calendar.dateComponents([.month, .day], from: date)
+            for event in parsed where event.covers(month: components.month ?? 0, day: components.day ?? 0, year: year) {
+                let label = event.emphasized ? "!\(event.name)" : event.name
+                result[key(date), default: []].append(label)
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: date) else { break }
+            date = next
+        }
+        return result
+    }
+
     static func frenchHolidays(in year: Int) -> [String: String] {
         let easter = easterSunday(year)
         let fixed: [(Int, Int, String)] = [
@@ -112,6 +190,27 @@ enum BigYearData {
         }
         guard (1...31).contains(day), (1...12).contains(month) else { return value }
         return String(format: "%02d-%02d", month, day)
+    }
+
+    private static func parseEventDate(_ raw: String) -> (day: Int, month: Int, year: Int?)? {
+        let value = raw.trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: "/", with: ".")
+        let digits = value.filter(\.isNumber)
+        if !value.contains(".") {
+            guard (4...8).contains(digits.count), digits.count % 2 == 0 else { return nil }
+            let day = Int(digits.prefix(2)) ?? 0
+            let month = Int(digits.dropFirst(2).prefix(2)) ?? 0
+            let year = digits.count == 8 ? Int(digits.suffix(4)) : nil
+            return valid(day: day, month: month, year: year)
+        }
+        let parts = value.split(separator: ".").compactMap { Int($0) }
+        guard parts.count == 2 || parts.count == 3 else { return nil }
+        return valid(day: parts[0], month: parts[1], year: parts.count == 3 ? parts[2] : nil)
+    }
+
+    private static func valid(day: Int, month: Int, year: Int?) -> (day: Int, month: Int, year: Int?)? {
+        guard (1...31).contains(day), (1...12).contains(month) else { return nil }
+        return (day, month, year)
     }
 
     private static func easterSunday(_ year: Int) -> Date {

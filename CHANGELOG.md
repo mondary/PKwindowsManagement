@@ -1,5 +1,26 @@
 # Changelog
 
+## [2026.08.27] - 2026-08-14
+### Added
+- Personnalisation de l'apparence Big Year : anniversaires ou noms des mois en gras au choix (le `!` reste prioritaire) et sélecteurs de couleur pour chaque élément (fond, jours fériés, anniversaires, événements, zones, texte…)
+- Réinitialisation des couleurs personnalisées d'un clic
+
+## [2026.08.26] - 2026-08-14
+### Added
+- Thème `Poster bleu` inspiré des calendriers muraux : 12 mois en lignes, 31 jours en colonnes, typographie bleue et aplats francs
+- Clic sur une journée pour ajouter directement un événement ponctuel ou une plage, récurrente ou limitée à ses années
+- Connexion native aux calendriers macOS, dont Google Calendar, via EventKit pour afficher les événements journée entière
+
+### Fixed
+- `Échap` ferme Big Year même si l'éditeur est focalisé ou si le panneau flottant n'est plus l'application active
+- Les plages datées traversant le nouvel an conservent correctement leur année de début et de fin
+
+## [2026.08.25] - 2026-08-14
+### Added
+- Événements personnalisés Big Year : un jour (`JJ.MM,Label`) ou une plage (`JJ.MM-JJ.MM,Label`), année optionnelle (`JJ.MM.AAAA`) et marqueur `!` pour gras
+- Les plages dont la fin précède le début traversent le nouvel an (ex : `28.12-03.01`)
+- Les événements apparaissent en bandes dans la grille, teintent leurs journées, s'ajoutent à la légende et au survol, avec éditeur dédié dans les réglages et le panneau d'options
+
 ## [2026.08.24] - 2026-08-14
 ### Fixed
 - Les raccourcis globaux ne capturent plus `Entrée`, les flèches ni la saisie lorsque PKwindowsManagement est au premier plan

@@ -86,6 +86,8 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
   <string>NSApplication</string>
   <key>NSAppleEventsUsageDescription</key>
   <string>PKwindowsManagement needs Finder automation to empty the Trash from the Launchpad button.</string>
+  <key>NSCalendarsUsageDescription</key>
+  <string>PKwindowsManagement affiche vos événements journée entière dans Big Year.</string>
 </dict>
 </plist>
 EOF

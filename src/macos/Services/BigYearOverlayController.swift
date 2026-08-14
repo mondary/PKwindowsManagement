@@ -13,6 +13,10 @@ private final class BigYearPanel: NSPanel {
         }
         super.keyDown(with: event)
     }
+
+    override func cancelOperation(_ sender: Any?) {
+        onEscape?()
+    }
 }
 
 final class BigYearOverlayController {
@@ -21,6 +25,7 @@ final class BigYearOverlayController {
     private var panel: NSPanel?
     private var host: NSHostingController<BigYearRootView>?
     private var localEventMonitor: Any?
+    private var globalEventMonitor: Any?
 
     func toggle() {
         if panel?.isVisible == true {
@@ -103,12 +108,20 @@ final class BigYearOverlayController {
 
             return event
         }
+        globalEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
+            guard event.keyCode == 53 else { return }
+            DispatchQueue.main.async { self?.hide() }
+        }
     }
 
     private func removeEventMonitor() {
         if let localEventMonitor {
             NSEvent.removeMonitor(localEventMonitor)
             self.localEventMonitor = nil
+        }
+        if let globalEventMonitor {
+            NSEvent.removeMonitor(globalEventMonitor)
+            self.globalEventMonitor = nil
         }
     }
 }

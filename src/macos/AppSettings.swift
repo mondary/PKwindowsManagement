@@ -34,8 +34,13 @@ final class AppSettings: ObservableObject {
         static let downloadsToDesktopSnippetMigration = "migrated-snippet-dl2desk-v1"
         static let windowShortcutDefaultsVersion = "window-shortcut-defaults-v5"
         static let bigYearBirthdays = "big-year-birthdays"
+        static let bigYearEvents = "big-year-events"
+        static let bigYearSystemCalendarEnabled = "big-year-system-calendar-enabled"
         static let bigYearSchoolZone = "big-year-school-zone"
         static let bigYearTheme = "big-year-theme"
+        static let bigYearEmphasizeBirthdays = "big-year-emphasize-birthdays"
+        static let bigYearEmphasizeMonthNames = "big-year-emphasize-month-names"
+        static let bigYearColorOverrides = "big-year-color-overrides"
     }
 
     private let defaults: UserDefaults
@@ -162,12 +167,36 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(bigYearBirthdays, forKey: Keys.bigYearBirthdays) }
     }
 
+    @Published var bigYearEvents: String {
+        didSet { defaults.set(bigYearEvents, forKey: Keys.bigYearEvents) }
+    }
+
+    @Published var bigYearSystemCalendarEnabled: Bool {
+        didSet { defaults.set(bigYearSystemCalendarEnabled, forKey: Keys.bigYearSystemCalendarEnabled) }
+    }
+
     @Published var bigYearSchoolZone: String {
         didSet { defaults.set(bigYearSchoolZone, forKey: Keys.bigYearSchoolZone) }
     }
 
     @Published var bigYearTheme: BigYearTheme {
         didSet { defaults.set(bigYearTheme.rawValue, forKey: Keys.bigYearTheme) }
+    }
+
+    @Published var bigYearEmphasizeBirthdays: Bool {
+        didSet { defaults.set(bigYearEmphasizeBirthdays, forKey: Keys.bigYearEmphasizeBirthdays) }
+    }
+
+    @Published var bigYearEmphasizeMonthNames: Bool {
+        didSet { defaults.set(bigYearEmphasizeMonthNames, forKey: Keys.bigYearEmphasizeMonthNames) }
+    }
+
+    @Published var bigYearColorOverrides: [String: String] {
+        didSet { defaults.set(bigYearColorOverrides, forKey: Keys.bigYearColorOverrides) }
+    }
+
+    var bigYearColors: BigYearColors {
+        bigYearTheme.colors.applying(overrides: bigYearColorOverrides)
     }
 
     var windowMarginPreset: WindowMarginPreset {
@@ -240,8 +269,13 @@ final class AppSettings: ObservableObject {
         almostFullMargins = Self.loadMargins(Keys.windowMarginAlmost, from: defaults, fallback: .init(top: 10, bottom: 10, left: 10, right: 10))
         centerMargins = Self.loadMargins(Keys.windowMarginCenter, from: defaults, fallback: .zero)
         bigYearBirthdays = defaults.string(forKey: Keys.bigYearBirthdays) ?? ""
+        bigYearEvents = defaults.string(forKey: Keys.bigYearEvents) ?? ""
+        bigYearSystemCalendarEnabled = defaults.bool(forKey: Keys.bigYearSystemCalendarEnabled)
         bigYearSchoolZone = defaults.string(forKey: Keys.bigYearSchoolZone) ?? "A"
         bigYearTheme = BigYearTheme(rawValue: defaults.string(forKey: Keys.bigYearTheme) ?? "") ?? .pastel
+        bigYearEmphasizeBirthdays = defaults.object(forKey: Keys.bigYearEmphasizeBirthdays) as? Bool ?? true
+        bigYearEmphasizeMonthNames = defaults.object(forKey: Keys.bigYearEmphasizeMonthNames) as? Bool ?? true
+        bigYearColorOverrides = (defaults.dictionary(forKey: Keys.bigYearColorOverrides) as? [String: String]) ?? [:]
 
         if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()
@@ -515,8 +549,13 @@ final class AppSettings: ObservableObject {
             launchpadRowSpacing: launchpadRowSpacing,
             appLanguage: appLanguage,
             bigYearBirthdays: bigYearBirthdays,
+            bigYearEvents: bigYearEvents,
+            bigYearSystemCalendarEnabled: bigYearSystemCalendarEnabled,
             bigYearSchoolZone: bigYearSchoolZone,
-            bigYearTheme: bigYearTheme
+            bigYearTheme: bigYearTheme,
+            bigYearEmphasizeBirthdays: bigYearEmphasizeBirthdays,
+            bigYearEmphasizeMonthNames: bigYearEmphasizeMonthNames,
+            bigYearColorOverrides: bigYearColorOverrides
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -570,8 +609,13 @@ final class AppSettings: ObservableObject {
         launchpadRowSpacing = backup.launchpadRowSpacing ?? 12
         appLanguage = backup.appLanguage ?? appLanguage
         bigYearBirthdays = backup.bigYearBirthdays ?? bigYearBirthdays
+        bigYearEvents = backup.bigYearEvents ?? bigYearEvents
+        bigYearSystemCalendarEnabled = backup.bigYearSystemCalendarEnabled ?? bigYearSystemCalendarEnabled
         bigYearSchoolZone = backup.bigYearSchoolZone ?? bigYearSchoolZone
         bigYearTheme = backup.bigYearTheme ?? bigYearTheme
+        bigYearEmphasizeBirthdays = backup.bigYearEmphasizeBirthdays ?? bigYearEmphasizeBirthdays
+        bigYearEmphasizeMonthNames = backup.bigYearEmphasizeMonthNames ?? bigYearEmphasizeMonthNames
+        bigYearColorOverrides = backup.bigYearColorOverrides ?? bigYearColorOverrides
 
         saveShortcuts()
         clearedWindowShortcuts = []
@@ -924,8 +968,13 @@ private struct SettingsBackup: Codable {
     let launchpadRowSpacing: Int?
     let appLanguage: AppLanguage?
     let bigYearBirthdays: String?
+    let bigYearEvents: String?
+    let bigYearSystemCalendarEnabled: Bool?
     let bigYearSchoolZone: String?
     let bigYearTheme: BigYearTheme?
+    let bigYearEmphasizeBirthdays: Bool?
+    let bigYearEmphasizeMonthNames: Bool?
+    let bigYearColorOverrides: [String: String]?
 }
 
 enum SettingsBackupError: LocalizedError {
