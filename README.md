@@ -28,7 +28,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Profils de grille par écran pour adapter le Launchpad à chaque moniteur connecté.
 - Choix du mode de navigation du Launchpad : scroll vertical continu ou pages horizontales.
 - Alignement en haut des pages en mode navigation horizontale.
-- Vue `Big Year` plein écran depuis le menu, avec fermeture par bouton, `Échap` ou `Cmd + W`.
+- Vue `Big Year` plein écran sans scroll : thème pastel, week-ends, jours fériés français, vacances scolaires A/B/C et anniversaires avec `🎂`; fermeture par bouton, `Échap` ou `Cmd + W`.
 - Indicateur de statut d'accessibilité avec bouton pour autoriser l'accès.
 - Export automatique des backups vers un dossier au choix (ex : Google Drive) à chaque modification des réglages.
 - Menu contextuel sur chaque application pour attribuer un raccourci ou la déplacer vers la Corbeille.
@@ -67,6 +67,8 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - `Ctrl + Option + 3` : tiers droit
 - `Ctrl + Option + [` : écran précédent
 - `Ctrl + Option + ]` : écran suivant
+- `Ctrl + Option + =` : agrandir depuis le centre
+- `Ctrl + Option + -` : réduire depuis le centre
 
 ## ⚙️ Réglages
 - Les raccourcis sont modifiables dans l'écran de préférences.
@@ -82,6 +84,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Les changements sont sauvegardés dans `UserDefaults`.
 - Import/export manuel des réglages au format JSON.
 - Auto-backup : choisis un dossier (ex : Google Drive) et exporte un backup JSON horodaté à chaque modification des réglages.
+- Dans Big Year, choisis la zone scolaire et saisis un anniversaire par ligne au format `MM-JJ,Prénom` (par exemple `11-02,Clément`).
 
 ## 🧾 Commandes
 - Clic gauche sur l'icône de barre de menu : ouvre ou ferme le Launchpad.
@@ -124,61 +127,7 @@ src/script/release.sh
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
 ## 🧾 Changelog
-- `0.19` - 2026-07-06
-  - Correction enregistrement : détection de la barre d'espace par keyCode physique (kVK_Space) au lieu de `charactersIgnoringModifiers`.
-  - Remplacement du moniteur NSEvent local par un CGEvent tap (évite l'interception système des touches comme CMD+Espace).
-  - Correction frappe « space » dans le champ texte : buffer local au lieu d'un binding qui tronquait le mot lettre à lettre.
-  - Correction du matching runtime (LaunchShortcutMonitor) : comparaison par keyCode pour Space, Return, Tab, Delete, flèches.
-  - Correction bug localisation français : `normalizedKey("Espace")` échouait → stockait « e » au lieu de « space ».
-  - Menu barre : affichage du vrai raccourci Launchpad au lieu de « CMD+Espace » en dur.
-  - Nouvelles touches spéciales dans l'éditeur de raccourci : boutons Space ␣, Return ↵, Tab ⇥, Delete ⌫, flèches ←→↑↓.
-  - Affichage unifié des touches spéciales dans les badges et labels.
-  - `0.18` - 2026-06-16
-  - L'icône officielle de l'app s'affiche dans la barre de menu (en couleur) et dans l'en-tête des réglages.
-  - Snippet `Archive` présent par défaut avec icône dédiée et raccourci `Right Cmd + S`.
-  - Snippet `DL2desk` ajouté par défaut pour déplacer `Downloads` vers le Bureau avec le raccourci `Right Cmd + L`.
-  - Icônes dossier pour les snippets Finder personnalisés ou par défaut qui ouvrent des dossiers.
-  - Commande `Empty Trash` fonctionnelle via l'automatisation Finder, avec feedback lisible si macOS bloque l'autorisation.
-  - Packaging documenté pour conserver un bundle signé stable et éviter les redemandes d'autorisations macOS à chaque mise à jour.
-  - Archive « Conserver les deux » en cas d'homonymes (`fichier 2.ext`).
-  - Archive locale d'abord (instantanée) puis recopie Google Drive en arrière-plan limitée — plus de freeze sur les gros dossiers.
-  - Dossiers mensuels Archive forcés en français (`2026_06_juin`) même si macOS lance le script avec une locale anglaise.
-  - Raccourci `DesktopArchive` pointant vers l'archive Google Drive quand elle est détectée, sinon vers l'archive locale.
-  - Fusion des doublons `Archive` en une seule entrée (raccourci existant conservé).
-- `0.17` - 2026-06-16
-  - Ajout de `Big Year` depuis le menu de la barre de menu.
-  - Sécurisation de la fermeture de l'overlay annuel (`Échap`, `Cmd + W`, bouton fermer, niveau de fenêtre moins intrusif).
-  - Démarrage et refresh des raccourcis plus légers : le moniteur global ne charge plus toutes les icônes d'applications.
-  - Le tri par couleur ne calcule la couleur dominante des icônes que quand le mode `Icon Color` est actif.
-  - Nettoyage plus complet des timers, event taps et handlers globaux à la fermeture.
-- `0.16` - 2026-06-05
-  - Tri configurable des applications du Launchpad par nom, dernière utilisation ou couleur dominante de l'icône.
-- `0.15` - 2026-06-05
-  - Onglet `URLs` dédié dans les réglages, séparé des scripts.
-  - Snippets `URL` avec choix du navigateur et raccourcis globaux.
-  - Icône de favicon récupérée automatiquement pour les snippets `URL` quand le site en fournit une.
-  - Icônes Launchpad des scripts et URLs rendues plus lisibles.
-- `0.14` - 2026-06-05
-  - Gestionnaire de snippets avec scripts exécutables, raccourcis globaux et activation/désactivation.
-  - Barre de recherche Launchpad capable d'effectuer des calculs simples avec unités.
-  - Éditeur snippets refondu et Launchpad ajusté pour les commandes système.
-- `0.13` - 2026-06-05
-  - Profils de grille Launchpad par écran connecté.
-  - Bouton `Record` pour enregistrer les raccourcis au clavier.
-  - Grille Launchpad étendue jusqu'à `20 × 20`.
-- `0.12` - 2026-06-04
-  - Choix du mode de navigation Launchpad : vertical continu ou pages horizontales.
-  - Import/export manuel des réglages en JSON.
-  - `Cmd + ,` pour ouvrir les réglages.
-  - Distinction gauche/droite pour Command, Option et Shift dans les raccourcis.
-  - Support du modificateur Fn + Shift.
-  - Paramétrage fin de la grille : taille des icônes, espacement colonnes/lignes.
-  - Alignement en haut des pages en navigation horizontale.
-  - Indicateur de statut d'accessibilité avec bouton d'autorisation.
-  - Auto-backup vers un dossier au choix à chaque modification des réglages.
-  - Correction du texte de la barre de recherche (blanc sur fond sombre).
-- `0.10` - 2026-06-03
-  - Initial project scaffold.
+- Voir [CHANGELOG.md](CHANGELOG.md) pour l'historique complet.
 
 ## 🔗 Liens
 - EN README : [README_en.md](README_en.md)

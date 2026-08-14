@@ -33,6 +33,8 @@ final class AppSettings: ObservableObject {
         static let archiveDuplicateMigration = "migrated-snippet-archive-dedup-v3"
         static let downloadsToDesktopSnippetMigration = "migrated-snippet-dl2desk-v1"
         static let windowShortcutDefaultsVersion = "window-shortcut-defaults-v5"
+        static let bigYearBirthdays = "big-year-birthdays"
+        static let bigYearSchoolZone = "big-year-school-zone"
     }
 
     private let defaults: UserDefaults
@@ -155,6 +157,14 @@ final class AppSettings: ObservableObject {
         didSet { saveMargins(centerMargins, forKey: Keys.windowMarginCenter) }
     }
 
+    @Published var bigYearBirthdays: String {
+        didSet { defaults.set(bigYearBirthdays, forKey: Keys.bigYearBirthdays) }
+    }
+
+    @Published var bigYearSchoolZone: String {
+        didSet { defaults.set(bigYearSchoolZone, forKey: Keys.bigYearSchoolZone) }
+    }
+
     var windowMarginPreset: WindowMarginPreset {
         .init(general: generalMargins, almostFull: almostFullMargins, center: centerMargins)
     }
@@ -224,6 +234,8 @@ final class AppSettings: ObservableObject {
         generalMargins = Self.loadMargins(Keys.windowMarginGeneral, from: defaults, fallback: .init(top: 1, bottom: 1, left: 1, right: 1))
         almostFullMargins = Self.loadMargins(Keys.windowMarginAlmost, from: defaults, fallback: .init(top: 10, bottom: 10, left: 10, right: 10))
         centerMargins = Self.loadMargins(Keys.windowMarginCenter, from: defaults, fallback: .zero)
+        bigYearBirthdays = defaults.string(forKey: Keys.bigYearBirthdays) ?? ""
+        bigYearSchoolZone = defaults.string(forKey: Keys.bigYearSchoolZone) ?? "A"
 
         if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()
@@ -479,7 +491,7 @@ final class AppSettings: ObservableObject {
 
     func exportBackup() throws -> Data {
         let backup = SettingsBackup(
-            version: 7,
+            version: 8,
             windowShortcuts: Dictionary(uniqueKeysWithValues: shortcuts.map { ($0.key.rawValue, $0.value) }),
             launchShortcuts: launchShortcuts,
             snippets: snippets,
@@ -495,7 +507,9 @@ final class AppSettings: ObservableObject {
             launchpadIconSize: launchpadIconSize,
             launchpadColumnSpacing: launchpadColumnSpacing,
             launchpadRowSpacing: launchpadRowSpacing,
-            appLanguage: appLanguage
+            appLanguage: appLanguage,
+            bigYearBirthdays: bigYearBirthdays,
+            bigYearSchoolZone: bigYearSchoolZone
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -525,7 +539,7 @@ final class AppSettings: ObservableObject {
 
     func importBackup(_ data: Data) throws {
         let backup = try JSONDecoder().decode(SettingsBackup.self, from: data)
-        guard backup.version == 1 || backup.version == 2 || backup.version == 3 || backup.version == 4 || backup.version == 5 || backup.version == 6 || backup.version == 7 else { throw SettingsBackupError.unsupportedVersion }
+        guard (1...8).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
 
         shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.compactMap { action in
             backup.windowShortcuts[action.rawValue].map { (action, $0) } ?? action.defaultShortcut.map { (action, $0) }
@@ -548,6 +562,8 @@ final class AppSettings: ObservableObject {
         launchpadColumnSpacing = backup.launchpadColumnSpacing ?? 16
         launchpadRowSpacing = backup.launchpadRowSpacing ?? 12
         appLanguage = backup.appLanguage ?? appLanguage
+        bigYearBirthdays = backup.bigYearBirthdays ?? bigYearBirthdays
+        bigYearSchoolZone = backup.bigYearSchoolZone ?? bigYearSchoolZone
 
         saveShortcuts()
         clearedWindowShortcuts = []
@@ -899,6 +915,8 @@ private struct SettingsBackup: Codable {
     let launchpadColumnSpacing: Int?
     let launchpadRowSpacing: Int?
     let appLanguage: AppLanguage?
+    let bigYearBirthdays: String?
+    let bigYearSchoolZone: String?
 }
 
 enum SettingsBackupError: LocalizedError {

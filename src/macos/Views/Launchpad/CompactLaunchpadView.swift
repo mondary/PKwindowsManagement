@@ -115,7 +115,10 @@ struct CompactLaunchpadView: View {
             }
         )
         .onAppear {
-            appCatalog = launcher.loadApps(settings: settings)
+            launcher.loadAppsAsync(settings: settings) { apps in
+                appCatalog = apps
+                selectedIndex = 0
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 searchFocused = true
             }

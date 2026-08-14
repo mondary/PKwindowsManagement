@@ -248,8 +248,10 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowFullScreen: .init(key: "return", modifier: .controlOption)
         case .windowNextDisplay: .init(key: "space", modifier: .controlOption)
         case .windowPreviousDisplay: .init(key: "[", modifier: .controlOption)
+        case .windowMakeLarger: .init(key: "=", modifier: .controlOption)
+        case .windowMakeSmaller: .init(key: "-", modifier: .controlOption)
         case .windowToggleFullScreen, .windowMaximizeHeight, .windowMaximizeWidth,
-             .windowMakeLarger, .windowMakeSmaller, .windowReasonableSize, .windowRestore,
+             .windowReasonableSize, .windowRestore,
              .windowMoveLeft, .windowMoveRight, .windowMoveUp, .windowMoveDown,
              .windowTopThird, .windowBottomThird, .windowTopTwoThirds, .windowBottomTwoThirds,
              .windowFirstTwoThirds, .windowCenterTwoThirds, .windowLastTwoThirds,

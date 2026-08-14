@@ -115,12 +115,19 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             action: #selector(openLaunchpad),
             keyEquivalent: launchpadShortcut?.menuKeyEquivalent ?? ""
         )
+        launchpadItem.target = self
         launchpadItem.keyEquivalentModifierMask = launchpadShortcut?.modifier.flags ?? []
         menu.addItem(launchpadItem)
 
-        menu.addItem(NSMenuItem(title: localizedString("Open Big Year"), action: #selector(openBigYear), keyEquivalent: "y"))
-        menu.addItem(NSMenuItem(title: localizedString("Open Preferences"), action: #selector(openPreferences), keyEquivalent: ","))
-        menu.addItem(NSMenuItem(title: localizedString("Quit"), action: #selector(quitApp), keyEquivalent: "q"))
+        let bigYearItem = NSMenuItem(title: localizedString("Open Big Year"), action: #selector(openBigYear), keyEquivalent: "y")
+        bigYearItem.target = self
+        menu.addItem(bigYearItem)
+        let preferencesItem = NSMenuItem(title: localizedString("Open Preferences"), action: #selector(openPreferences), keyEquivalent: ",")
+        preferencesItem.target = self
+        menu.addItem(preferencesItem)
+        let quitItem = NSMenuItem(title: localizedString("Quit"), action: #selector(quitApp), keyEquivalent: "q")
+        quitItem.target = self
+        menu.addItem(quitItem)
         statusMenu = menu
     }
 

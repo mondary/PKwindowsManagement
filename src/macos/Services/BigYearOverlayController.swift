@@ -2,8 +2,17 @@ import AppKit
 import SwiftUI
 
 private final class BigYearPanel: NSPanel {
+    var onEscape: (() -> Void)?
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 53 {
+            onEscape?()
+            return
+        }
+        super.keyDown(with: event)
+    }
 }
 
 final class BigYearOverlayController {
@@ -23,10 +32,14 @@ final class BigYearOverlayController {
 
     func show(year: Int = Calendar.current.component(.year, from: Date())) {
         guard panel?.isVisible != true else { return }
+        guard let settings = AppRuntime.shared.settings else { return }
 
         let screen = NSScreen.main ?? NSScreen.screens.first
-        let screenFrame = screen?.frame ?? .zero
-        let rootView = BigYearRootView(year: year, onClose: { [weak self] in
+        let screenFrame = screen?.visibleFrame ?? .zero
+        let rootView = BigYearRootView(
+            year: year,
+            settings: settings,
+            onClose: { [weak self] in
             self?.hide()
         })
         let hosting = NSHostingController(rootView: rootView)
@@ -37,14 +50,16 @@ final class BigYearOverlayController {
             defer: false
         )
         panel.setFrame(screenFrame, display: true)
-        panel.isOpaque = false
-        panel.backgroundColor = .black
+        panel.isOpaque = true
+        panel.backgroundColor = .white
+        panel.appearance = NSAppearance(named: .aqua)
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         panel.hasShadow = false
-        panel.hidesOnDeactivate = true
+        panel.hidesOnDeactivate = false
         panel.isMovable = false
         panel.isMovableByWindowBackground = false
+        panel.onEscape = { [weak self] in self?.hide() }
         hosting.view.frame = NSRect(origin: .zero, size: screenFrame.size)
         hosting.view.autoresizingMask = [.width, .height]
         panel.contentView = hosting.view

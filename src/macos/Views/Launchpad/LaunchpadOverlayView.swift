@@ -564,7 +564,10 @@ struct LaunchpadOverlayView: View {
     }
 
     private func reloadAppCatalog() {
-        appCatalog = launcher.loadApps(settings: settings)
+        launcher.loadAppsAsync(settings: settings) { apps in
+            appCatalog = apps
+            selectFirstApp()
+        }
     }
 
     private var filteredApps: [LaunchableApp] {

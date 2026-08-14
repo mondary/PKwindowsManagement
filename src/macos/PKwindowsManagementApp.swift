@@ -3,8 +3,24 @@ import SwiftUI
 @main
 struct PKwindowsManagementApp: App {
     @NSApplicationDelegateAdaptor(MenuBarController.self) private var menuBarController
-    @StateObject private var settings = AppSettings()
+    @StateObject private var settings: AppSettings
     @Environment(\.openWindow) private var openWindow
+
+    init() {
+        let settings = AppSettings()
+        _settings = StateObject(wrappedValue: settings)
+        AppRuntime.shared.settings = settings
+
+        let launcher = AppLauncherService()
+        launcher.prewarmApps(settings: settings)
+        launcher.refreshURLSnippetIcons(settings: settings)
+        LaunchShortcutMonitor.shared.start(
+            settings: settings,
+            apps: launcher.loadShortcutTargets(settings: settings),
+            launchHandler: { app in _ = launcher.launch(app, settings: settings) },
+            windowHandler: { action in WindowSnapService().perform(action, preset: settings.windowMarginPreset) }
+        )
+    }
 
     var body: some Scene {
         WindowGroup("PKwindowsManagement", id: "settings") {
@@ -13,19 +29,10 @@ struct PKwindowsManagementApp: App {
                 .environment(\.locale, settings.appLanguage.locale)
                 .id(settings.appLanguage)
                 .onAppear {
-                    AppRuntime.shared.settings = settings
                     AppRuntime.shared.openSettings = {
                         LaunchpadOverlayController.shared.hide()
                         openWindow(id: "settings")
                         NSApp.activate(ignoringOtherApps: true)
-                    }
-                    let launcher = AppLauncherService()
-                    launcher.refreshURLSnippetIcons(settings: settings)
-                    let apps = launcher.loadShortcutTargets(settings: settings)
-                    LaunchShortcutMonitor.shared.start(settings: settings, apps: apps) { app in
-                        _ = launcher.launch(app, settings: settings)
-                    } windowHandler: { action in
-                        WindowSnapService().perform(action, preset: settings.windowMarginPreset)
                     }
                 }
                 .onChange(of: settings.snippets) { _ in

@@ -24,7 +24,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Per-display Launchpad grid profiles to adapt the layout to each connected monitor.
 - Launchpad navigation mode: continuous vertical scroll or horizontal pages.
 - Top-aligned pages in horizontal navigation mode.
-- Full-screen `Big Year` view from the menu, with close button, `Escape`, and `Cmd + W` exit paths.
+- Scroll-free full-screen `Big Year`: pastel theme, weekends, French public holidays, school holidays for zones A/B/C, and birthdays marked with `🎂`; close button, `Escape`, and `Cmd + W` exit paths.
 - Accessibility status indicator with grant-access button.
 - Automatic backup export to a user-chosen folder (e.g. Google Drive) on every settings change.
 - Application context menu for assigning shortcuts or moving applications to Trash.
@@ -60,6 +60,8 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - `Ctrl + Option + 3` : last third
 - `Ctrl + Option + [` : previous display
 - `Ctrl + Option + ]` : next display
+- `Ctrl + Option + =` : enlarge from the center
+- `Ctrl + Option + -` : shrink from the center
 
 ## ⚙️ Settings
 - Shortcuts can be edited in the preferences window.
@@ -74,6 +76,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Changes are persisted in `UserDefaults`.
 - Manual settings import/export in JSON format.
 - Auto-backup: choose a folder (e.g. Google Drive) and export a timestamped JSON backup on every settings change.
+- In Big Year, choose the school zone and enter one birthday per line as `MM-DD,Name` (for example `11-02,Clément`).
 
 ## 🧾 Commands
 - Left-click the menu bar icon to open or close Launchpad.
@@ -113,48 +116,7 @@ src/script/release.sh
 - If the app cannot control windows, check the target app permissions as well.
 
 ## 🧾 Changelog
-- `0.18` - 2026-06-16
-  - The app's official icon is shown in the menu bar (full color) and in the settings header.
-  - Default `Archive` snippet with a dedicated icon and a `Right Command + S` shortcut.
-  - Archive keeps both files on name conflicts (`file 2.ext`).
-  - Archive moves to a fast local archive first, then mirrors to Google Drive in the background (throttled) — no more freeze on large folders.
-  - Archive monthly folders are forced to French names (`2026_06_juin`) even when macOS launches the script with an English locale.
-  - `DesktopArchive` points to the Google Drive archive when detected, otherwise to the local archive.
-  - Duplicate `Archive` snippets merged into a single entry (existing shortcut preserved).
-- `0.17` - 2026-06-16
-  - Added `Big Year` from the menu bar menu.
-  - Safer annual overlay exits (`Escape`, `Cmd + W`, close button, less intrusive window level).
-  - Lighter global-shortcut startup and refresh path: the global monitor no longer loads all application icons.
-  - Dominant icon color is computed only when the `Icon Color` sort mode is active.
-  - More complete cleanup of timers, event taps, and global handlers on shutdown.
-- `0.16` - 2026-06-05
-  - Configurable Launchpad app ordering by name, last used, or dominant icon color.
-- `0.15` - 2026-06-05
-  - Dedicated `URLs` section in preferences, separate from scripts.
-  - URL snippets with browser selection and global shortcuts.
-  - URL snippets now fetch and use the site favicon when available.
-  - More readable Launchpad icons for scripts and URLs.
-- `0.14` - 2026-06-05
-  - Script-based snippets with global shortcuts and enable/disable support.
-  - Launchpad search bar can now handle simple calculations with units.
-  - Refined snippet editor and tighter Launchpad rendering for system commands.
-- `0.13` - 2026-06-05
-  - Per-display Launchpad grid profiles.
-  - `Record` button for keyboard shortcut capture.
-  - Launchpad grid extended up to `20 × 20`.
-- `0.12` - 2026-06-04
-  - Launchpad navigation mode: continuous vertical scroll or horizontal pages.
-  - Manual settings import/export in JSON.
-  - `Cmd + ,` shortcut to open settings.
-  - Left/right modifier key distinction for Command, Option, and Shift.
-  - Fn + Shift modifier support.
-  - Fine-grained grid settings: icon size, column and row spacing.
-  - Top-aligned pages in horizontal navigation mode.
-  - Accessibility status indicator with grant-access button.
-  - Auto-backup to a user-chosen folder on every settings change.
-  - Fixed search bar text color (white on dark background).
-- `0.10` - 2026-06-03
-  - Initial project scaffold.
+- See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ## 🔗 Links
 - FR README: [README.md](README.md)

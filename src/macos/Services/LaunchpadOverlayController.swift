@@ -11,6 +11,7 @@ final class LaunchpadOverlayController {
 
     private var panel: NSPanel?
     private var host: NSViewController?
+    private var style: LaunchpadStyle?
 
     func toggle(settings: AppSettings) {
         if panel?.isVisible == true {
@@ -22,6 +23,15 @@ final class LaunchpadOverlayController {
 
     func show(settings: AppSettings) {
         guard panel?.isVisible != true else { return }
+        if style == settings.launchpadStyle, let panel {
+            NSApp.activate(ignoringOtherApps: true)
+            panel.makeKeyAndOrderFront(nil)
+            panel.orderFrontRegardless()
+            return
+        }
+        panel = nil
+        host = nil
+        style = settings.launchpadStyle
         if settings.launchpadStyle == .compact {
             showCompact(settings: settings)
         } else {
@@ -99,8 +109,6 @@ final class LaunchpadOverlayController {
 
     func hide() {
         panel?.orderOut(nil)
-        panel = nil
-        host = nil
     }
 
     func openSettings() {

@@ -10,8 +10,10 @@ final class AppRuntime {
 
     var settings: AppSettings? {
         didSet {
-            NotificationCenter.default.post(name: .launchpadHotKeyDidChange, object: nil)
-            NotificationCenter.default.post(name: .launchpadHotCornerDidChange, object: nil)
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .launchpadHotKeyDidChange, object: nil)
+                NotificationCenter.default.post(name: .launchpadHotCornerDidChange, object: nil)
+            }
         }
     }
     var openSettings: (() -> Void)?

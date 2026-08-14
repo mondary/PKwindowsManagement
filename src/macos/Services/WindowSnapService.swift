@@ -143,11 +143,11 @@ final class WindowSnapService {
         case .makeLarger:
             let width = min(baseAX.width, currentFrame.width * 1.05)
             let height = min(baseAX.height, currentFrame.height * 1.05)
-            targetFrame = centered(currentFrame, to: width, height: height)
+            targetFrame = centered(currentFrame, to: width, height: height, in: baseAX)
         case .makeSmaller:
             let width = max(100, currentFrame.width * 0.95)
             let height = max(60, currentFrame.height * 0.95)
-            targetFrame = centered(currentFrame, to: width, height: height)
+            targetFrame = centered(currentFrame, to: width, height: height, in: baseAX)
         case .reasonableSize:
             let width = floor(baseAX.width * 0.6)
             let height = floor(baseAX.height * 0.6)
@@ -410,8 +410,13 @@ final class WindowSnapService {
         AXUIElementSetAttributeValue(window, attribute, isFull ? kCFBooleanFalse : kCFBooleanTrue)
     }
 
-    private func centered(_ frame: CGRect, to width: CGFloat, height: CGFloat) -> CGRect {
-        CGRect(x: frame.midX - width / 2.0, y: frame.midY - height / 2.0, width: width, height: height)
+    private func centered(_ frame: CGRect, to width: CGFloat, height: CGFloat, in bounds: CGRect) -> CGRect {
+        CGRect(
+            x: min(max(frame.midX - width / 2.0, bounds.minX), bounds.maxX - width),
+            y: min(max(frame.midY - height / 2.0, bounds.minY), bounds.maxY - height),
+            width: width,
+            height: height
+        )
     }
 
     private func translated(_ frame: CGRect, in bounds: CGRect, x: CGFloat, y: CGFloat) -> CGRect {

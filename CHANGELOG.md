@@ -1,5 +1,19 @@
 # Changelog
 
+## [2026.08.15] - 2026-08-14
+### Added
+- Big Year affiche les week-ends, jours fériés français, vacances scolaires de la zone A/B/C choisie et anniversaires saisis à raison d'une entrée `MM-JJ,Prénom` par ligne
+- Raccourcis `Ctrl + Option + =` et `Ctrl + Option + -` pour agrandir ou réduire la fenêtre depuis son centre
+
+### Changed
+- Big Year adopte une grille annuelle plein écran sans scroll, un thème clair pastel, une journée courante renforcée et un panneau latéral pour la zone scolaire et les anniversaires
+- Le launcher précharge son catalogue hors du thread principal et conserve son panneau entre les ouvertures
+
+### Fixed
+- Les services globaux démarrent même lorsque macOS ne restaure pas la fenêtre Réglages
+- Le launcher et Big Year restent accessibles après fermeture des Réglages; les actions du menu ont désormais une cible explicite
+- `Échap` ferme Big Year directement au niveau de sa fenêtre
+
 ## [2026.08.10] - 2026-08-04
 ### Added
 - Compact Launchpad themes: Light, Dark, Catpuccin, Glass — selectable in Settings → Launchpad when Style is Compact

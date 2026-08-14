@@ -41,6 +41,7 @@ struct LaunchableApp: Identifiable {
 }
 
 final class AppLauncherService {
+    private static let catalogQueue = DispatchQueue(label: "com.pkwindowsmanagement.app-catalog", qos: .userInitiated)
     private static var cachedInstalledApps: [InstalledApp]?
     private static var cachedInstalledAppsTimestamp: Date = .distantPast
     // Rebuilding NSWorkspace icons repeatedly grows IconServices' internal
@@ -51,6 +52,19 @@ final class AppLauncherService {
     static func invalidateInstalledAppsCache() {
         cachedInstalledApps = nil
         cachedInstalledAppsTimestamp = .distantPast
+    }
+
+    func prewarmApps(settings: AppSettings) {
+        Self.catalogQueue.async { [self] in
+            _ = loadApps(settings: settings)
+        }
+    }
+
+    func loadAppsAsync(settings: AppSettings, completion: @escaping ([LaunchableApp]) -> Void) {
+        Self.catalogQueue.async { [self] in
+            let apps = loadApps(settings: settings)
+            DispatchQueue.main.async { completion(apps) }
+        }
     }
 
     func canUninstall(_ app: LaunchableApp) -> Bool {
