@@ -308,6 +308,10 @@ struct WindowShortcutsPreferencesView: View {
             ), format: .number)
             .textFieldStyle(.roundedBorder)
             .frame(width: 46)
+            .onMoveCommand { direction in
+                let step: CGFloat = direction == .up ? 1 : -1
+                value.wrappedValue = min(max(value.wrappedValue + step, 0), 25)
+            }
             Text("%")
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)

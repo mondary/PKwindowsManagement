@@ -113,7 +113,9 @@ final class WindowSnapService {
         let visible = targetScreen.visibleFrame
         let axTop = mainHeight - visible.maxY
         let visibleAX = CGRect(x: visible.minX, y: axTop, width: visible.width, height: visible.height)
-        let baseAX = insetFrame(visibleAX, by: preset.general)
+        // General margins are applied per snap region (creates a gap between
+        // adjacent halves/thirds/quarters), not just around the working area.
+        let baseAX = visibleAX
 
         let targetFrame: CGRect
 
@@ -259,7 +261,36 @@ final class WindowSnapService {
             targetFrame = moved
         }
 
-        setFrame(targetFrame, for: focusedWindow, on: appElement)
+        let finalFrame = Self.snapGapActions.contains(action)
+            ? insetByGaps(targetFrame, area: visibleAX, by: preset.general)
+            : targetFrame
+        setFrame(finalFrame, for: focusedWindow, on: appElement)
+    }
+
+    private static let snapGapActions: Set<WindowSnapAction> = [
+        .leftHalf, .rightHalf, .topHalf, .bottomHalf,
+        .topLeft, .topRight, .bottomLeft, .bottomRight,
+        .firstThird, .centerThird, .lastThird,
+        .topFirstSixth, .topCenterSixth, .topLastSixth,
+        .bottomFirstSixth, .bottomCenterSixth, .bottomLastSixth,
+        .topThird, .bottomThird, .topTwoThirds, .bottomTwoThirds,
+        .firstTwoThirds, .centerTwoThirds, .lastTwoThirds,
+        .firstFourth, .secondFourth, .thirdFourth, .lastFourth,
+        .firstThreeFourths, .centerThreeFourths, .lastThreeFourths,
+        .maximizeHeight, .maximizeWidth
+    ]
+
+    private func insetByGaps(_ frame: CGRect, area: CGRect, by margins: WindowMargins) -> CGRect {
+        let dx = area.width * margins.left / 100
+        let dw = area.width * margins.right / 100
+        let dy = area.height * margins.top / 100
+        let dh = area.height * margins.bottom / 100
+        return CGRect(
+            x: frame.minX + dx,
+            y: frame.minY + dy,
+            width: max(0, frame.width - dx - dw),
+            height: max(0, frame.height - dy - dh)
+        )
     }
 
     private func insetFrame(_ rect: CGRect, by margins: WindowMargins) -> CGRect {
