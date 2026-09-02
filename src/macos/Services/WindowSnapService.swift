@@ -285,11 +285,19 @@ final class WindowSnapService {
         let dw = area.width * margins.right / 100
         let dy = area.height * margins.top / 100
         let dh = area.height * margins.bottom / 100
+        // Un bord sur le bord de l'écran compte plein, un bord intérieur
+        // (collé à une autre zone de snap) compte à moitié : le gap total
+        // entre deux zones vaut une seule fois la marge.
+        let epsilon: CGFloat = 0.5
+        let leftGap = dx * (frame.minX > area.minX + epsilon ? 0.5 : 1.0)
+        let rightGap = dw * (frame.maxX < area.maxX - epsilon ? 0.5 : 1.0)
+        let topGap = dy * (frame.minY > area.minY + epsilon ? 0.5 : 1.0)
+        let bottomGap = dh * (frame.maxY < area.maxY - epsilon ? 0.5 : 1.0)
         return CGRect(
-            x: frame.minX + dx,
-            y: frame.minY + dy,
-            width: max(0, frame.width - dx - dw),
-            height: max(0, frame.height - dy - dh)
+            x: frame.minX + leftGap,
+            y: frame.minY + topGap,
+            width: max(0, frame.width - leftGap - rightGap),
+            height: max(0, frame.height - topGap - bottomGap)
         )
     }
 

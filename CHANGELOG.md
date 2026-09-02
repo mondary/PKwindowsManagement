@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.09.02] - 2026-09-02
+### Fixed
+- La marge générale ne se cumule plus entre zones de snap adjacentes : un bord d'écran compte plein, un bord intérieur compte à moitié — le gap total vaut une seule fois la marge (1%), partout
+
 ## [2026.09.01] - 2026-09-02
 ### Fixed
 - Le launcher s'affiche sur l'écran où se trouve la souris même quand son panneau est réutilisé depuis le cache (régression du launcher instantané)
