@@ -88,7 +88,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openPreferences() {
-        AppRuntime.shared.openSettings?()
+        LaunchpadOverlayController.shared.openSettings()
     }
 
     @objc private func openLaunchpad() {

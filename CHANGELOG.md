@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.09.01] - 2026-09-02
+### Fixed
+- Le launcher s'affiche sur l'écran où se trouve la souris même quand son panneau est réutilisé depuis le cache (régression du launcher instantané)
+- Le launcher plein écran recouvre à nouveau tout l'écran externe (plus de marge en haut ni à droite) et la grille par écran suit l'écran affiché
+- Le mode compact se recentre sur l'écran cible à chaque ouverture
+- Les réglages s'ouvrent à nouveau même quand la fenêtre du dashboard est fermée ou non restaurée : l'ouverture ne dépend plus d'une closure SwiftUI capturée à l'affichage, la fenêtre est mise au premier plan ou recréée via l'Apple Event `reopen`
+
 ## [2026.08.27] - 2026-08-14
 ### Added
 - Personnalisation de l'apparence Big Year : anniversaires ou noms des mois en gras au choix (le `!` reste prioritaire) et sélecteurs de couleur pour chaque élément (fond, jours fériés, anniversaires, événements, zones, texte…)

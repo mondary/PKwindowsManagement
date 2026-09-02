@@ -4,7 +4,6 @@ import SwiftUI
 struct PKwindowsManagementApp: App {
     @NSApplicationDelegateAdaptor(MenuBarController.self) private var menuBarController
     @StateObject private var settings: AppSettings
-    @Environment(\.openWindow) private var openWindow
 
     init() {
         let settings = AppSettings()
@@ -28,13 +27,6 @@ struct PKwindowsManagementApp: App {
                 .frame(minWidth: 900, minHeight: 620)
                 .environment(\.locale, settings.appLanguage.locale)
                 .id(settings.appLanguage)
-                .onAppear {
-                    AppRuntime.shared.openSettings = {
-                        LaunchpadOverlayController.shared.hide()
-                        openWindow(id: "settings")
-                        NSApp.activate(ignoringOtherApps: true)
-                    }
-                }
                 .onChange(of: settings.snippets) { _ in
                     let launcher = AppLauncherService()
                     launcher.refreshURLSnippetIcons(settings: settings)
@@ -50,7 +42,7 @@ struct PKwindowsManagementApp: App {
         .commands {
             CommandGroup(replacing: .appSettings) {
                 Button(localizedString("Settings...")) {
-                    AppRuntime.shared.openSettings?()
+                    LaunchpadOverlayController.shared.openSettings()
                 }
                 .keyboardShortcut(",", modifiers: .command)
             }

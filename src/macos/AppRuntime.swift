@@ -16,5 +16,4 @@ final class AppRuntime {
             }
         }
     }
-    var openSettings: (() -> Void)?
 }

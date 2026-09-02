@@ -24,6 +24,29 @@ final class LaunchpadOverlayController {
     func show(settings: AppSettings) {
         guard panel?.isVisible != true else { return }
         if style == settings.launchpadStyle, let panel {
+            let targetScreen = screenForCurrentPointer() ?? NSScreen.main
+            if style == .compact {
+                if let visibleFrame = targetScreen?.visibleFrame {
+                    let size = panel.frame.size
+                    panel.setFrame(
+                        NSRect(
+                            x: visibleFrame.midX - size.width / 2,
+                            y: visibleFrame.midY - size.height / 2,
+                            width: size.width,
+                            height: size.height
+                        ),
+                        display: true
+                    )
+                }
+            } else if let screenFrame = targetScreen?.frame {
+                panel.setFrame(screenFrame, display: true)
+                if let hosting = host as? NSHostingController<LaunchpadOverlayRootView> {
+                    hosting.rootView = LaunchpadOverlayRootView(
+                        settings: settings,
+                        displayID: targetScreen?.launchpadDisplayID
+                    )
+                }
+            }
             NSApp.activate(ignoringOtherApps: true)
             panel.makeKeyAndOrderFront(nil)
             panel.orderFrontRegardless()
@@ -114,12 +137,18 @@ final class LaunchpadOverlayController {
     func openSettings() {
         hide()
         DispatchQueue.main.async {
-            if let settingsWindow = NSApp.windows.first(where: { $0.title == "PKwindowsManagement" }) {
+            NSApp.activate(ignoringOtherApps: true)
+            if let settingsWindow = NSApp.windows.first(where: { $0.title == "PKwindowsManagement" && $0.isVisible }) {
+                if settingsWindow.isMiniaturized {
+                    settingsWindow.deminiaturize(nil)
+                }
                 settingsWindow.makeKeyAndOrderFront(nil)
-                NSApp.activate(ignoringOtherApps: true)
                 return
             }
-            AppRuntime.shared.openSettings?()
+            // Fenêtre fermée ou non restaurée au lancement : réouvrir le bundle
+            // de l'app en cours envoie l'Apple Event `reopen` et SwiftUI recrée
+            // la fenêtre du WindowGroup, sans dépendre d'une closure SwiftUI.
+            NSWorkspace.shared.open(Bundle.main.bundleURL)
         }
     }
 
