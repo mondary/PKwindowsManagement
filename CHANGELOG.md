@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.09.07] - 2026-09-03
+### Fixed
+- Plante de l'onglet Fenêtres des réglages (`Double value cannot be converted to Int`) causé par des divisions entières (`1/3`, `2/3`, `1/4`…) évaluées à zéro dans les fractions des vignettes — remplacées par des littéraux décimaux, avec garde-fou anti-largeur nulle
+### Changed
+- Vignettes de l'onglet Fenêtres refaites avec des mini-grilles claires : les fractions « deux tiers » et « trois quarts » sont maintenant découpées en 3 et 4 colonnes (avec mailles actives en surbrillance) au lieu de rendus ambigus
+- Icônes « Presque maximiser », « Tout maximiser » et « Tout maximiser (app active) » redessinées (écran quasi plein, deux écrans, fenêtres empilées) pour remplacer les symboles abstraits
+
 ## [2026.09.06] - 2026-09-03
 ### Added
 - La fenêtre compacte du Launchpad se déplace à la souris et sa position est mémorisée : elle se rouvre exactement là où elle a été posée (retour au centrage si l'écran mémorisé n'est plus connecté)

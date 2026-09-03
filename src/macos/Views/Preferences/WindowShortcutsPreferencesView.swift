@@ -32,61 +32,61 @@ struct WindowShortcutsPreferencesView: View {
 
     private var fourthsEntries: [WindowCommandSpec] {
         [
-            .bound("First Fourth", nil, .windowFirstFourth, fraction: CGRect(x: 0, y: 0, width: 1 / 4, height: 1)),
-            .bound("Second Fourth", nil, .windowSecondFourth, fraction: CGRect(x: 1 / 4, y: 0, width: 1 / 4, height: 1)),
-            .bound("Third Fourth", nil, .windowThirdFourth, fraction: CGRect(x: 2 / 4, y: 0, width: 1 / 4, height: 1)),
-            .bound("Last Fourth", nil, .windowLastFourth, fraction: CGRect(x: 3 / 4, y: 0, width: 1 / 4, height: 1)),
+            .bound("First Fourth", nil, .windowFirstFourth, fraction: CGRect(x: 0, y: 0, width: 0.25, height: 1)),
+            .bound("Second Fourth", nil, .windowSecondFourth, fraction: CGRect(x: 0.25, y: 0, width: 0.25, height: 1)),
+            .bound("Third Fourth", nil, .windowThirdFourth, fraction: CGRect(x: 0.5, y: 0, width: 0.25, height: 1)),
+            .bound("Last Fourth", nil, .windowLastFourth, fraction: CGRect(x: 0.75, y: 0, width: 0.25, height: 1)),
         ]
     }
 
     private var thirdsEntries: [WindowCommandSpec] {
         [
-            .bound("First Third", nil, .windowFirstThird, fraction: CGRect(x: 0, y: 0, width: 1 / 3, height: 1)),
-            .bound("Center Third", nil, .windowCenterThird, fraction: CGRect(x: 1 / 3, y: 0, width: 1 / 3, height: 1)),
-            .bound("Last Third", nil, .windowLastThird, fraction: CGRect(x: 2 / 3, y: 0, width: 1 / 3, height: 1)),
+            .bound("First Third", nil, .windowFirstThird, fraction: CGRect(x: 0, y: 0, width: 0.3334, height: 1)),
+            .bound("Center Third", nil, .windowCenterThird, fraction: CGRect(x: 0.3333, y: 0, width: 0.3334, height: 1)),
+            .bound("Last Third", nil, .windowLastThird, fraction: CGRect(x: 0.6667, y: 0, width: 0.3333, height: 1)),
         ]
     }
 
     private var twoThirdsEntries: [WindowCommandSpec] {
         [
-            .bound("First Two Thirds", nil, .windowFirstTwoThirds, fraction: CGRect(x: 0, y: 0, width: 2 / 3, height: 1)),
-            .bound("Center Two Thirds", nil, .windowCenterTwoThirds, fraction: CGRect(x: 1 / 3, y: 0, width: 1 / 3, height: 1)),
-            .bound("Last Two Thirds", nil, .windowLastTwoThirds, fraction: CGRect(x: 1 / 3, y: 0, width: 2 / 3, height: 1)),
+            .bound("First Two Thirds", nil, .windowFirstTwoThirds, fraction: CGRect(x: 0, y: 0, width: 0.6667, height: 1)),
+            .bound("Center Two Thirds", nil, .windowCenterTwoThirds, fraction: CGRect(x: 0.1667, y: 0, width: 0.6666, height: 1)),
+            .bound("Last Two Thirds", nil, .windowLastTwoThirds, fraction: CGRect(x: 0.3333, y: 0, width: 0.6667, height: 1)),
         ]
     }
 
     private var threeFourthsEntries: [WindowCommandSpec] {
         [
-            .bound("First Three Fourths", nil, .windowFirstThreeFourths, fraction: CGRect(x: 0, y: 0, width: 3 / 4, height: 1)),
-            .bound("Center Three Fourths", nil, .windowCenterThreeFourths, fraction: CGRect(x: 1 / 4, y: 0, width: 2 / 4, height: 1)),
-            .bound("Last Three Fourths", nil, .windowLastThreeFourths, fraction: CGRect(x: 1 / 4, y: 0, width: 3 / 4, height: 1)),
+            .bound("First Three Fourths", nil, .windowFirstThreeFourths, fraction: CGRect(x: 0, y: 0, width: 0.75, height: 1)),
+            .bound("Center Three Fourths", nil, .windowCenterThreeFourths, fraction: CGRect(x: 0.125, y: 0, width: 0.75, height: 1)),
+            .bound("Last Three Fourths", nil, .windowLastThreeFourths, fraction: CGRect(x: 0.25, y: 0, width: 0.75, height: 1)),
         ]
     }
 
     private var horizontalEntries: [WindowCommandSpec] {
         [
-            .bound("Top Third", nil, .windowTopThird, fraction: CGRect(x: 0, y: 0, width: 1, height: 1 / 3)),
-            .bound("Bottom Third", nil, .windowBottomThird, fraction: CGRect(x: 0, y: 2 / 3, width: 1, height: 1 / 3)),
-            .bound("Top Two Thirds", nil, .windowTopTwoThirds, fraction: CGRect(x: 0, y: 0, width: 1, height: 2 / 3)),
-            .bound("Bottom Two Thirds", nil, .windowBottomTwoThirds, fraction: CGRect(x: 0, y: 1 / 3, width: 1, height: 2 / 3)),
+            .bound("Top Third", nil, .windowTopThird, fraction: CGRect(x: 0, y: 0, width: 1, height: 0.3334)),
+            .bound("Bottom Third", nil, .windowBottomThird, fraction: CGRect(x: 0, y: 0.6667, width: 1, height: 0.3333)),
+            .bound("Top Two Thirds", nil, .windowTopTwoThirds, fraction: CGRect(x: 0, y: 0, width: 1, height: 0.6667)),
+            .bound("Bottom Two Thirds", nil, .windowBottomTwoThirds, fraction: CGRect(x: 0, y: 0.3333, width: 1, height: 0.6667)),
         ]
     }
 
     private var sixthsEntries: [WindowCommandSpec] {
         [
-            .bound("Top Left Sixth", nil, .windowTopFirstSixth, fraction: CGRect(x: 0, y: 0, width: 1 / 3, height: 0.5)),
-            .bound("Top Center Sixth", nil, .windowTopCenterSixth, fraction: CGRect(x: 1 / 3, y: 0, width: 1 / 3, height: 0.5)),
-            .bound("Top Right Sixth", nil, .windowTopLastSixth, fraction: CGRect(x: 2 / 3, y: 0, width: 1 / 3, height: 0.5)),
-            .bound("Bottom Left Sixth", nil, .windowBottomFirstSixth, fraction: CGRect(x: 0, y: 0.5, width: 1 / 3, height: 0.5)),
-            .bound("Bottom Center Sixth", nil, .windowBottomCenterSixth, fraction: CGRect(x: 1 / 3, y: 0.5, width: 1 / 3, height: 0.5)),
-            .bound("Bottom Right Sixth", nil, .windowBottomLastSixth, fraction: CGRect(x: 2 / 3, y: 0.5, width: 1 / 3, height: 0.5)),
+            .bound("Top Left Sixth", nil, .windowTopFirstSixth, fraction: CGRect(x: 0, y: 0, width: 0.3334, height: 0.5)),
+            .bound("Top Center Sixth", nil, .windowTopCenterSixth, fraction: CGRect(x: 0.3333, y: 0, width: 0.3334, height: 0.5)),
+            .bound("Top Right Sixth", nil, .windowTopLastSixth, fraction: CGRect(x: 0.6667, y: 0, width: 0.3333, height: 0.5)),
+            .bound("Bottom Left Sixth", nil, .windowBottomFirstSixth, fraction: CGRect(x: 0, y: 0.5, width: 0.3334, height: 0.5)),
+            .bound("Bottom Center Sixth", nil, .windowBottomCenterSixth, fraction: CGRect(x: 0.3333, y: 0.5, width: 0.3334, height: 0.5)),
+            .bound("Bottom Right Sixth", nil, .windowBottomLastSixth, fraction: CGRect(x: 0.6667, y: 0.5, width: 0.3333, height: 0.5)),
         ]
     }
 
     private var displaysEntries: [WindowCommandSpec] {
         [
-            .bound("Next Display", "arrow.right.to.line.compact", .windowNextDisplay),
-            .bound("Previous Display", "arrow.left.to.line.compact", .windowPreviousDisplay),
+            .bound("Next Display", "arrow.forward.square", .windowNextDisplay),
+            .bound("Previous Display", "arrow.backward.square", .windowPreviousDisplay),
         ]
     }
 
@@ -181,7 +181,7 @@ struct WindowShortcutsPreferencesView: View {
                 Divider()
                 windowRow(.bound("Toggle Fullscreen", "rectangle.inset.fill", .windowToggleFullScreen))
                 Divider()
-                windowRow(.bound("Almost Maximize", "rectangle.inset.filled", .windowMaximize))
+                windowRow(.bound("Almost Maximize", nil, .windowMaximize, fraction: CGRect(x: 0.045, y: 0.045, width: 0.91, height: 0.91)))
                 Divider()
                 windowRow(.bound("Maximize All Windows", "rectangle.on.rectangle", .windowMaximizeAll))
                 Divider()
@@ -264,6 +264,10 @@ struct WindowShortcutsPreferencesView: View {
                 .fill(Color.accentColor.opacity(0.15))
             if let fraction = item.fraction {
                 splitIcon(fraction)
+            } else if item.action == .windowMaximizeAll {
+                allScreensIcon
+            } else if item.action == .windowMaximizeAllInApp {
+                appStackIcon
             } else {
                 Image(systemName: item.symbol)
                     .font(.system(size: 12, weight: .semibold))
@@ -273,17 +277,103 @@ struct WindowShortcutsPreferencesView: View {
         .frame(width: 20, height: 20)
     }
 
-    private func splitIcon(_ fraction: CGRect) -> some View {
-        let size: CGFloat = 12
-        return ZStack {
-            RoundedRectangle(cornerRadius: 1.5)
-                .stroke(Color.accentColor, lineWidth: 1)
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(Color.accentColor)
-                .frame(width: max(1, size * fraction.width), height: max(1, size * fraction.height))
-                .offset(x: (fraction.midX - 0.5) * size, y: (fraction.midY - 0.5) * size)
+    // Deux écrans côte à côte, chacun avec sa fenêtre presque pleine
+    private var allScreensIcon: some View {
+        HStack(spacing: 1.5) {
+            miniScreen
+            miniScreen
         }
-        .frame(width: size, height: size)
+        .frame(width: 15, height: 12)
+    }
+
+    private var miniScreen: some View {
+        RoundedRectangle(cornerRadius: 1.2)
+            .stroke(Color.accentColor.opacity(0.55), lineWidth: 1)
+            .overlay(
+                RoundedRectangle(cornerRadius: 0.8)
+                    .fill(Color.accentColor)
+                    .padding(1.5)
+            )
+    }
+
+    // Un écran avec deux fenêtres empilées de l'app active
+    private var appStackIcon: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 2)
+                .stroke(Color.accentColor.opacity(0.55), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.accentColor.opacity(0.4))
+                .frame(width: 9, height: 7)
+                .offset(x: -1.5, y: -1.5)
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.accentColor)
+                .frame(width: 9, height: 7)
+                .offset(x: 1.5, y: 1.5)
+        }
+        .frame(width: 15, height: 12)
+    }
+
+    // L'entier n (2…6) qui aligne le mieux `value` sur k/n :
+    // 0.667 → 3 (deux tiers), 0.75 → 4 (trois quarts), 0.5 → 2…
+    private func bestDenominator(_ value: CGFloat) -> Int {
+        var best = 2
+        var bestError = CGFloat.greatestFiniteMagnitude
+        for n in 2...6 {
+            let k = (value * CGFloat(n)).rounded()
+            let error = abs(value - k / CGFloat(n))
+            if error < bestError - 0.0001 {
+                bestError = error
+                best = n
+            }
+        }
+        return best
+    }
+
+    @ViewBuilder
+    private func splitIcon(_ fraction: CGRect) -> some View {
+        let canvasW: CGFloat = 15
+        let canvasH: CGFloat = 12
+        let gap: CGFloat = 1
+        // Garde-fou : une fraction nulle rendrait la division infinie (crash)
+        let width = max(0.05, min(1, fraction.width))
+        let height = max(0.05, min(1, fraction.height))
+
+        // Fenêtre flottante centrée (ex. Taille raisonnable) : contour + rectangle intérieur
+        if fraction.minX > 0.01, fraction.minY > 0.01,
+           fraction.maxX < 0.99, fraction.maxY < 0.99 {
+            ZStack {
+                RoundedRectangle(cornerRadius: 2)
+                    .stroke(Color.accentColor.opacity(0.55), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 1.2)
+                    .fill(Color.accentColor)
+                    .frame(width: max(2, canvasW * width), height: max(2, canvasH * height))
+            }
+            .frame(width: canvasW, height: canvasH)
+        } else {
+            // Dénominateur du découpage : l'entier n (2…6) qui aligne le mieux
+            // la largeur sur k/n — deux tiers → 3 colonnes, trois quarts → 4…
+            let cols = width >= 0.99 ? 1 : bestDenominator(width)
+            let rows = height >= 0.99 ? 1 : bestDenominator(height)
+            let activeCols = Int((width * CGFloat(cols)).rounded())
+            let activeRows = Int((height * CGFloat(rows)).rounded())
+            let colStart = max(0, min(Int((fraction.minX * CGFloat(cols)).rounded()), cols - activeCols))
+            let rowStart = max(0, min(Int((fraction.minY * CGFloat(rows)).rounded()), rows - activeRows))
+            let colEnd = colStart + activeCols
+            let rowEnd = rowStart + activeRows
+
+            VStack(spacing: gap) {
+                ForEach(0..<rows, id: \.self) { row in
+                    HStack(spacing: gap) {
+                        ForEach(0..<cols, id: \.self) { col in
+                            let active = col >= colStart && col < colEnd && row >= rowStart && row < rowEnd
+                            RoundedRectangle(cornerRadius: 1.2)
+                                .fill(active ? Color.accentColor : Color.accentColor.opacity(0.18))
+                        }
+                    }
+                }
+            }
+            .frame(width: canvasW, height: canvasH)
+        }
     }
 
     private func marginEditor(_ margins: Binding<WindowMargins>) -> some View {
