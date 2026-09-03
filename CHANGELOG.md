@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026.09.06] - 2026-09-03
+### Added
+- La fenêtre compacte du Launchpad se déplace à la souris et sa position est mémorisée : elle se rouvre exactement là où elle a été posée (retour au centrage si l'écran mémorisé n'est plus connecté)
+
+## [2026.09.05] - 2026-09-03
+### Changed
+- Réglages Launchpad entièrement repensés, sans menus déroulants : coin actif sélectionnable directement sur une miniature d'écran (clic pour choisir, re-clic pour désactiver), aperçus graphiques pour les styles Plein écran et Compact, échantillons colorés pour les thèmes (Clair, Sombre, Catpuccin, Verre)
+
 ## [2026.09.04] - 2026-09-03
 ### Added
 - `Tout maximiser (app active)` : même presque-maximisation que `Tout maximiser`, mais limitée aux fenêtres de l'application au premier plan (Chrome → ses fenêtres, Finder → les siennes) via `Ctrl + Shift + D`, personnalisable dans les réglages

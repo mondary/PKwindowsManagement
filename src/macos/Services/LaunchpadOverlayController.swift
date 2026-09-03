@@ -12,6 +12,10 @@ final class LaunchpadOverlayController {
     private var panel: NSPanel?
     private var host: NSViewController?
     private var style: LaunchpadStyle?
+    private var moveObserver: NSObjectProtocol?
+
+    private static let compactOriginXKey = "launchpad-compact-origin-x"
+    private static let compactOriginYKey = "launchpad-compact-origin-y"
 
     func toggle(settings: AppSettings) {
         if panel?.isVisible == true {
@@ -26,18 +30,12 @@ final class LaunchpadOverlayController {
         if style == settings.launchpadStyle, let panel {
             let targetScreen = screenForCurrentPointer() ?? NSScreen.main
             if style == .compact {
-                if let visibleFrame = targetScreen?.visibleFrame {
-                    let size = panel.frame.size
-                    panel.setFrame(
-                        NSRect(
-                            x: visibleFrame.midX - size.width / 2,
-                            y: visibleFrame.midY - size.height / 2,
-                            width: size.width,
-                            height: size.height
-                        ),
-                        display: true
-                    )
-                }
+                // Reprendre la position choisie par l'utilisateur (sinon centré)
+                let size = panel.frame.size
+                panel.setFrame(
+                    NSRect(origin: compactOrigin(size: size), size: size),
+                    display: true
+                )
             } else if let screenFrame = targetScreen?.frame {
                 panel.setFrame(screenFrame, display: true)
                 if let hosting = host as? NSHostingController<LaunchpadOverlayRootView> {
@@ -54,6 +52,10 @@ final class LaunchpadOverlayController {
         }
         panel = nil
         host = nil
+        if let observer = moveObserver {
+            NotificationCenter.default.removeObserver(observer)
+            moveObserver = nil
+        }
         style = settings.launchpadStyle
         if settings.launchpadStyle == .compact {
             showCompact(settings: settings)
@@ -95,16 +97,11 @@ final class LaunchpadOverlayController {
     }
 
     private func showCompact(settings: AppSettings) {
-        let targetScreen = screenForCurrentPointer() ?? NSScreen.main
         let rootView = CompactLaunchpadRootView(settings: settings)
         let hosting = NSHostingController(rootView: rootView)
 
         let compactSize = NSSize(width: 600, height: 460)
-        let screenFrame = targetScreen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
-        let origin = NSPoint(
-            x: screenFrame.midX - compactSize.width / 2,
-            y: screenFrame.midY - compactSize.height / 2
-        )
+        let origin = compactOrigin(size: compactSize)
         let panel = LaunchpadPanel(
             contentRect: NSRect(origin: origin, size: compactSize),
             styleMask: [.borderless],
@@ -117,11 +114,20 @@ final class LaunchpadOverlayController {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         panel.hasShadow = true
         panel.hidesOnDeactivate = true
-        panel.isMovable = false
+        panel.isMovable = true
+        panel.isMovableByWindowBackground = true
 
         hosting.view.frame = NSRect(origin: .zero, size: compactSize)
         hosting.view.autoresizingMask = [.width, .height]
         panel.contentView = hosting.view
+
+        moveObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didMoveNotification, object: panel, queue: .main
+        ) { [weak self] _ in
+            guard let self, let frame = self.panel?.frame else { return }
+            UserDefaults.standard.set(frame.origin.x, forKey: Self.compactOriginXKey)
+            UserDefaults.standard.set(frame.origin.y, forKey: Self.compactOriginYKey)
+        }
 
         self.host = hosting
         self.panel = panel
@@ -150,6 +156,34 @@ final class LaunchpadOverlayController {
             // la fenêtre du WindowGroup, sans dépendre d'une closure SwiftUI.
             NSWorkspace.shared.open(Bundle.main.bundleURL)
         }
+    }
+
+    /// Position d'ouverture du panneau compact : celle choisie par
+    /// l'utilisateur (limitée à l'écran où elle se trouve), sinon centré
+    /// sur l'écran sous le pointeur.
+    private func compactOrigin(size: NSSize) -> NSPoint {
+        if let saved = savedCompactOrigin,
+           let savedScreen = NSScreen.screens.first(where: { $0.visibleFrame.contains(saved) }) {
+            let visible = savedScreen.visibleFrame
+            return NSPoint(
+                x: min(max(saved.x, visible.minX), visible.maxX - size.width),
+                y: min(max(saved.y, visible.minY), visible.maxY - size.height)
+            )
+        }
+        let visibleFrame = screenForCurrentPointer()?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
+        return NSPoint(
+            x: visibleFrame.midX - size.width / 2,
+            y: visibleFrame.midY - size.height / 2
+        )
+    }
+
+    private var savedCompactOrigin: NSPoint? {
+        let defaults = UserDefaults.standard
+        guard defaults.object(forKey: Self.compactOriginXKey) != nil else { return nil }
+        return NSPoint(
+            x: defaults.double(forKey: Self.compactOriginXKey),
+            y: defaults.double(forKey: Self.compactOriginYKey)
+        )
     }
 
     private func screenForCurrentPointer() -> NSScreen? {
