@@ -4,6 +4,7 @@ import Foundation
 
 enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
     case controlOption
+    case controlShift
     case command
     case leftCommand
     case rightCommand
@@ -20,6 +21,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
     var displayName: String {
         switch self {
         case .controlOption: localizedString("Control + Option")
+        case .controlShift: localizedString("Control + Shift")
         case .command: localizedString("Command")
         case .leftCommand: localizedString("Left Command")
         case .rightCommand: localizedString("Right Command")
@@ -36,6 +38,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
     var symbolPrefix: String {
         switch self {
         case .controlOption: "⌃⌥"
+        case .controlShift: "⌃⇧"
         case .command: "⌘"
         case .leftCommand: "⌘L"
         case .rightCommand: "⌘R"
@@ -52,6 +55,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
     var flags: NSEvent.ModifierFlags {
         switch self {
         case .controlOption: [.control, .option]
+        case .controlShift: [.control, .shift]
         case .command, .leftCommand, .rightCommand: [.command]
         case .option, .leftOption, .rightOption: [.option]
         case .shift, .leftShift, .rightShift: [.shift]
@@ -62,6 +66,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
     var carbonFlags: UInt32 {
         switch self {
         case .controlOption: UInt32(controlKey | optionKey)
+        case .controlShift: UInt32(controlKey | shiftKey)
         case .command, .leftCommand, .rightCommand: UInt32(cmdKey)
         case .option, .leftOption, .rightOption: UInt32(optionKey)
         case .shift, .leftShift, .rightShift: UInt32(shiftKey)
@@ -72,6 +77,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
     var keySymbols: [String] {
         switch self {
         case .controlOption: ["⌃", "⌥"]
+        case .controlShift: ["⌃", "⇧"]
         case .command: ["⌘"]
         case .leftCommand: ["⌘L"]
         case .rightCommand: ["⌘R"]
@@ -126,6 +132,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case windowBottomHalf
     case windowMaximize
     case windowMaximizeAll
+    case windowMaximizeAllInApp
     case windowCenter
     case windowTopLeft
     case windowTopRight
@@ -179,6 +186,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowBottomHalf: localizedString("Bottom Half")
         case .windowMaximize: localizedString("Maximize")
         case .windowMaximizeAll: localizedString("Maximize All Windows")
+        case .windowMaximizeAllInApp: localizedString("Maximize All Windows (Current App)")
         case .windowCenter: localizedString("Center")
         case .windowTopLeft: localizedString("Top Left")
         case .windowTopRight: localizedString("Top Right")
@@ -234,6 +242,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowBottomHalf: .init(key: "down", modifier: .controlOption)
         case .windowMaximize: .init(key: "f", modifier: .controlOption)
         case .windowMaximizeAll: .init(key: "g", modifier: .controlOption)
+        case .windowMaximizeAllInApp: .init(key: "d", modifier: .controlShift)
         case .windowCenter: .init(key: "c", modifier: .controlOption)
         case .windowTopLeft: .init(key: "y", modifier: .controlOption)
         case .windowTopRight: .init(key: "p", modifier: .controlOption)

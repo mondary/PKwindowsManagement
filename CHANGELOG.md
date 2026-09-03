@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.09.04] - 2026-09-03
+### Added
+- `Tout maximiser (app active)` : même presque-maximisation que `Tout maximiser`, mais limitée aux fenêtres de l'application au premier plan (Chrome → ses fenêtres, Finder → les siennes) via `Ctrl + Shift + D`, personnalisable dans les réglages
+
 ## [2026.09.03] - 2026-09-03
 ### Added
 - `Tout maximiser` : toutes les fenêtres visibles (non réduites) de tous les écrans passent en presque maximisé via `Ctrl + Option + G` (personnalisable dans les réglages), chaque fenêtre restant restaurable via l'action Restaurer

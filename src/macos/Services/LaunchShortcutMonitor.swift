@@ -202,6 +202,8 @@ private struct ModifierState {
         switch preset {
         case .controlOption:
             return flags.contains(.maskControl) && flags.contains(.maskAlternate)
+        case .controlShift:
+            return flags.contains(.maskControl) && flags.contains(.maskShift)
         case .command:
             return flags.contains(.maskCommand)
         case .leftCommand:

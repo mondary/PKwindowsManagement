@@ -353,6 +353,9 @@ private struct ShortcutCaptureState {
         if controlPressed && optionPressed && !commandPressed && !shiftPressed {
             return .controlOption
         }
+        if controlPressed && shiftPressed && !commandPressed && !optionPressed {
+            return .controlShift
+        }
         if commandPressed && !controlPressed && !optionPressed && !shiftPressed {
             return leftCommand != rightCommand ? (leftCommand ? .leftCommand : .rightCommand) : .command
         }

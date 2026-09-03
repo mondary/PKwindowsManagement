@@ -222,3 +222,4 @@
 "Trash could not be emptied: %@" = "No se pudo vaciar la papelera: %@";
 "macOS blocked Finder automation. Relaunch this packaged app and allow PKwindowsManagement to control Finder when prompted." = "macOS bloqueó la automatización de Finder. Reinicia esta app y permite que PKwindowsManagement controle Finder.";
 "Maximize All Windows" = "Maximizar todo";
+"Maximize All Windows (Current App)" = "Maximizar todo (app activa)";

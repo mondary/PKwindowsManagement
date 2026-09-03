@@ -8,6 +8,7 @@ enum WindowSnapAction: CaseIterable {
     case bottomHalf
     case maximize
     case maximizeAll
+    case maximizeAllInApp
     case center
     case topLeft
     case topRight
@@ -89,8 +90,16 @@ final class WindowSnapService {
     func perform(_ action: WindowSnapAction, preset: WindowMarginPreset = WindowMarginPreset()) {
         guard ensureAccessibilityPermission() else { return }
 
-        if action == .maximizeAll {
-            maximizeAllWindows(preset: preset)
+        if action == .maximizeAll || action == .maximizeAllInApp {
+            let apps: [NSRunningApplication]
+            if action == .maximizeAllInApp {
+                apps = NSWorkspace.shared.frontmostApplication.map { [$0] } ?? []
+            } else {
+                apps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
+            }
+            for app in apps {
+                maximizeAllWindows(of: app, preset: preset)
+            }
             return
         }
 
@@ -256,7 +265,7 @@ final class WindowSnapService {
         case .bottomLastSixth:
             let w = floor(baseAX.width / 3.0)
             targetFrame = CGRect(x: baseAX.maxX - w, y: baseAX.midY, width: w, height: floor(baseAX.height / 2.0))
-        case .restore, .toggleFullscreen, .maximizeAll:
+        case .restore, .toggleFullscreen, .maximizeAll, .maximizeAllInApp:
             targetFrame = currentFrame
         case .nextDisplay, .previousDisplay:
             guard let moved = moveToAnotherDisplay(
@@ -274,25 +283,22 @@ final class WindowSnapService {
         setFrame(finalFrame, for: focusedWindow, on: appElement)
     }
 
-    private func maximizeAllWindows(preset: WindowMarginPreset) {
-        let apps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
-        for app in apps {
-            let appElement = AXUIElementCreateApplication(app.processIdentifier)
-            var windowsRef: AnyObject?
-            guard AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) == .success,
-                  let windows = windowsRef as? [AXUIElement]
+    private func maximizeAllWindows(of app: NSRunningApplication, preset: WindowMarginPreset) {
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        var windowsRef: AnyObject?
+        guard AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+              let windows = windowsRef as? [AXUIElement]
+        else { return }
+        for window in windows {
+            if isMinimized(window) { continue }
+            guard let windowFrame = frame(of: window),
+                  let targetScreen = screen(for: windowFrame)
             else { continue }
-            for window in windows {
-                if isMinimized(window) { continue }
-                guard let windowFrame = frame(of: window),
-                      let targetScreen = screen(for: windowFrame)
-                else { continue }
-                let mainHeight = primaryScreenHeight
-                let visible = targetScreen.visibleFrame
-                let visibleAX = CGRect(x: visible.minX, y: mainHeight - visible.maxY, width: visible.width, height: visible.height)
-                Self.restoreStore[Self.windowKey(for: window)] = windowFrame
-                setFrame(insetFrame(visibleAX, by: preset.almostFull), for: window, on: appElement)
-            }
+            let mainHeight = primaryScreenHeight
+            let visible = targetScreen.visibleFrame
+            let visibleAX = CGRect(x: visible.minX, y: mainHeight - visible.maxY, width: visible.width, height: visible.height)
+            Self.restoreStore[Self.windowKey(for: window)] = windowFrame
+            setFrame(insetFrame(visibleAX, by: preset.almostFull), for: window, on: appElement)
         }
     }
 
@@ -596,6 +602,7 @@ extension ShortcutAction {
         case .windowBottomHalf: .bottomHalf
         case .windowMaximize: .maximize
         case .windowMaximizeAll: .maximizeAll
+        case .windowMaximizeAllInApp: .maximizeAllInApp
         case .windowCenter: .center
         case .windowTopLeft: .topLeft
         case .windowTopRight: .topRight
