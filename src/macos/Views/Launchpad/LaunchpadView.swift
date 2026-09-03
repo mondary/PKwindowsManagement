@@ -166,7 +166,7 @@ struct LaunchpadView: View {
     }
 }
 
-private let launchpadDesktopGradient = LinearGradient(
+let launchpadDesktopGradient = LinearGradient(
     colors: [Color(red: 0.30, green: 0.47, blue: 0.78), Color(red: 0.16, green: 0.28, blue: 0.52)],
     startPoint: .top, endPoint: .bottom
 )
