@@ -51,6 +51,7 @@ enum WindowSnapAction: CaseIterable {
     case firstThreeFourths
     case centerThreeFourths
     case lastThreeFourths
+    case tileAll
 }
 
 struct WindowMargins: Codable, Equatable {
@@ -100,6 +101,11 @@ final class WindowSnapService {
             for app in apps {
                 maximizeAllWindows(of: app, preset: preset)
             }
+            return
+        }
+
+        if action == .tileAll {
+            tileAllWindows(preset: preset)
             return
         }
 
@@ -265,7 +271,7 @@ final class WindowSnapService {
         case .bottomLastSixth:
             let w = floor(baseAX.width / 3.0)
             targetFrame = CGRect(x: baseAX.maxX - w, y: baseAX.midY, width: w, height: floor(baseAX.height / 2.0))
-        case .restore, .toggleFullscreen, .maximizeAll, .maximizeAllInApp:
+        case .restore, .toggleFullscreen, .maximizeAll, .maximizeAllInApp, .tileAll:
             targetFrame = currentFrame
         case .nextDisplay, .previousDisplay:
             guard let moved = moveToAnotherDisplay(
@@ -299,6 +305,55 @@ final class WindowSnapService {
             let visibleAX = CGRect(x: visible.minX, y: mainHeight - visible.maxY, width: visible.width, height: visible.height)
             Self.restoreStore[Self.windowKey(for: window)] = windowFrame
             setFrame(insetFrame(visibleAX, by: preset.almostFull), for: window, on: appElement)
+        }
+    }
+
+    private func tileAllWindows(preset: WindowMarginPreset) {
+        guard let app = NSWorkspace.shared.frontmostApplication else { return }
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        var windowsRef: AnyObject?
+        guard AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+              let windows = windowsRef as? [AXUIElement]
+        else { return }
+
+        // Fenêtres visibles (non réduites, taille utile)
+        let tiles: [(AXUIElement, CGRect)] = windows.compactMap { window in
+            guard !isMinimized(window),
+                  let frame = frame(of: window),
+                  frame.width > 80, frame.height > 80
+            else { return nil }
+            return (window, frame)
+        }
+        guard !tiles.isEmpty else { return }
+
+        // Écran de la première fenêtre (toutes seront sur cet écran)
+        guard let firstFrame = tiles.first?.1,
+              let targetScreen = screen(for: firstFrame) ?? NSScreen.main
+        else { return }
+
+        let mainHeight = primaryScreenHeight
+        let visible = targetScreen.visibleFrame
+        let axTop = mainHeight - visible.maxY
+        let baseAX = CGRect(x: visible.minX, y: axTop, width: visible.width, height: visible.height)
+
+        let n = tiles.count
+        let cols = Int(ceil(sqrt(Double(n))))
+        let rows = Int(ceil(Double(n) / Double(cols)))
+        let cellW = floor(baseAX.width / CGFloat(cols))
+        let cellH = floor(baseAX.height / CGFloat(rows))
+
+        for (index, tile) in tiles.enumerated() {
+            let col = index % cols
+            let row = index / cols
+            let x = baseAX.minX + CGFloat(col) * cellW
+            let y = baseAX.minY + CGFloat(row) * cellH
+            // Dernière colonne/ligne s'étend au bord pour absorber l'arrondi
+            let w = col == cols - 1 ? baseAX.maxX - x : cellW
+            let h = row == rows - 1 ? baseAX.maxY - y : cellH
+            let cell = CGRect(x: x, y: y, width: w, height: h)
+            let frame = insetByGaps(cell, area: baseAX, by: preset.general)
+            Self.restoreStore[Self.windowKey(for: tile.0)] = tile.1
+            setFrame(frame, for: tile.0, on: appElement)
         }
     }
 
@@ -645,6 +700,7 @@ extension ShortcutAction {
         case .windowFirstThreeFourths: .firstThreeFourths
         case .windowCenterThreeFourths: .centerThreeFourths
         case .windowLastThreeFourths: .lastThreeFourths
+        case .windowTileAll: .tileAll
         }
     }
 }

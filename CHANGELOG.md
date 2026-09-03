@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.09.08] - 2026-09-03
+### Added
+- `Carreler toutes les fenêtres` (`Tile All Windows`) : les fenêtres visibles de l'app au premier plan sont disposées en grille sur l'écran (4 → 2×2, 6 → 3×2…), avec marges et restauration individuelle, via `Ctrl + Option + T` personnalisable
+
 ## [2026.09.07] - 2026-09-03
 ### Fixed
 - Plante de l'onglet Fenêtres des réglages (`Double value cannot be converted to Int`) causé par des divisions entières (`1/3`, `2/3`, `1/4`…) évaluées à zéro dans les fractions des vignettes — remplacées par des littéraux décimaux, avec garde-fou anti-largeur nulle

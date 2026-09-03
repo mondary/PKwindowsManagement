@@ -175,6 +175,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case windowFirstThreeFourths
     case windowCenterThreeFourths
     case windowLastThreeFourths
+    case windowTileAll
 
     var id: String { rawValue }
 
@@ -229,6 +230,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowFirstThreeFourths: localizedString("First Three Fourths")
         case .windowCenterThreeFourths: localizedString("Center Three Fourths")
         case .windowLastThreeFourths: localizedString("Last Three Fourths")
+        case .windowTileAll: localizedString("Tile All Windows")
         }
     }
 
@@ -243,6 +245,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowMaximize: .init(key: "f", modifier: .controlOption)
         case .windowMaximizeAll: .init(key: "g", modifier: .controlOption)
         case .windowMaximizeAllInApp: .init(key: "d", modifier: .controlShift)
+        case .windowTileAll: .init(key: "t", modifier: .controlOption)
         case .windowCenter: .init(key: "c", modifier: .controlOption)
         case .windowTopLeft: .init(key: "y", modifier: .controlOption)
         case .windowTopRight: .init(key: "p", modifier: .controlOption)
@@ -268,7 +271,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
              .windowTopThird, .windowBottomThird, .windowTopTwoThirds, .windowBottomTwoThirds,
              .windowFirstTwoThirds, .windowCenterTwoThirds, .windowLastTwoThirds,
              .windowFirstFourth, .windowSecondFourth, .windowThirdFourth, .windowLastFourth,
-             .windowFirstThreeFourths, .windowCenterThreeFourths, .windowLastThreeFourths:
+             .windowFirstThreeFourths, .windowCenterThreeFourths, .windowLastThreeFourths,
+             .windowTileAll:
             nil
         }
     }

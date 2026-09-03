@@ -224,4 +224,5 @@
 "macOS blocked Finder automation. Relaunch this packaged app and allow PKwindowsManagement to control Finder when prompted." = "macOS a bloqué l’automatisation de Finder. Relancez cette app puis autorisez PKwindowsManagement à contrôler Finder.";
 "Maximize All Windows" = "Tout maximiser";
 "Maximize All Windows (Current App)" = "Tout maximiser (app active)";
+"Tile All Windows" = "Carreler toutes les fenêtres";
 "Grid & Sizing" = "Grille et tailles";

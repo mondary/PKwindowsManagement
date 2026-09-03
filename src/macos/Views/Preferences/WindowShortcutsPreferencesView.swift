@@ -186,6 +186,7 @@ struct WindowShortcutsPreferencesView: View {
                 windowRow(.bound("Maximize All Windows", "rectangle.on.rectangle", .windowMaximizeAll))
                 Divider()
                 windowRow(.bound("Maximize All Windows (Current App)", "rectangle.stack", .windowMaximizeAllInApp))
+                windowRow(.bound("Tile All Windows", nil, .windowTileAll, fraction: CGRect(x: 0, y: 0, width: 0.5, height: 0.5)))
                 Divider()
                 marginEditor($settings.almostFullMargins)
                 Divider()
