@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.09.03] - 2026-09-03
+### Added
+- `Tout maximiser` : toutes les fenêtres visibles (non réduites) de tous les écrans passent en presque maximisé via `Ctrl + Option + G` (personnalisable dans les réglages), chaque fenêtre restant restaurable via l'action Restaurer
+
 ## [2026.09.02] - 2026-09-02
 ### Fixed
 - La marge générale ne se cumule plus entre zones de snap adjacentes : un bord d'écran compte plein, un bord intérieur compte à moitié — le gap total vaut une seule fois la marge (1%), partout

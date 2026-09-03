@@ -7,6 +7,7 @@ enum WindowSnapAction: CaseIterable {
     case topHalf
     case bottomHalf
     case maximize
+    case maximizeAll
     case center
     case topLeft
     case topRight
@@ -87,6 +88,12 @@ private enum WindowCycleFamily {
 final class WindowSnapService {
     func perform(_ action: WindowSnapAction, preset: WindowMarginPreset = WindowMarginPreset()) {
         guard ensureAccessibilityPermission() else { return }
+
+        if action == .maximizeAll {
+            maximizeAllWindows(preset: preset)
+            return
+        }
+
         guard let (focusedWindow, appElement) = focusedAXWindow(),
               let currentFrame = frame(of: focusedWindow)
         else { return }
@@ -249,7 +256,7 @@ final class WindowSnapService {
         case .bottomLastSixth:
             let w = floor(baseAX.width / 3.0)
             targetFrame = CGRect(x: baseAX.maxX - w, y: baseAX.midY, width: w, height: floor(baseAX.height / 2.0))
-        case .restore, .toggleFullscreen:
+        case .restore, .toggleFullscreen, .maximizeAll:
             targetFrame = currentFrame
         case .nextDisplay, .previousDisplay:
             guard let moved = moveToAnotherDisplay(
@@ -265,6 +272,34 @@ final class WindowSnapService {
             ? insetByGaps(targetFrame, area: visibleAX, by: preset.general)
             : targetFrame
         setFrame(finalFrame, for: focusedWindow, on: appElement)
+    }
+
+    private func maximizeAllWindows(preset: WindowMarginPreset) {
+        let apps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
+        for app in apps {
+            let appElement = AXUIElementCreateApplication(app.processIdentifier)
+            var windowsRef: AnyObject?
+            guard AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+                  let windows = windowsRef as? [AXUIElement]
+            else { continue }
+            for window in windows {
+                if isMinimized(window) { continue }
+                guard let windowFrame = frame(of: window),
+                      let targetScreen = screen(for: windowFrame)
+                else { continue }
+                let mainHeight = primaryScreenHeight
+                let visible = targetScreen.visibleFrame
+                let visibleAX = CGRect(x: visible.minX, y: mainHeight - visible.maxY, width: visible.width, height: visible.height)
+                Self.restoreStore[Self.windowKey(for: window)] = windowFrame
+                setFrame(insetFrame(visibleAX, by: preset.almostFull), for: window, on: appElement)
+            }
+        }
+    }
+
+    private func isMinimized(_ window: AXUIElement) -> Bool {
+        var value: AnyObject?
+        guard AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &value) == .success else { return false }
+        return (value as? Bool) ?? false
     }
 
     private static let snapGapActions: Set<WindowSnapAction> = [
@@ -560,6 +595,7 @@ extension ShortcutAction {
         case .windowTopHalf: .topHalf
         case .windowBottomHalf: .bottomHalf
         case .windowMaximize: .maximize
+        case .windowMaximizeAll: .maximizeAll
         case .windowCenter: .center
         case .windowTopLeft: .topLeft
         case .windowTopRight: .topRight

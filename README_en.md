@@ -8,6 +8,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 
 ## ✅ Features
 - Snap active windows to halves, thirds, quarters, and corners.
+- `Maximize All Windows`: snaps every visible window on every display to almost-maximize, default shortcut `Ctrl + Option + G`.
 - Move a window to the next or previous display.
 - Customize keyboard shortcuts from a SwiftUI preferences screen.
 - Control the focused window through macOS Accessibility APIs.

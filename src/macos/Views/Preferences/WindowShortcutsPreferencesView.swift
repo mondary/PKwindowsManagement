@@ -183,6 +183,8 @@ struct WindowShortcutsPreferencesView: View {
                 Divider()
                 windowRow(.bound("Almost Maximize", "rectangle.inset.filled", .windowMaximize))
                 Divider()
+                windowRow(.bound("Maximize All Windows", "rectangle.on.rectangle", .windowMaximizeAll))
+                Divider()
                 marginEditor($settings.almostFullMargins)
                 Divider()
                 windowRow(.bound("Maximize Height", "arrow.up.and.down", .windowMaximizeHeight))

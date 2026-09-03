@@ -125,6 +125,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case windowTopHalf
     case windowBottomHalf
     case windowMaximize
+    case windowMaximizeAll
     case windowCenter
     case windowTopLeft
     case windowTopRight
@@ -177,6 +178,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowTopHalf: localizedString("Top Half")
         case .windowBottomHalf: localizedString("Bottom Half")
         case .windowMaximize: localizedString("Maximize")
+        case .windowMaximizeAll: localizedString("Maximize All Windows")
         case .windowCenter: localizedString("Center")
         case .windowTopLeft: localizedString("Top Left")
         case .windowTopRight: localizedString("Top Right")
@@ -231,6 +233,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowTopHalf: .init(key: "up", modifier: .controlOption)
         case .windowBottomHalf: .init(key: "down", modifier: .controlOption)
         case .windowMaximize: .init(key: "f", modifier: .controlOption)
+        case .windowMaximizeAll: .init(key: "g", modifier: .controlOption)
         case .windowCenter: .init(key: "c", modifier: .controlOption)
         case .windowTopLeft: .init(key: "y", modifier: .controlOption)
         case .windowTopRight: .init(key: "p", modifier: .controlOption)

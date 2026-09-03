@@ -8,6 +8,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 
 ## ✅ Fonctionnalités
 - Snap des fenêtres actives sur les moitiés, tiers, quarts et coins de l'écran.
+- `Tout maximiser` : passe toutes les fenêtres visibles de tous les écrans en presque maximisé, raccourci par défaut `Ctrl + Option + G`.
 - Déplacement de la fenêtre vers l'écran suivant ou précédent.
 - Raccourcis clavier configurables depuis une interface SwiftUI.
 - Contrôle de la fenêtre focalisée via les API d'accessibilité macOS.
