@@ -20,7 +20,7 @@ struct AboutSettingsView: View {
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
 
-                    Text("Par PK")
+                    Text(localizedString("By PK"))
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                         .padding(.top, 2)
@@ -69,23 +69,23 @@ struct AboutSettingsView: View {
 
     private var aboutText: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Salut l'ami,")
+            Text(localizedString("Hi friend,"))
                 .italic()
                 .font(.system(size: 13))
 
-            Text("PKwindowsManagement est né d'une frustration simple : gérer ses fenêtres et lancer ses apps sans encombrer l'écran.")
+            Text(localizedString("PKwindowsManagement was born from a simple frustration: managing windows and launching apps without cluttering the screen."))
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
 
-            Text("Snapping de fenêtres, launchpad compact ou plein écran, snippets de scripts, raccourcis d'apps — tout au clavier, sans quitter son flux. Multi-écrans, binaire natif, zéro dépendance.")
+            Text(localizedString("Window snapping, compact or fullscreen launchpad, script snippets, app shortcuts — all from the keyboard, without leaving your flow. Multi-display, native binary, zero dependencies."))
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
 
-            Text("Construit avec soin pour la communauté Mac. Discret quand tu n'as pas besoin de lui, présent quand tu le regardes.")
+            Text(localizedString("Built with care for the Mac community. Unobtrusive when you don't need it, there when you look at it."))
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
 
-            Text("Merci d'en faire partie.")
+            Text(localizedString("Thanks for being part of this."))
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
                 .padding(.top, 8)
@@ -108,8 +108,20 @@ struct AboutSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Link(destination: URL(string: "https://ko-fi.com/pouark")!) {
+                HStack(spacing: 4) {
+                    if let image = AppLocalization.assetImage("kofi-logo") {
+                        Image(nsImage: image)
+                            .resizable()
+                            .frame(width: 12, height: 12)
+                    }
+                    Text("Ko-fi")
+                }
+                .font(.caption)
+                .foregroundStyle(Color(red: 1.0, green: 0.37, blue: 0.36))
+            }
             Spacer()
-            Text("MIT License")
+            Text(localizedString("MIT License"))
                 .font(.caption)
                 .foregroundStyle(.tertiary)
             Text("·")

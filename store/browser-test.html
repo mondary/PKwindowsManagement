@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>PKwindowsManagement | Test navigateur</title>
+<style>
+  body { margin: 24px; font: 14px/1.6 system-ui, sans-serif; color: #102443; background: #edf4fc; }
+  pre { white-space: pre-wrap; }
+  iframe { display: block; height: 850px; border: 1px solid #91a7c5; }
+</style>
+<h1>Test navigateur de la landing</h1>
+<p>Depuis la racine : <code>python3 -m http.server 8768 --bind 127.0.0.1</code>, puis ouvrir <code>http://127.0.0.1:8768/store/browser-test.html</code>.</p>
+<pre id="result" role="status">Vérification en cours…</pre>
+<iframe src="index.html" title="Page testée" width="360"></iframe>
+<script>
+  const frame = document.querySelector('iframe');
+  const result = document.querySelector('#result');
+  frame.addEventListener('load', async () => {
+    const lines = [];
+    const assert = (condition, message) => {
+      if (!condition) throw new Error(message);
+      lines.push('PASS ' + message);
+    };
+    try {
+      const doc = frame.contentDocument;
+      assert(Boolean(doc), 'Accès à la page : serveur HTTP de même origine');
+      assert(doc.documentElement.lang === 'fr', 'Langue française');
+      assert(doc.querySelectorAll('h1').length === 1, 'Un titre principal unique');
+      for (const width of [360, 390, 768, 1280, 1440]) {
+        frame.width = width;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        assert(doc.documentElement.scrollWidth <= width, 'Aucun débordement horizontal à ' + width + ' px');
+      }
+      for (const button of doc.querySelectorAll('[data-snap]')) {
+        button.focus();
+        button.click();
+        assert(doc.activeElement === button, 'Focus conservé : ' + button.dataset.snap);
+        assert(doc.querySelector('#snap-stage').dataset.layout === button.dataset.snap, 'Placement : ' + button.dataset.snap);
+        assert(doc.querySelectorAll('[data-snap][aria-pressed="true"]').length === 1, 'Une seule sélection : ' + button.dataset.snap);
+        assert(doc.querySelector('#snap-status').textContent.length > 35, 'État annoncé : ' + button.dataset.snap);
+      }
+      assert(!doc.querySelector('video').autoplay, 'Vidéo sans autoplay');
+      assert(!doc.querySelector('#snap-gif img').hasAttribute('src'), 'GIF non chargé sans consentement');
+      const gif = doc.querySelector('#gif-toggle');
+      gif.click();
+      assert(gif.getAttribute('aria-pressed') === 'true', 'Démarrage du GIF à la demande');
+      gif.click();
+      assert(!doc.querySelector('#snap-gif img').hasAttribute('src'), 'Arrêt du GIF : ressource déchargée');
+      for (const link of doc.querySelectorAll('a[href^="#"]')) {
+        assert(link.hash === '' || Boolean(doc.getElementById(link.hash.slice(1))), 'Ancre valide : ' + link.getAttribute('href'));
+      }
+      assert([...doc.images].every((image) => image.hasAttribute('alt')), 'Toutes les images ont un attribut alt');
+      const assets = ['screenshots/launchpad.png', 'screenshots/shortcuts.png', 'screenshots/big-year.png', 'screenshots/appearance.png', 'videos/shotcraft.mp4', 'videos/snap.gif'];
+      for (const asset of assets) {
+        const response = await fetch(asset, { method: 'HEAD' });
+        lines.push((response.ok ? 'MEDIA OK ' : 'MEDIA EN ATTENTE ') + asset);
+      }
+      frame.width = 360;
+      doc.querySelector('[data-snap="left"]').click();
+      frame.contentWindow.scrollTo(0, 0);
+      result.dataset.status = 'passed';
+      result.textContent = lines.join('\n') + '\n\nTests fonctionnels réussis. Vérifier visuellement les captures après livraison des médias.';
+    } catch (error) {
+      result.dataset.status = 'failed';
+      result.textContent = lines.join('\n') + '\nFAIL ' + error.message;
+    }
+  });
+</script>
+</html>

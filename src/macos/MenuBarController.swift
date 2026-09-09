@@ -4,6 +4,7 @@ import Carbon.HIToolbox
 final class MenuBarController: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var statusMenu: NSMenu?
+    private var shortcutTargets: [LaunchableApp] = []
     private var launchpadHotKey: EventHotKeyRef?
     private var launchpadHotKeyHandler: EventHandlerRef?
     private var launchpadHotKeyObserver: NSObjectProtocol?
@@ -100,6 +101,24 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         BigYearOverlayController.shared.toggle()
     }
 
+    @objc private func openURLSnippet(_ sender: NSMenuItem) {
+        guard let urlString = sender.representedObject as? String, let url = URL(string: urlString) else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    @objc private func openCoffee() {
+        if let url = URL(string: "https://ko-fi.com/pouark") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    @objc private func launchTarget(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String,
+              let settings = AppRuntime.shared.settings,
+              let target = shortcutTargets.first(where: { $0.id == id }) else { return }
+        _ = AppLauncherService().launch(target, settings: settings)
+    }
+
     @objc private func quitApp() {
         NSApp.terminate(nil)
     }
@@ -125,6 +144,56 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         let preferencesItem = NSMenuItem(title: localizedString("Open Preferences"), action: #selector(openPreferences), keyEquivalent: ",")
         preferencesItem.target = self
         menu.addItem(preferencesItem)
+
+        menu.addItem(.separator())
+
+        let settings = AppRuntime.shared.settings
+        shortcutTargets = settings.map { AppLauncherService().loadShortcutTargets(settings: $0).filter { $0.shortcut != nil } } ?? []
+        let shortcutIDs = Set(shortcutTargets.map(\.id))
+        let urlSnippets = (settings?.snippets.filter { $0.kind == .url && $0.isEnabled && !$0.urlString.isEmpty } ?? [])
+            .filter { !shortcutIDs.contains($0.id) }
+
+        if !shortcutTargets.isEmpty || !urlSnippets.isEmpty {
+            let shortcutsHeader = NSMenuItem(title: localizedString("Shortcuts"), action: nil, keyEquivalent: "")
+            shortcutsHeader.isEnabled = false
+            menu.addItem(shortcutsHeader)
+
+            for target in shortcutTargets {
+                let item = NSMenuItem(
+                    title: target.name,
+                    action: #selector(launchTarget(_:)),
+                    keyEquivalent: target.shortcut?.menuKeyEquivalent ?? ""
+                )
+                item.target = self
+                item.representedObject = target.id
+                item.keyEquivalentModifierMask = target.shortcut?.modifier.flags ?? []
+                let icon = target.icon
+                icon.size = NSSize(width: 16, height: 16)
+                item.image = icon
+                menu.addItem(item)
+            }
+
+            for snippet in urlSnippets {
+                let item = NSMenuItem(title: snippet.title, action: #selector(openURLSnippet(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = snippet.urlString
+                if let faviconData = snippet.faviconData, let favicon = NSImage(data: faviconData) {
+                    favicon.size = NSSize(width: 16, height: 16)
+                    item.image = favicon
+                }
+                menu.addItem(item)
+            }
+            menu.addItem(.separator())
+        }
+
+        let coffeeItem = NSMenuItem(title: "Ko-fi", action: #selector(openCoffee), keyEquivalent: "")
+        coffeeItem.target = self
+        if let kofi = AppLocalization.assetImage("kofi-logo") {
+            kofi.size = NSSize(width: 16, height: 16)
+            coffeeItem.image = kofi
+        }
+        menu.addItem(coffeeItem)
+
         let quitItem = NSMenuItem(title: localizedString("Quit"), action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)

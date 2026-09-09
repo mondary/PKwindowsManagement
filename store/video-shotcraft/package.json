@@ -1,0 +1,19 @@
+{
+  "name": "pkwindowsmanagement-shotcraft",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "prepare-assets": "node scripts/prepare.mjs",
+    "test": "node scripts/check.mjs",
+    "still": "remotion still src/index.tsx Shotcraft out/styleframe.png --frame=210",
+    "render": "npm run prepare-assets && remotion render src/index.tsx Shotcraft ../videos/shotcraft.mp4 --codec=h264 --pixel-format=yuv420p --color-space=bt709 --crf=18 --concurrency=4 --muted --overwrite --log=error",
+    "qa": "node scripts/qa.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.484",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "remotion": "4.0.484"
+  }
+}

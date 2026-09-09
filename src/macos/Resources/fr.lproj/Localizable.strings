@@ -226,3 +226,31 @@
 "Maximize All Windows (Current App)" = "Tout maximiser (app active)";
 "Tile All Windows" = "Carreler toutes les fenêtres";
 "Grid & Sizing" = "Grille et tailles";
+
+/* About */
+"Hi friend," = "Salut l’ami,";
+"By PK" = "Par PK";
+"MIT License" = "Licence MIT";
+"Thanks for being part of this." = "Merci d’en faire partie.";
+"PKwindowsManagement was born from a simple frustration: managing windows and launching apps without cluttering the screen." = "PKwindowsManagement est né d’une frustration simple : gérer ses fenêtres et lancer ses apps sans encombrer l’écran.";
+"Window snapping, compact or fullscreen launchpad, script snippets, app shortcuts — all from the keyboard, without leaving your flow. Multi-display, native binary, zero dependencies." = "Snapping de fenêtres, launchpad compact ou plein écran, snippets de scripts, raccourcis d’apps — tout au clavier, sans quitter son flux. Multi-écrans, binaire natif, zéro dépendance.";
+"Built with care for the Mac community. Unobtrusive when you don't need it, there when you look at it." = "Construit avec soin pour la communauté Mac. Discret quand tu n’as pas besoin de lui, présent quand tu le regardes.";
+
+/* Store */
+"More Apps by PK" = "Autres apps de PK";
+"Check out other apps from the same developer" = "Découvrez les autres apps du même développeur";
+"Get" = "Obtenir";
+"Notes app with inline calculation, command palette, and keyboard-first shortcuts." = "Notes natives macOS avec calcul inline, palette de commandes et raccourcis clavier.";
+"Video downloader powered by yt-dlp — YouTube, Instagram, X, TikTok and thousands more." = "Téléchargeur vidéo propulsé par yt-dlp — YouTube, Instagram, X, TikTok et des milliers d’autres sites.";
+"Archive your Desktop to Google Drive via rclone." = "Archive ton Bureau vers Google Drive via rclone.";
+"Menu bar app showing a real-time RAM or battery bar on every screen." = "App menu-bar qui affiche une barre RAM ou batterie en temps réel sur chaque écran.";
+"A focused system monitor in the menu bar." = "Moniteur système discret dans la barre des menus.";
+
+/* Support */
+"Support PKwindowsManagement" = "Soutenir PKwindowsManagement";
+"If you enjoy using this app, consider supporting its development." = "Si cette app vous plaît, pensez à soutenir son développement.";
+"Support the developer with a coffee" = "Soutenez le développeur avec un café";
+"Donate" = "Faire un don";
+"Source code and releases" = "Code source et versions";
+"Report an Issue" = "Signaler un problème";
+"Bugs, feature requests, feedback" = "Bugs, suggestions, retours";

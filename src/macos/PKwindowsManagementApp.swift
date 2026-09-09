@@ -53,9 +53,6 @@ struct PKwindowsManagementApp: App {
 private struct RootDashboardView: View {
     @ObservedObject var settings: AppSettings
     @State private var selection: SettingsSection? = .general
-    @State private var isSidebarVisible = true
-    @State private var sidebarWidth: CGFloat = 210
-    @State private var sidebarDragStart: CGFloat = 0
 
     static var appIcon: NSImage? {
         if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns") {
@@ -65,51 +62,13 @@ private struct RootDashboardView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            if isSidebarVisible {
-                sidebar
-                    .frame(width: sidebarWidth)
-                    .clipped()
-
-                sidebarDivider
-            } else {
-                sidebarRevealStrip
-                Divider()
-            }
+        NavigationSplitView {
+            sidebar
+                .navigationSplitViewColumnWidth(min: 198, ideal: 210, max: 240)
+        } detail: {
             detail
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-    }
-
-    private var sidebarDivider: some View {
-        Rectangle()
-            .fill(Color(NSColor.separatorColor))
-            .frame(width: 1)
-            .overlay(
-                Rectangle()
-                    .fill(Color.clear)
-                    .frame(width: 6)
-                    .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                if sidebarDragStart == 0 {
-                                    sidebarDragStart = sidebarWidth
-                                }
-                                sidebarWidth = min(320, max(170, sidebarDragStart + value.translation.width))
-                            }
-                            .onEnded { _ in
-                                sidebarDragStart = 0
-                            }
-                    )
-                    .onHover { inside in
-                        if inside {
-                            NSCursor.resizeLeftRight.push()
-                        } else {
-                            NSCursor.pop()
-                        }
-                    }
-            )
+        .navigationSplitViewStyle(.balanced)
     }
 
     private var sidebar: some View {
@@ -120,7 +79,6 @@ private struct RootDashboardView: View {
         .listStyle(.sidebar)
         .safeAreaInset(edge: .top, spacing: 0) {
             HStack(spacing: 10) {
-                sidebarToggleButton
                 if let icon = Self.appIcon {
                     Image(nsImage: icon)
                         .resizable()
@@ -152,54 +110,30 @@ private struct RootDashboardView: View {
         return "v\(raw)"
     }
 
-    private var sidebarRevealStrip: some View {
-        VStack {
-            sidebarToggleButton
-                .padding(.top, 10)
-            Spacer(minLength: 0)
-        }
-        .frame(width: 24)
-        .background(.regularMaterial)
-    }
-
-    private var sidebarToggleButton: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.18)) {
-                isSidebarVisible.toggle()
-            }
-        } label: {
-            Image(systemName: "sidebar.left")
-                .font(.system(size: 13, weight: .medium))
-                .frame(width: 24, height: 24)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
-        .help(localizedString("Show / Hide Sidebar"))
-    }
-
+    @ViewBuilder
     private var detail: some View {
-        Group {
-            switch selection ?? .general {
-            case .general:
-                GeneralSettingsView(settings: settings)
-            case .windows:
-                WindowShortcutsPreferencesView(settings: settings)
-            case .launchpad:
-                LaunchpadView(settings: settings)
-            case .bigYear:
-                BigYearSettingsView(settings: settings)
-            case .appearance:
-                AppearanceSettingsView(settings: settings)
-            case .snippets:
-                SnippetsSettingsView(settings: settings)
-            case .urls:
-                URLSnippetsSettingsView(settings: settings)
-            case .about:
-                AboutSettingsView()
-            }
+        switch selection ?? .general {
+        case .general:
+            GeneralSettingsView(settings: settings)
+        case .windows:
+            WindowShortcutsPreferencesView(settings: settings)
+        case .launchpad:
+            LaunchpadView(settings: settings)
+        case .bigYear:
+            BigYearSettingsView(settings: settings)
+        case .appearance:
+            AppearanceSettingsView(settings: settings)
+        case .snippets:
+            SnippetsSettingsView(settings: settings)
+        case .urls:
+            URLSnippetsSettingsView(settings: settings)
+        case .support:
+            SupportSettingsView()
+        case .store:
+            StoreSettingsView()
+        case .about:
+            AboutSettingsView()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -211,6 +145,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     case appearance
     case snippets
     case urls
+    case support
+    case store
     case about
 
     var id: String { rawValue }
@@ -224,6 +160,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .appearance: localizedString("Appearance")
         case .snippets: localizedString("Snippets")
         case .urls: "URLs"
+        case .support: localizedString("Support")
+        case .store: localizedString("Store")
         case .about: localizedString("About")
         }
     }
@@ -237,6 +175,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .appearance: "paintbrush"
         case .snippets: "doc.on.doc"
         case .urls: "link"
+        case .support: "heart.fill"
+        case .store: "bag"
         case .about: "info.circle"
         }
     }

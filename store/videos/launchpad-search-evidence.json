@@ -1,0 +1,143 @@
+[
+  {
+    "firstFrame" : 0,
+    "frames" : 24,
+    "query" : "",
+    "renderedGridLabels" : [
+      "Activity Monitor",
+      "Books",
+      "Calculator",
+      "Calendar",
+      "Clock",
+      "Contacts",
+      "Empty Trash",
+      "FaceTime",
+      "Mail",
+      "Maps",
+      "Messages",
+      "Music",
+      "Notes",
+      "Photos",
+      "Podcasts",
+      "Preview",
+      "Termina",
+      "TextEdit",
+      "Weather",
+      "c",
+      "teminder:"
+    ]
+  },
+  {
+    "firstFrame" : 24,
+    "frames" : 12,
+    "query" : "c",
+    "renderedGridLabels" : [
+      "Activity Monitor",
+      "Books",
+      "Calculator",
+      "Calendar",
+      "Clock",
+      "Contacts",
+      "Empty Trash",
+      "FaceTime",
+      "Mail",
+      "Maps",
+      "Messages",
+      "Music",
+      "Notes",
+      "Photos",
+      "Podcasts",
+      "Preview",
+      "Termina",
+      "TextEdit",
+      "Weather",
+      "c",
+      "teminder:"
+    ]
+  },
+  {
+    "firstFrame" : 36,
+    "frames" : 12,
+    "query" : "ca",
+    "renderedGridLabels" : [
+      "Calculator",
+      "Calendar",
+      "Podcasts"
+    ]
+  },
+  {
+    "firstFrame" : 48,
+    "frames" : 36,
+    "query" : "cal",
+    "renderedGridLabels" : [
+      "Calculator",
+      "Calendar"
+    ]
+  },
+  {
+    "firstFrame" : 84,
+    "frames" : 6,
+    "query" : "ca",
+    "renderedGridLabels" : [
+      "Calculator",
+      "Calendar",
+      "Podcasts"
+    ]
+  },
+  {
+    "firstFrame" : 90,
+    "frames" : 6,
+    "query" : "c",
+    "renderedGridLabels" : [
+      "Activity Monitor",
+      "Books",
+      "Calculator",
+      "Calendar",
+      "Clock",
+      "Contacts",
+      "Empty Trash",
+      "FaceTime",
+      "Mail",
+      "Maps",
+      "Messages",
+      "Music",
+      "Notes",
+      "Photos",
+      "Podcasts",
+      "Preview",
+      "Termina",
+      "TextEdit",
+      "Weather",
+      "c",
+      "teminder:"
+    ]
+  },
+  {
+    "firstFrame" : 96,
+    "frames" : 24,
+    "query" : "",
+    "renderedGridLabels" : [
+      "Activity Monitor",
+      "Books",
+      "Calculator",
+      "Calendar",
+      "Clock",
+      "Contacts",
+      "Empty Trash",
+      "FaceTime",
+      "Mail",
+      "Maps",
+      "Messages",
+      "Music",
+      "Notes",
+      "Photos",
+      "Podcasts",
+      "Preview",
+      "Termina",
+      "TextEdit",
+      "Weather",
+      "c",
+      "teminder:"
+    ]
+  }
+]

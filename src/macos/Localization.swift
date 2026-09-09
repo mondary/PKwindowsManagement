@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 enum AppLanguage: String, CaseIterable, Identifiable, Codable {
@@ -34,6 +35,23 @@ enum AppLanguage: String, CaseIterable, Identifiable, Codable {
 enum AppLocalization {
     static let defaultsKey = "app-language"
 
+    /// SwiftPM resource bundle, looked up manually: the generated `Bundle.module`
+    /// calls fatalError when the bundle is missing or malformed (crash on launch).
+    private static let moduleResources: Bundle? = {
+        let name = "PKwindowsManagement_PKwindowsManagement"
+        let dirs = [
+            Bundle.main.resourceURL,
+            URL(fileURLWithPath: Bundle.main.bundlePath).deletingLastPathComponent(),
+        ]
+        for dir in dirs {
+            if let url = dir?.appendingPathComponent(name + ".bundle"),
+               let bundle = Bundle(url: url) {
+                return bundle
+            }
+        }
+        return nil
+    }()
+
     static var currentLanguage: AppLanguage {
         let rawValue = UserDefaults.standard.string(forKey: defaultsKey) ?? AppLanguage.system.rawValue
         return AppLanguage(rawValue: rawValue) ?? .system
@@ -41,16 +59,23 @@ enum AppLocalization {
 
     static var locale: Locale { currentLanguage.locale }
 
+    /// Bundle holding SwiftPM-processed assets (images, strings).
+    static var assetBundle: Bundle { moduleResources ?? .main }
+
+    /// Loads an image from the SwiftPM resource bundle (falls back to the main bundle).
+    static func assetImage(_ name: String) -> NSImage? {
+        NSImage(named: name) ?? assetBundle.image(forResource: name)
+    }
+
     static func bundle(for language: AppLanguage = currentLanguage) -> Bundle {
         let code = language.resolvedCode
-        let candidates = [Bundle.main, Bundle.module]
-        for candidate in candidates {
-            if let path = candidate.path(forResource: code, ofType: "lproj"),
+        for candidate in [moduleResources, Bundle.main] {
+            if let path = candidate?.path(forResource: code, ofType: "lproj"),
                let localizedBundle = Bundle(path: path) {
                 return localizedBundle
             }
         }
-        return Bundle.module
+        return Bundle.main
     }
 }
 
