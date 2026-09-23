@@ -186,7 +186,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             menu.addItem(.separator())
         }
 
-        let coffeeItem = NSMenuItem(title: "Ko-fi", action: #selector(openCoffee), keyEquivalent: "")
+        let coffeeItem = NSMenuItem(title: localizedString("Support on Ko-fi"), action: #selector(openCoffee), keyEquivalent: "")
         coffeeItem.target = self
         if let kofi = AppLocalization.assetImage("kofi-logo") {
             kofi.size = NSSize(width: 16, height: 16)

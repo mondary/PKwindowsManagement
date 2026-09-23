@@ -127,7 +127,7 @@ final class LaunchShortcutMonitor {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             NSLog("PKwindowsManagement: global shortcut listener disabled by macOS (%d); re-enabling", eventType.rawValue)
             modifierState = ModifierState()
-            if let eventTap {
+            if let eventTap, CFMachPortIsValid(eventTap) {
                 CGEvent.tapEnable(tap: eventTap, enable: true)
             }
             return .passUnretained(event)
@@ -148,7 +148,13 @@ final class LaunchShortcutMonitor {
             } else if let windowAction = matchWindowShortcut(event: event) {
                 let captured = windowAction
                 DispatchQueue.main.async { [weak self] in
-                    self?.windowHandler?(captured)
+                    guard let self else { return }
+                    self.windowHandler?(captured)
+                    // Window accessibility calls can briefly block the main
+                    // run loop long enough for macOS to disable this tap.
+                    // Re-arm it as soon as the resize finishes so the next
+                    // shortcut is not lost while waiting for the watchdog.
+                    self.rearmEventTapIfNeeded()
                 }
                 consumed = true
             }
@@ -156,6 +162,19 @@ final class LaunchShortcutMonitor {
         default:
             return .passUnretained(event)
         }
+    }
+
+    private func rearmEventTapIfNeeded() {
+        guard let tap = eventTap, CFMachPortIsValid(tap) else {
+            removeEventTap()
+            modifierState = ModifierState()
+            installEventTap()
+            return
+        }
+        guard !CGEvent.tapIsEnabled(tap: tap) else { return }
+        NSLog("PKwindowsManagement: re-enabling global shortcut listener after window action")
+        modifierState = ModifierState()
+        CGEvent.tapEnable(tap: tap, enable: true)
     }
 
     private func match(event: CGEvent) -> LaunchableApp? {
