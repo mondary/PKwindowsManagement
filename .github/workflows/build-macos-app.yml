@@ -1,0 +1,37 @@
+name: Build macOS app
+
+on:
+  push:
+    branches:
+      - main
+      - 'codex/**'
+    paths:
+      - 'src/macos/**'
+      - 'src/script/package_app.sh'
+      - 'Package.swift'
+      - 'VERSION'
+      - '.github/workflows/build-macos-app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode toolchain
+        run: |
+          xcode-select -p
+          swift --version
+      - name: Build app bundle
+        run: src/script/package_app.sh release
+      - name: Archive app bundle
+        run: ditto -c -k --sequesterRsrc --keepParent release/PKwindowsManagement.app PKwindowsManagement.app.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PKwindowsManagement-macos
+          path: PKwindowsManagement.app.zip
+          if-no-files-found: error
+          retention-days: 7

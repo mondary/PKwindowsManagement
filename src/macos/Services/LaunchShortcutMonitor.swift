@@ -14,6 +14,7 @@ final class LaunchShortcutMonitor {
     private var modifierState = ModifierState()
     private var appsByBundleID: [String: LaunchableApp] = [:]
     private var retryTimer: Timer?
+    private var healthTimer: Timer?
     private var didRequestAccessibility = false
 
     func start(settings: AppSettings, apps: [LaunchableApp], launchHandler: @escaping (LaunchableApp) -> Void, windowHandler: @escaping (WindowSnapAction) -> Void) {
@@ -24,18 +25,27 @@ final class LaunchShortcutMonitor {
 
         requestAccessibilityOnce()
         installEventTap()
+        startHealthCheck()
     }
 
     func stop() {
+        healthTimer?.invalidate()
+        healthTimer = nil
         retryTimer?.invalidate()
         retryTimer = nil
+        removeEventTap()
+        modifierState = ModifierState()
+    }
 
+    private func removeEventTap() {
         if let runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
             self.runLoopSource = nil
         }
         if let eventTap {
-            CGEvent.tapEnable(tap: eventTap, enable: false)
+            if CFMachPortIsValid(eventTap) {
+                CGEvent.tapEnable(tap: eventTap, enable: false)
+            }
             self.eventTap = nil
         }
     }
@@ -63,6 +73,9 @@ final class LaunchShortcutMonitor {
         // Active tap: lets us consume matched shortcuts so the focused app
         // (e.g. Chrome) doesn't also receive them and interfere with cycling.
         guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .tailAppendEventTap, options: .defaultTap, eventsOfInterest: mask, callback: callback, userInfo: refcon) else {
+            if retryTimer == nil {
+                NSLog("PKwindowsManagement: global shortcut listener unavailable; retrying")
+            }
             scheduleRetry()
             return
         }
@@ -74,6 +87,28 @@ final class LaunchShortcutMonitor {
             CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
         }
         CGEvent.tapEnable(tap: tap, enable: true)
+        modifierState = ModifierState()
+    }
+
+    private func startHealthCheck() {
+        guard healthTimer == nil else { return }
+        healthTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            if let tap = self.eventTap {
+                if CFMachPortIsValid(tap) {
+                    if !CGEvent.tapIsEnabled(tap: tap) {
+                        NSLog("PKwindowsManagement: re-enabling global shortcut listener")
+                        self.modifierState = ModifierState()
+                        CGEvent.tapEnable(tap: tap, enable: true)
+                    }
+                    return
+                }
+                NSLog("PKwindowsManagement: recreating invalid global shortcut listener")
+                self.removeEventTap()
+            }
+            self.modifierState = ModifierState()
+            self.installEventTap()
+        }
     }
 
     private func scheduleRetry() {
@@ -89,6 +124,13 @@ final class LaunchShortcutMonitor {
 
     private func handle(eventType: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         switch eventType {
+        case .tapDisabledByTimeout, .tapDisabledByUserInput:
+            NSLog("PKwindowsManagement: global shortcut listener disabled by macOS (%d); re-enabling", eventType.rawValue)
+            modifierState = ModifierState()
+            if let eventTap {
+                CGEvent.tapEnable(tap: eventTap, enable: true)
+            }
+            return .passUnretained(event)
         case .flagsChanged:
             modifierState.update(with: event)
             return .passUnretained(event)
@@ -207,21 +249,21 @@ private struct ModifierState {
         case .command:
             return flags.contains(.maskCommand)
         case .leftCommand:
-            return leftCommand
+            return flags.contains(.maskCommand) && leftCommand
         case .rightCommand:
-            return rightCommand
+            return flags.contains(.maskCommand) && rightCommand
         case .option:
             return flags.contains(.maskAlternate)
         case .leftOption:
-            return leftOption
+            return flags.contains(.maskAlternate) && leftOption
         case .rightOption:
-            return rightOption
+            return flags.contains(.maskAlternate) && rightOption
         case .shift:
             return flags.contains(.maskShift)
         case .leftShift:
-            return leftShift
+            return flags.contains(.maskShift) && leftShift
         case .rightShift:
-            return rightShift
+            return flags.contains(.maskShift) && rightShift
         case .fnShift:
             return fn && (flags.contains(.maskShift) || leftShift || rightShift)
         }
