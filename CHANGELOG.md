@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026.09.11] - 2026-10-01
+### Added
+- Lien Ko-fi dans la navigation de la vitrine, en plus de la section de soutien existante en bas de page
+- Bloc « Installer autrement » sur la vitrine : Homebrew (`brew install --cask mondary/tap/pk-windows-management`) et curl, avec bouton Copier bilingue
+- Release GitHub `pk-2026.09.08` publiée avec un DMG versionné et un DMG à nom fixe pour `releases/latest/download`, et cask `pk-windows-management` ajouté au tap `mondary/homebrew-tap`
+### Changed
+- Le téléchargement de la vitrine pointe sur la GitHub Release au lieu du ZIP local, retiré du dossier déployé (`store/sources/downloads` reste le miroir local) ; guide d'installation revu pour le DMG et lien SHA-256 vers la release
+
 ## [2026.09.10] - 2026-10-01
 ### Changed
 - Réorganisation du store : l'ancienne vitrine v1 et son projet vidéo passent dans `store/archive`, la vitrine courante devient `store/website` (dossier autonome prêt à déposer tel quel sur un hébergement), les originaux non déployés dans `store/sources` et le kit média dans `store/media-kit`

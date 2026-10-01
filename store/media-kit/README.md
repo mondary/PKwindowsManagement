@@ -110,7 +110,7 @@ n'est promis.
 - **Miroir local** : `sources/downloads/PKwindowsManagement-2026.09.08-arm64.zip` avec sa somme
   SHA-256 dans `SHA256SUMS.txt` ; ce miroir n'est pas déployé sur le site.
 
-La vitrine/documentation porte la version de dépôt **2026.09.10**. `CHANGELOG.md` fait foi ;
+La vitrine/documentation porte la version de dépôt **2026.09.11**. `CHANGELOG.md` fait foi ;
 le fichier `VERSION` préexistant reste synchronisé car le script de packaging actuel le lit.
 L'archive précédente n'a pas été artificiellement renommée : la version de la vitrine et celle
 du bundle sont distinctes.

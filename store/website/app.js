@@ -78,6 +78,16 @@ document.querySelector('#auto-play').addEventListener('click', () => {
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopDemo(); });
 new IntersectionObserver(entries => { if (!entries[0].isIntersecting) stopDemo(); }, {threshold:0.1}).observe(desktop);
 reducedMotion.addEventListener('change', stopDemo);
+
+// Install commands: copy to clipboard with a transient bilingual confirmation.
+document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
+  const label = button.querySelector('.copy-label');
+  try { await navigator.clipboard.writeText(button.dataset.copy); } catch { /* The command stays visible for manual copy. */ }
+  const initial = label.innerHTML;
+  label.textContent = root.lang === 'fr' ? 'Copié ✓' : 'Copied ✓';
+  button.classList.add('copied');
+  setTimeout(() => { label.innerHTML = initial; button.classList.remove('copied'); }, 1600);
+}));
 document.querySelectorAll('[data-theme]').forEach(button => button.addEventListener('click', () => {
   currentTheme = button.dataset.theme;
   document.querySelectorAll('[data-theme]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
