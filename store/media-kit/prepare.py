@@ -45,7 +45,7 @@ def main():
             destination = temp / path.name
             destination.write_text(text)
             sources.append(str(destination))
-        resource = ROOT / 'release/PKwindowsManagement.app/Contents/Resources/PKwindowsManagement_PKwindowsManagement.bundle'
+        resource = ROOT / 'build/PKwindowsManagement.app/Contents/Resources/PKwindowsManagement_PKwindowsManagement.bundle'
         (temp / resource.name).symlink_to(resource)
         sdk = '/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk'
         subprocess.run(['swiftc', '-swift-version', '5', '-target', 'arm64-apple-macos13.0', '-sdk', sdk, '-whole-module-optimization', '-Onone', *sources, str(KIT / 'capture-native.swift'), '-o', str(temp / 'Capture')], check=True)
@@ -57,10 +57,10 @@ def main():
     for name in DEPLOYED_PNGS:
         shutil.copy2(SRC / 'screenshots' / name, WEB / 'screenshots' / name)
     archive = SRC / 'downloads/PKwindowsManagement-2026.09.08-arm64.zip'
-    info = plistlib.loads((ROOT / 'release/PKwindowsManagement.app/Contents/Info.plist').read_bytes())
+    info = plistlib.loads((ROOT / 'build/PKwindowsManagement.app/Contents/Info.plist').read_bytes())
     assert info['CFBundleShortVersionString'] == '2026.09.08', 'Update the archive filename and website before packaging a new app version'
-    assert subprocess.check_output(['lipo', '-archs', str(ROOT / 'release/PKwindowsManagement.app/Contents/MacOS/PKwindowsManagement')], text=True).strip() == 'arm64'
-    subprocess.run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(ROOT / 'release/PKwindowsManagement.app'), str(archive)], check=True)
+    assert subprocess.check_output(['lipo', '-archs', str(ROOT / 'build/PKwindowsManagement.app/Contents/MacOS/PKwindowsManagement')], text=True).strip() == 'arm64'
+    subprocess.run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(ROOT / 'build/PKwindowsManagement.app'), str(archive)], check=True)
     (SRC / 'downloads/SHA256SUMS.txt').write_text(hashlib.sha256(archive.read_bytes()).hexdigest() + '  ' + archive.name + '\n')
 
 if __name__ == '__main__':

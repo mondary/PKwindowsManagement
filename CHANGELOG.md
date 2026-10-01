@@ -1,5 +1,17 @@
 # Changelog
 
+## [2026.09.13] - 2026-10-01
+### Changed
+- Structure racine allégée : un seul dossier d'artefacts `build/` (app bundle) à la place de `release/` ; `package_app.sh` utilise le scratch SwiftPM standard `.build/` partagé debug/release au lieu du second scratch `release/build/`
+- Scripts (`package_app.sh`, `release.sh`, `build_and_run.sh`), workflow CI, `prepare.py`, media-kit et README FR/EN alignés sur `build/` ; `release/` retiré du `.gitignore`
+### Removed
+- `Tests/BigYearEvents` : ébauche non câblée dans `Package.swift`, jamais compilée
+- `icon2.png` en racine : référencé nulle part (`icon.png` reste la référence)
+
+## [2026.09.12] - 2026-10-01
+### Changed
+- Vrais boutons Ko-fi sur la vitrine : fond rouge officiel `#ff5e5c` avec la tasse blanche dérivée du logo de l'app (`assets/kofi-cup-white.png`), version compacte dans la navigation et grande version en section de soutien, à la place des liens texte
+
 ## [2026.09.11] - 2026-10-01
 ### Added
 - Lien Ko-fi dans la navigation de la vitrine, en plus de la section de soutien existante en bas de page

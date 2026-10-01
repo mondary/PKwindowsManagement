@@ -128,7 +128,7 @@ src/script/package_app.sh release
 ```bash
 src/script/package_app.sh debug
 rm -rf ~/Desktop/PKwindowsManagement.app
-ditto release/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
+ditto build/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
 ```
 - Création d'une release et copie dans `/Applications` :
 ```bash

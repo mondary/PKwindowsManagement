@@ -67,7 +67,7 @@ git diff --check
 
 Avant une nouvelle session, adapter l'id TaskSpace `38` dans les scripts Ego au nouvel espace
 créé, ainsi que les chemins `base` et temporaires si le dépôt a été déplacé. Le serveur doit tourner.
-Le script natif utilise les ressources du bundle local `release/PKwindowsManagement.app`.
+Le script natif utilise les ressources du bundle local `build/PKwindowsManagement.app`.
 Il vérifie la version 2026.09.08 et l'architecture arm64 avant de produire son archive. Pour une
 nouvelle version de l'app, mettre à jour ensemble le script, le nom de l'archive et les liens.
 

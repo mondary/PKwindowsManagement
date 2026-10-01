@@ -28,7 +28,7 @@ jobs:
       - name: Build app bundle
         run: src/script/package_app.sh release
       - name: Archive app bundle
-        run: ditto -c -k --sequesterRsrc --keepParent release/PKwindowsManagement.app PKwindowsManagement.app.zip
+        run: ditto -c -k --sequesterRsrc --keepParent build/PKwindowsManagement.app PKwindowsManagement.app.zip
       - uses: actions/upload-artifact@v4
         with:
           name: PKwindowsManagement-macos

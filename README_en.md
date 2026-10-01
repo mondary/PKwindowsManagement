@@ -119,7 +119,7 @@ src/script/package_app.sh release
 - Build a testable app on the Desktop:
 ```bash
 src/script/package_app.sh debug
-cp -R release/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
+cp -R build/PKwindowsManagement.app ~/Desktop/PKwindowsManagement.app
 ```
 - Build a release and copy it to `/Applications`:
 ```bash

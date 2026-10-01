@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 APP_NAME="PKwindowsManagement"
-APP_DIR="$ROOT_DIR/release/$APP_NAME.app"
+APP_DIR="$ROOT_DIR/build/$APP_NAME.app"
 
 pkill -x "$APP_NAME" 2>/dev/null || true
 "$ROOT_DIR/src/script/package_app.sh" debug >/dev/null
