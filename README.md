@@ -6,6 +6,17 @@
 
 PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres au clavier et lancer rapidement les applications installées.
 
+## Vitrine interactive
+
+[Découvrir Store2](Store2/index.html) : présentation FR/EN, fonctionnalités détaillées, playground de fenêtres et aperçus des thèmes Big Year.
+
+![Launchpad compact — capture native avec données fictives](Store2/screenshots/launchpad-fr.webp)
+![Big Year — calendrier annuel natif, thème Poster bleu](Store2/screenshots/year-poster.webp)
+
+- [Démo vidéo](Store2/videos/window-flow.mp4) · [GIF animé](Store2/gifs/window-flow-wide.gif)
+- [Télécharger le ZIP Apple Silicon v2026.09.08](Store2/downloads/PKwindowsManagement-2026.09.08-arm64.zip) : décompressez, glissez l'app dans Applications et autorisez l'Accessibilité. Build local pour macOS 13+, sans garantie de notarisation ; aucune release GitHub publiée à la création de la vitrine.
+- [Sources et limites des captures](Store2/media-kit/README.md)
+
 ## ✅ Fonctionnalités
 - Snap des fenêtres actives sur les moitiés, tiers, quarts et coins de l'écran.
 - `Tout maximiser` : passe toutes les fenêtres visibles de tous les écrans en presque maximisé, raccourci par défaut `Ctrl + Option + G`.
@@ -135,3 +146,6 @@ src/script/release.sh
 ## 🔗 Liens
 - EN README : [README_en.md](README_en.md)
 - Changelog : [CHANGELOG.md](CHANGELOG.md)
+
+## ❤️ Soutenir
+Soutenir ce projet sur [Ko-fi](https://ko-fi.com/pouark).

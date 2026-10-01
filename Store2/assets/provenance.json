@@ -1,0 +1,32 @@
+{
+  "wallpaper": {
+    "id": "2a566450c6f9",
+    "sha256": "2a566450c6f9588fb80601f3f4968ca533a68389d682f7533a02bc9dc49b706c",
+    "sources": [
+      "file_00000000a2a481f4b005e93a05ae0808.png"
+    ],
+    "original": "originals/2a566450c6f9.png",
+    "preview": "previews/2a566450c6f9.webp",
+    "width": 1672,
+    "height": 941,
+    "bytes": 309775,
+    "ratio": 1.777,
+    "tone": "dark",
+    "palette": [
+      "#355d67",
+      "#657e7e",
+      "#182e32",
+      "#dfbc8e",
+      "#6fa59c"
+    ],
+    "category": "landscape",
+    "contains_ui": false,
+    "provenance": "user-provided appWall; licence not independently verified",
+    "review": "visual contact-sheet review 2026-09-29; inspect full size before publication",
+    "crop": "center; verify per layout",
+    "text_zone": "none approved; place copy outside image by default"
+  },
+  "crop": "center, cover",
+  "source": "PK premium-promo-media / appWall collection; decorative landscape, not product UI",
+  "native": "Production SwiftUI views, temporary catalog fixture, isolated UserDefaults, no personal data"
+}

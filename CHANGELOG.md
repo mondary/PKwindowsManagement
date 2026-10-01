@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.09.09] - 2026-09-29
+### Added
+- Nouvelle vitrine indépendante `Store2` FR/EN, direction Apple, inventaire détaillé des fonctionnalités, playground de dispositions et aperçu des thèmes Big Year.
+- Captures SwiftUI natives à données fictives, GIFs, vidéo de démonstration, bannière et carte sociale avec scripts de régénération.
+- Téléchargement local du bundle Apple Silicon 2026.09.08, empreinte SHA-256, installation et liens de soutien Ko-fi.
+
 ## [2026.09.08] - 2026-09-03
 ### Added
 - `Carreler toutes les fenêtres` (`Tile All Windows`) : les fenêtres visibles de l'app au premier plan sont disposées en grille sur l'écran (4 → 2×2, 6 → 3×2…), avec marges et restauration individuelle, via `Ctrl + Option + T` personnalisable

@@ -1,0 +1,112 @@
+{
+  "date": "2026-09-29T21:09:35.177Z",
+  "context": "Ego Lite / Chromium on local macOS, localhost Python server, cache disabled, no network or CPU throttling; one sample per viewport, not a Lighthouse score",
+  "metrics": [
+    {
+      "width": 390,
+      "lcp": 88,
+      "cls": 0,
+      "errors": [],
+      "initialBytes": 653571,
+      "resources": [
+        {
+          "name": "wallpaper.webp",
+          "bytes": 283186
+        },
+        {
+          "name": "style.css",
+          "bytes": 21254
+        },
+        {
+          "name": "year-pastel.webp",
+          "bytes": 72196
+        },
+        {
+          "name": "launchpad-fr.webp",
+          "bytes": 21806
+        },
+        {
+          "name": "icon.png",
+          "bytes": 39672
+        },
+        {
+          "name": "app.js",
+          "bytes": 7894
+        },
+        {
+          "name": "demo-poster.webp",
+          "bytes": 48080
+        },
+        {
+          "name": "windows-fr.webp",
+          "bytes": 56626
+        },
+        {
+          "name": "launchpad-en.webp",
+          "bytes": 22600
+        },
+        {
+          "name": "windows-en.webp",
+          "bytes": 49602
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "lcp": 80,
+      "cls": 0,
+      "errors": [],
+      "initialBytes": 547343,
+      "resources": [
+        {
+          "name": "wallpaper.webp",
+          "bytes": 283186
+        },
+        {
+          "name": "style.css",
+          "bytes": 21254
+        },
+        {
+          "name": "year-pastel.webp",
+          "bytes": 72196
+        },
+        {
+          "name": "demo-poster.webp",
+          "bytes": 48080
+        },
+        {
+          "name": "launchpad-fr.webp",
+          "bytes": 21806
+        },
+        {
+          "name": "icon.png",
+          "bytes": 39672
+        },
+        {
+          "name": "app.js",
+          "bytes": 7894
+        },
+        {
+          "name": "launchpad-en.webp",
+          "bytes": 22600
+        }
+      ]
+    }
+  ],
+  "files": {
+    "assets/wallpaper.webp": 282886,
+    "assets/banner-1544x500.png": 271293,
+    "assets/card-1200x630.png": 329870,
+    "gifs/window-flow-wide.gif": 3955395,
+    "gifs/window-flow-compact.gif": 1173629,
+    "videos/window-flow.mp4": 1538015,
+    "downloads/PKwindowsManagement-2026.09.08-arm64.zip": 2770947
+  },
+  "additionalChecks": [
+    "First supported navigator language: es/en/fr selects English",
+    "Manual language works when localStorage throws",
+    "No-JS visual capture",
+    "file:// assets and playground work",
+    "MP4 frame 5.2s and animated GIF opened for visual review"
+  ]
+}
