@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.09.10] - 2026-10-01
+### Changed
+- Réorganisation du store : l'ancienne vitrine v1 et son projet vidéo passent dans `store/archive`, la vitrine courante devient `store/website` (dossier autonome prêt à déposer tel quel sur un hébergement), les originaux non déployés dans `store/sources` et le kit média dans `store/media-kit`
+- Chemins du kit média (`prepare.py`, `capture.mjs`, `encode.py`, `verify.mjs`, `measure.mjs`) et liens des README FR/EN mis à jour vers la nouvelle arborescence ; l'archive ZIP locale devient un miroir dans `store/sources/downloads`
+
 ## [2026.09.09] - 2026-09-29
 ### Added
 - Nouvelle vitrine indépendante `Store2` FR/EN, direction Apple, inventaire détaillé des fonctionnalités, playground de dispositions et aperçu des thèmes Big Year.

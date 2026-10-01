@@ -8,14 +8,14 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 
 ## Interactive website
 
-[Discover Store2](Store2/index.html): FR/EN presentation, detailed features, a window playground and Big Year theme previews.
+[Discover the website](store/website/index.html): FR/EN presentation, detailed features, a window playground and Big Year theme previews.
 
-![Compact Launchpad — native capture with sample data](Store2/screenshots/launchpad-en.webp)
-![Big Year — native annual calendar, Blue Poster theme](Store2/screenshots/year-poster.webp)
+![Compact Launchpad — native capture with sample data](store/website/screenshots/launchpad-en.webp)
+![Big Year — native annual calendar, Blue Poster theme](store/website/screenshots/year-poster.webp)
 
-- [Video demo](Store2/videos/window-flow.mp4) · [Animated GIF](Store2/gifs/window-flow-wide.gif)
-- [Download the Apple Silicon ZIP v2026.09.08](Store2/downloads/PKwindowsManagement-2026.09.08-arm64.zip): unzip, move the app to Applications and enable Accessibility. Local macOS 13+ build, with no notarization guarantee; no GitHub release was published when the website was created.
-- [Capture sources and limitations](Store2/media-kit/README.md)
+- [Video demo](store/website/videos/window-flow.mp4) · [Animated GIF](store/website/gifs/window-flow-wide.gif)
+- [Download the Apple Silicon ZIP v2026.09.08](store/sources/downloads/PKwindowsManagement-2026.09.08-arm64.zip): unzip, move the app to Applications and enable Accessibility. Local macOS 13+ build, with no notarization guarantee; no GitHub release was published when the website was created.
+- [Capture sources and limitations](store/media-kit/README.md)
 
 ## ✅ Features
 - Snap active windows to halves, thirds, quarters, and corners.

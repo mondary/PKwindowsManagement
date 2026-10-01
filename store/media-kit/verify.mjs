@@ -1,11 +1,11 @@
-// ego-browser nodejs < Store2/media-kit/verify.mjs
+// ego-browser nodejs < store/media-kit/verify.mjs
 const task = await taskSpace(38);
 const page = task.page('p1');
 const assert = (await import('node:assert/strict')).default;
 const fs = await import('node:fs/promises');
 const temp = '/var/folders/jb/07k9zyks6_d60c27tclhjd2h0000gn/T/opencode';
 const report = {date:new Date().toISOString(),viewports:[],checks:[]};
-await page.goto('http://127.0.0.1:4178/Store2/');
+await page.goto('http://127.0.0.1:4178/store/website/');
 await page.evaluate(() => {
   document.documentElement.style.scrollBehavior = 'auto';
   document.querySelectorAll('img').forEach(image => image.loading = 'eager');
@@ -19,14 +19,14 @@ for (const width of [390,768,1440,1920]) {
     const dimensions = await page.evaluate(() => ({viewport:innerWidth,document:document.documentElement.scrollWidth}));
     assert(dimensions.document <= dimensions.viewport, `No overflow ${width}/${language}`);
     report.viewports.push({width,language,...dimensions});
-    await page.screenshot({path:`${temp}/store2-${width}-${language}.png`});
+    await page.screenshot({path:`${temp}/site-${width}-${language}.png`});
   }
 }
 await page.cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:1050,deviceScaleFactor:1,mobile:false});
 await page.evaluate(() => setLanguage('fr'));
 for (const id of ['playground','launchpad','big-year','all-features','download']) {
   await page.evaluate(id => window.scrollTo(0,document.getElementById(id).offsetTop - 90),id);
-  await page.screenshot({path:`${temp}/store2-${id}.png`});
+  await page.screenshot({path:`${temp}/site-${id}.png`});
 }
 await page.click('button[data-layout="grid"]');
 await page.waitForFunction(() => document.querySelector('#play-desktop').dataset.layout === 'grid');
@@ -64,6 +64,6 @@ assert.equal(video.duration,8); assert.equal(video.errors.length,0);
 report.video = video;
 await page.cdp('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
 await page.evaluate(() => { setLanguage('fr'); document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0,document.querySelector('#playground').offsetTop-75); });
-await page.screenshot({path:`${temp}/store2-mobile-playground.png`});
-await fs.writeFile(`${temp}/store2-qa.json`,JSON.stringify(report,null,2));
+await page.screenshot({path:`${temp}/site-mobile-playground.png`});
+await fs.writeFile(`${temp}/site-qa.json`,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
