@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.1] - 2026-10-06
+### Added
+- Copie locale d'archivage de l'app Rooms (upstream saragordic/rooms, licence MIT) dans `vendors/rooms` avec fichier de provenance `vendors/README.md` : référence conservée au cas où l'amont disparaîtrait
+- `docs/rooms-gap-analysis.md` : analyse comparative PKwindowsManagement ↔ Rooms (features en plus dans chaque sens, équivalences, quick wins d'intégration priorisés, piste rooms ↔ Space macOS + wallpaper dédié)
+- Section « Rooms » dans `TODO.md` avec les chantiers d'intégration
+
 ## [2026.09.13] - 2026-10-01
 ### Changed
 - Structure racine allégée : un seul dossier d'artefacts `build/` (app bundle) à la place de `release/` ; `package_app.sh` utilise le scratch SwiftPM standard `.build/` partagé debug/release au lieu du second scratch `release/build/`
