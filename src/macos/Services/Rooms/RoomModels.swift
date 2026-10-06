@@ -101,6 +101,15 @@ struct Room: Codable, Identifiable, Hashable {
         return windows.compactMap { seen.insert($0.bundleID).inserted ? $0.bundleID : nil }
     }
 
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case windows
+        case apps
+        case layout
+        case createdAt
+    }
+
     static func slug(_ s: String) -> String {
         RoomText.fold(s)
             .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
