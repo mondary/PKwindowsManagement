@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.20] - 2026-10-06
+### Added
+- Changement de canal réel : lorsqu'une recherche manuelle ne trouve rien de plus récent mais que le canal choisi publie une version différente (par ex. retour d'un build Dev vers la dernière Stable), l'app propose de l'installer — téléchargement, remplacement du bundle et relance, même vers une version plus ancienne
+
 ## [2026.10.19] - 2026-10-06
 ### Changed
 - Un seul canal de build : chaque push (branche de travail ou main) publie directement un build Dev signé sur le feed, mis à jour depuis l'app elle-même ; suppression de la voie de test par artifact séparée

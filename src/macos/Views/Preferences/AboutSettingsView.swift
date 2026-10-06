@@ -105,10 +105,38 @@ struct AboutSettingsView: View {
                 Label(localizedString("Check for Updates…"), systemImage: "arrow.triangle.2.circlepath")
             }
             .buttonStyle(.bordered)
+            .disabled(updater.installingSwitch)
+
+            if updater.installingSwitch {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text(localizedString("Installing update…"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if let message = updater.switchErrorMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.025)))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.08), lineWidth: 1))
+        .alert(localizedString("Switch channel?"), isPresented: switchOfferPresented) {
+            Button(localizedString("Install and relaunch")) { updater.performSwitchInstall() }
+            Button(localizedString("Cancel"), role: .cancel) { updater.cancelSwitchOffer() }
+        } message: {
+            if let offer = updater.switchOffer {
+                Text(String(
+                    format: localizedString("You are using %1$@. Install %2$@ from the %3$@ channel?"),
+                    appVersion, offer.version, offer.channel.title
+                ))
+            }
+        }
     }
 
     private func versionColumn(title: String, value: String, symbol: String, isInstalled: Bool) -> some View {
@@ -135,6 +163,13 @@ struct AboutSettingsView: View {
 
     private var isDevBuild: Bool {
         appVersion.localizedCaseInsensitiveContains("-dev")
+    }
+
+    private var switchOfferPresented: Binding<Bool> {
+        Binding(
+            get: { updater.switchOffer != nil },
+            set: { if !$0 { updater.cancelSwitchOffer() } }
+        )
     }
 
     private var appIconLarge: some View {

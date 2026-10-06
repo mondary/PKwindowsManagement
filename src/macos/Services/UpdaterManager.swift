@@ -1,5 +1,16 @@
+import AppKit
 import Foundation
 import Sparkle
+
+/// Offer shown when a manual check finds nothing newer but the selected
+/// channel's latest build differs from the running one (e.g. going back from
+/// a dev build to the last stable release).
+struct ChannelSwitchOffer: Identifiable {
+    let id = UUID()
+    let channel: UpdateChannel
+    let version: String
+    let url: URL
+}
 
 /// Sparkle auto-updates with two channels (pattern proven in Macos_PKmonitor):
 /// - stable: `appcast.xml`, fed by `v*` tag releases;
@@ -20,11 +31,17 @@ final class UpdaterManager: ObservableObject {
     @Published private(set) var selectedChannel: UpdateChannel
     @Published private(set) var latestStableVersion: String?
     @Published private(set) var latestDevVersion: String?
+    @Published private(set) var switchOffer: ChannelSwitchOffer?
+    @Published private(set) var installingSwitch = false
+    @Published private(set) var switchErrorMessage: String?
 
     private init() {
         selectedChannel = UpdateChannel(
             rawValue: UserDefaults.standard.string(forKey: Self.channelKey) ?? UpdateChannel.stable.rawValue
         ) ?? .stable
+        feedProvider.onNoUpdate = { [weak self] userInitiated, item in
+            self?.handleNoUpdate(userInitiated: userInitiated, item: item)
+        }
     }
 
     var channel: UpdateChannel {
@@ -80,6 +97,111 @@ final class UpdaterManager: ObservableObject {
     /// Dev builds install silently; stable builds ask first.
     private func applyChannelBehavior() {
         controller?.updater.automaticallyDownloadsUpdates = (channel == .dev)
+    }
+
+    /// Sparkle never offers an older version, but switching channel is a
+    /// legitimate "install that channel's latest, whatever its number" move.
+    /// When a manual check finds nothing newer and the feed's latest build
+    /// differs from the running one, offer that switch.
+    private func handleNoUpdate(userInitiated: Bool, item: SUAppcastItem?) {
+        guard userInitiated,
+              !installingSwitch,
+              let item,
+              let fileURL = item.fileURL,
+              let installed = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+        else { return }
+        let target = item.displayVersionString
+        guard !target.isEmpty, target != installed else { return }
+        switchOffer = ChannelSwitchOffer(channel: channel, version: target, url: fileURL)
+    }
+
+    func cancelSwitchOffer() {
+        switchOffer = nil
+    }
+
+    func performSwitchInstall() {
+        guard let offer = switchOffer else { return }
+        switchOffer = nil
+        installingSwitch = true
+        switchErrorMessage = nil
+        Task {
+            do {
+                try await installChannelBuild(from: offer.url, expectedVersion: offer.version)
+                await MainActor.run {
+                    installingSwitch = false
+                    NSApp.terminate(nil)
+                }
+            } catch {
+                await MainActor.run {
+                    installingSwitch = false
+                    switchErrorMessage = String(
+                        format: localizedString("Install failed: %@"),
+                        error.localizedDescription
+                    )
+                }
+            }
+        }
+    }
+
+    /// Downloads the channel's published zip, checks it really is the offered
+    /// version, then hands over to a detached script that swaps the bundle and
+    /// relaunches the app once this instance has quit.
+    private func installChannelBuild(from url: URL, expectedVersion: String) async throws {
+        let work = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PKwindowsManagement-switch-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200, !data.isEmpty else {
+            throw NSError(
+                domain: "PKwindowsManagement.Switch", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)"]
+            )
+        }
+        let zipURL = work.appendingPathComponent("app.zip")
+        try data.write(to: zipURL)
+
+        try await runProcess("/usr/bin/ditto", ["-x", "-k", "--sequesterRsrc", zipURL.path, work.path])
+        let extractedApp = work.appendingPathComponent("PKwindowsManagement.app")
+        let extractedVersion = NSDictionary(
+            contentsOf: extractedApp.appendingPathComponent("Contents/Info.plist")
+        )?["CFBundleShortVersionString"] as? String
+        guard extractedVersion == expectedVersion else {
+            throw NSError(
+                domain: "PKwindowsManagement.Switch", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "unexpected bundle version"]
+            )
+        }
+
+        let scriptURL = work.appendingPathComponent("install.sh")
+        try """
+        #!/bin/bash
+        sleep 2
+        rm -rf '/Applications/PKwindowsManagement.app'
+        /usr/bin/ditto '\(extractedApp.path)' '/Applications/PKwindowsManagement.app'
+        open '/Applications/PKwindowsManagement.app'
+        rm -rf '\(work.path)'
+        """.write(to: scriptURL, atomically: true, encoding: .utf8)
+
+        let installer = Process()
+        installer.executableURL = URL(fileURLWithPath: "/bin/bash")
+        installer.arguments = [scriptURL.path]
+        installer.qualityOfService = .userInitiated
+        try installer.run()
+    }
+
+    private func runProcess(_ path: String, _ arguments: [String]) async throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = arguments
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            throw NSError(
+                domain: "PKwindowsManagement.Switch", code: 3,
+                userInfo: [NSLocalizedDescriptionKey: "\(path) exited with \(process.terminationStatus)"]
+            )
+        }
     }
 }
 
@@ -139,9 +261,18 @@ enum UpdateChannel: String, CaseIterable, Identifiable {
 /// methods are called nonisolated, and `updaterDelegate` must outlive the
 /// controller.
 private final class ChannelFeedProvider: NSObject, SPUUpdaterDelegate {
+    var onNoUpdate: ((Bool, SUAppcastItem?) -> Void)?
+
     func feedURLString(for updater: SPUUpdater) -> String? {
         UserDefaults.standard.string(forKey: UpdaterManager.channelKey) == UpdateChannel.dev.rawValue
             ? UpdaterManager.devFeedURL
             : UpdaterManager.stableFeedURL
+    }
+
+    func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: NSError) {
+        let info = error.userInfo
+        let userInitiated = (info[SPUNoUpdateFoundUserInitiatedKey] as? Bool) ?? false
+        let item = info[SPULatestAppcastItemFoundKey] as? SUAppcastItem
+        onNoUpdate?(userInitiated, item)
     }
 }

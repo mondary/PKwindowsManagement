@@ -285,6 +285,11 @@
 "Stable version" = "Versión estable";
 "Dev version" = "Versión dev";
 "Support me on Ko-fi" = "Apóyame en Ko-fi";
+"Switch channel?" = "¿Cambiar de canal?";
+"Install and relaunch" = "Instalar y reiniciar";
+"You are using %1$@. Install %2$@ from the %3$@ channel?" = "Usas %1$@. ¿Instalar %2$@ del canal %3$@?";
+"Installing update…" = "Instalando la actualización…";
+"Install failed: %@" = "Error de instalación: %@";
 "Latest stable" = "Última estable";
 "Latest dev" = "Última dev";
 "Not published" = "No publicada";
