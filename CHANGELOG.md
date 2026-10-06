@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.17] - 2026-10-06
+### Fixed
+- Le repère « Version installée » n'est affiché que sous le canal dont la version publiée correspond exactement à la version installée ; un build de test plus récent n'est plus présenté à tort comme Stable
+
 ## [2026.10.16] - 2026-10-06
 ### Fixed
 - Sparkle utilise un numéro de build chronologique commun aux publications Stable et Dev, permettant de changer de canal sans être bloqué par une rétrogradation technique ; la version CalVer reste affichée

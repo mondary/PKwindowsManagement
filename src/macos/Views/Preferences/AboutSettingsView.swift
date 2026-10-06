@@ -85,14 +85,14 @@ struct AboutSettingsView: View {
                     title: localizedString("Stable version"),
                     value: updater.latestStableVersion ?? localizedString("Not published"),
                     symbol: "checkmark.seal",
-                    isInstalled: !isDevBuild
+                    isInstalled: isInstalledVersion(updater.latestStableVersion)
                 )
                 Divider().frame(height: 42)
                 versionColumn(
                     title: localizedString("Dev version"),
                     value: updater.latestDevVersion ?? localizedString("Not published"),
                     symbol: "hammer",
-                    isInstalled: isDevBuild
+                    isInstalled: isInstalledVersion(updater.latestDevVersion)
                 )
             }
             .padding(.vertical, 12)
@@ -133,8 +133,10 @@ struct AboutSettingsView: View {
         .padding(.horizontal, 8)
     }
 
-    private var isDevBuild: Bool {
-        appVersion.localizedCaseInsensitiveContains("-dev")
+    private func isInstalledVersion(_ publishedVersion: String?) -> Bool {
+        guard let publishedVersion else { return false }
+        return publishedVersion.trimmingCharacters(in: .whitespacesAndNewlines)
+            .caseInsensitiveCompare(appVersion) == .orderedSame
     }
 
     private var appIconLarge: some View {
