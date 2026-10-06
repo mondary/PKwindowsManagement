@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.4] - 2026-10-06
+### Changed
+- `TODO.md` : section Rooms mise à jour après la v1 du switcher (moteur de layouts et vue livrés, restent raccourcis directs ⌃⌥1-9, matching fenêtre à fenêtre, park & registre, prototype Space/wallpaper)
+
 ## [2026.10.3] - 2026-10-06
 ### Added
 - Vue « Rooms » façon Spotlight (⌃⌥R ou menu barre) : rooms = ensembles d'applications nommées avec disposition, persistées dans `~/Library/Application Support/PKwindowsManagement/rooms.json`
