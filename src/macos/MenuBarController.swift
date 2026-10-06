@@ -48,6 +48,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
         registerLaunchpadTriggers()
         registerRoomsHotKey()
+        UpdaterManager.shared.start()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -109,6 +110,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         RoomsOverlayController.shared.toggle()
     }
 
+    @objc private func checkForUpdates() {
+        UpdaterManager.shared.checkForUpdates()
+    }
+
     @objc private func openURLSnippet(_ sender: NSMenuItem) {
         guard let urlString = sender.representedObject as? String, let url = URL(string: urlString) else { return }
         NSWorkspace.shared.open(url)
@@ -153,6 +158,9 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         roomsItem.target = self
         roomsItem.keyEquivalentModifierMask = [.control, .option]
         menu.addItem(roomsItem)
+        let updatesItem = NSMenuItem(title: localizedString("Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
+        updatesItem.target = self
+        menu.addItem(updatesItem)
         let preferencesItem = NSMenuItem(title: localizedString("Open Preferences"), action: #selector(openPreferences), keyEquivalent: ",")
         preferencesItem.target = self
         menu.addItem(preferencesItem)
@@ -275,26 +283,13 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Global shortcuts for the Rooms switcher: ⌃⌥Space (primary, like the
-    /// upstream Rooms app's ⌥Space) and ⌃⌥R (fallback; ⌃⌥Space can conflict
-    /// with the system input-source switcher). A configurable shortcut can
-    /// come later.
+    /// Global ⌃⌥R shortcut for the Rooms switcher (⌃⌥Space was tried and
+    /// dropped: it conflicts with the user's display-switching shortcut; a
+    /// configurable shortcut can come later).
     private func registerRoomsHotKey() {
         unregisterRoomsHotKey()
         ensureLaunchpadHotKeyHandler()
-        let spaceStatus = RegisterEventHotKey(
-            UInt32(kVK_Space),
-            UInt32(controlKey | optionKey),
-            EventHotKeyID(signature: roomsHotKeySignature, id: 3),
-            GetEventDispatcherTarget(),
-            0,
-            &roomsHotKey
-        )
-        if spaceStatus != noErr {
-            roomsHotKey = nil
-            NSLog("PKwindowsManagement: failed to register rooms space hotkey (%d)", spaceStatus)
-        }
-        let rStatus = RegisterEventHotKey(
+        let status = RegisterEventHotKey(
             UInt32(kVK_ANSI_R),
             UInt32(controlKey | optionKey),
             EventHotKeyID(signature: roomsHotKeySignature, id: 2),
@@ -302,8 +297,9 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             0,
             &roomsHotKey
         )
-        if rStatus != noErr {
-            NSLog("PKwindowsManagement: failed to register rooms r hotkey (%d)", rStatus)
+        if status != noErr {
+            roomsHotKey = nil
+            NSLog("PKwindowsManagement: failed to register rooms hotkey (%d)", status)
         }
     }
 
@@ -432,7 +428,7 @@ private func launchpadHotKeyCallback(
         switch (hotKeyID.signature, hotKeyID.id) {
         case (fourCharCode("PKLP"), 1):
             controller.handleLaunchpadHotKey()
-        case (fourCharCode("PKRM"), 2), (fourCharCode("PKRM"), 3):
+        case (fourCharCode("PKRM"), 2):
             RoomsOverlayController.shared.toggle()
         default:
             break

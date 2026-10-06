@@ -10,6 +10,7 @@ struct GeneralSettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 languageSection
+                updateSection
                 accessibilitySection
                 backupSection
                 autoBackupSection
@@ -46,6 +47,58 @@ struct GeneralSettingsView: View {
                 Spacer()
             }
         }
+    }
+
+    private var updateSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(localizedString("Updates"))
+                .font(.headline)
+
+            HStack(spacing: 12) {
+                Picker(localizedString("Update channel"), selection: updateChannelBinding) {
+                    ForEach(UpdateChannel.allCases) { channel in
+                        Text(channel.title).tag(channel)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 200)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(selectedChannelDetail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(installedVersionLabel)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(.tertiary)
+                }
+
+                Spacer()
+
+                Button {
+                    UpdaterManager.shared.checkForUpdates()
+                } label: {
+                    Label(localizedString("Check for Updates…"), systemImage: "arrow.triangle.2.circlepath")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+    }
+
+    private var updateChannelBinding: Binding<UpdateChannel> {
+        Binding(
+            get: { UpdaterManager.shared.channel },
+            set: { UpdaterManager.shared.channel = $0 }
+        )
+    }
+
+    private var selectedChannelDetail: String {
+        updateChannelBinding.wrappedValue.detail
+    }
+
+    private var installedVersionLabel: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+        return build != version ? "v\(version) (\(build))" : "v\(version)"
     }
 
     private var accessibilitySection: some View {

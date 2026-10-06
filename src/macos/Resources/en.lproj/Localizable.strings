@@ -23,3 +23,11 @@
 "Click windows in order — 1 is the main spot" = "Click windows in order — 1 is the main spot";
 "%d window(s) selected" = "%d window(s) selected";
 "No rooms yet. Create your first room from your open windows." = "No rooms yet. Create your first room from your open windows.";
+"Support" = "Support";
+"Updates" = "Updates";
+"Update channel" = "Update channel";
+"Check for Updates…" = "Check for Updates…";
+"Stable" = "Stable";
+"Dev" = "Dev";
+"Versioned releases only, tested." = "Versioned releases only, tested.";
+"Every push on main, installed silently." = "Every push on main, installed silently.";

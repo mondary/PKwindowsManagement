@@ -1,0 +1,113 @@
+name: Release (stable)
+
+# A tag v* publishes a stable release: DMG + Sparkle zip, appcast.xml
+# regenerated and committed, GitHub Release created.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version from CHANGELOG
+        id: version
+        run: |
+          VERSION="$(sed -n 's/^## \[\([0-9][0-9.]*\)\].*/\1/p' CHANGELOG.md | head -1)"
+          if [[ -z "$VERSION" ]]; then
+            echo "Unable to read the version from CHANGELOG.md" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "$TAG" == "main" || -z "$TAG" || "$TAG" == refs/* ]]; then TAG="v$VERSION"; fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Build app bundle
+        run: src/script/package_app.sh release
+
+      - name: Zip app (Sparkle)
+        run: ditto -c -k --sequesterRsrc --keepParent build/PKwindowsManagement.app PKwindowsManagement-app.zip
+
+      - name: Create DMG
+        run: |
+          hdiutil create -volname PKwindowsManagement \
+            -srcfolder build/PKwindowsManagement.app \
+            -ov -format UDZO "PKwindowsManagement_${{ steps.version.outputs.version }}.dmg"
+
+      - name: Fetch Sparkle signing tools
+        run: |
+          curl -sL https://github.com/sparkle-project/Sparkle/releases/download/2.7.1/Sparkle-2.7.1.tar.xz -o sparkle.tar.xz
+          tar -xf sparkle.tar.xz
+
+      - name: Sign update
+        id: sign
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          OUT="$(./bin/sign_update PKwindowsManagement-app.zip)"
+          ED_SIG="$(echo "$OUT" | sed -n 's/.*edSignature="\([^"]*\)".*/\1/p')"
+          LENGTH="$(echo "$OUT" | sed -n 's/.*length="\([^"]*\)".*/\1/p')"
+          if [[ -z "$ED_SIG" || -z "$LENGTH" ]]; then
+            echo "sign_update failed: $OUT" >&2
+            exit 1
+          fi
+          echo "ed_signature=$ED_SIG" >> "$GITHUB_OUTPUT"
+          echo "length=$LENGTH" >> "$GITHUB_OUTPUT"
+
+      - name: Regenerate appcast.xml
+        env:
+          ED_SIGNATURE: ${{ steps.sign.outputs.ed_signature }}
+          LENGTH: ${{ steps.sign.outputs.length }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          cat > appcast.xml <<EOF
+          <?xml version="1.0" encoding="utf-8" standalone="no"?>
+          <!-- Stable channel: regenerated on every v* tag. Single latest item. -->
+          <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
+            <channel>
+              <title>PKwindowsManagement</title>
+              <link>https://github.com/mondary/PKwindowsManagement</link>
+              <description>Most recent stable releases</description>
+              <language>en</language>
+              <item>
+                <title>Version $VERSION</title>
+                <pubDate>$(date -u '+%a, %d %b %Y %H:%M:%S +0000')</pubDate>
+                <sparkle:version>$VERSION</sparkle:version>
+                <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+                <enclosure
+                  url="https://github.com/mondary/PKwindowsManagement/releases/download/${TAG}/PKwindowsManagement-app.zip"
+                  sparkle:edSignature="$ED_SIGNATURE"
+                  length="$LENGTH"
+                  type="application/octet-stream" />
+              </item>
+            </channel>
+          </rss>
+          EOF
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes "Release ${{ steps.version.outputs.version }} — see CHANGELOG.md." \
+            PKwindowsManagement-app.zip "PKwindowsManagement_${{ steps.version.outputs.version }}.dmg"
+
+      - name: Commit appcast.xml
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add appcast.xml
+          git commit -m "MAJ: appcast stable ${{ steps.version.outputs.version }} [skip ci]" || exit 0
+          git pull --rebase origin main
+          git push origin main

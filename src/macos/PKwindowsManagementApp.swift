@@ -145,8 +145,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     case appearance
     case snippets
     case urls
-    case support
     case store
+    case support
     case about
 
     var id: String { rawValue }
@@ -160,8 +160,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .appearance: localizedString("Appearance")
         case .snippets: localizedString("Snippets")
         case .urls: "URLs"
-        case .support: localizedString("Support")
         case .store: localizedString("Store")
+        case .support: localizedString("Support")
         case .about: localizedString("About")
         }
     }

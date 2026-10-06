@@ -273,3 +273,11 @@
 "Click windows in order — 1 is the main spot" = "Clique les fenêtres dans l'ordre — 1 est la place principale";
 "%d window(s) selected" = "%d fenêtre(s) sélectionnée(s)";
 "No rooms yet. Create your first room from your open windows." = "Aucune room pour l'instant. Crée ta première room à partir de tes fenêtres ouvertes.";
+"Support" = "Soutenir";
+"Updates" = "Mises à jour";
+"Update channel" = "Canal de mise à jour";
+"Check for Updates…" = "Rechercher les mises à jour…";
+"Stable" = "Stable";
+"Dev" = "Dev";
+"Versioned releases only, tested." = "Versions numérotées uniquement, testées.";
+"Every push on main, installed silently." = "Chaque push sur main, installé silencieusement.";

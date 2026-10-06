@@ -1,0 +1,107 @@
+name: Dev build + appcast
+
+# Every push on main produces a dev build: the zip replaces the asset of the
+# permanent "dev" release and appcast-dev.xml is regenerated (single item) and
+# committed. The app's dev channel installs it silently.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/macos/**'
+      - 'src/script/package_app.sh'
+      - 'Package.swift'
+      - '.github/workflows/dev-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dev-build:
+    runs-on: macos-15
+    # Skip the appcast commit itself, and anything that doesn't build the app.
+    if: ${{ !contains(github.event.head_commit.message, 'appcast') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build dev app bundle
+        run: PK_DEV_BUILD=1 src/script/package_app.sh release
+
+      - name: Zip app
+        run: ditto -c -k --sequesterRsrc --keepParent build/PKwindowsManagement.app PKwindowsManagement-dev.zip
+
+      - name: Fetch Sparkle signing tools
+        run: |
+          curl -sL https://github.com/sparkle-project/Sparkle/releases/download/2.7.1/Sparkle-2.7.1.tar.xz -o sparkle.tar.xz
+          tar -xf sparkle.tar.xz
+
+      - name: Sign update
+        id: sign
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          OUT="$(./bin/sign_update PKwindowsManagement-dev.zip)"
+          ED_SIG="$(echo "$OUT" | sed -n 's/.*edSignature="\([^"]*\)".*/\1/p')"
+          LENGTH="$(echo "$OUT" | sed -n 's/.*length="\([^"]*\)".*/\1/p')"
+          if [[ -z "$ED_SIG" || -z "$LENGTH" ]]; then
+            echo "sign_update failed: $OUT" >&2
+            exit 1
+          fi
+          echo "ed_signature=$ED_SIG" >> "$GITHUB_OUTPUT"
+          echo "length=$LENGTH" >> "$GITHUB_OUTPUT"
+
+      - name: Read dev version
+        id: version
+        run: |
+          EPOCH="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' build/PKwindowsManagement.app/Contents/Info.plist)"
+          SHORT="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' build/PKwindowsManagement.app/Contents/Info.plist)"
+          echo "epoch=$EPOCH" >> "$GITHUB_OUTPUT"
+          echo "short=$SHORT" >> "$GITHUB_OUTPUT"
+
+      - name: Regenerate appcast-dev.xml
+        env:
+          ED_SIGNATURE: ${{ steps.sign.outputs.ed_signature }}
+          LENGTH: ${{ steps.sign.outputs.length }}
+          EPOCH: ${{ steps.version.outputs.epoch }}
+          SHORT: ${{ steps.version.outputs.short }}
+        run: |
+          cat > appcast-dev.xml <<EOF
+          <?xml version="1.0" encoding="utf-8" standalone="no"?>
+          <!-- Dev channel: regenerated on every push on main. Single item. -->
+          <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
+            <channel>
+              <title>PKwindowsManagement — Dev</title>
+              <link>https://github.com/mondary/PKwindowsManagement</link>
+              <description>Most recent dev builds</description>
+              <language>en</language>
+              <item>
+                <title>Dev build $SHORT</title>
+                <pubDate>$(date -u '+%a, %d %b %Y %H:%M:%S +0000')</pubDate>
+                <sparkle:version>$EPOCH</sparkle:version>
+                <sparkle:shortVersionString>$SHORT</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+                <enclosure
+                  url="https://github.com/mondary/PKwindowsManagement/releases/download/dev/PKwindowsManagement-dev.zip"
+                  sparkle:edSignature="$ED_SIGNATURE"
+                  length="$LENGTH"
+                  type="application/octet-stream" />
+              </item>
+            </channel>
+          </rss>
+          EOF
+
+      - name: Publish dev release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create dev --title "Dev builds" --notes "Latest dev build of PKwindowsManagement. Replaced on every push on main." --prerelease 2>/dev/null || true
+          gh release upload dev PKwindowsManagement-dev.zip --clobber
+
+      - name: Commit appcast-dev.xml
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add appcast-dev.xml
+          git commit -m "MAJ: appcast dev ${{ steps.version.outputs.epoch }} [skip ci]" || exit 0
+          git pull --rebase origin main
+          git push origin main

@@ -29,6 +29,18 @@ if [[ -z "$VERSION" ]]; then
   exit 1
 fi
 
+# Dev builds (PK_DEV_BUILD=1, CI pushes on main): CFBundleVersion is the epoch
+# — always growing, always above any stable CalVer, so any installed app gets
+# offered the dev build. Stable keeps the CalVer everywhere.
+if [[ "${PK_DEV_BUILD:-0}" == "1" ]]; then
+  EPOCH="$(date +%s)"
+  BUNDLE_VERSION="$EPOCH"
+  SHORT_VERSION="$VERSION-dev.$(echo "$EPOCH" | tail -c 5)"
+else
+  BUNDLE_VERSION="$VERSION"
+  SHORT_VERSION="$VERSION"
+fi
+
 cd "$ROOT_DIR"
 # Package.swift declares macOS 13 as the minimum supported system. Without an
 # explicit deployment target, Swift uses the host macOS version instead.
@@ -83,9 +95,15 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>$VERSION</string>
+  <string>$SHORT_VERSION</string>
   <key>CFBundleVersion</key>
-  <string>$VERSION</string>
+  <string>$BUNDLE_VERSION</string>
+  <key>SUFeedURL</key>
+  <string>https://raw.githubusercontent.com/mondary/PKwindowsManagement/main/appcast.xml</string>
+  <key>SUPublicEDKey</key>
+  <string>t9Zzlc7LZD17hLCepinDvSRHk51hAWGbkFc2yVjbAYs=</string>
+  <key>SUEnableAutomaticChecks</key>
+  <true/>
   <key>LSMinimumSystemVersion</key>
   <string>13.0</string>
   <key>NSPrincipalClass</key>

@@ -3,7 +3,6 @@ name: Build macOS app
 on:
   push:
     branches:
-      - main
       - 'codex/**'
     paths:
       - 'src/macos/**'

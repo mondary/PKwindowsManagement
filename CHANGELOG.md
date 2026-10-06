@@ -1,5 +1,17 @@
 # Changelog
 
+## [2026.10.7] - 2026-10-06
+### Added
+- Mises à jour automatiques Sparkle 2 (dépendance SPM, variante statique) : section « Mises à jour » dans Général avec choix du canal **Stable / Dev** et bouton « Rechercher les mises à jour… » ; item de menu équivalent dans la barre de menu ; le canal dev s'installe silencieusement, le canal stable demande confirmation
+- Pipeline de distribution : workflow `dev-build.yml` (chaque push sur main → build dev versionné epoch → zip signé EdDSA → release permanente `dev` → `appcast-dev.xml` régénéré) et `release.yml` (tag `v*` → DMG + zip Sparkle → `appcast.xml` → GitHub Release) ; clé EdDSA existante du trousseau partagée, clé privée en secret GitHub `SPARKLE_PRIVATE_KEY`
+- `package_app.sh` : clés `SUFeedURL`/`SUPublicEDKey`/`SUEnableAutomaticChecks` dans l'Info.plist et support `PK_DEV_BUILD=1` (CFBundleVersion = epoch toujours croissant)
+### Changed
+- Onglet des réglages « Support » renommé « Soutenir » (FR, + ES/DE) et déplacé entre « Store » et « À propos »
+- Workflow `build-macos-app.yml` limité aux branches `codex/**` (plus de double build sur main, `dev-build.yml` s'en charge)
+### Fixed
+- Panneaux Scripts/URLs : en fenêtre réduite, le panneau gauche à largeur fixe écrasait l'éditeur — sa largeur est désormais plafonnée à 50 % de l'espace disponible
+- Le raccourci ⌃⌥Space des Rooms est retiré (conflit avec le raccourci d'écran de l'utilisateur) : ⌃⌥R redevient l'unique raccourci
+
 ## [2026.10.6] - 2026-10-06
 ### Added
 - Granularité par fenêtre dans les rooms (comme l'app amont) : une room mémorise des fenêtres individuelles (bundle ID + titre de session + window ID), pas seulement des apps — 5 fenêtres VS Code = 5 slots avec leurs titres ; migration automatique des rooms v1 (apps → slots par app)
