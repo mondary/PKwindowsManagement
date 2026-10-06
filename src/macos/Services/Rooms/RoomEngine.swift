@@ -141,23 +141,25 @@ final class RoomEngine {
     private func pointAttribute(_ attribute: CFString, on element: AXUIElement) -> CGPoint? {
         var value: AnyObject?
         let status = AXUIElementCopyAttributeValue(element, attribute, &value)
-        guard status == .success else { return nil }
-        var point = CGPoint.zero
-        guard let axValue = value as? AXValue,
-              AXValueGetValue(axValue, .cgPoint, &point)
+        guard status == .success,
+              let axValue = value,
+              CFGetTypeID(axValue) == AXValueGetTypeID()
         else { return nil }
-        return point
+        var point = CGPoint.zero
+        let converted = AXValueGetValue(axValue as! AXValue, .cgPoint, &point)
+        return converted ? point : nil
     }
 
     private func sizeAttribute(_ attribute: CFString, on element: AXUIElement) -> CGSize? {
         var value: AnyObject?
         let status = AXUIElementCopyAttributeValue(element, attribute, &value)
-        guard status == .success else { return nil }
-        var size = CGSize.zero
-        guard let axValue = value as? AXValue,
-              AXValueGetValue(axValue, .cgSize, &size)
+        guard status == .success,
+              let axValue = value,
+              CFGetTypeID(axValue) == AXValueGetTypeID()
         else { return nil }
-        return size
+        var size = CGSize.zero
+        let converted = AXValueGetValue(axValue as! AXValue, .cgSize, &size)
+        return converted ? size : nil
     }
 
     private func frame(of window: AXUIElement) -> CGRect? {
