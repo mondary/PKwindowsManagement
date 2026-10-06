@@ -41,12 +41,21 @@ jobs:
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # Sparkle must be able to move from a recent Dev epoch build back to
+          # Stable. Keep the visible CalVer separate from its monotonic build ID.
+          echo "build_version=$(date +%s)" >> "$GITHUB_OUTPUT"
           TAG="${GITHUB_REF_NAME}"
           if [[ "$TAG" == "main" || -z "$TAG" || "$TAG" == refs/* ]]; then TAG="v$VERSION"; fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Build app bundle
+        env:
+          PK_BUNDLE_VERSION: ${{ steps.version.outputs.build_version }}
         run: src/script/package_app.sh release
+
+      - name: Read Sparkle build version
+        id: build
+        run: echo "version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' build/PKwindowsManagement.app/Contents/Info.plist)" >> "$GITHUB_OUTPUT"
 
       - name: Zip app (Sparkle)
         run: ditto -c -k --sequesterRsrc --keepParent build/PKwindowsManagement.app PKwindowsManagement-app.zip
@@ -90,6 +99,7 @@ jobs:
           ED_SIGNATURE: ${{ steps.sign.outputs.ed_signature }}
           LENGTH: ${{ steps.sign.outputs.length }}
           VERSION: ${{ steps.version.outputs.version }}
+          BUILD_VERSION: ${{ steps.build.outputs.version }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
           cat > appcast.xml <<EOF
@@ -104,7 +114,7 @@ jobs:
               <item>
                 <title>Version $VERSION</title>
                 <pubDate>$(date -u '+%a, %d %b %Y %H:%M:%S +0000')</pubDate>
-                <sparkle:version>$VERSION</sparkle:version>
+                <sparkle:version>$BUILD_VERSION</sparkle:version>
                 <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
                 <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
                 <enclosure

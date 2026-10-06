@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.16] - 2026-10-06
+### Fixed
+- Sparkle utilise un numéro de build chronologique commun aux publications Stable et Dev, permettant de changer de canal sans être bloqué par une rétrogradation technique ; la version CalVer reste affichée
+### Changed
+- Libellé du lien Ko-fi dans « À propos » remplacé par « Me soutenir sur Ko-fi »
+
 ## [2026.10.15] - 2026-10-06
 ### Changed
 - Comparaison Sparkle dans « À propos » : colonnes renommées « Version stable » / « Version dev » ; retrait de la ligne distincte « Version installée » et affichage d'un repère vert sous la colonne correspondant au canal du build actuellement installé

@@ -210,7 +210,7 @@ struct AboutSettingsView: View {
                             .resizable()
                             .frame(width: 12, height: 12)
                     }
-                    Text("Ko-fi")
+                    Text(localizedString("Support me on Ko-fi"))
                 }
                 .font(.caption)
                 .foregroundStyle(Color(red: 1.0, green: 0.37, blue: 0.36))
