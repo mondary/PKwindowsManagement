@@ -29,11 +29,11 @@ struct AboutSettingsView: View {
                         .padding(.top, 2)
                         .padding(.bottom, 32)
 
-                    updateSection
+                    aboutText
                         .frame(maxWidth: 480)
                         .padding(.bottom, 32)
 
-                    aboutText
+                    updateSection
                         .frame(maxWidth: 480)
                         .padding(.bottom, 32)
                 }

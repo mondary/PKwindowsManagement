@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.14] - 2026-10-06
+### Changed
+- Réglages de mise à jour déplacés uniquement dans « À propos », sous le texte de présentation ; suppression du doublon dans « Général » ; comparaison en deux colonnes « Dernière stable / Dernière dev », version installée sur une ligne distincte dessous
+
 ## [2026.10.13] - 2026-10-06
 ### Changed
 - Comparaison des mises à jour dans À propos simplifiée en deux colonnes Stable/Dev, avec la version installée affichée séparément dessous et un seul libellé de canal.
