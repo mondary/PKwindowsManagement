@@ -86,7 +86,7 @@ final class RoomEngine {
                       let candidate = candidates[safe: windowIndex]
                 else { continue }
                 if candidate.isMinimized {
-                    setBool(candidate.element, kAXMinimizedAttribute as CFString, false)
+                    setBool(kAXMinimizedAttribute as CFString, false, on: candidate.element)
                 }
                 setFrame(frames[slotIndex], for: candidate.element, on: candidate.appElement)
                 report.placed += 1
@@ -128,7 +128,7 @@ final class RoomEngine {
                 let minimized = boolAttribute(kAXMinimizedAttribute as CFString, on: element) ?? false
                 // Windows of hidden or minimized apps report AXDialog for a
                 // while; a real document window still has a minimize button.
-                let hasMinimizeButton = (attribute(kAXMinimizeButtonAttribute as CFString, on: element) as AXUIElement?) != nil
+                let hasMinimizeButton = attribute(kAXMinimizeButtonAttribute as CFString, on: element) != nil
                 let isStandard = subrole == kAXStandardWindowSubrole as String
                     || (subrole == kAXDialogSubrole as String && (app.isHidden || minimized || hasMinimizeButton))
                 guard isStandard,
