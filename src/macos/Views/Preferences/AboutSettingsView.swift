@@ -70,6 +70,8 @@ struct AboutSettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .labelsHidden()
+                .accessibilityLabel(localizedString("Update channel"))
                 .frame(width: 190)
                 Spacer(minLength: 0)
             }
@@ -79,14 +81,25 @@ struct AboutSettingsView: View {
                 .foregroundStyle(.secondary)
 
             HStack(alignment: .top, spacing: 0) {
-                versionColumn(title: localizedString("Installed"), value: installedVersionLabel, symbol: "checkmark.circle")
-                Divider().frame(height: 42)
                 versionColumn(title: localizedString("Latest stable"), value: updater.latestStableVersion ?? localizedString("Not published"), symbol: "checkmark.seal")
                 Divider().frame(height: 42)
                 versionColumn(title: localizedString("Latest dev"), value: updater.latestDevVersion ?? localizedString("Not published"), symbol: "hammer")
             }
             .padding(.vertical, 12)
             .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.045)))
+
+            HStack(spacing: 8) {
+                Label(localizedString("Installed version"), systemImage: "checkmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 12)
+                Text(installedVersionLabel)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .help(installedVersionLabel)
+            }
+            .padding(.horizontal, 8)
 
             Button {
                 updater.refreshAvailableVersions()

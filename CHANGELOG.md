@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.13] - 2026-10-06
+### Changed
+- Comparaison des mises à jour dans À propos simplifiée en deux colonnes Stable/Dev, avec la version installée affichée séparément dessous et un seul libellé de canal.
+
 ## [2026.10.12] - 2026-10-06
 ### Fixed
 - Le workflow Dev met de côté l’état SwiftPM généré avant de rebaser et pousser l’appcast, afin que les changements de build ne bloquent plus la publication du feed.
