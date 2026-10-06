@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.5] - 2026-10-06
+### Added
+- `src/script/dev_update.sh` : boucle de test « push → CI → je teste » — récupère la dernière build CI réussie d'une branche (`--branch`), l'installe dans `/Applications` en quittant poliment l'app si elle tourne, puis la relance (`--no-launch` pour s'abstenir) ; dépanne tant que les CommandLineTools seuls ne compilent pas SwiftUI
+
 ## [2026.10.4] - 2026-10-06
 ### Changed
 - `TODO.md` : section Rooms mise à jour après la v1 du switcher (moteur de layouts et vue livrés, restent raccourcis directs ⌃⌥1-9, matching fenêtre à fenêtre, park & registre, prototype Space/wallpaper)
