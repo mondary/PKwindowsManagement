@@ -46,6 +46,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Application context menu for assigning shortcuts or moving applications to Trash.
 - Open Launchpad with `Option + Space`, the top-left hot corner, or a menu bar icon click.
 - The app's official icon is shown in the menu bar (full color); context menu to open preferences or quit.
+- Sparkle updates: choose the Stable or Dev channel and compare the installed, stable, and dev versions in General or About.
 - Lighter startup path: global shortcuts no longer need to load every application icon, and dominant-color analysis only runs for the `Icon Color` sort mode.
 
 ## 🧠 Usage
@@ -90,6 +91,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Per-display Launchpad grid profiles are available in Appearance settings.
 - Launchpad navigation mode: vertical scroll or horizontal pages.
 - Changes are persisted in `UserDefaults`.
+- In `General` or `About`, choose the `Stable` or `Dev` update channel and compare the installed version with the latest release on each channel. Dev builds install automatically; Stable asks before installing.
 - Manual settings import/export in JSON format.
 - Auto-backup: choose a folder (e.g. Google Drive) and export a timestamped JSON backup on every settings change.
 - In the calendar or its dedicated `Big Year` settings section, use the live preview, choose the school zone, theme, and appearance: birthdays or month names in bold as you prefer (the `!` marker still wins), plus custom colors for each element (background, holidays, birthdays, events, zones, text…). Then enter one birthday per line as `DD.MM,Name` or `DDMM,Name` (for example `11.02,Clément` or `0112,Marie`). Prefix the name with `!` to emphasize it in bold. Click a day directly to create a single-day or date-range event, or use the `DD.MM-DD.MM,Title` text format. Enable `macOS / Google Calendars` to import all-day events from accounts configured in macOS Calendar.

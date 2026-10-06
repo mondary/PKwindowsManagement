@@ -1,5 +1,4 @@
 import Foundation
-import FoundationXML
 import Sparkle
 
 /// Sparkle auto-updates with two channels (pattern proven in Macos_PKmonitor):
@@ -18,15 +17,22 @@ final class UpdaterManager: ObservableObject {
 
     private let feedProvider = ChannelFeedProvider()
     private var controller: SPUStandardUpdaterController?
+    @Published private(set) var selectedChannel: UpdateChannel
     @Published private(set) var latestStableVersion: String?
     @Published private(set) var latestDevVersion: String?
 
+    private init() {
+        selectedChannel = UpdateChannel(
+            rawValue: UserDefaults.standard.string(forKey: Self.channelKey) ?? UpdateChannel.stable.rawValue
+        ) ?? .stable
+    }
+
     var channel: UpdateChannel {
-        get {
-            UpdateChannel(rawValue: UserDefaults.standard.string(forKey: Self.channelKey) ?? UpdateChannel.stable.rawValue) ?? .stable
-        }
+        get { selectedChannel }
         set {
+            guard selectedChannel != newValue else { return }
             UserDefaults.standard.set(newValue.rawValue, forKey: Self.channelKey)
+            selectedChannel = newValue
             applyChannelBehavior()
         }
     }
@@ -133,7 +139,7 @@ enum UpdateChannel: String, CaseIterable, Identifiable {
 /// methods are called nonisolated, and `updaterDelegate` must outlive the
 /// controller.
 private final class ChannelFeedProvider: NSObject, SPUUpdaterDelegate {
-    func feedURLString(for updater: SPUUpdater) -> String {
+    func feedURLString(for updater: SPUUpdater) -> String? {
         UserDefaults.standard.string(forKey: UpdaterManager.channelKey) == UpdateChannel.dev.rawValue
             ? UpdaterManager.devFeedURL
             : UpdaterManager.stableFeedURL

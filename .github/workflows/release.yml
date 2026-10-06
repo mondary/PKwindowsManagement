@@ -59,7 +59,7 @@ jobs:
 
       - name: Fetch Sparkle signing tools
         run: |
-          curl -sL https://github.com/sparkle-project/Sparkle/releases/download/2.7.1/Sparkle-2.7.1.tar.xz -o sparkle.tar.xz
+          curl -fsSL https://github.com/sparkle-project/Sparkle/releases/download/2.10.0/Sparkle-2.10.0.tar.xz -o sparkle.tar.xz
           tar -xf sparkle.tar.xz
 
       - name: Sign update
@@ -67,7 +67,15 @@ jobs:
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
-          OUT="$(./bin/sign_update PKwindowsManagement-app.zip)"
+          if [[ -z "$SPARKLE_PRIVATE_KEY" ]]; then
+            echo "SPARKLE_PRIVATE_KEY is not configured" >&2
+            exit 1
+          fi
+          KEY_FILE="$RUNNER_TEMP/sparkle-private-key"
+          trap 'rm -f "$KEY_FILE"' EXIT
+          umask 077
+          printf '%s' "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
+          OUT="$(./bin/sign_update --ed-key-file "$KEY_FILE" PKwindowsManagement-app.zip)"
           ED_SIG="$(echo "$OUT" | sed -n 's/.*edSignature="\([^"]*\)".*/\1/p')"
           LENGTH="$(echo "$OUT" | sed -n 's/.*length="\([^"]*\)".*/\1/p')"
           if [[ -z "$ED_SIG" || -z "$LENGTH" ]]; then

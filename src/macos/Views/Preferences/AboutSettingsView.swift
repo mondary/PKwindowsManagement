@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct AboutSettingsView: View {
+    @ObservedObject private var updater = UpdaterManager.shared
+    @State private var selectedChannel = UpdaterManager.shared.channel
+
     private let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "—"
     private let appBuild = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "—"
 
@@ -26,6 +29,10 @@ struct AboutSettingsView: View {
                         .padding(.top, 2)
                         .padding(.bottom, 32)
 
+                    updateSection
+                        .frame(maxWidth: 480)
+                        .padding(.bottom, 32)
+
                     aboutText
                         .frame(maxWidth: 480)
                         .padding(.bottom, 32)
@@ -40,6 +47,79 @@ struct AboutSettingsView: View {
                 .padding(.vertical, 14)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            selectedChannel = updater.channel
+            updater.refreshAvailableVersions()
+        }
+        .onChange(of: selectedChannel) { channel in
+            updater.channel = channel
+        }
+    }
+
+    private var updateSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(localizedString("Updates"))
+                .font(.headline)
+
+            HStack(spacing: 12) {
+                Text(localizedString("Update channel"))
+                    .font(.subheadline.weight(.medium))
+                Picker(localizedString("Update channel"), selection: $selectedChannel) {
+                    ForEach(UpdateChannel.allCases) { channel in
+                        Text(channel.title).tag(channel)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 190)
+                Spacer(minLength: 0)
+            }
+
+            Text(selectedChannel.detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack(alignment: .top, spacing: 0) {
+                versionColumn(title: localizedString("Installed"), value: installedVersionLabel, symbol: "checkmark.circle")
+                Divider().frame(height: 42)
+                versionColumn(title: localizedString("Latest stable"), value: updater.latestStableVersion ?? localizedString("Not published"), symbol: "checkmark.seal")
+                Divider().frame(height: 42)
+                versionColumn(title: localizedString("Latest dev"), value: updater.latestDevVersion ?? localizedString("Not published"), symbol: "hammer")
+            }
+            .padding(.vertical, 12)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.045)))
+
+            Button {
+                updater.refreshAvailableVersions()
+                updater.checkForUpdates()
+            } label: {
+                Label(localizedString("Check for Updates…"), systemImage: "arrow.triangle.2.circlepath")
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.025)))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.08), lineWidth: 1))
+    }
+
+    private func versionColumn(title: String, value: String, symbol: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Label(title, systemImage: symbol)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Text(value)
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .help(value)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 8)
+    }
+
+    private var installedVersionLabel: String {
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+        return build != appVersion ? "v\(appVersion) (\(build))" : "v\(appVersion)"
     }
 
     private var appIconLarge: some View {

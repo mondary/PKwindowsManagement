@@ -51,6 +51,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Commande `Empty Trash` dans le Launchpad pour vider la Corbeille via Finder.
 - Ouverture du Launchpad avec `Option + Espace`, le coin supérieur gauche ou un clic sur l'icône de barre de menu.
 - L'icône officielle de l'app s'affiche dans la barre de menu (en couleur) ; menu contextuel pour ouvrir les préférences ou quitter.
+- Mises à jour Sparkle : choisis le canal Stable ou Dev et compare les versions installée, stable et dev dans Général ou À propos.
 - Chargement plus léger au démarrage : les raccourcis globaux n'ont plus besoin de charger toutes les icônes d'applications, et l'analyse couleur ne se fait que pour le tri `Icon Color`.
 
 ## 🧠 Utilisation
@@ -98,6 +99,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Possibilité de définir une grille spécifique par écran dans les réglages d'apparence.
 - Choix du mode de navigation du Launchpad : scroll vertical ou pages horizontales.
 - Les changements sont sauvegardés dans `UserDefaults`.
+- Dans `Général` ou `À propos`, choisis le canal de mise à jour `Stable` ou `Dev` et compare la version installée aux dernières versions publiées sur chaque canal. Le canal Dev installe les builds automatiquement ; Stable conserve la confirmation avant installation.
 - Import/export manuel des réglages au format JSON.
 - Auto-backup : choisis un dossier (ex : Google Drive) et exporte un backup JSON horodaté à chaque modification des réglages.
 - Dans le calendrier ou sa section dédiée `Big Year` des réglages, utilise l’aperçu vivant, choisis la zone scolaire, le thème et l’apparence : anniversaires ou noms des mois en gras au choix (le `!` reste prioritaire), et couleurs personnalisées pour chaque élément (fond, jours fériés, anniversaires, événements, zones, texte…). Puis saisis un anniversaire par ligne au format `JJ.MM,Prénom` ou `JJMM,Prénom` (par exemple `11.02,Clément` ou `0112,Marie`). Préfixe le prénom par `!` pour un événement important en gras. Clique aussi directement sur une journée pour créer un événement d'un jour ou une plage, ou utilise le format texte `JJ.MM-JJ.MM,Titre`. Active `Calendriers macOS / Google` pour importer les événements journée entière des comptes configurés dans Calendrier macOS.

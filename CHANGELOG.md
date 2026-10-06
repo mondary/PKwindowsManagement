@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026.10.11] - 2026-10-06
+### Fixed
+- Sparkle Dev et Stable signent les archives avec la clé privée EdDSA injectée par GitHub Actions ; auparavant le secret n’était pas transmis à `sign_update`.
+
+## [2026.10.10] - 2026-10-06
+### Changed
+- L’écran À propos affiche les versions installée, stable et dev, permet de choisir le canal de mise à jour et de lancer une vérification Sparkle.
+
 ## [2026.10.9] - 2026-10-06
 ### Changed
 - Signatures de build CI cohérentes avec le certificat Apple Development local : certificat chiffré dans GitHub Secrets, importé dans les workflows build/dev/release ; Sparkle.framework et l'app sont signés avec la même identité (permet à macOS/TCC de reconnaître l'app entre mises à jour, après une réautorisation unique lors du changement d'identité)
