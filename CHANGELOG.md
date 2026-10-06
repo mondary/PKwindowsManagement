@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.2] - 2026-10-06
+### Changed
+- `docs/rooms-gap-analysis.md` corrigé après lecture du code : le cycle ½→⅔→⅓ existe déjà chez nous (`WindowSnapService.cycleFrame`, version plus robuste que Rooms) — ligne déplacée en équivalence et retirée des quick wins ; détail du lancement des apps manquantes enrichi (démarrage en arrière-plan + attente jusqu'à 4 s des fenêtres avec replanification, slot repris par une autre fenêtre de l'app si la sauvegardée est fermée)
+
 ## [2026.10.1] - 2026-10-06
 ### Added
 - Copie locale d'archivage de l'app Rooms (upstream saragordic/rooms, licence MIT) dans `vendors/rooms` avec fichier de provenance `vendors/README.md` : référence conservée au cas où l'amont disparaîtrait

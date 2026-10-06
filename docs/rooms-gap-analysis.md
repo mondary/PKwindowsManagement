@@ -66,10 +66,10 @@ Ces deux features (Spaces dédiés + wallpaper par room) sont donc des idées qu
 | **Rooms** : ensembles de fenêtres nommés par projet | Cœur de l'app : modèle `Room` (apps, fenêtres ordonnées, layout, aliases, raccourci direct), stocké en JSON éditable | **Moyen** — c'est LE chantier, mais RoomsCore est MIT et pur Swift |
 | **Switcher ⌥Space** façon Spotlight | Recherche floue (préfixe, initiales, sous-séquence, aliases), récence, ⌘1-9, ⌘S, ⌘⌫, ⌘Z | Moyen — on a déjà un overlay Launchpad à recycler |
 | **Moteur de layouts** | Auto / Focus / Stack / Columns / Grid / My Layout / As Saved, avec tailles minimales mesurées par app, fallback Stack, mémoire par écran | **Faible** — `Layout.swift`, `GridLayout.swift`, `Arrangement.swift` sont de la géométrie pure, copiables quasi tels quels |
-| **Cycle ½ → ⅔ → ⅓** en repressant moitié gauche/droite | Comportement Rectangle, dans `Snap.swift` | **Très faible** |
+| **Cycle ½ → ⅔ → ⅓** en repressant moitié gauche/droite | Déjà chez nous (`WindowSnapService.cycleFrame`), avec fenêtre temporelle 3 s + re-détection de la position — notre version est plus robuste | Rien à faire |
 | **Park & restore** | Les fenêtres hors room sont masquées ou parquées hors écran ; registre `resting.json` écrit AVANT tout déplacement (crash-safe) ; « Show Everything » | Moyen — `WindowEngine.swift` à adapter à notre AX |
 | **Identité persistante des fenêtres** | Matching par windowID → titre exact → titre similaire → n'importe quelle fenêtre de l'app, en respectant les fenêtres « claimées » par d'autres rooms | Faible — `SlotMatcher` est pur Swift |
-| **Lancement des apps manquantes** | Une room dont une app n'est pas lancée la démarre (`NSWorkspace.openApplication`) puis dispose | Faible — on a déjà `AppLauncherService` |
+| **Lancement des apps manquantes** | Oui : une room dont une app n'est pas lancée la démarre en arrière-plan (`NSWorkspace.openApplication`, `activates = false`), puis `arrange(room, launched:)` attend jusqu'à 4 s (40 × 100 ms) que leurs fenêtres apparaissent en re-planifiant à chaque tick ; si une fenêtre sauvegardée a été fermée entre-temps, une autre fenêtre de la même app prend le slot (en préférant une hors room). App introuvable → notée « missing » dans le rapport | Faible — `AppLauncherService` existe, il faut ajouter la boucle d'attente + replanification |
 | **Aperçu de layout animé** | Overlay qui montre chaque layout en glissant quand on tape Tab | Moyen |
 | **Layout par écran** | Laptop = Stack, moniteur = Focus, re-disposition auto quand un écran est branché | Moyen |
 | **Gestion des pièges AX Electron/Chromium** | Bascule `AXManualAccessibility` à la lecture, park-avec-Finder, fenêtres d'apps masquées (subrole AXDialog) | Faible — portage direct de recettes |
@@ -88,21 +88,19 @@ Ces deux features (Spaces dédiés + wallpaper par room) sont donc des idées qu
 
 ## Ce qu'on peut intégrer rapidement (par ordre de rentabilité)
 
-1. **Cycle ½→⅔→⅓ sur moitiés** (qq heures) : re-presser `Ctrl+Option+ H/L` enchaîne
-   les largeurs. Code : `Snap.swift` (`step % 3`).
-2. **Portage du moteur Tiler** (1-2 j) : intégrer `Layout.swift` + `GridLayout.swift` +
+1. **Portage du moteur Tiler** (1-2 j) : intégrer `Layout.swift` + `GridLayout.swift` +
    `Arrangement.swift` + `Geometry.swift` (MIT, zéro dépendance AppKit) comme module
    `LayoutEngine` et s'en servir pour améliorer `Carreler toutes les fenêtres` :
    tailles minimales prises en compte, fallback Stack, choix Focus/Columns/Grid.
-3. **Concept de Rooms minimal** (3-5 j) : modèle `Room` + stockage JSON + raccourcis
+2. **Concept de Rooms minimal** (3-5 j) : modèle `Room` + stockage JSON + raccourcis
    directs ⌃⌥1-9 + application d'une room (disposer + masquer le reste via notre AX
    existant). Le switcher peut être un mode du Launchpad existant plutôt qu'une
    palette séparée dans un premier temps.
-4. **Matching + lancement** : `SlotMatcher` + lancement des apps manquantes via
-   `AppLauncherService` (déjà là).
-5. **Park & ledger crash-safe** : adapter `WindowEngine` (parking hors écran +
+3. **Matching + lancement** : `SlotMatcher` + lancement des apps manquantes via
+   `AppLauncherService` (déjà là), avec la boucle d'attente de leurs fenêtres.
+4. **Park & ledger crash-safe** : adapter `WindowEngine` (parking hors écran +
    `resting.json` écrit avant tout mouvement + « Tout montrer »).
-6. **Ensuite seulement** : aperçus animés, ⌘S « apprendre l'arrangement », layouts par
+5. **Ensuite seulement** : aperçus animés, ⌘S « apprendre l'arrangement », layouts par
    écran, Edit Windows.
 
 ## Notre différenciateur (au-delà de Rooms)

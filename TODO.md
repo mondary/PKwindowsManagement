@@ -27,10 +27,9 @@
 - [ ] Raccourcis avancés pour layouts.
 
 ## Rooms (inspiré de saragordic/rooms — voir docs/rooms-gap-analysis.md)
-- [ ] Cycle ½ → ⅔ → ⅓ en re-pressant moitié gauche/droite.
 - [ ] Portage du moteur de layouts Tiler (tailles minimales par app, fallback Stack).
 - [ ] Concept de rooms : ensembles de fenêtres nommés + switcher + raccourcis ⌃⌥1-9.
-- [ ] Matching fenêtres (windowID / titre / app) + lancement des apps manquantes.
+- [ ] Matching fenêtres (windowID / titre / app) + lancement des apps manquantes avec boucle d'attente.
 - [ ] Park & registre crash-safe (« Tout montrer »).
 - [ ] Prototype room ↔ Space macOS dédié + wallpaper dédié.
 
