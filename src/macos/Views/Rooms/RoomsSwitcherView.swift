@@ -7,7 +7,9 @@ final class RoomsSwitcherModel: ObservableObject {
     @Published var selection = 0
     @Published var isCreating = false
     @Published var newName = ""
-    @Published var newAppSelection = Set<String>()
+    /// Windows picked for the new room, in click order: index 0 is the main spot.
+    @Published var picked: [RoomEngine.WindowOffer] = []
+    @Published var offers: [RoomEngine.WindowOffer] = []
 
     let store: RoomStore
     private let engine: RoomEngine
@@ -27,25 +29,23 @@ final class RoomsSwitcherModel: ObservableObject {
         return filtered[selection]
     }
 
-    /// Regular apps currently running, by name; our own app is not offered.
-    var runningApps: [RoomApp] {
-        let ownBundleID = Bundle.main.bundleIdentifier
-        return NSWorkspace.shared.runningApplications
-            .filter { $0.activationPolicy == .regular && $0.bundleIdentifier != nil && $0.bundleIdentifier != ownBundleID }
-            .compactMap { app in
-                guard let id = app.bundleIdentifier else { return nil }
-                return RoomApp(bundleID: id, name: app.localizedName ?? id)
-            }
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-    }
-
     /// Called each time the panel opens.
     func prepare() {
         query = ""
         selection = 0
-        isCreating = store.rooms.isEmpty
+        isCreating = false
         newName = ""
-        newAppSelection = []
+        picked = []
+        offers = []
+    }
+
+    /// Refresh the window list for the picker (AX reads: async so opening the
+    /// panel never waits on them).
+    func refreshOffers() {
+        let engine = engine
+        Task { @MainActor in
+            self.offers = engine.windowOffers()
+        }
     }
 
     func moveSelection(_ delta: Int) {
@@ -64,9 +64,14 @@ final class RoomsSwitcherModel: ObservableObject {
     @discardableResult
     func activateSelected() -> Bool {
         guard let room = selectedRoom else { return false }
-        let engine = engine
-        Task { _ = await engine.activate(room) }
+        activate(room: room)
         return true
+    }
+
+    private func activate(room: Room) {
+        let engine = engine
+        let claimed = store.claimedWindowIDs(excluding: room.id)
+        Task { _ = await engine.activate(room, claimed: claimed) }
     }
 
     func deleteSelected() {
@@ -75,26 +80,35 @@ final class RoomsSwitcherModel: ObservableObject {
         selection = 0
     }
 
-    func toggleNewApp(_ app: RoomApp) {
-        if newAppSelection.contains(app.bundleID) {
-            newAppSelection.remove(app.bundleID)
+    // MARK: Creation
+
+    /// Click a window: take it out if picked, put it back at the end otherwise.
+    func togglePick(_ offer: RoomEngine.WindowOffer) {
+        if let index = picked.firstIndex(of: offer) {
+            picked.remove(at: index)
         } else {
-            newAppSelection.insert(app.bundleID)
+            picked.append(offer)
         }
     }
 
+    func isPicked(_ offer: RoomEngine.WindowOffer) -> Bool {
+        picked.contains(offer)
+    }
+
     var canCreateRoom: Bool {
-        !RoomText.fold(newName).trimmingCharacters(in: .whitespaces).isEmpty && !newAppSelection.isEmpty
+        !RoomText.fold(newName).trimmingCharacters(in: .whitespaces).isEmpty && !picked.isEmpty
     }
 
     func createRoom() {
         guard canCreateRoom else { return }
-        let chosen = runningApps.filter { newAppSelection.contains($0.bundleID) }
-        let room = Room(name: newName.trimmingCharacters(in: .whitespaces), apps: chosen)
+        let windows = picked.map { offer in
+            RoomWindow(bundleID: offer.bundleID, appName: offer.appName, title: offer.title, windowID: offer.windowID)
+        }
+        let room = Room(name: newName.trimmingCharacters(in: .whitespaces), windows: windows)
         store.upsert(room)
         isCreating = false
         newName = ""
-        newAppSelection = []
+        picked = []
         query = ""
         selection = 0
     }
@@ -146,6 +160,7 @@ struct RoomsSwitcherView: View {
 private struct ListView: View {
     @ObservedObject var model: RoomsSwitcherModel
     let onActivateRoom: () -> Void
+    @FocusState private var searchFocused: Bool
 
     var body: some View {
         VStack(spacing: 12) {
@@ -153,6 +168,7 @@ private struct ListView: View {
             if model.rooms.isEmpty {
                 EmptyStateView {
                     model.isCreating = true
+                    model.refreshOffers()
                 }
                 Spacer()
             } else {
@@ -176,6 +192,7 @@ private struct ListView: View {
             footer
         }
         .padding(16)
+        .onAppear { searchFocused = true }
     }
 
     private var searchField: some View {
@@ -187,8 +204,10 @@ private struct ListView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(.white)
+                .focused($searchFocused)
             Button {
                 model.isCreating = true
+                model.refreshOffers()
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 13, weight: .semibold))
@@ -226,6 +245,11 @@ private struct RoomRowView: View {
     let room: Room
     let isSelected: Bool
 
+    private var subtitle: String {
+        let names = room.windows.map { $0.title.isEmpty ? $0.appName : $0.title }
+        return names.joined(separator: " · ")
+    }
+
     var body: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 5) {
@@ -233,17 +257,23 @@ private struct RoomRowView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(isSelected ? .white : .white.opacity(0.92))
                     .lineLimit(1)
-                Text(room.apps.map(\.name).joined(separator: " · "))
+                Text(subtitle)
                     .font(.system(size: 10.5))
                     .foregroundColor(isSelected ? .white.opacity(0.75) : .white.opacity(0.5))
-                    .lineLimit(2)
+                    .lineLimit(3)
                 HStack(spacing: 4) {
-                    ForEach(Array(room.apps.prefix(5).enumerated()), id: \.element.id) { index, app in
-                        Image(nsImage: RoomIconCache.icon(for: app))
+                    ForEach(Array(room.windows.prefix(5).enumerated()), id: \.element.id) { index, window in
+                        Image(nsImage: RoomIconCache.icon(for: window))
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 16, height: 16)
                             .offset(x: CGFloat(index) * -3)
+                            .help(window.title.isEmpty ? window.appName : "\(window.appName) — \(window.title)")
+                    }
+                    if room.windows.count > 5 {
+                        Text("+\(room.windows.count - 5)")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.5))
                     }
                 }
                 .padding(.top, 1)
@@ -255,7 +285,7 @@ private struct RoomRowView: View {
                     .background(Capsule().fill(Color.white.opacity(isSelected ? 0.22 : 0.10)))
             }
             Spacer(minLength: 10)
-            RoomLayoutDiagram(apps: room.apps, kind: room.layout)
+            RoomLayoutDiagram(windows: room.windows, kind: room.layout)
                 .frame(width: 150)
         }
         .padding(12)
@@ -276,7 +306,7 @@ private struct EmptyStateView: View {
             Image(systemName: "square.grid.3x3.square")
                 .font(.system(size: 36, weight: .light))
                 .foregroundColor(.white.opacity(0.4))
-            Text(localizedString("No rooms yet. Create your first room from your running apps."))
+            Text(localizedString("No rooms yet. Create your first room from your open windows."))
                 .font(.system(size: 13))
                 .foregroundColor(.white.opacity(0.6))
                 .multilineTextAlignment(.center)
@@ -298,6 +328,7 @@ private struct EmptyStateView: View {
 
 private struct CreationView: View {
     @ObservedObject var model: RoomsSwitcherModel
+    @FocusState private var nameFocused: Bool
 
     var body: some View {
         VStack(spacing: 12) {
@@ -309,6 +340,8 @@ private struct CreationView: View {
                     .textFieldStyle(.plain)
                     .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.white)
+                    .focused($nameFocused)
+                    .onSubmit { if model.canCreateRoom { model.createRoom() } }
                 Button {
                     model.isCreating = false
                 } label: {
@@ -329,24 +362,42 @@ private struct CreationView: View {
             )
 
             HStack {
-                Text(localizedString("Running apps"))
-                    .font(.system(size: 11, weight: .semibold))
+                Text(localizedString("Click windows in order — 1 is the main spot"))
+                    .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.55))
                 Spacer()
-                Text(String(format: localizedString("%d app(s) selected"), model.newAppSelection.count))
+                Text(String(format: localizedString("%d window(s) selected"), model.picked.count))
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.45))
             }
 
-            ScrollView {
-                LazyVStack(spacing: 4) {
-                    ForEach(model.runningApps) { app in
-                        NewAppRow(app: app, isSelected: model.newAppSelection.contains(app.bundleID)) {
-                            model.toggleNewApp(app)
+            if model.offers.isEmpty {
+                Spacer()
+                ProgressView()
+                    .scaleEffect(0.8)
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(model.offers) { offer in
+                            WindowOfferRow(
+                                offer: offer,
+                                pickIndex: model.isPicked(offer) ? model.picked.firstIndex(of: offer).map { $0 + 1 } : nil
+                            ) {
+                                model.togglePick(offer)
+                            }
                         }
                     }
+                    .padding(.horizontal, 2)
                 }
-                .padding(.horizontal, 2)
+            }
+
+            if let first = model.picked.first {
+                RoomLayoutDiagram(
+                    windows: model.picked.map { RoomWindow(bundleID: $0.bundleID, appName: $0.appName, title: $0.title, windowID: $0.windowID) },
+                    kind: .auto
+                )
+                .frame(width: 220)
             }
 
             HStack {
@@ -368,34 +419,50 @@ private struct CreationView: View {
             }
         }
         .padding(16)
+        .onAppear { nameFocused = true }
     }
 }
 
-private struct NewAppRow: View {
-    let app: RoomApp
-    let isSelected: Bool
+private struct WindowOfferRow: View {
+    let offer: RoomEngine.WindowOffer
+    /// Position in the layout (1 = main) when picked, nil otherwise.
+    let pickIndex: Int?
     let onToggle: () -> Void
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(nsImage: RoomIconCache.icon(for: app))
+            ZStack {
+                Circle()
+                    .fill(pickIndex != nil ? Color.accentColor : Color.clear)
+                    .frame(width: 22, height: 22)
+                if let pickIndex {
+                    Text("\(pickIndex)")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                }
+            }
+            Image(nsImage: RoomIconCache.icon(bundleID: offer.bundleID, name: offer.appName))
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 22, height: 22)
-            Text(app.name)
-                .font(.system(size: 13))
-                .foregroundColor(.white.opacity(0.88))
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(offer.title.isEmpty ? offer.appName : offer.title)
+                    .font(.system(size: 12.5))
+                    .foregroundColor(.white.opacity(0.88))
+                    .lineLimit(1)
+                if !offer.title.isEmpty {
+                    Text(offer.appName)
+                        .font(.system(size: 9.5))
+                        .foregroundColor(.white.opacity(0.4))
+                }
+            }
             Spacer()
-            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 15))
-                .foregroundColor(isSelected ? Color.accentColor : .white.opacity(0.3))
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
+                .fill(pickIndex != nil ? Color.accentColor.opacity(0.18) : Color.clear)
         )
         .contentShape(Rectangle())
         .onTapGesture(perform: onToggle)

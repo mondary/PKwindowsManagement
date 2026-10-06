@@ -275,23 +275,35 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Global ⌃⌥R shortcut for the Rooms switcher (fixed in v1; a configurable
-    /// shortcut can come later).
+    /// Global shortcuts for the Rooms switcher: ⌃⌥Space (primary, like the
+    /// upstream Rooms app's ⌥Space) and ⌃⌥R (fallback; ⌃⌥Space can conflict
+    /// with the system input-source switcher). A configurable shortcut can
+    /// come later.
     private func registerRoomsHotKey() {
         unregisterRoomsHotKey()
         ensureLaunchpadHotKeyHandler()
-        let hotKeyID = EventHotKeyID(signature: roomsHotKeySignature, id: 2)
-        let status = RegisterEventHotKey(
-            UInt32(kVK_ANSI_R),
+        let spaceStatus = RegisterEventHotKey(
+            UInt32(kVK_Space),
             UInt32(controlKey | optionKey),
-            hotKeyID,
+            EventHotKeyID(signature: roomsHotKeySignature, id: 3),
             GetEventDispatcherTarget(),
             0,
             &roomsHotKey
         )
-        if status != noErr {
+        if spaceStatus != noErr {
             roomsHotKey = nil
-            NSLog("PKwindowsManagement: failed to register rooms hotkey (%d)", status)
+            NSLog("PKwindowsManagement: failed to register rooms space hotkey (%d)", spaceStatus)
+        }
+        let rStatus = RegisterEventHotKey(
+            UInt32(kVK_ANSI_R),
+            UInt32(controlKey | optionKey),
+            EventHotKeyID(signature: roomsHotKeySignature, id: 2),
+            GetEventDispatcherTarget(),
+            0,
+            &roomsHotKey
+        )
+        if rStatus != noErr {
+            NSLog("PKwindowsManagement: failed to register rooms r hotkey (%d)", rStatus)
         }
     }
 
@@ -420,7 +432,7 @@ private func launchpadHotKeyCallback(
         switch (hotKeyID.signature, hotKeyID.id) {
         case (fourCharCode("PKLP"), 1):
             controller.handleLaunchpadHotKey()
-        case (fourCharCode("PKRM"), 2):
+        case (fourCharCode("PKRM"), 2), (fourCharCode("PKRM"), 3):
             RoomsOverlayController.shared.toggle()
         default:
             break

@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026.10.6] - 2026-10-06
+### Added
+- Granularité par fenêtre dans les rooms (comme l'app amont) : une room mémorise des fenêtres individuelles (bundle ID + titre de session + window ID), pas seulement des apps — 5 fenêtres VS Code = 5 slots avec leurs titres ; migration automatique des rooms v1 (apps → slots par app)
+- Sélecteur de fenêtres à la création : liste des fenêtres ouvertes (icône + titre + app), clic dans l'ordre pour numéroter (1 = place principale, re-clic pour retirer, re-clic pour remettre en fin), miniature du tiling en direct pendant la sélection
+- Matching à l'activation porté du SlotMatcher amont (MIT) : window ID → titre exact → titre similaire → autre fenêtre de l'app, en évitant les fenêtres claimées par d'autres rooms ; les fenêtres minimisées sont réveillées, un slot sans fenêtre laisse sa place vide
+- Hotkey ⌃⌥Space pour ouvrir la vue Rooms (⌃⌥R conservé en secours — ⌃⌥Space peut entrer en conflit avec le sélecteur de source de saisie système)
+### Fixed
+- Le champ de recherche/reçoit le focus clavier à l'ouverture du panneau et à l'entrée en mode création (plus besoin de cliquer avant de taper)
+
 ## [2026.10.5] - 2026-10-06
 ### Added
 - `src/script/dev_update.sh` : boucle de test « push → CI → je teste » — récupère la dernière build CI réussie d'une branche (`--branch`), l'installe dans `/Applications` en quittant poliment l'app si elle tourne, puis la relance (`--no-launch` pour s'abstenir) ; dépanne tant que les CommandLineTools seuls ne compilent pas SwiftUI

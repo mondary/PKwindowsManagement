@@ -270,3 +270,6 @@
 "No rooms yet. Create your first room from your running apps." = "Aucune room pour l'instant. Créez votre première room à partir de vos apps actives.";
 "↵ open · ⇥ change layout · ⌘⌫ delete" = "↵ ouvrir · ⇥ disposition · ⌘⌫ supprimer";
 "Create Room" = "Créer la room";
+"Click windows in order — 1 is the main spot" = "Clique les fenêtres dans l'ordre — 1 est la place principale";
+"%d window(s) selected" = "%d fenêtre(s) sélectionnée(s)";
+"No rooms yet. Create your first room from your open windows." = "Aucune room pour l'instant. Crée ta première room à partir de tes fenêtres ouvertes.";
