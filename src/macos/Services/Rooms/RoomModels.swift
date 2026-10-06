@@ -110,6 +110,16 @@ struct Room: Codable, Identifiable, Hashable {
         case createdAt
     }
 
+    /// `apps` is a read-only migration key: never written back.
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(windows, forKey: .windows)
+        try c.encode(layout, forKey: .layout)
+        try c.encode(createdAt, forKey: .createdAt)
+    }
+
     static func slug(_ s: String) -> String {
         RoomText.fold(s)
             .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
