@@ -81,25 +81,22 @@ struct AboutSettingsView: View {
                 .foregroundStyle(.secondary)
 
             HStack(alignment: .top, spacing: 0) {
-                versionColumn(title: localizedString("Latest stable"), value: updater.latestStableVersion ?? localizedString("Not published"), symbol: "checkmark.seal")
+                versionColumn(
+                    title: localizedString("Stable version"),
+                    value: updater.latestStableVersion ?? localizedString("Not published"),
+                    symbol: "checkmark.seal",
+                    isInstalled: !isDevBuild
+                )
                 Divider().frame(height: 42)
-                versionColumn(title: localizedString("Latest dev"), value: updater.latestDevVersion ?? localizedString("Not published"), symbol: "hammer")
+                versionColumn(
+                    title: localizedString("Dev version"),
+                    value: updater.latestDevVersion ?? localizedString("Not published"),
+                    symbol: "hammer",
+                    isInstalled: isDevBuild
+                )
             }
             .padding(.vertical, 12)
             .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.045)))
-
-            HStack(spacing: 8) {
-                Label(localizedString("Installed version"), systemImage: "checkmark.circle")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 12)
-                Text(installedVersionLabel)
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .help(installedVersionLabel)
-            }
-            .padding(.horizontal, 8)
 
             Button {
                 updater.refreshAvailableVersions()
@@ -114,7 +111,7 @@ struct AboutSettingsView: View {
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.08), lineWidth: 1))
     }
 
-    private func versionColumn(title: String, value: String, symbol: String) -> some View {
+    private func versionColumn(title: String, value: String, symbol: String, isInstalled: Bool) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Label(title, systemImage: symbol)
                 .font(.caption)
@@ -125,14 +122,19 @@ struct AboutSettingsView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
                 .help(value)
+            if isInstalled {
+                Label(localizedString("Installed version"), systemImage: "checkmark.circle.fill")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.green)
+                    .padding(.top, 2)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 8)
     }
 
-    private var installedVersionLabel: String {
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
-        return build != appVersion ? "v\(appVersion) (\(build))" : "v\(appVersion)"
+    private var isDevBuild: Bool {
+        appVersion.localizedCaseInsensitiveContains("-dev")
     }
 
     private var appIconLarge: some View {

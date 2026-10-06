@@ -33,6 +33,8 @@
 "Every push on main, installed silently." = "Every push on main, installed silently.";
 "Installed" = "Installed";
 "Installed version" = "Installed version";
+"Stable version" = "Stable version";
+"Dev version" = "Dev version";
 "Latest stable" = "Latest stable";
 "Latest dev" = "Latest dev";
 "Not published" = "Not published";

@@ -283,6 +283,8 @@
 "Every push on main, installed silently." = "Chaque push sur main, installé silencieusement.";
 "Installed" = "Installée";
 "Installed version" = "Version installée";
+"Stable version" = "Version stable";
+"Dev version" = "Version dev";
 "Latest stable" = "Dernière stable";
 "Latest dev" = "Dernière dev";
 "Not published" = "Non publiée";

@@ -282,6 +282,8 @@
 "Every push on main, installed silently." = "Jeder Push auf main, still installiert.";
 "Installed" = "Installiert";
 "Installed version" = "Installierte Version";
+"Stable version" = "Stabile Version";
+"Dev version" = "Dev-Version";
 "Latest stable" = "Neueste stabile";
 "Latest dev" = "Neueste Dev";
 "Not published" = "Nicht veröffentlicht";
