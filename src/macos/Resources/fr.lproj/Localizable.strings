@@ -291,6 +291,17 @@
 "You are using %1$@. Install %2$@ from the %3$@ channel?" = "Vous utilisez %1$@. Installer %2$@ du canal %3$@ ?";
 "Installing update…" = "Installation de la mise à jour…";
 "Install failed: %@" = "Échec de l'installation : %@";
+"Project Library" = "Project Library";
+"Search settings" = "Rechercher";
+"App" = "App";
+"Features" = "Fonctionnalités";
+"PK Projects" = "Projets PK";
+"Window management" = "Gestion des fenêtres";
+"Settings" = "Réglages";
+"More projects" = "Plus de projets";
+"Discover the other tools and projects I build." = "Découvre les autres outils et projets que je construis.";
+"View all repositories on GitHub" = "Voir tous les dépôts sur GitHub";
+"Star on GitHub" = "Étoiler sur GitHub";
 "Latest stable" = "Dernière stable";
 "Latest dev" = "Dernière dev";
 "Not published" = "Non publiée";

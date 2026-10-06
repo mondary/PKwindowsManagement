@@ -41,6 +41,17 @@
 "You are using %1$@. Install %2$@ from the %3$@ channel?" = "You are using %1$@. Install %2$@ from the %3$@ channel?";
 "Installing update…" = "Installing update…";
 "Install failed: %@" = "Install failed: %@";
+"Project Library" = "Project Library";
+"Search settings" = "Search settings";
+"App" = "App";
+"Features" = "Features";
+"PK Projects" = "PK Projects";
+"Window management" = "Window management";
+"Settings" = "Settings";
+"More projects" = "More projects";
+"Discover the other tools and projects I build." = "Discover the other tools and projects I build.";
+"View all repositories on GitHub" = "View all repositories on GitHub";
+"Star on GitHub" = "Star on GitHub";
 "Latest stable" = "Latest stable";
 "Latest dev" = "Latest dev";
 "Not published" = "Not published";

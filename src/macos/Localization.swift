@@ -20,6 +20,16 @@ enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    var flagEmoji: String {
+        switch self {
+        case .system: "🌐"
+        case .french: "🇫🇷"
+        case .english: "🇬🇧"
+        case .spanish: "🇪🇸"
+        case .german: "🇩🇪"
+        }
+    }
+
     var resolvedCode: String {
         guard self == .system else { return rawValue }
         let preferred = Locale.preferredLanguages.first ?? "en"

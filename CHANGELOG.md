@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.10.21] - 2026-10-06
+### Added
+- Barre latérale refaite sur le modèle de PK Monitor : recherche dans les réglages, sections groupées (App / Fonctionnalités / Projets PK), en-tête avec icône et version en pied, drapeaux FR/EN/ES/DE de changement de langue immédiat en bas de la barre
+- Section « Project Library » (ex-Store) sur le modèle de PK Monitor : carte vedette, grille des projets PK avec vraies icônes, captures et teintes, lien GitHub
+### Changed
+- « Apparence » déplacée juste après « Launchpad » dont elle configure l'apparence
+
 ## [2026.10.20] - 2026-10-06
 ### Added
 - Changement de canal réel : lorsqu'une recherche manuelle ne trouve rien de plus récent mais que le canal choisi publie une version différente (par ex. retour d'un build Dev vers la dernière Stable), l'app propose de l'installer — téléchargement, remplacement du bundle et relance, même vers une version plus ancienne

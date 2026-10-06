@@ -23,6 +23,11 @@ let package = Package(
                 .product(name: "Sparkle", package: "Sparkle")
             ],
             path: "src/macos",
+            exclude: [
+                // Copied verbatim into the app bundle by src/script/package_app.sh.
+                "Resources/ProjectIcons",
+                "Resources/ProjectScreenshots"
+            ],
             resources: [.process("Resources")]
         )
     ]
