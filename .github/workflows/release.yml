@@ -133,5 +133,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add appcast.xml
           git commit -m "MAJ: appcast stable ${{ steps.version.outputs.version }} [skip ci]" || exit 0
-          git pull --rebase origin main
+          git stash push -m "CI generated build state before appcast rebase" || true
+          git fetch origin main
+          git rebase origin/main
           git push origin main
