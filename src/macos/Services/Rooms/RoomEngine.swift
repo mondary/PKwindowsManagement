@@ -187,22 +187,22 @@ final class RoomEngine {
         return array.map { $0 as! AXUIElement }
     }
 
-    private func attribute(_ attribute: CFString, on element: AXUIElement) -> AnyObject? {
+    private func rawAttribute(_ attribute: CFString, on element: AXUIElement) -> AnyObject? {
         var value: AnyObject?
         guard AXUIElementCopyAttributeValue(element, attribute, &value) == .success else { return nil }
         return value
     }
 
     private func stringAttribute(_ attribute: CFString, on element: AXUIElement) -> String? {
-        attribute(attribute, on: element) as? String
+        rawAttribute(attribute, on: element) as? String
     }
 
     private func boolAttribute(_ attribute: CFString, on element: AXUIElement) -> Bool? {
-        attribute(attribute, on: element) as? Bool
+        rawAttribute(attribute, on: element) as? Bool
     }
 
     private func pointAttribute(_ attribute: CFString, on element: AXUIElement) -> CGPoint? {
-        guard let axValue = attribute(attribute, on: element),
+        guard let axValue = rawAttribute(attribute, on: element),
               CFGetTypeID(axValue) == AXValueGetTypeID()
         else { return nil }
         var point = CGPoint.zero
@@ -211,7 +211,7 @@ final class RoomEngine {
     }
 
     private func sizeAttribute(_ attribute: CFString, on element: AXUIElement) -> CGSize? {
-        guard let axValue = attribute(attribute, on: element),
+        guard let axValue = rawAttribute(attribute, on: element),
               CFGetTypeID(axValue) == AXValueGetTypeID()
         else { return nil }
         var size = CGSize.zero
@@ -254,7 +254,7 @@ final class RoomEngine {
     private func setFrame(_ frame: CGRect, for window: AXUIElement, on appElement: AXUIElement) {
         let enhancedKey = "AXEnhancedUserInterface" as CFString
         var enhancedWasOn = false
-        if let previous = attribute(enhancedKey, on: appElement) as? Bool, previous {
+        if let previous = rawAttribute(enhancedKey, on: appElement) as? Bool, previous {
             enhancedWasOn = true
             AXUIElementSetAttributeValue(appElement, enhancedKey, kCFBooleanFalse)
         }
