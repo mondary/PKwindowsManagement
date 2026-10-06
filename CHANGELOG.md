@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.12] - 2026-10-06
+### Fixed
+- Le workflow Dev met de côté l’état SwiftPM généré avant de rebaser et pousser l’appcast, afin que les changements de build ne bloquent plus la publication du feed.
+
 ## [2026.10.11] - 2026-10-06
 ### Fixed
 - Sparkle Dev et Stable signent les archives avec la clé privée EdDSA injectée par GitHub Actions ; auparavant le secret n’était pas transmis à `sign_update`.

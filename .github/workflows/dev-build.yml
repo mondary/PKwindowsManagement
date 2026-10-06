@@ -127,5 +127,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add appcast-dev.xml
           git commit -m "MAJ: appcast dev ${{ steps.version.outputs.epoch }} [skip ci]" || exit 0
-          git pull --rebase origin main
+          # SwiftPM may rewrite tracked build state (notably Package.resolved).
+          # The appcast commit is already saved; stash generated tracked changes
+          # before rebasing the feed commit onto a concurrently updated main.
+          git stash push -m "CI generated build state before appcast rebase" || true
+          git fetch origin main
+          git rebase origin/main
           git push origin main
