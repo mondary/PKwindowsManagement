@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026.10.9] - 2026-10-06
+### Changed
+- Signatures de build CI cohérentes avec le certificat Apple Development local : certificat chiffré dans GitHub Secrets, importé dans les workflows build/dev/release ; Sparkle.framework et l'app sont signés avec la même identité (permet à macOS/TCC de reconnaître l'app entre mises à jour, après une réautorisation unique lors du changement d'identité)
+- Section « Mises à jour » de Général réorganisée sur plusieurs lignes : sélecteur de canal séparé des détails, colonnes « Installée / Dernière stable / Dernière dev » alimentées depuis les appcasts, bouton de vérification distinct
+
+## [2026.10.8] - 2026-10-06
+### Fixed
+- L'app compilée avec Sparkle ne lançait pas (« dyld: Library not loaded @rpath/Sparkle.framework ») : `package_app.sh` embarque désormais `Sparkle.framework` (artifact SPM universel) dans `Contents/Frameworks`, ajoute le rpath `@executable_path/../Frameworks` au binaire et signe le framework avant l'app
+
 ## [2026.10.7] - 2026-10-06
 ### Added
 - Mises à jour automatiques Sparkle 2 (dépendance SPM, variante statique) : section « Mises à jour » dans Général avec choix du canal **Stable / Dev** et bouton « Rechercher les mises à jour… » ; item de menu équivalent dans la barre de menu ; le canal dev s'installe silencieusement, le canal stable demande confirmation

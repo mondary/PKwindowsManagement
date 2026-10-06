@@ -52,6 +52,21 @@ mkdir -p "$APP_DIR/Contents/MacOS" "$RESOURCES_DIR"
 cp "$ROOT_DIR/.build/$BUILD_CONFIGURATION/$PRODUCT_NAME" "$EXECUTABLE"
 chmod +x "$EXECUTABLE"
 
+# Sparkle (SPM binary target) links as @rpath/Sparkle.framework: embed the
+# framework in the bundle and point the executable's rpath at it, or dyld
+# fails with "Library not loaded" at launch.
+SPARKLE_FRAMEWORK="$(find "$ROOT_DIR/.build/artifacts" -type d -name "Sparkle.framework" -path "*macos*" | head -1)"
+if [[ -n "$SPARKLE_FRAMEWORK" ]]; then
+  mkdir -p "$APP_DIR/Contents/Frameworks"
+  cp -R "$SPARKLE_FRAMEWORK" "$APP_DIR/Contents/Frameworks/"
+  if ! otool -l "$EXECUTABLE" | grep -A2 LC_RPATH | grep -q "@executable_path/../Frameworks"; then
+    install_name_tool -add_rpath "@executable_path/../Frameworks" "$EXECUTABLE"
+  fi
+else
+  echo "Sparkle.framework not found in .build/artifacts — the app will not launch." >&2
+  exit 1
+fi
+
 # SwiftPM keeps localized resources in a generated bundle. Copy the language
 # folders into the app resources as well so SwiftUI and AppKit both resolve them.
 RESOURCE_BUNDLE="$ROOT_DIR/.build/$BUILD_CONFIGURATION/PKwindowsManagement_PKwindowsManagement.bundle"
@@ -116,10 +131,17 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
 </plist>
 EOF
 
-# Signature stable : préférez une identité développeur (TCC/accessibilité
-# persiste entre les rebuilds), sinon repli ad-hoc avec identifiant stable.
+# Signature stable : la CI importe le même certificat Apple Development que le
+# build local. TCC (Accessibilité) identifie l'app via cette identité ; le repli
+# ad-hoc n'est réservé qu'aux environnements sans certificat configuré.
+# Le framework embarqué est signé d'abord, puis l'app.
 SIGN_IDENTITY="${SIGN_IDENTITY:-Apple Development: cleeement@gmail.com (8CZKU67BTY)}"
 BUNDLE_ID="com.mondary.PKwindowsManagement"
+if [[ -d "$APP_DIR/Contents/Frameworks/Sparkle.framework" ]]; then
+  if ! codesign --force --sign "$SIGN_IDENTITY" --identifier "org.sparkle-project.Sparkle" "$APP_DIR/Contents/Frameworks/Sparkle.framework" 2>/dev/null; then
+    codesign --force --sign - --identifier "org.sparkle-project.Sparkle" "$APP_DIR/Contents/Frameworks/Sparkle.framework" 2>/dev/null || true
+  fi
+fi
 if ! codesign --force --sign "$SIGN_IDENTITY" --identifier "$BUNDLE_ID" "$APP_DIR" 2>/dev/null; then
   codesign --force --sign - --identifier "$BUNDLE_ID" "$APP_DIR" 2>/dev/null || true
 fi

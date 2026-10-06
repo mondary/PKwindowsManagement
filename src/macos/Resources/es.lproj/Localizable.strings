@@ -280,3 +280,7 @@
 "Dev" = "Dev";
 "Versioned releases only, tested." = "Solo versiones numeradas, probadas.";
 "Every push on main, installed silently." = "Cada push en main, instalado en silencio.";
+"Installed" = "Instalada";
+"Latest stable" = "Última estable";
+"Latest dev" = "Última dev";
+"Not published" = "No publicada";

@@ -1,4 +1,5 @@
 import Foundation
+import FoundationXML
 import Sparkle
 
 /// Sparkle auto-updates with two channels (pattern proven in Macos_PKmonitor):
@@ -8,7 +9,7 @@ import Sparkle
 /// The feed URL must come from the updater delegate (SPUUpdater.feedURL is
 /// read-only), so a small dedicated object provides it from the shared
 /// `updateChannel` preference.
-final class UpdaterManager {
+final class UpdaterManager: ObservableObject {
     static let shared = UpdaterManager()
 
     static let channelKey = "updateChannel"
@@ -17,6 +18,8 @@ final class UpdaterManager {
 
     private let feedProvider = ChannelFeedProvider()
     private var controller: SPUStandardUpdaterController?
+    @Published private(set) var latestStableVersion: String?
+    @Published private(set) var latestDevVersion: String?
 
     var channel: UpdateChannel {
         get {
@@ -44,9 +47,64 @@ final class UpdaterManager {
         controller?.checkForUpdates(nil)
     }
 
+    func refreshAvailableVersions() {
+        Task {
+            async let stable = Self.latestVersion(at: Self.stableFeedURL)
+            async let dev = Self.latestVersion(at: Self.devFeedURL)
+            let versions = await (stable, dev)
+            await MainActor.run {
+                self.latestStableVersion = versions.0
+                self.latestDevVersion = versions.1
+            }
+        }
+    }
+
+    private static func latestVersion(at address: String) async -> String? {
+        guard let url = URL(string: address),
+              let (data, response) = try? await URLSession.shared.data(from: url),
+              (response as? HTTPURLResponse)?.statusCode == 200
+        else { return nil }
+        let parser = AppcastVersionParser()
+        let xml = XMLParser(data: data)
+        xml.delegate = parser
+        guard xml.parse() else { return nil }
+        return parser.version
+    }
+
     /// Dev builds install silently; stable builds ask first.
     private func applyChannelBehavior() {
         controller?.updater.automaticallyDownloadsUpdates = (channel == .dev)
+    }
+}
+
+private final class AppcastVersionParser: NSObject, XMLParserDelegate {
+    private var insideShortVersion = false
+    private var insideSparkleVersion = false
+    private var currentText = ""
+    private(set) var version: String?
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+        if elementName == "sparkle:shortVersionString" || qName == "sparkle:shortVersionString" {
+            insideShortVersion = true
+            currentText = ""
+        } else if elementName == "sparkle:version" || qName == "sparkle:version" {
+            insideSparkleVersion = true
+            currentText = ""
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        if insideShortVersion || insideSparkleVersion { currentText += string }
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        if insideShortVersion && (elementName == "sparkle:shortVersionString" || qName == "sparkle:shortVersionString") {
+            version = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+            insideShortVersion = false
+        } else if insideSparkleVersion && (elementName == "sparkle:version" || qName == "sparkle:version") {
+            if version == nil { version = currentText.trimmingCharacters(in: .whitespacesAndNewlines) }
+            insideSparkleVersion = false
+        }
     }
 }
 

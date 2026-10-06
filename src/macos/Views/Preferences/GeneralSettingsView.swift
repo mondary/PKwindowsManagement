@@ -2,6 +2,7 @@ import SwiftUI
 
 struct GeneralSettingsView: View {
     @ObservedObject var settings: AppSettings
+    @ObservedObject private var updater = UpdaterManager.shared
     @State private var backupMessage: String?
     @State private var accessibilityGranted = AXIsProcessTrusted()
     private let statusTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -54,34 +55,59 @@ struct GeneralSettingsView: View {
             Text(localizedString("Updates"))
                 .font(.headline)
 
-            HStack(spacing: 12) {
-                Picker(localizedString("Update channel"), selection: updateChannelBinding) {
-                    ForEach(UpdateChannel.allCases) { channel in
-                        Text(channel.title).tag(channel)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Text(localizedString("Update channel"))
+                        .font(.subheadline.weight(.medium))
+                    Picker(localizedString("Update channel"), selection: updateChannelBinding) {
+                        ForEach(UpdateChannel.allCases) { channel in
+                            Text(channel.title).tag(channel)
+                        }
                     }
+                    .pickerStyle(.segmented)
+                    .frame(width: 220)
+                    Spacer(minLength: 0)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 200)
+                Text(updateChannelBinding.wrappedValue.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, -6)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(selectedChannelDetail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(installedVersionLabel)
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(.tertiary)
+                HStack(alignment: .top, spacing: 0) {
+                    versionColumn(title: localizedString("Installed"), value: installedVersionLabel, symbol: "checkmark.circle")
+                    Divider().frame(height: 42)
+                    versionColumn(title: localizedString("Latest stable"), value: updater.latestStableVersion ?? localizedString("Not published"), symbol: "checkmark.seal")
+                    Divider().frame(height: 42)
+                    versionColumn(title: localizedString("Latest dev"), value: updater.latestDevVersion ?? localizedString("Not published"), symbol: "hammer")
                 }
-
-                Spacer()
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.045)))
 
                 Button {
                     UpdaterManager.shared.checkForUpdates()
                 } label: {
                     Label(localizedString("Check for Updates…"), systemImage: "arrow.triangle.2.circlepath")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
             }
+            .onAppear { updater.refreshAvailableVersions() }
         }
+    }
+
+    private func versionColumn(title: String, value: String, symbol: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Label(title, systemImage: symbol)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Text(value)
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .help(value)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
     }
 
     private var updateChannelBinding: Binding<UpdateChannel> {
@@ -89,10 +115,6 @@ struct GeneralSettingsView: View {
             get: { UpdaterManager.shared.channel },
             set: { UpdaterManager.shared.channel = $0 }
         )
-    }
-
-    private var selectedChannelDetail: String {
-        updateChannelBinding.wrappedValue.detail
     }
 
     private var installedVersionLabel: String {
