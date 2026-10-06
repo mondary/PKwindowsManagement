@@ -1,11 +1,12 @@
 name: Dev build + appcast
 
-# Every push on main produces a dev build: the zip replaces the asset of the
-# permanent "dev" release and appcast-dev.xml is regenerated (single item) and
-# committed. The app's dev channel installs it silently.
+# Every push on any working branch publishes THE dev build: the zip replaces
+# the asset of the permanent "dev" release and appcast-dev.xml is regenerated
+# (single item) and committed to main. The app's dev channel updates from it.
+# Stable is published separately, only when a v* tag validates a version.
 on:
   push:
-    branches: [main]
+    branches: ['**']
     paths:
       - 'src/macos/**'
       - 'src/script/package_app.sh'
@@ -122,15 +123,15 @@ jobs:
           gh release upload dev PKwindowsManagement-dev.zip --clobber
 
       - name: Commit appcast-dev.xml
+        # Commit only the feed file on top of main (worktree), whatever the
+        # branch the build ran on — never pushes branch commits to main.
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git worktree add "$RUNNER_TEMP/mainwt" -b appcast-commit origin/main
+          cp appcast-dev.xml "$RUNNER_TEMP/mainwt/appcast-dev.xml"
+          cd "$RUNNER_TEMP/mainwt"
           git add appcast-dev.xml
           git commit -m "MAJ: appcast dev ${{ steps.version.outputs.epoch }} [skip ci]" || exit 0
-          # SwiftPM may rewrite tracked build state (notably Package.resolved).
-          # The appcast commit is already saved; stash generated tracked changes
-          # before rebasing the feed commit onto a concurrently updated main.
-          git stash push -m "CI generated build state before appcast rebase" || true
-          git fetch origin main
-          git rebase origin/main
-          git push origin main
+          git push origin appcast-commit:main

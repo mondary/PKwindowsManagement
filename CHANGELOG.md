@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.10.19] - 2026-10-06
+### Changed
+- Un seul canal de build : chaque push (branche de travail ou main) publie directement un build Dev signé sur le feed, mis à jour depuis l'app elle-même ; suppression de la voie de test par artifact séparée
+- La Stable reste publiée uniquement au tag de validation ; dev_update.sh installe désormais le zip du canal Dev publié
+
 ## [2026.10.18] - 2026-10-06
 ### Changed
 - Les builds de test CI sont des builds Dev à part entière : version affichée « 2026.10.18-dev » (numéro technique chronologique conservé pour Sparkle), repère « Version installée » sous le canal Dev ; une version ne devient Stable qu'au moment du tag de publication
