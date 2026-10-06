@@ -281,6 +281,7 @@
 "Versioned releases only, tested." = "Nur nummerierte Releases, getestet.";
 "Every push on main, installed silently." = "Jeder Push auf main, still installiert.";
 "Installed" = "Installiert";
+"Installed version" = "Installierte Version";
 "Latest stable" = "Neueste stabile";
 "Latest dev" = "Neueste Dev";
 "Not published" = "Nicht veröffentlicht";

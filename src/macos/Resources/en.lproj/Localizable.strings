@@ -32,6 +32,7 @@
 "Versioned releases only, tested." = "Versioned releases only, tested.";
 "Every push on main, installed silently." = "Every push on main, installed silently.";
 "Installed" = "Installed";
+"Installed version" = "Installed version";
 "Latest stable" = "Latest stable";
 "Latest dev" = "Latest dev";
 "Not published" = "Not published";
