@@ -35,7 +35,7 @@ fi
 if [[ "${PK_DEV_BUILD:-0}" == "1" ]]; then
   EPOCH="$(date +%s)"
   BUNDLE_VERSION="$EPOCH"
-  SHORT_VERSION="$VERSION-dev.$(echo "$EPOCH" | tail -c 5)"
+  SHORT_VERSION="$VERSION-dev"
 else
   BUNDLE_VERSION="${PK_BUNDLE_VERSION:-$(date +%s)}"
   SHORT_VERSION="$VERSION"

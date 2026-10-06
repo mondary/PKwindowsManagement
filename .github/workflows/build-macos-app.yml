@@ -39,7 +39,8 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN_PATH"
           rm -f "$RUNNER_TEMP/developer-cert.p12"
       - name: Build app bundle
-        run: src/script/package_app.sh release
+        # Test builds are dev builds: same code, labeled -dev.
+        run: PK_DEV_BUILD=1 src/script/package_app.sh release
       - name: Archive app bundle
         run: ditto -c -k --sequesterRsrc --keepParent build/PKwindowsManagement.app PKwindowsManagement.app.zip
       - uses: actions/upload-artifact@v4

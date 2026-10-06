@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.18] - 2026-10-06
+### Changed
+- Les builds de test CI sont des builds Dev à part entière : version affichée « 2026.10.18-dev » (numéro technique chronologique conservé pour Sparkle), repère « Version installée » sous le canal Dev ; une version ne devient Stable qu'au moment du tag de publication
+
 ## [2026.10.17] - 2026-10-06
 ### Fixed
 - Le repère « Version installée » n'est affiché que sous le canal dont la version publiée correspond exactement à la version installée ; un build de test plus récent n'est plus présenté à tort comme Stable
