@@ -3,13 +3,11 @@ name: Build macOS app
 on:
   push:
     branches:
-      - main
       - 'codex/**'
     paths:
       - 'src/macos/**'
       - 'src/script/package_app.sh'
       - 'Package.swift'
-      - 'VERSION'
       - '.github/workflows/build-macos-app.yml'
   workflow_dispatch:
 
@@ -25,6 +23,21 @@ jobs:
         run: |
           xcode-select -p
           swift --version
+      - name: Import signing certificate
+        env:
+          CERT_P12: ${{ secrets.APPLE_DEVELOPMENT_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPMENT_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/developer-cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$RUNNER_TEMP/developer-cert.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          rm -f "$RUNNER_TEMP/developer-cert.p12"
       - name: Build app bundle
         run: src/script/package_app.sh release
       - name: Archive app bundle

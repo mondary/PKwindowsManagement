@@ -254,3 +254,33 @@
 "Source code and releases" = "Quellcode und Versionen";
 "Report an Issue" = "Problem melden";
 "Bugs, feature requests, feedback" = "Fehler, Vorschläge, Feedback";
+
+/* Rooms */
+"Open Rooms" = "Rooms öffnen";
+"Auto" = "Automatisch";
+"Focus" = "Fokus";
+"Grid" = "Raster";
+"Stack" = "Stapel";
+"Search or create a room…" = "Room suchen oder erstellen…";
+"New Room" = "Neue Room";
+"Room name" = "Room-Name";
+"Running apps" = "Aktive Apps";
+"%d app(s) selected" = "%d App(s) ausgewählt";
+"No rooms yet. Create your first room from your running apps." = "Noch keine Rooms. Erstelle deine erste Room aus deinen aktiven Apps.";
+"↵ open · ⇥ change layout · ⌘⌫ delete" = "↵ öffnen · ⇥ Anordnung · ⌘⌫ löschen";
+"Create Room" = "Room erstellen";
+"Click windows in order — 1 is the main spot" = "Klicke die Fenster in Reihenfolge — 1 ist der Hauptplatz";
+"%d window(s) selected" = "%d Fenster ausgewählt";
+"No rooms yet. Create your first room from your open windows." = "Noch keine Rooms. Erstelle deine erste Room aus deinen offenen Fenstern.";
+"Support" = "Unterstützen";
+"Updates" = "Aktualisierungen";
+"Update channel" = "Update-Kanal";
+"Check for Updates…" = "Nach Updates suchen…";
+"Stable" = "Stabil";
+"Dev" = "Dev";
+"Versioned releases only, tested." = "Nur nummerierte Releases, getestet.";
+"Every push on main, installed silently." = "Jeder Push auf main, still installiert.";
+"Installed" = "Installiert";
+"Latest stable" = "Neueste stabile";
+"Latest dev" = "Neueste Dev";
+"Not published" = "Nicht veröffentlicht";

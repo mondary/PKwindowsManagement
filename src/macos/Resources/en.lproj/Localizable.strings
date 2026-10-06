@@ -5,3 +5,33 @@
 /* Support */
 "Support on Ko-fi" = "Support on Ko-fi";
 "Donate" = "Support on Ko-fi";
+
+/* Rooms */
+"Open Rooms" = "Open Rooms";
+"Auto" = "Auto";
+"Focus" = "Focus";
+"Grid" = "Grid";
+"Stack" = "Stack";
+"Search or create a room…" = "Search or create a room…";
+"New Room" = "New Room";
+"Room name" = "Room name";
+"Running apps" = "Running apps";
+"%d app(s) selected" = "%d app(s) selected";
+"No rooms yet. Create your first room from your running apps." = "No rooms yet. Create your first room from your running apps.";
+"↵ open · ⇥ change layout · ⌘⌫ delete" = "↵ open · ⇥ change layout · ⌘⌫ delete";
+"Create Room" = "Create Room";
+"Click windows in order — 1 is the main spot" = "Click windows in order — 1 is the main spot";
+"%d window(s) selected" = "%d window(s) selected";
+"No rooms yet. Create your first room from your open windows." = "No rooms yet. Create your first room from your open windows.";
+"Support" = "Support";
+"Updates" = "Updates";
+"Update channel" = "Update channel";
+"Check for Updates…" = "Check for Updates…";
+"Stable" = "Stable";
+"Dev" = "Dev";
+"Versioned releases only, tested." = "Versioned releases only, tested.";
+"Every push on main, installed silently." = "Every push on main, installed silently.";
+"Installed" = "Installed";
+"Latest stable" = "Latest stable";
+"Latest dev" = "Latest dev";
+"Not published" = "Not published";

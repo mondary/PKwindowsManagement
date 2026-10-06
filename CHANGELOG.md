@@ -1,5 +1,72 @@
 # Changelog
 
+## [2026.10.11] - 2026-10-06
+### Fixed
+- Sparkle Dev et Stable signent les archives avec la clé privée EdDSA injectée par GitHub Actions ; auparavant le secret n’était pas transmis à `sign_update`.
+
+## [2026.10.10] - 2026-10-06
+### Changed
+- L’écran À propos affiche les versions installée, stable et dev, permet de choisir le canal de mise à jour et de lancer une vérification Sparkle.
+
+## [2026.10.9] - 2026-10-06
+### Changed
+- Signatures de build CI cohérentes avec le certificat Apple Development local : certificat chiffré dans GitHub Secrets, importé dans les workflows build/dev/release ; Sparkle.framework et l'app sont signés avec la même identité (permet à macOS/TCC de reconnaître l'app entre mises à jour, après une réautorisation unique lors du changement d'identité)
+- Section « Mises à jour » de Général réorganisée sur plusieurs lignes : sélecteur de canal séparé des détails, colonnes « Installée / Dernière stable / Dernière dev » alimentées depuis les appcasts, bouton de vérification distinct
+
+## [2026.10.8] - 2026-10-06
+### Fixed
+- L'app compilée avec Sparkle ne lançait pas (« dyld: Library not loaded @rpath/Sparkle.framework ») : `package_app.sh` embarque désormais `Sparkle.framework` (artifact SPM universel) dans `Contents/Frameworks`, ajoute le rpath `@executable_path/../Frameworks` au binaire et signe le framework avant l'app
+
+## [2026.10.7] - 2026-10-06
+### Added
+- Mises à jour automatiques Sparkle 2 (dépendance SPM, variante statique) : section « Mises à jour » dans Général avec choix du canal **Stable / Dev** et bouton « Rechercher les mises à jour… » ; item de menu équivalent dans la barre de menu ; le canal dev s'installe silencieusement, le canal stable demande confirmation
+- Pipeline de distribution : workflow `dev-build.yml` (chaque push sur main → build dev versionné epoch → zip signé EdDSA → release permanente `dev` → `appcast-dev.xml` régénéré) et `release.yml` (tag `v*` → DMG + zip Sparkle → `appcast.xml` → GitHub Release) ; clé EdDSA existante du trousseau partagée, clé privée en secret GitHub `SPARKLE_PRIVATE_KEY`
+- `package_app.sh` : clés `SUFeedURL`/`SUPublicEDKey`/`SUEnableAutomaticChecks` dans l'Info.plist et support `PK_DEV_BUILD=1` (CFBundleVersion = epoch toujours croissant)
+### Changed
+- Onglet des réglages « Support » renommé « Soutenir » (FR, + ES/DE) et déplacé entre « Store » et « À propos »
+- Workflow `build-macos-app.yml` limité aux branches `codex/**` (plus de double build sur main, `dev-build.yml` s'en charge)
+### Fixed
+- Panneaux Scripts/URLs : en fenêtre réduite, le panneau gauche à largeur fixe écrasait l'éditeur — sa largeur est désormais plafonnée à 50 % de l'espace disponible
+- Le raccourci ⌃⌥Space des Rooms est retiré (conflit avec le raccourci d'écran de l'utilisateur) : ⌃⌥R redevient l'unique raccourci
+
+## [2026.10.6] - 2026-10-06
+### Added
+- Granularité par fenêtre dans les rooms (comme l'app amont) : une room mémorise des fenêtres individuelles (bundle ID + titre de session + window ID), pas seulement des apps — 5 fenêtres VS Code = 5 slots avec leurs titres ; migration automatique des rooms v1 (apps → slots par app)
+- Sélecteur de fenêtres à la création : liste des fenêtres ouvertes (icône + titre + app), clic dans l'ordre pour numéroter (1 = place principale, re-clic pour retirer, re-clic pour remettre en fin), miniature du tiling en direct pendant la sélection
+- Matching à l'activation porté du SlotMatcher amont (MIT) : window ID → titre exact → titre similaire → autre fenêtre de l'app, en évitant les fenêtres claimées par d'autres rooms ; les fenêtres minimisées sont réveillées, un slot sans fenêtre laisse sa place vide
+- Hotkey ⌃⌥Space pour ouvrir la vue Rooms (⌃⌥R conservé en secours — ⌃⌥Space peut entrer en conflit avec le sélecteur de source de saisie système)
+### Fixed
+- Le champ de recherche/reçoit le focus clavier à l'ouverture du panneau et à l'entrée en mode création (plus besoin de cliquer avant de taper)
+
+## [2026.10.5] - 2026-10-06
+### Added
+- `src/script/dev_update.sh` : boucle de test « push → CI → je teste » — récupère la dernière build CI réussie d'une branche (`--branch`), l'installe dans `/Applications` en quittant poliment l'app si elle tourne, puis la relance (`--no-launch` pour s'abstenir) ; dépanne tant que les CommandLineTools seuls ne compilent pas SwiftUI
+
+## [2026.10.4] - 2026-10-06
+### Changed
+- `TODO.md` : section Rooms mise à jour après la v1 du switcher (moteur de layouts et vue livrés, restent raccourcis directs ⌃⌥1-9, matching fenêtre à fenêtre, park & registre, prototype Space/wallpaper)
+
+## [2026.10.3] - 2026-10-06
+### Added
+- Vue « Rooms » façon Spotlight (⌃⌥R ou menu barre) : rooms = ensembles d'applications nommées avec disposition, persistées dans `~/Library/Application Support/PKwindowsManagement/rooms.json`
+- Miniature vivante de la composition du tiling sur chaque ligne de room : une tuile par app (icône + numéro, 1 = principale), dimensionnée par le même moteur de géométrie que l'arrangement réel ; Tab/⇧Tab fait défiler les layouts (Auto/Focus/Colonnes/Grille/Pile) et la miniature s'anime
+- Activation d'une room (Entrée ou clic) : lance les apps manquantes en arrière-plan, attend leurs fenêtres (max 4 s), tuile toutes leurs fenêtres sur l'écran courant, puis atterrit sur la première app ; rien n'est masqué, fermé ou parqué en v1
+- Création de room depuis les apps actives (nom + sélection), suppression par ⌘⌫, recherche par nom insensible à la casse et aux accents
+- Moteur de layouts `RoomTiler` porté et simplifié depuis Rooms (saragordic/rooms, MIT) : Auto résout contre l'écran réel, fallback Pile
+- Chaînes localisées FR/EN/ES/DE pour la vue Rooms
+### Fixed
+- `package_app.sh` lit la version dans `CHANGELOG.md` (le fichier `VERSION` supprimé en 2026.09.13 cassait le build en CI)
+
+## [2026.10.2] - 2026-10-06
+### Changed
+- `docs/rooms-gap-analysis.md` corrigé après lecture du code : le cycle ½→⅔→⅓ existe déjà chez nous (`WindowSnapService.cycleFrame`, version plus robuste que Rooms) — ligne déplacée en équivalence et retirée des quick wins ; détail du lancement des apps manquantes enrichi (démarrage en arrière-plan + attente jusqu'à 4 s des fenêtres avec replanification, slot repris par une autre fenêtre de l'app si la sauvegardée est fermée)
+
+## [2026.10.1] - 2026-10-06
+### Added
+- Copie locale d'archivage de l'app Rooms (upstream saragordic/rooms, licence MIT) dans `vendors/rooms` avec fichier de provenance `vendors/README.md` : référence conservée au cas où l'amont disparaîtrait
+- `docs/rooms-gap-analysis.md` : analyse comparative PKwindowsManagement ↔ Rooms (features en plus dans chaque sens, équivalences, quick wins d'intégration priorisés, piste rooms ↔ Space macOS + wallpaper dédié)
+- Section « Rooms » dans `TODO.md` avec les chantiers d'intégration
+
 ## [2026.09.13] - 2026-10-01
 ### Changed
 - Structure racine allégée : un seul dossier d'artefacts `build/` (app bundle) à la place de `release/` ; `package_app.sh` utilise le scratch SwiftPM standard `.build/` partagé debug/release au lieu du second scratch `release/build/`

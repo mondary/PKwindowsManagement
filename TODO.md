@@ -26,6 +26,14 @@
 - [ ] Résolution des tailles relatives.
 - [ ] Raccourcis avancés pour layouts.
 
+## Rooms (inspiré de saragordic/rooms — voir docs/rooms-gap-analysis.md)
+- [x] Moteur de layouts `RoomTiler` porté (Auto / Focus / Colonnes / Grille / Pile).
+- [x] Vue Rooms façon Spotlight avec miniature du tiling par app, création depuis les apps actives, activation (lancement des apps manquantes + attente + tuilage) — hotkey ⌃⌥R (v1 : rooms par apps, pas par fenêtres individuelles).
+- [ ] Raccourcis directs ⌃⌥1-9 par room.
+- [ ] Matching fenêtres individuelles (windowID / titre / app).
+- [ ] Park & registre crash-safe (« Tout montrer »).
+- [ ] Prototype room ↔ Space macOS dédié + wallpaper dédié.
+
 ## Inspirations
 - [ ] Recherche Spotlight intégrée.
 - [ ] Grids d’apps configurables.

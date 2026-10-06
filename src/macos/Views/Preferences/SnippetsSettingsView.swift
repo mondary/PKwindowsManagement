@@ -131,14 +131,22 @@ private struct ResizableHSplit<Left: View, Right: View>: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            left()
-                .frame(width: leftWidth)
-                .clipped()
+        // Adaptive: the left pane keeps the width the user chose, but never
+        // more than half the available space — in a small window a fixed-width
+        // pane was crushing the editor beside it into a broken sliver.
+        GeometryReader { geo in
+            let effectiveWidth = min(leftWidth, max(minWidth, geo.size.width * 0.5))
+            HStack(spacing: 0) {
+                left()
+                    .frame(width: effectiveWidth)
+                    .clipped()
 
-            divider
+                divider
 
-            right()
+                right()
+                    .frame(minWidth: 0, maxWidth: .infinity)
+            }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
         }
     }
 
