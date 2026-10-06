@@ -5,3 +5,18 @@
 /* Support */
 "Support on Ko-fi" = "Support on Ko-fi";
 "Donate" = "Support on Ko-fi";
+
+/* Rooms */
+"Open Rooms" = "Open Rooms";
+"Auto" = "Auto";
+"Focus" = "Focus";
+"Grid" = "Grid";
+"Stack" = "Stack";
+"Search or create a room…" = "Search or create a room…";
+"New Room" = "New Room";
+"Room name" = "Room name";
+"Running apps" = "Running apps";
+"%d app(s) selected" = "%d app(s) selected";
+"No rooms yet. Create your first room from your running apps." = "No rooms yet. Create your first room from your running apps.";
+"↵ open · ⇥ change layout · ⌘⌫ delete" = "↵ open · ⇥ change layout · ⌘⌫ delete";
+"Create Room" = "Create Room";

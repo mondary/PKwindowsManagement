@@ -22,7 +22,12 @@ RESOURCES_DIR="$APP_DIR/Contents/Resources"
 ICON_SOURCE="$ROOT_DIR/icon.png"
 ICONSET_DIR="$DIST_DIR/AppIcon.iconset"
 APP_ICON="$RESOURCES_DIR/AppIcon.icns"
-VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
+# CHANGELOG.md is the single source of truth for the version (no VERSION file).
+VERSION="$(sed -n 's/^## \[\([0-9][0-9.]*\)\].*/\1/p' "$ROOT_DIR/CHANGELOG.md" | head -1)"
+if [[ -z "$VERSION" ]]; then
+  echo "Unable to read the version from CHANGELOG.md" >&2
+  exit 1
+fi
 
 cd "$ROOT_DIR"
 # Package.swift declares macOS 13 as the minimum supported system. Without an

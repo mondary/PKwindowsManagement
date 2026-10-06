@@ -255,3 +255,18 @@
 "Source code and releases" = "Code source et versions";
 "Report an Issue" = "Signaler un problème";
 "Bugs, feature requests, feedback" = "Bugs, suggestions, retours";
+
+/* Rooms */
+"Open Rooms" = "Ouvrir Rooms";
+"Auto" = "Auto";
+"Focus" = "Focus";
+"Grid" = "Grille";
+"Stack" = "Pile";
+"Search or create a room…" = "Rechercher ou créer une room…";
+"New Room" = "Nouvelle room";
+"Room name" = "Nom de la room";
+"Running apps" = "Apps actives";
+"%d app(s) selected" = "%d app(s) sélectionnée(s)";
+"No rooms yet. Create your first room from your running apps." = "Aucune room pour l'instant. Créez votre première room à partir de vos apps actives.";
+"↵ open · ⇥ change layout · ⌘⌫ delete" = "↵ ouvrir · ⇥ disposition · ⌘⌫ supprimer";
+"Create Room" = "Créer la room";

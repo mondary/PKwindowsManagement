@@ -9,7 +9,6 @@ on:
       - 'src/macos/**'
       - 'src/script/package_app.sh'
       - 'Package.swift'
-      - 'VERSION'
       - '.github/workflows/build-macos-app.yml'
   workflow_dispatch:
 

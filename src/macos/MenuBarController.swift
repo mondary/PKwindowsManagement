@@ -7,6 +7,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var shortcutTargets: [LaunchableApp] = []
     private var launchpadHotKey: EventHotKeyRef?
     private var launchpadHotKeyHandler: EventHandlerRef?
+    private var roomsHotKey: EventHotKeyRef?
     private var launchpadHotKeyObserver: NSObjectProtocol?
     private var hotCornerObserver: NSObjectProtocol?
     private var languageObserver: NSObjectProtocol?
@@ -16,6 +17,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var lastHotCornerTrigger: Date?
     private let hotCornerCooldown: TimeInterval = 1.5
     private let launchpadHotKeySignature = fourCharCode("PKLP")
+    private let roomsHotKeySignature = fourCharCode("PKRM")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         automaticTerminationActivity = ProcessInfo.processInfo.beginActivity(
@@ -45,6 +47,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         ) { [weak self] _ in self?.rebuildStatusMenu() }
 
         registerLaunchpadTriggers()
+        registerRoomsHotKey()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -60,6 +63,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         hotCornerTimer = nil
         LaunchShortcutMonitor.shared.stop()
         unregisterLaunchpadHotKey()
+        unregisterRoomsHotKey()
         if let launchpadHotKeyHandler {
             RemoveEventHandler(launchpadHotKeyHandler)
             self.launchpadHotKeyHandler = nil
@@ -99,6 +103,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
     @objc private func openBigYear() {
         BigYearOverlayController.shared.toggle()
+    }
+
+    @objc private func openRooms() {
+        RoomsOverlayController.shared.toggle()
     }
 
     @objc private func openURLSnippet(_ sender: NSMenuItem) {
@@ -141,6 +149,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         let bigYearItem = NSMenuItem(title: localizedString("Open Big Year"), action: #selector(openBigYear), keyEquivalent: "y")
         bigYearItem.target = self
         menu.addItem(bigYearItem)
+        let roomsItem = NSMenuItem(title: localizedString("Open Rooms"), action: #selector(openRooms), keyEquivalent: "r")
+        roomsItem.target = self
+        roomsItem.keyEquivalentModifierMask = [.control, .option]
+        menu.addItem(roomsItem)
         let preferencesItem = NSMenuItem(title: localizedString("Open Preferences"), action: #selector(openPreferences), keyEquivalent: ",")
         preferencesItem.target = self
         menu.addItem(preferencesItem)
@@ -263,6 +275,33 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Global ⌃⌥R shortcut for the Rooms switcher (fixed in v1; a configurable
+    /// shortcut can come later).
+    private func registerRoomsHotKey() {
+        unregisterRoomsHotKey()
+        ensureLaunchpadHotKeyHandler()
+        let hotKeyID = EventHotKeyID(signature: roomsHotKeySignature, id: 2)
+        let status = RegisterEventHotKey(
+            UInt32(kVK_ANSI_R),
+            UInt32(controlKey | optionKey),
+            hotKeyID,
+            GetEventDispatcherTarget(),
+            0,
+            &roomsHotKey
+        )
+        if status != noErr {
+            roomsHotKey = nil
+            NSLog("PKwindowsManagement: failed to register rooms hotkey (%d)", status)
+        }
+    }
+
+    private func unregisterRoomsHotKey() {
+        if let roomsHotKey {
+            UnregisterEventHotKey(roomsHotKey)
+            self.roomsHotKey = nil
+        }
+    }
+
     private func ensureLaunchpadHotKeyHandler() {
         guard launchpadHotKeyHandler == nil else { return }
         var eventType = EventTypeSpec(
@@ -381,6 +420,8 @@ private func launchpadHotKeyCallback(
         switch (hotKeyID.signature, hotKeyID.id) {
         case (fourCharCode("PKLP"), 1):
             controller.handleLaunchpadHotKey()
+        case (fourCharCode("PKRM"), 2):
+            RoomsOverlayController.shared.toggle()
         default:
             break
         }

@@ -1,5 +1,16 @@
 # Changelog
 
+## [2026.10.3] - 2026-10-06
+### Added
+- Vue « Rooms » façon Spotlight (⌃⌥R ou menu barre) : rooms = ensembles d'applications nommées avec disposition, persistées dans `~/Library/Application Support/PKwindowsManagement/rooms.json`
+- Miniature vivante de la composition du tiling sur chaque ligne de room : une tuile par app (icône + numéro, 1 = principale), dimensionnée par le même moteur de géométrie que l'arrangement réel ; Tab/⇧Tab fait défiler les layouts (Auto/Focus/Colonnes/Grille/Pile) et la miniature s'anime
+- Activation d'une room (Entrée ou clic) : lance les apps manquantes en arrière-plan, attend leurs fenêtres (max 4 s), tuile toutes leurs fenêtres sur l'écran courant, puis atterrit sur la première app ; rien n'est masqué, fermé ou parqué en v1
+- Création de room depuis les apps actives (nom + sélection), suppression par ⌘⌫, recherche par nom insensible à la casse et aux accents
+- Moteur de layouts `RoomTiler` porté et simplifié depuis Rooms (saragordic/rooms, MIT) : Auto résout contre l'écran réel, fallback Pile
+- Chaînes localisées FR/EN/ES/DE pour la vue Rooms
+### Fixed
+- `package_app.sh` lit la version dans `CHANGELOG.md` (le fichier `VERSION` supprimé en 2026.09.13 cassait le build en CI)
+
 ## [2026.10.2] - 2026-10-06
 ### Changed
 - `docs/rooms-gap-analysis.md` corrigé après lecture du code : le cycle ½→⅔→⅓ existe déjà chez nous (`WindowSnapService.cycleFrame`, version plus robuste que Rooms) — ligne déplacée en équivalence et retirée des quick wins ; détail du lancement des apps manquantes enrichi (démarrage en arrière-plan + attente jusqu'à 4 s des fenêtres avec replanification, slot repris par une autre fenêtre de l'app si la sauvegardée est fermée)
