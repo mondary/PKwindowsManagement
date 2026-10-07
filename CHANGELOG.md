@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.41] - 2026-10-07
+### Changed
+- Refonte du panneau de mise à jour avec cartes Stable/Dev et statuts explicites ; accès toujours visible dans la sidebar, bouton adapté lorsqu'une version est disponible
+
 ## [2026.10.40] - 2026-10-07
 ### Changed
 - Panneau de mise à jour simplifié en deux rangées : versions Stable/Dev côte à côte, puis sélecteur et bouton ; description du canal utilise toute la largeur

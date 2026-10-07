@@ -296,6 +296,9 @@
 "Dev version" = "Version dev";
 "New version available" = "Nouvelle version disponible";
 "Update available — %@" = "Mise à jour disponible — %@";
+"Update available" = "Mise à jour disponible";
+"Latest version" = "Dernière version";
+"Install %@" = "Installer %@";
 "Support me on Ko-fi" = "Me soutenir sur Ko-fi";
 "Switch channel?" = "Changer de canal ?";
 "Install and relaunch" = "Installer et relancer";

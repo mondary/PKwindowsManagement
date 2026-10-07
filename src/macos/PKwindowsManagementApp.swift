@@ -190,22 +190,33 @@ private struct RootDashboardView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 10)
 
-            if updater.availableUpdateVersion != nil {
-                Button {
-                    updater.checkForUpdatesOrSwitch()
-                } label: {
-                    Label(localizedString("New version available"), systemImage: "arrow.down.circle.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
-                        .background(Color.accentColor.opacity(0.11), in: Capsule())
-                }
-                .buttonStyle(.plain)
-                .help(String(format: localizedString("Update available — %@"), updater.availableUpdateVersion ?? ""))
-                .padding(.horizontal, 18)
-                .padding(.bottom, 8)
+            Button {
+                updater.checkForUpdatesOrSwitch()
+            } label: {
+                Label(
+                    updater.availableUpdateVersion == nil
+                        ? localizedString("Check for Updates…")
+                        : localizedString("New version available"),
+                    systemImage: updater.availableUpdateVersion == nil
+                        ? "arrow.clockwise"
+                        : "arrow.down.circle.fill"
+                )
+                .font(.system(size: 11, weight: updater.availableUpdateVersion == nil ? .medium : .semibold))
+                .foregroundStyle(updater.availableUpdateVersion == nil ? Color.secondary : Color.accentColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(
+                    updater.availableUpdateVersion == nil ? Color.primary.opacity(0.035) : Color.accentColor.opacity(0.11),
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
             }
+            .buttonStyle(.plain)
+            .help(updater.availableUpdateVersion.map {
+                String(format: localizedString("Update available — %@"), $0)
+            } ?? localizedString("Check for Updates…"))
+            .padding(.horizontal, 14)
+            .padding(.bottom, 8)
 
             Text(appVersionLabel)
                 .font(.system(size: 11, weight: .medium, design: .monospaced))

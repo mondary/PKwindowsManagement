@@ -61,19 +61,20 @@ struct AboutSettingsView: View {
 
     private var updateSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 0) {
+            HStack(spacing: 10) {
                 versionColumn(
                     title: localizedString("Stable version"),
                     value: updater.latestStableVersion ?? localizedString("Not published"),
                     symbol: "checkmark.seal",
-                    isInstalled: !isDevBuild
+                    isInstalled: !isDevBuild,
+                    isUpdateAvailable: selectedChannel == .stable && updater.availableUpdateVersion != nil
                 )
-                Divider().frame(height: 42)
                 versionColumn(
                     title: localizedString("Dev version"),
                     value: updater.latestDevVersion ?? localizedString("Not published"),
                     symbol: "hammer",
-                    isInstalled: isDevBuild
+                    isInstalled: isDevBuild,
+                    isUpdateAvailable: selectedChannel == .dev && updater.availableUpdateVersion != nil
                 )
             }
 
@@ -91,9 +92,11 @@ struct AboutSettingsView: View {
                 Button {
                     updater.checkForUpdatesOrSwitch()
                 } label: {
-                    Label(localizedString("Check for Updates…"), systemImage: "arrow.triangle.2.circlepath")
+                    Label(updateButtonTitle, systemImage: updater.availableUpdateVersion == nil
+                        ? "arrow.triangle.2.circlepath"
+                        : "arrow.down.circle.fill")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.borderedProminent)
                 .disabled(updater.installingSwitch)
             }
 
@@ -134,26 +137,44 @@ struct AboutSettingsView: View {
         }
     }
 
-    private func versionColumn(title: String, value: String, symbol: String, isInstalled: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
+    private func versionColumn(
+        title: String,
+        value: String,
+        symbol: String,
+        isInstalled: Bool,
+        isUpdateAvailable: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
             Label(title, systemImage: symbol)
-                .font(.caption)
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+
             Text(value)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .font(.system(size: 16, weight: .semibold, design: .monospaced))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
                 .help(value)
-            if isInstalled {
-                Label(localizedString("Installed version"), systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.green)
-                    .padding(.top, 2)
-            }
+
+            Label(
+                localizedString(isUpdateAvailable ? "Update available" : (isInstalled ? "Installed version" : "Latest version")),
+                systemImage: isUpdateAvailable ? "arrow.down.circle.fill" : (isInstalled ? "checkmark.circle.fill" : "sparkle")
+            )
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(isUpdateAvailable ? Color.accentColor : (isInstalled ? Color.green : Color.secondary))
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 8)
+        .padding(12)
+        .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private var updateButtonTitle: String {
+        guard let version = updater.availableUpdateVersion else {
+            return localizedString("Check for Updates…")
+        }
+        return String(format: localizedString("Install %@"), version)
     }
 
     private var isDevBuild: Bool {

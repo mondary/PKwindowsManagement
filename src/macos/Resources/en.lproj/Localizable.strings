@@ -37,6 +37,9 @@
 "Dev version" = "Dev version";
 "New version available" = "New version available";
 "Update available — %@" = "Update available — %@";
+"Update available" = "Update available";
+"Latest version" = "Latest version";
+"Install %@" = "Install %@";
 "Credits & inspirations" = "Credits & Inspirations";
 "Credits" = "Credits";
 "Projects and tools that inform or power PKwindowsManagement." = "Projects and tools that inform or power PKwindowsManagement.";
