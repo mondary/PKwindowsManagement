@@ -70,33 +70,42 @@ private struct RootDashboardView: View {
 
             Divider()
 
-            Group {
-                switch selection ?? .general {
-                case .general:
-                    GeneralSettingsView(settings: settings)
-                case .windows:
-                    WindowShortcutsPreferencesView(settings: settings)
-                case .launchpad:
-                    LaunchpadView(settings: settings)
-                case .appearance:
-                    AppearanceSettingsView(settings: settings)
-                case .bigYear:
-                    BigYearSettingsView(settings: settings)
-                case .snippets:
-                    SnippetsSettingsView(settings: settings)
-                case .urls:
-                    URLSnippetsSettingsView(settings: settings)
-                case .ai:
-                    AISettingsView()
-                case .support:
-                    SupportSettingsView()
-                case .library:
-                    ProjectLibraryView()
-                case .about:
-                    AboutSettingsView()
-                case .credits:
-                    CreditsInspirationsSettingsView()
+            VStack(spacing: 0) {
+                Group {
+                    switch selection ?? .general {
+                    case .general:
+                        GeneralSettingsView(settings: settings)
+                    case .windows:
+                        WindowShortcutsPreferencesView(settings: settings)
+                    case .launchpad:
+                        LaunchpadView(settings: settings)
+                    case .appearance:
+                        AppearanceSettingsView(settings: settings)
+                    case .bigYear:
+                        BigYearSettingsView(settings: settings)
+                    case .snippets:
+                        SnippetsSettingsView(settings: settings)
+                    case .urls:
+                        URLSnippetsSettingsView(settings: settings)
+                    case .ai:
+                        AISettingsView()
+                    case .support:
+                        SupportSettingsView()
+                    case .library:
+                        ProjectLibraryView()
+                    case .about:
+                        AboutSettingsView()
+                    case .credits:
+                        CreditsInspirationsSettingsView()
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                Divider()
+
+                SettingsFooterView()
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

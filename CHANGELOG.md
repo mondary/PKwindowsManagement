@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.10.44] - 2026-10-07
+### Fixed
+- Les installations manuelles vérifient la signature EdDSA, le bundle ID et les deux versions avant le swap ; le script restaure l’ancienne app si le remplacement ou le relancement échoue, et le parseur garde l’URL et la signature du même premier élément d’appcast.
+### Changed
+- Crédits utilisent les pictogrammes officiels et chaque ligne est entièrement cliquable ; footer GitHub/Issues/Ko-fi/licence affiché dans toutes les pages des réglages.
+- README et vitrine pointent désormais vers le dernier Stable réellement publié ; la source locale non publiée reste distinguée.
+
 ## [2026.10.43] - 2026-10-07
 ### Fixed
 - Indicateur de mise à jour déplacé sur la ligne de la version installée sans décaler les drapeaux ; affiche la version cible en une ligne

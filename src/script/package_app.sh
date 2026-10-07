@@ -75,9 +75,9 @@ if [[ -d "$RESOURCE_BUNDLE" ]]; then
   find "$RESOURCE_BUNDLE" -maxdepth 1 -type d -name '*.lproj' -exec cp -R {} "$RESOURCES_DIR/" \;
 fi
 
-# Project Library assets (icons + screenshots), excluded from SPM and copied
-# as plain directories so Bundle.main can load them by subdirectory.
-for RES_SUBDIR in ProjectIcons ProjectScreenshots; do
+# Project Library and credits assets, excluded from SPM and copied as plain
+# directories so Bundle.main can load them by subdirectory.
+for RES_SUBDIR in ProjectIcons ProjectScreenshots CreditIcons; do
   if [[ -d "$ROOT_DIR/src/macos/Resources/$RES_SUBDIR" ]]; then
     cp -R "$ROOT_DIR/src/macos/Resources/$RES_SUBDIR" "$RESOURCES_DIR/"
   fi

@@ -62,6 +62,7 @@
 "You are using %1$@. Install %2$@ from the %3$@ channel?" = "You are using %1$@. Install %2$@ from the %3$@ channel?";
 "Installing update…" = "Installing update…";
 "Install failed: %@" = "Install failed: %@";
+"Update signature is invalid." = "The update signature is invalid.";
 "Project Library" = "Project Library";
 "Search settings" = "Search settings";
 "App" = "App";

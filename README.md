@@ -14,9 +14,9 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 ![Big Year — calendrier annuel natif, thème Poster bleu](store/website/screenshots/year-poster.webp)
 
 - [Démo vidéo](store/website/videos/window-flow.mp4) · [GIF animé](store/website/gifs/window-flow-wide.gif)
-- [Télécharger le DMG Apple Silicon v2026.10.43](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.43.dmg) : montez le DMG, glissez l'app dans Applications et autorisez l'Accessibilité. Build pour macOS 13+.
+- [Télécharger le dernier Stable publié — v2026.10.32](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg) : montez le DMG, glissez l'app dans Applications et autorisez l'Accessibilité. Build pour macOS 13+.
 - Homebrew : `brew install --cask mondary/tap/pk-windows-management` (mise à jour : `brew upgrade --cask pk-windows-management`).
-- curl : `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.43.dmg`
+- curl : `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg`
 - [Sources et limites des captures](store/media-kit/README.md)
 
 ## ✅ Fonctionnalités

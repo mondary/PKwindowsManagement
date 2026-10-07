@@ -1,4 +1,5 @@
 import AppKit
+import CryptoKit
 import Foundation
 import Sparkle
 
@@ -9,7 +10,9 @@ struct ChannelSwitchOffer: Identifiable {
     let id = UUID()
     let channel: UpdateChannel
     let version: String
+    let technicalVersion: String
     let url: URL
+    let signature: String
     let isUpdate: Bool
 }
 
@@ -54,9 +57,6 @@ final class UpdaterManager: ObservableObject {
         selectedChannel = UpdateChannel(
             rawValue: UserDefaults.standard.string(forKey: Self.channelKey) ?? UpdateChannel.stable.rawValue
         ) ?? .stable
-        feedProvider.onNoUpdate = { [weak self] userInitiated, item in
-            self?.handleNoUpdate(userInitiated: userInitiated, item: item)
-        }
     }
 
     var channel: UpdateChannel {
@@ -111,6 +111,8 @@ final class UpdaterManager: ObservableObject {
     /// This avoids Sparkle presenting a stale CDN copy of an appcast. A channel
     /// switch to an older build is also offered when the short version differs.
     func checkForUpdatesOrSwitch() {
+        switchErrorMessage = nil
+        switchOffer = nil
         Task {
             let versions = await (
                 Self.latestInfo(at: Self.stableFeedURL),
@@ -126,9 +128,11 @@ final class UpdaterManager: ObservableObject {
                 let target = channel == .dev ? versions.1 : versions.0
                 guard let target,
                       let enclosure = target.enclosure,
+                      let signature = target.signature,
                       let installedShort = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
                       let installedTechnical = Int64(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""),
-                      let feedTechnical = Int64(target.technical)
+                      let feedTechnical = Int64(target.technical),
+                      feedTechnical > 0
                 else {
                     controller?.checkForUpdates(nil)
                     return
@@ -140,14 +144,18 @@ final class UpdaterManager: ObservableObject {
                     switchOffer = ChannelSwitchOffer(
                         channel: channel,
                         version: target.short,
+                        technicalVersion: target.technical,
                         url: enclosure,
+                        signature: signature,
                         isUpdate: true
                     )
                 } else if target.short != installedShort {
                     switchOffer = ChannelSwitchOffer(
                         channel: channel,
                         version: target.short,
+                        technicalVersion: target.technical,
                         url: enclosure,
+                        signature: signature,
                         isUpdate: false
                     )
                 } else {
@@ -188,7 +196,8 @@ final class UpdaterManager: ObservableObject {
         let info = channel == .dev ? devInfo : stableInfo
         let installedTechnical = Int64(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "")
         let feedTechnical = info.flatMap { Int64($0.technical) }
-        if let info, let installedTechnical, let feedTechnical, feedTechnical > installedTechnical {
+        if let info, info.enclosure != nil, info.signature != nil,
+           let installedTechnical, let feedTechnical, feedTechnical > installedTechnical {
             availableUpdateVersion = info.short
         } else {
             availableUpdateVersion = nil
@@ -204,7 +213,7 @@ final class UpdaterManager: ObservableObject {
         guard (channel == .dev) == installedIsDev else { return .otherChannel }
 
         let info = channel == .dev ? devInfo : stableInfo
-        guard let info,
+        guard let info, info.enclosure != nil, info.signature != nil,
               let installedTechnical = Int64(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""),
               let feedTechnical = Int64(info.technical)
         else { return .unavailable }
@@ -219,22 +228,6 @@ final class UpdaterManager: ObservableObject {
         controller?.updater.automaticallyDownloadsUpdates = (channel == .dev)
     }
 
-    /// Sparkle never offers an older version, but switching channel is a
-    /// legitimate "install that channel's latest, whatever its number" move.
-    /// When a manual check finds nothing newer and the feed's latest build
-    /// differs from the running one, offer that switch.
-    private func handleNoUpdate(userInitiated: Bool, item: SUAppcastItem?) {
-        guard userInitiated,
-              !installingSwitch,
-              let item,
-              let fileURL = item.fileURL,
-              let installed = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-        else { return }
-        let target = item.displayVersionString
-        guard !target.isEmpty, target != installed else { return }
-        switchOffer = ChannelSwitchOffer(channel: channel, version: target, url: fileURL, isUpdate: false)
-    }
-
     func cancelSwitchOffer() {
         switchOffer = nil
     }
@@ -246,7 +239,12 @@ final class UpdaterManager: ObservableObject {
         switchErrorMessage = nil
         Task {
             do {
-                try await installChannelBuild(from: offer.url, expectedVersion: offer.version)
+                try await installChannelBuild(
+                    from: offer.url,
+                    expectedVersion: offer.version,
+                    expectedTechnicalVersion: offer.technicalVersion,
+                    signature: offer.signature
+                )
                 await MainActor.run {
                     installingSwitch = false
                     NSApp.terminate(nil)
@@ -263,13 +261,21 @@ final class UpdaterManager: ObservableObject {
         }
     }
 
-    /// Downloads the channel's published zip, checks it really is the offered
-    /// version, then hands over to a detached script that swaps the bundle and
-    /// relaunches the app once this instance has quit.
-    private func installChannelBuild(from url: URL, expectedVersion: String) async throws {
+    /// Downloads the channel's published zip, verifies Sparkle's EdDSA
+    /// signature and bundle identity/version, then stages a rollback-safe swap.
+    private func installChannelBuild(
+        from url: URL,
+        expectedVersion: String,
+        expectedTechnicalVersion: String,
+        signature: String
+    ) async throws {
         let work = FileManager.default.temporaryDirectory
             .appendingPathComponent("PKwindowsManagement-switch-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
+        var handedOffToInstaller = false
+        defer {
+            if !handedOffToInstaller { try? FileManager.default.removeItem(at: work) }
+        }
 
         let (data, response) = try await URLSession.shared.data(from: url)
         guard let http = response as? HTTPURLResponse, http.statusCode == 200, !data.isEmpty else {
@@ -278,29 +284,64 @@ final class UpdaterManager: ObservableObject {
                 userInfo: [NSLocalizedDescriptionKey: "HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)"]
             )
         }
+        guard let signatureData = Data(base64Encoded: signature),
+              let publicKeyString = Bundle.main.infoDictionary?["SUPublicEDKey"] as? String,
+              let publicKeyData = Data(base64Encoded: publicKeyString),
+              let publicKey = try? Curve25519.Signing.PublicKey(rawRepresentation: publicKeyData),
+              publicKey.isValidSignature(signatureData, for: data) else {
+            throw NSError(
+                domain: "PKwindowsManagement.Switch", code: 4,
+                userInfo: [NSLocalizedDescriptionKey: localizedString("Update signature is invalid.")]
+            )
+        }
         let zipURL = work.appendingPathComponent("app.zip")
         try data.write(to: zipURL)
 
         try await runProcess("/usr/bin/ditto", ["-x", "-k", "--sequesterRsrc", zipURL.path, work.path])
         let extractedApp = work.appendingPathComponent("PKwindowsManagement.app")
-        let extractedVersion = NSDictionary(
-            contentsOf: extractedApp.appendingPathComponent("Contents/Info.plist")
-        )?["CFBundleShortVersionString"] as? String
-        guard extractedVersion == expectedVersion else {
+        guard let extractedInfo = NSDictionary(contentsOf: extractedApp.appendingPathComponent("Contents/Info.plist")),
+              extractedInfo["CFBundleShortVersionString"] as? String == expectedVersion,
+              extractedInfo["CFBundleVersion"] as? String == expectedTechnicalVersion,
+              extractedInfo["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier else {
             throw NSError(
                 domain: "PKwindowsManagement.Switch", code: 2,
-                userInfo: [NSLocalizedDescriptionKey: "unexpected bundle version"]
+                userInfo: [NSLocalizedDescriptionKey: "The update bundle does not match the signed appcast."]
             )
         }
 
+        let installedApp = Bundle.main.bundleURL
+        let parentDirectory = installedApp.deletingLastPathComponent()
+        let stagedApp = parentDirectory.appendingPathComponent(".PKwindowsManagement-update-\(UUID().uuidString).app")
+        let backupApp = parentDirectory.appendingPathComponent(".PKwindowsManagement-backup-\(UUID().uuidString).app")
+        var handedOffStagedApp = false
+        defer {
+            if !handedOffStagedApp { try? FileManager.default.removeItem(at: stagedApp) }
+        }
+        try FileManager.default.copyItem(at: extractedApp, to: stagedApp)
+
+        let installedPath = Self.shellQuote(installedApp.path)
+        let stagedPath = Self.shellQuote(stagedApp.path)
+        let backupPath = Self.shellQuote(backupApp.path)
+        let workPath = Self.shellQuote(work.path)
         let scriptURL = work.appendingPathComponent("install.sh")
         try """
         #!/bin/bash
         sleep 2
-        rm -rf '/Applications/PKwindowsManagement.app'
-        /usr/bin/ditto '\(extractedApp.path)' '/Applications/PKwindowsManagement.app'
-        open '/Applications/PKwindowsManagement.app'
-        rm -rf '\(work.path)'
+        /usr/bin/mv \(installedPath) \(backupPath) || exit 1
+        if /usr/bin/mv \(stagedPath) \(installedPath); then
+          if /usr/bin/open \(installedPath); then
+            /bin/rm -rf \(backupPath) \(workPath)
+          else
+            /usr/bin/mv \(installedPath) \(stagedPath)
+            /usr/bin/mv \(backupPath) \(installedPath)
+            /bin/rm -rf \(stagedPath) \(workPath)
+            exit 1
+          fi
+        else
+          /usr/bin/mv \(backupPath) \(installedPath)
+          /bin/rm -rf \(stagedPath) \(workPath)
+          exit 1
+        fi
         """.write(to: scriptURL, atomically: true, encoding: .utf8)
 
         let installer = Process()
@@ -308,6 +349,12 @@ final class UpdaterManager: ObservableObject {
         installer.arguments = [scriptURL.path]
         installer.qualityOfService = .userInitiated
         try installer.run()
+        handedOffToInstaller = true
+        handedOffStagedApp = true
+    }
+
+    private static func shellQuote(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     private func runProcess(_ path: String, _ arguments: [String]) async throws {
@@ -326,19 +373,35 @@ final class UpdaterManager: ObservableObject {
 }
 
 private final class AppcastVersionParser: NSObject, XMLParserDelegate {
+    private var foundFirstItem = false
+    private var insideFirstItem = false
     private var insideShortVersion = false
     private var insideSparkleVersion = false
     private var currentText = ""
     private var shortVersion: String?
     private var technicalVersion: String?
     private var enclosureURL: URL?
+    private var signature: String?
 
     var info: AppcastInfo? {
         guard let shortVersion else { return nil }
-        return AppcastInfo(short: shortVersion, technical: technicalVersion ?? shortVersion, enclosure: enclosureURL)
+        return AppcastInfo(
+            short: shortVersion,
+            technical: technicalVersion ?? shortVersion,
+            enclosure: enclosureURL,
+            signature: signature
+        )
     }
 
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+        if elementName == "item" || qName == "item" {
+            guard !foundFirstItem else { return }
+            foundFirstItem = true
+            insideFirstItem = true
+            return
+        }
+        guard insideFirstItem else { return }
+
         if elementName == "sparkle:shortVersionString" || qName == "sparkle:shortVersionString" {
             insideShortVersion = true
             currentText = ""
@@ -349,6 +412,8 @@ private final class AppcastVersionParser: NSObject, XMLParserDelegate {
             if let address = attributeDict["url"], let url = URL(string: address) {
                 enclosureURL = url
             }
+            signature = attributeDict.first(where: { $0.key.hasSuffix(":edSignature") })?.value
+                ?? attributeDict["edSignature"]
         }
     }
 
@@ -357,6 +422,10 @@ private final class AppcastVersionParser: NSObject, XMLParserDelegate {
     }
 
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        if (elementName == "item" || qName == "item"), insideFirstItem {
+            insideFirstItem = false
+            return
+        }
         if insideShortVersion && (elementName == "sparkle:shortVersionString" || qName == "sparkle:shortVersionString") {
             shortVersion = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
             insideShortVersion = false
@@ -373,6 +442,7 @@ struct AppcastInfo {
     let short: String
     let technical: String
     let enclosure: URL?
+    let signature: String?
 }
 
 enum UpdateChannel: String, CaseIterable, Identifiable {
@@ -400,19 +470,10 @@ enum UpdateChannel: String, CaseIterable, Identifiable {
 /// methods are called nonisolated, and `updaterDelegate` must outlive the
 /// controller.
 private final class ChannelFeedProvider: NSObject, SPUUpdaterDelegate {
-    var onNoUpdate: ((Bool, SUAppcastItem?) -> Void)?
-
     func feedURLString(for updater: SPUUpdater) -> String? {
         let address = UserDefaults.standard.string(forKey: UpdaterManager.channelKey) == UpdateChannel.dev.rawValue
             ? UpdaterManager.devFeedURL
             : UpdaterManager.stableFeedURL
         return UpdaterManager.freshFeedURL(address)?.absoluteString ?? address
-    }
-
-    func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: NSError) {
-        let info = error.userInfo
-        let userInitiated = (info[SPUNoUpdateFoundUserInitiatedKey] as? Bool) ?? false
-        let item = info[SPULatestAppcastItemFoundKey] as? SUAppcastItem
-        onNoUpdate?(userInitiated, item)
     }
 }

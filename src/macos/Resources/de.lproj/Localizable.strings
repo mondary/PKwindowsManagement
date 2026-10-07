@@ -311,6 +311,7 @@
 "You are using %1$@. Install %2$@ from the %3$@ channel?" = "Du verwendest %1$@. %2$@ aus dem Kanal %3$@ installieren?";
 "Installing update…" = "Aktualisierung wird installiert…";
 "Install failed: %@" = "Installation fehlgeschlagen: %@";
+"Update signature is invalid." = "Die Update-Signatur ist ungültig.";
 "Project Library" = "Projektbibliothek";
 "Search settings" = "Suchen";
 "App" = "App";
