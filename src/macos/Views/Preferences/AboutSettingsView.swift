@@ -60,47 +60,33 @@ struct AboutSettingsView: View {
     }
 
     private var updateSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 7) {
-                    Text(localizedString("Updates"))
-                        .font(.headline)
-
-                    Picker(localizedString("Update channel"), selection: $selectedChannel) {
-                        ForEach(UpdateChannel.allCases) { channel in
-                            Text(channel.title).tag(channel)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .accessibilityLabel(localizedString("Update channel"))
-                    .frame(width: 190)
-
-                    Text(selectedChannel.detail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(width: 220, alignment: .leading)
-
-                HStack(alignment: .top, spacing: 0) {
-                    versionColumn(
-                        title: localizedString("Stable version"),
-                        value: updater.latestStableVersion ?? localizedString("Not published"),
-                        symbol: "checkmark.seal",
-                        isInstalled: !isDevBuild
-                    )
-                    Divider().frame(height: 42)
-                    versionColumn(
-                        title: localizedString("Dev version"),
-                        value: updater.latestDevVersion ?? localizedString("Not published"),
-                        symbol: "hammer",
-                        isInstalled: isDevBuild
-                    )
-                }
-                .frame(maxWidth: .infinity)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 0) {
+                versionColumn(
+                    title: localizedString("Stable version"),
+                    value: updater.latestStableVersion ?? localizedString("Not published"),
+                    symbol: "checkmark.seal",
+                    isInstalled: !isDevBuild
+                )
+                Divider().frame(height: 42)
+                versionColumn(
+                    title: localizedString("Dev version"),
+                    value: updater.latestDevVersion ?? localizedString("Not published"),
+                    symbol: "hammer",
+                    isInstalled: isDevBuild
+                )
             }
 
-            HStack {
+            HStack(spacing: 12) {
+                Picker(localizedString("Update channel"), selection: $selectedChannel) {
+                    ForEach(UpdateChannel.allCases) { channel in
+                        Text(channel.title).tag(channel)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .accessibilityLabel(localizedString("Update channel"))
+                .frame(width: 190)
                 Spacer(minLength: 0)
                 Button {
                     updater.checkForUpdatesOrSwitch()
@@ -110,6 +96,11 @@ struct AboutSettingsView: View {
                 .buttonStyle(.bordered)
                 .disabled(updater.installingSwitch)
             }
+
+            Text(selectedChannel.detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             if updater.installingSwitch {
                 HStack(spacing: 8) {

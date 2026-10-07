@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.40] - 2026-10-07
+### Changed
+- Panneau de mise à jour simplifié en deux rangées : versions Stable/Dev côte à côte, puis sélecteur et bouton ; description du canal utilise toute la largeur
+
 ## [2026.10.39] - 2026-10-07
 ### Added
 - Indicateur de mise à jour disponible près des langues et de la version dans la sidebar, et libellé dynamique dans le menu ; menu affiche l'app et sa version installée
