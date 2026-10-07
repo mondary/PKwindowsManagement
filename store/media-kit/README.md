@@ -98,15 +98,15 @@ s'arrête hors écran ou dans un onglet masqué. `prefers-reduced-motion` suppri
 
 ## Distribution
 
-Le bundle distribué est le build local **2026.09.08**, macOS 13+, Apple Silicon (arm64),
-signature Apple Development vérifiée. Aucun certificat Developer ID ou ticket de notarisation
-n'est promis.
+La release Stable **2026.10.43** est construite par `.github/workflows/release.yml` depuis le tag
+`v2026.10.43` : app macOS 13+, Apple Silicon (arm64), DMG versionné et archive ZIP Sparkle signée.
+Le workflow signe avec le certificat Apple Development configuré ; aucun certificat Developer ID
+ou ticket de notarisation n'est promis.
 
-- **GitHub Release `pk-2026.09.08`** du dépôt public : DMG versionné
-  `PKwindowsManagement_2026.09.08_aarch64.dmg` (référence du cask Homebrew) et DMG à nom fixe
-  `PKwindowsManagement_aarch64.dmg` (cible stable de `releases/latest/download/…` pour le bouton
-  du site et la commande curl).
-- **Cask Homebrew** `pk-windows-management` du tap `mondary/tap` : `brew install --cask mondary/tap/pk-windows-management`.
+- **GitHub Release `v2026.10.43`** du dépôt public :
+  `PKwindowsManagement_2026.10.43.dmg` et `PKwindowsManagement-app.zip`.
+- **Cask Homebrew** `pk-windows-management` du tap `mondary/tap` :
+  `brew install --cask mondary/tap/pk-windows-management`.
 - **Miroir local** : `sources/downloads/PKwindowsManagement-2026.09.08-arm64.zip` avec sa somme
   SHA-256 dans `SHA256SUMS.txt` ; ce miroir n'est pas déployé sur le site.
 

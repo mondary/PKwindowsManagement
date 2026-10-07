@@ -14,9 +14,9 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 ![Big Year — native annual calendar, Blue Poster theme](store/website/screenshots/year-poster.webp)
 
 - [Video demo](store/website/videos/window-flow.mp4) · [Animated GIF](store/website/gifs/window-flow-wide.gif)
-- [Download the Apple Silicon DMG v2026.10.32](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg): open the DMG, move the app to Applications and enable Accessibility. macOS 13+ build.
+- [Download the Apple Silicon DMG v2026.10.43](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.43.dmg): open the DMG, move the app to Applications and enable Accessibility. macOS 13+ build.
 - Homebrew: `brew install --cask mondary/tap/pk-windows-management` (upgrade: `brew upgrade --cask pk-windows-management`).
-- curl: `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg`
+- curl: `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.43.dmg`
 - [Capture sources and limitations](store/media-kit/README.md)
 
 ## ✅ Features
@@ -49,7 +49,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Application context menu for assigning shortcuts or moving applications to Trash.
 - Open Launchpad with `Option + Space`, the top-left hot corner, or a menu bar icon click.
 - The app's official icon is shown in the menu bar (full color); context menu to open preferences or quit.
-- Sparkle updates: choose the Stable or Dev channel and compare the installed, stable, and dev versions in General or About.
+- Sparkle updates in `About`: compare the installed version with the latest Stable and Dev releases; each channel shows whether it is up to date, has an update, or is the other channel.
 - Lighter startup path: global shortcuts no longer need to load every application icon, and dominant-color analysis only runs for the `Icon Color` sort mode.
 
 ## 🧠 Usage
@@ -97,7 +97,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Launchpad navigation mode: vertical scroll or horizontal pages.
 - Changes are persisted in `UserDefaults`.
 - In `General` or `About`, choose the `Stable` or `Dev` update channel and compare the installed version with the latest release on each channel. Dev builds install automatically; Stable asks before installing.
-- A new version on the selected channel is surfaced in the sidebar and menu bar menu; click the badge to start the update. Feeds are checked at launch and periodically.
+- The sidebar keeps the installed and available versions on one line without moving the language flags; click the offered version to install it. Manual checks use the fresh appcast and the channel's signed archive.
 - Manual settings import/export in JSON format.
 - Auto-backup: choose a folder (e.g. Google Drive) and export a timestamped JSON backup on every settings change.
 - In the calendar or its dedicated `Big Year` settings section, use the live preview, choose the school zone, theme, and appearance: birthdays or month names in bold as you prefer (the `!` marker still wins), plus custom colors for each element (background, holidays, birthdays, events, zones, text…). Then enter one birthday per line as `DD.MM,Name` or `DDMM,Name` (for example `11.02,Clément` or `0112,Marie`). Prefix the name with `!` to emphasize it in bold. Click a day directly to create a single-day or date-range event, or use the `DD.MM-DD.MM,Title` text format. Enable `macOS / Google Calendars` to import all-day events from accounts configured in macOS Calendar.
