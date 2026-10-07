@@ -266,14 +266,7 @@ struct LaunchpadOverlayView: View {
 
     @ViewBuilder
     private func gridContent(apps: [LaunchableApp], metrics: LaunchpadGridMetrics) -> some View {
-        let visibleApps: [LaunchableApp]
-        if settings.launchpadGroupedByCategory, let selectedCategory {
-            visibleApps = apps.filter {
-                AppCategorizer.effectiveGroup(for: $0, overrides: settings.launchpadCategoryOverrides) == selectedCategory
-            }
-        } else {
-            visibleApps = apps
-        }
+        let visibleApps = appsForSelectedCategory(apps)
         switch settings.launchpadGridNavigation {
         case .vertical:
             ScrollViewReader { proxy in
@@ -339,6 +332,13 @@ struct LaunchpadOverlayView: View {
 
                 pageIndicator(pageCount: pages.count)
             }
+        }
+    }
+
+    private func appsForSelectedCategory(_ apps: [LaunchableApp]) -> [LaunchableApp] {
+        guard settings.launchpadGroupedByCategory, let selectedCategory else { return apps }
+        return apps.filter {
+            AppCategorizer.effectiveGroup(for: $0, overrides: settings.launchpadCategoryOverrides) == selectedCategory
         }
     }
 

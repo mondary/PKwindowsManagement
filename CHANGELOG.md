@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.27] - 2026-10-07
+### Fixed
+- Correction de la compilation Dev du Launchpad : le filtrage par catégorie est maintenant calculé hors du `ViewBuilder`
+
 ## [2026.10.26] - 2026-10-07
 ### Changed
 - Les commandes « Rechercher les mises à jour » et « Ouvrir les réglages » sont regroupées en bas du menu de la barre des menus, avec le soutien Ko-fi et Quitter
