@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.23] - 2026-10-07
+### Fixed
+- Le workflow Dev ne saute plus les commits dont le message mentionne « appcast » : le filtre cible désormais l'auteur (bot) et non le texte du commit
+
 ## [2026.10.22] - 2026-10-07
 ### Fixed
 - Les raccourcis de fenêtre s'appliquent aussi quand PKwindowsManagement est l'app active : sa propre fenêtre de réglages se déplace et se redimensionne comme une fenêtre classique (les raccourcis de lancement restent inertes pendant la saisie dans ses champs)
