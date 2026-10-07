@@ -35,6 +35,12 @@
 "Installed version" = "Installed version";
 "Stable version" = "Stable version";
 "Dev version" = "Dev version";
+"Credits" = "Credits";
+"Rooms concept and layout engine, ported as RoomTiler." = "Rooms concept and layout engine, ported as RoomTiler.";
+"Stable and Dev auto-updates." = "Stable and Dev auto-updates.";
+"Local decision model behind the integrated AI." = "Local decision model behind the integrated AI.";
+"Credits section presentation." = "Credits section presentation.";
+"Built with Apple's native frameworks: SwiftUI, AppKit and the Accessibility API." = "Built with Apple's native frameworks: SwiftUI, AppKit and the Accessibility API.";
 "Support me on Ko-fi" = "Support me on Ko-fi";
 "Switch channel?" = "Switch channel?";
 "Install and relaunch" = "Install and relaunch";

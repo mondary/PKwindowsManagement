@@ -36,6 +36,10 @@ struct AboutSettingsView: View {
                     updateSection
                         .frame(maxWidth: 480)
                         .padding(.bottom, 32)
+
+                    creditsSection
+                        .frame(maxWidth: 480)
+                        .padding(.bottom, 24)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -169,6 +173,102 @@ struct AboutSettingsView: View {
             get: { updater.switchOffer != nil },
             set: { if !$0 { updater.cancelSwitchOffer() } }
         )
+    }
+
+    private struct CreditEntry {
+        let name: String
+        let author: String
+        let roleKey: String
+        let license: String
+        let url: URL
+    }
+
+    /// Real dependencies and inspirations, established from the sources
+    /// (SPM imports, vendored code, sidecar scripts) — every link verified.
+    private let credits: [CreditEntry] = [
+        CreditEntry(
+            name: "Rooms",
+            author: "Sara Gordić",
+            roleKey: "Rooms concept and layout engine, ported as RoomTiler.",
+            license: "MIT",
+            url: URL(string: "https://github.com/saragordic/rooms")!
+        ),
+        CreditEntry(
+            name: "Sparkle",
+            author: "Sparkle project",
+            roleKey: "Stable and Dev auto-updates.",
+            license: "MIT",
+            url: URL(string: "https://github.com/sparkle-project/Sparkle")!
+        ),
+        CreditEntry(
+            name: "Laya",
+            author: "Convai Innovations",
+            roleKey: "Local decision model behind the integrated AI.",
+            license: "Apache-2.0",
+            url: URL(string: "https://huggingface.co/convaiinnovations/laya")!
+        ),
+        CreditEntry(
+            name: "Pulse",
+            author: "qunqin24",
+            roleKey: "Credits section presentation.",
+            license: "Apache-2.0",
+            url: URL(string: "https://github.com/qunqin24/Pulse")!
+        )
+    ]
+
+    private var creditsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(localizedString("Credits"))
+                .font(.headline)
+
+            VStack(spacing: 0) {
+                ForEach(Array(credits.enumerated()), id: \.offset) { index, credit in
+                    creditRow(credit)
+                    if index < credits.count - 1 {
+                        Divider()
+                            .padding(.horizontal, 2)
+                    }
+                }
+            }
+
+            Text(localizedString("Built with Apple's native frameworks: SwiftUI, AppKit and the Accessibility API."))
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .padding(.top, 2)
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.025)))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.08), lineWidth: 1))
+    }
+
+    private func creditRow(_ credit: CreditEntry) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Link(credit.name, destination: credit.url)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                    Text(credit.author)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Text(localizedString(credit.roleKey))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Text(credit.license)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(Color.primary.opacity(0.05)))
+                .overlay(Capsule().stroke(Color.primary.opacity(0.12), lineWidth: 1))
+        }
+        .padding(.vertical, 7)
+        .accessibilityElement(children: .combine)
     }
 
     private var appIconLarge: some View {

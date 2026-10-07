@@ -147,6 +147,15 @@ src/script/release.sh
 - Pour `Empty Trash`, valide aussi l'autorisation d'automatisation Finder quand macOS la demande. Cette commande passe par Finder car macOS bloque l'accès direct au dossier `~/.Trash`.
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
 
+## 🙏 Crédits
+
+PKwindowsManagement s'appuie sur des projets open source et s'en inspire — les crédits complets sont aussi dans l'app, À propos :
+
+- [Rooms](https://github.com/saragordic/rooms) (Sara Gordić, MIT) — concept des rooms et moteur de disposition porté en RoomTiler.
+- [Sparkle 2](https://github.com/sparkle-project/Sparkle) (MIT) — mises à jour automatiques Stable/Dev.
+- [Laya](https://huggingface.co/convaiinnovations/laya) (Convai Innovations, Apache-2.0) — modèle de décision local derrière l'IA intégrée.
+- [Pulse](https://github.com/qunqin24/Pulse) (Apache-2.0) — inspiration de la section crédits.
+
 ## 🧾 Changelog
 - Voir [CHANGELOG.md](CHANGELOG.md) pour l'historique complet.
 

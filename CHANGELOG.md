@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.33] - 2026-10-07
+### Added
+- Section « Crédits » dans À propos : dépendances réelles (Sparkle 2, Laya) et inspirations (Rooms, Pulse) avec auteur, usage, licence et lien vérifié pour chacune ; lien Laya pointé vers Hugging Face car le repo GitHub amont n'existe pas
+
 ## [2026.10.32] - 2026-10-07
 ### Fixed
 - Le tri général des apps (dernier lancement, nom, couleur ou personnalisé) reste indépendant du regroupement ; le tri des catégories ne s’applique qu’aux sections groupées
