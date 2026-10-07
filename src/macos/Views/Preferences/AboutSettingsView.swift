@@ -124,15 +124,19 @@ struct AboutSettingsView: View {
         .padding(14)
         .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.035)))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.08), lineWidth: 1))
-        .alert(localizedString("Switch channel?"), isPresented: switchOfferPresented) {
+        .alert(localizedString(updater.switchOffer?.isUpdate == true ? "Install update?" : "Switch channel?"), isPresented: switchOfferPresented) {
             Button(localizedString("Install and relaunch")) { updater.performSwitchInstall() }
             Button(localizedString("Cancel"), role: .cancel) { updater.cancelSwitchOffer() }
         } message: {
             if let offer = updater.switchOffer {
-                Text(String(
-                    format: localizedString("You are using %1$@. Install %2$@ from the %3$@ channel?"),
-                    appVersion, offer.version, offer.channel.title
-                ))
+                if offer.isUpdate {
+                    Text(String(format: localizedString("Install version %@ from the %@ channel?"), offer.version, offer.channel.title))
+                } else {
+                    Text(String(
+                        format: localizedString("You are using %1$@. Install %2$@ from the %3$@ channel?"),
+                        appVersion, offer.version, offer.channel.title
+                    ))
+                }
             }
         }
     }

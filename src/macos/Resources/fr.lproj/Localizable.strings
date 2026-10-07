@@ -299,6 +299,8 @@
 "Update available" = "Mise à jour disponible";
 "Latest version" = "Dernière version";
 "Install %@" = "Installer %@";
+"Install update?" = "Installer la mise à jour ?";
+"Install version %@ from the %@ channel?" = "Installer la version %@ du canal %@ ?";
 "Support me on Ko-fi" = "Me soutenir sur Ko-fi";
 "Switch channel?" = "Changer de canal ?";
 "Install and relaunch" = "Installer et relancer";

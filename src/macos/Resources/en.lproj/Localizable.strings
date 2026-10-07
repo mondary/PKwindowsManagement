@@ -40,6 +40,8 @@
 "Update available" = "Update available";
 "Latest version" = "Latest version";
 "Install %@" = "Install %@";
+"Install update?" = "Install update?";
+"Install version %@ from the %@ channel?" = "Install version %@ from the %@ channel?";
 "Credits & inspirations" = "Credits & Inspirations";
 "Credits" = "Credits";
 "Projects and tools that inform or power PKwindowsManagement." = "Projects and tools that inform or power PKwindowsManagement.";

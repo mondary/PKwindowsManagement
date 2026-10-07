@@ -10,6 +10,7 @@ struct ChannelSwitchOffer: Identifiable {
     let channel: UpdateChannel
     let version: String
     let url: URL
+    let isUpdate: Bool
 }
 
 /// Sparkle auto-updates with two channels (pattern proven in Macos_PKmonitor):
@@ -79,7 +80,7 @@ final class UpdaterManager: ObservableObject {
     }
 
     func checkForUpdates() {
-        controller?.checkForUpdates(nil)
+        checkForUpdatesOrSwitch()
     }
 
     func refreshAvailableVersions() {
@@ -98,10 +99,9 @@ final class UpdaterManager: ObservableObject {
         }
     }
 
-    /// Button entry point: refresh the feeds, then either hand over to Sparkle
-    /// (a real newer update exists) or offer the channel switch ourselves.
-    /// Sparkle never offers an older build, and going back to the stable
-    /// channel is a legitimate downgrade we must handle deterministically.
+    /// Refresh both feeds, then install from the verified enclosure directly.
+    /// This avoids Sparkle presenting a stale CDN copy of an appcast. A channel
+    /// switch to an older build is also offered when the short version differs.
     func checkForUpdatesOrSwitch() {
         Task {
             let versions = await (
@@ -116,15 +116,32 @@ final class UpdaterManager: ObservableObject {
                 self.refreshUpdateAvailability()
 
                 let target = channel == .dev ? versions.1 : versions.0
-                if let target,
-                   let enclosure = target.enclosure,
-                   let installedShort = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-                   let installedTechnical = Int64(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""),
-                   let feedTechnical = Int64(target.technical),
-                   feedTechnical <= installedTechnical,
-                   target.short != installedShort
-                {
-                    switchOffer = ChannelSwitchOffer(channel: channel, version: target.short, url: enclosure)
+                guard let target,
+                      let enclosure = target.enclosure,
+                      let installedShort = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+                      let installedTechnical = Int64(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""),
+                      let feedTechnical = Int64(target.technical)
+                else {
+                    controller?.checkForUpdates(nil)
+                    return
+                }
+
+                if feedTechnical > installedTechnical {
+                    // The fresh feed check is authoritative. Do not hand this
+                    // result back to Sparkle, whose CDN response may be stale.
+                    switchOffer = ChannelSwitchOffer(
+                        channel: channel,
+                        version: target.short,
+                        url: enclosure,
+                        isUpdate: true
+                    )
+                } else if target.short != installedShort {
+                    switchOffer = ChannelSwitchOffer(
+                        channel: channel,
+                        version: target.short,
+                        url: enclosure,
+                        isUpdate: false
+                    )
                 } else {
                     controller?.checkForUpdates(nil)
                 }
@@ -191,7 +208,7 @@ final class UpdaterManager: ObservableObject {
         else { return }
         let target = item.displayVersionString
         guard !target.isEmpty, target != installed else { return }
-        switchOffer = ChannelSwitchOffer(channel: channel, version: target, url: fileURL)
+        switchOffer = ChannelSwitchOffer(channel: channel, version: target, url: fileURL, isUpdate: false)
     }
 
     func cancelSwitchOffer() {

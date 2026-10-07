@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.42] - 2026-10-07
+### Fixed
+- Les contrôles manuels d'update utilisent la version vérifiée directement dans le feed frais au lieu de déléguer systématiquement à Sparkle, qui pouvait présenter un appcast Dev périmé
+
 ## [2026.10.41] - 2026-10-07
 ### Changed
 - Refonte du panneau de mise à jour avec cartes Stable/Dev et statuts explicites ; accès toujours visible dans la sidebar, bouton adapté lorsqu'une version est disponible
