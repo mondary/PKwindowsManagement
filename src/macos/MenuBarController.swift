@@ -11,6 +11,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var launchpadHotKeyObserver: NSObjectProtocol?
     private var hotCornerObserver: NSObjectProtocol?
     private var languageObserver: NSObjectProtocol?
+    private var updateAvailabilityObserver: NSObjectProtocol?
     private var automaticTerminationActivity: NSObjectProtocol?
     private var hotCornerTimer: Timer?
     private var lastMouseLocation: CGPoint = .zero
@@ -42,6 +43,11 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         rebuildStatusMenu()
         languageObserver = NotificationCenter.default.addObserver(
             forName: .appLanguageDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in self?.rebuildStatusMenu() }
+        updateAvailabilityObserver = NotificationCenter.default.addObserver(
+            forName: UpdaterManager.availabilityDidChange,
             object: nil,
             queue: .main
         ) { [weak self] _ in self?.rebuildStatusMenu() }
@@ -77,6 +83,9 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         }
         if let languageObserver {
             NotificationCenter.default.removeObserver(languageObserver)
+        }
+        if let updateAvailabilityObserver {
+            NotificationCenter.default.removeObserver(updateAvailabilityObserver)
         }
     }
 
@@ -138,7 +147,8 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
     private func rebuildStatusMenu() {
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "PKwindowsManagement", action: nil, keyEquivalent: ""))
+        let installedVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        menu.addItem(NSMenuItem(title: "PKwindowsManagement  ·  v\(installedVersion)", action: nil, keyEquivalent: ""))
         menu.addItem(.separator())
 
         let launchpadShortcut = AppRuntime.shared.settings?.launchpadShortcut
@@ -199,9 +209,16 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             menu.addItem(.separator())
         }
 
-        let updatesItem = NSMenuItem(title: localizedString("Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
+        let availableVersion = UpdaterManager.shared.availableUpdateVersion
+        let updateTitle = availableVersion.map {
+            String(format: localizedString("Update available — %@"), $0)
+        } ?? localizedString("Check for Updates…")
+        let updatesItem = NSMenuItem(title: updateTitle, action: #selector(checkForUpdates), keyEquivalent: "")
         updatesItem.target = self
-        updatesItem.image = menuSymbol("arrow.clockwise", description: localizedString("Check for Updates…"))
+        updatesItem.image = menuSymbol(
+            availableVersion == nil ? "arrow.clockwise" : "arrow.down.circle.fill",
+            description: updateTitle
+        )
         menu.addItem(updatesItem)
         let preferencesItem = NSMenuItem(title: localizedString("Open Preferences"), action: #selector(openPreferences), keyEquivalent: ",")
         preferencesItem.target = self

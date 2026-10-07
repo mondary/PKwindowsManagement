@@ -52,6 +52,7 @@ struct PKwindowsManagementApp: App {
 
 private struct RootDashboardView: View {
     @ObservedObject var settings: AppSettings
+    @ObservedObject private var updater = UpdaterManager.shared
     @State private var selection: SettingsSection? = .general
 
     static var appIcon: NSImage? {
@@ -188,6 +189,23 @@ private struct RootDashboardView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 10)
+
+            if updater.availableUpdateVersion != nil {
+                Button {
+                    updater.checkForUpdatesOrSwitch()
+                } label: {
+                    Label(localizedString("New version available"), systemImage: "arrow.down.circle.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(Color.accentColor.opacity(0.11), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .help(String(format: localizedString("Update available — %@"), updater.availableUpdateVersion ?? ""))
+                .padding(.horizontal, 18)
+                .padding(.bottom, 8)
+            }
 
             Text(appVersionLabel)
                 .font(.system(size: 11, weight: .medium, design: .monospaced))

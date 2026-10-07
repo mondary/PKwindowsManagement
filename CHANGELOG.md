@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.10.39] - 2026-10-07
+### Added
+- Indicateur de mise à jour disponible près des langues et de la version dans la sidebar, et libellé dynamique dans le menu ; menu affiche l'app et sa version installée
+- Contrôle des feeds au lancement et toutes les six heures
+### Changed
+- Panneau des mises à jour épinglé en bas de À propos, pleine largeur ; la présentation éditoriale reste dans sa zone défilante
+
 ## [2026.10.38] - 2026-10-07
 ### Changed
 - En-tête de Bibliothèque de projets harmonisé avec Crédits, À propos et Soutenir : icône colorée, titre et sous-titre centrés

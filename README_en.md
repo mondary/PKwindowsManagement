@@ -97,6 +97,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Launchpad navigation mode: vertical scroll or horizontal pages.
 - Changes are persisted in `UserDefaults`.
 - In `General` or `About`, choose the `Stable` or `Dev` update channel and compare the installed version with the latest release on each channel. Dev builds install automatically; Stable asks before installing.
+- A new version on the selected channel is surfaced in the sidebar and menu bar menu; click the badge to start the update. Feeds are checked at launch and periodically.
 - Manual settings import/export in JSON format.
 - Auto-backup: choose a folder (e.g. Google Drive) and export a timestamped JSON backup on every settings change.
 - In the calendar or its dedicated `Big Year` settings section, use the live preview, choose the school zone, theme, and appearance: birthdays or month names in bold as you prefer (the `!` marker still wins), plus custom colors for each element (background, holidays, birthdays, events, zones, text…). Then enter one birthday per line as `DD.MM,Name` or `DDMM,Name` (for example `11.02,Clément` or `0112,Marie`). Prefix the name with `!` to emphasize it in bold. Click a day directly to create a single-day or date-range event, or use the `DD.MM-DD.MM,Title` text format. Enable `macOS / Google Calendars` to import all-day events from accounts configured in macOS Calendar.

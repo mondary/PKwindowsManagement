@@ -293,6 +293,8 @@
 "Installed version" = "Installierte Version";
 "Stable version" = "Stabile Version";
 "Dev version" = "Dev-Version";
+"New version available" = "Neue Version verfügbar";
+"Update available — %@" = "Update verfügbar — %@";
 "Support me on Ko-fi" = "Unterstütze mich auf Ko-fi";
 "Switch channel?" = "Kanal wechseln?";
 "Install and relaunch" = "Installieren und neu starten";

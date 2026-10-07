@@ -294,6 +294,8 @@
 "Installed version" = "Version installée";
 "Stable version" = "Version stable";
 "Dev version" = "Version dev";
+"New version available" = "Nouvelle version disponible";
+"Update available — %@" = "Mise à jour disponible — %@";
 "Support me on Ko-fi" = "Me soutenir sur Ko-fi";
 "Switch channel?" = "Changer de canal ?";
 "Install and relaunch" = "Installer et relancer";

@@ -31,11 +31,15 @@ final class UpdaterManager: ObservableObject {
     @Published private(set) var selectedChannel: UpdateChannel
     @Published private(set) var latestStableVersion: String?
     @Published private(set) var latestDevVersion: String?
+    @Published private(set) var availableUpdateVersion: String?
     @Published private(set) var switchOffer: ChannelSwitchOffer?
     @Published private(set) var installingSwitch = false
     @Published private(set) var switchErrorMessage: String?
     private var stableInfo: AppcastInfo?
     private var devInfo: AppcastInfo?
+    private var versionRefreshTimer: Timer?
+
+    static let availabilityDidChange = Notification.Name("PKwindowsManagement.updateAvailabilityDidChange")
 
     private init() {
         selectedChannel = UpdateChannel(
@@ -53,6 +57,7 @@ final class UpdaterManager: ObservableObject {
             UserDefaults.standard.set(newValue.rawValue, forKey: Self.channelKey)
             selectedChannel = newValue
             applyChannelBehavior()
+            refreshUpdateAvailability()
         }
     }
 
@@ -66,6 +71,11 @@ final class UpdaterManager: ObservableObject {
         self.controller = controller
         applyChannelBehavior()
         controller.startUpdater()
+        refreshAvailableVersions()
+        versionRefreshTimer?.invalidate()
+        versionRefreshTimer = Timer.scheduledTimer(withTimeInterval: 6 * 60 * 60, repeats: true) { [weak self] _ in
+            self?.refreshAvailableVersions()
+        }
     }
 
     func checkForUpdates() {
@@ -83,6 +93,7 @@ final class UpdaterManager: ObservableObject {
                 self.latestDevVersion = versions.1?.short
                 self.stableInfo = versions.0
                 self.devInfo = versions.1
+                self.refreshUpdateAvailability()
             }
         }
     }
@@ -102,6 +113,7 @@ final class UpdaterManager: ObservableObject {
                 self.latestDevVersion = versions.1?.short
                 self.stableInfo = versions.0
                 self.devInfo = versions.1
+                self.refreshUpdateAvailability()
 
                 let target = channel == .dev ? versions.1 : versions.0
                 if let target,
@@ -144,6 +156,21 @@ final class UpdaterManager: ObservableObject {
         items.append(URLQueryItem(name: "_pk_refresh", value: UUID().uuidString))
         components.queryItems = items
         return components.url
+    }
+
+    private func refreshUpdateAvailability() {
+        let previousVersion = availableUpdateVersion
+        let info = channel == .dev ? devInfo : stableInfo
+        let installedTechnical = Int64(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "")
+        let feedTechnical = info.flatMap { Int64($0.technical) }
+        if let info, let installedTechnical, let feedTechnical, feedTechnical > installedTechnical {
+            availableUpdateVersion = info.short
+        } else {
+            availableUpdateVersion = nil
+        }
+        if availableUpdateVersion != previousVersion {
+            NotificationCenter.default.post(name: Self.availabilityDidChange, object: self)
+        }
     }
 
     /// Dev builds install silently; stable builds ask first.
