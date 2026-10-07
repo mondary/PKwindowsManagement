@@ -65,8 +65,10 @@ struct LaunchpadOverlayView: View {
                         keyboardApps = apps.filter {
                             AppCategorizer.effectiveGroup(for: $0, overrides: settings.launchpadCategoryOverrides) == selectedCategory
                         }
-                    } else {
+                    } else if settings.launchpadGroupedByCategory {
                         keyboardApps = apps
+                    } else {
+                        keyboardApps = orderedFlatApps(apps)
                     }
                     return handleKeyEvent(event, apps: keyboardApps, configuration: gridConfiguration, calculationState: calculationState)
                 }
@@ -269,7 +271,9 @@ struct LaunchpadOverlayView: View {
 
     @ViewBuilder
     private func gridContent(apps: [LaunchableApp], metrics: LaunchpadGridMetrics) -> some View {
-        let visibleApps = appsForSelectedCategory(apps)
+        let visibleApps = settings.launchpadGroupedByCategory
+            ? appsForSelectedCategory(apps)
+            : orderedFlatApps(apps)
         switch settings.launchpadGridNavigation {
         case .vertical:
             ScrollViewReader { proxy in
@@ -286,7 +290,11 @@ struct LaunchpadOverlayView: View {
                         .padding(.horizontal, metrics.horizontalPadding)
                         .padding(.vertical, metrics.verticalPadding)
                     } else {
-                        appGrid(apps: visibleApps, metrics: metrics, orderContextApps: apps)
+                        appGrid(
+                            apps: visibleApps,
+                            metrics: metrics,
+                            orderContextApps: settings.launchpadGroupedByCategory ? apps : visibleApps
+                        )
                             .padding(.horizontal, metrics.horizontalPadding)
                             .padding(.vertical, metrics.verticalPadding)
                     }
@@ -308,7 +316,11 @@ struct LaunchpadOverlayView: View {
                         LazyHStack(spacing: 0) {
                             ForEach(Array(pages.enumerated()), id: \.offset) { page, pageApps in
                                 VStack {
-                                    appGrid(apps: pageApps, metrics: metrics, orderContextApps: apps)
+                                    appGrid(
+                                        apps: pageApps,
+                                        metrics: metrics,
+                                        orderContextApps: settings.launchpadGroupedByCategory ? apps : visibleApps
+                                    )
                                         .padding(.horizontal, metrics.horizontalPadding)
                                         .padding(.top, metrics.verticalPadding)
                                     Spacer(minLength: 0)
@@ -410,6 +422,10 @@ struct LaunchpadOverlayView: View {
             sortMode: settings.launchpadCategorySortMode,
             customOrder: settings.launchpadCustomCategoryOrder
         )
+    }
+
+    private func orderedFlatApps(_ apps: [LaunchableApp]) -> [LaunchableApp] {
+        categoryGroups(apps).flatMap(\.apps)
     }
 
     private func overlaySectionHeader(_ group: LaunchpadGroup, count: Int) -> some View {

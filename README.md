@@ -41,6 +41,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Gestionnaire d'URLs avec choix du navigateur et raccourcis globaux.
 - Tri configurable des applications du Launchpad par dernier lancement, nom, couleur dominante ou ordre personnalisé par glisser-déposer.
 - Regroupement par catégories avec tri indépendant : catégories les plus fournies, ordre alphabétique ou ordre personnalisé par glisser-déposer ; les apps gardent leur propre critère de tri dans chaque catégorie.
+- Désactiver les catégories masque leurs en-têtes sans perdre cet ordre : les apps restent affichées à plat dans le même ordre.
 - Paramétrage fin de la grille du Launchpad : colonnes, lignes, taille des icônes, espacement des colonnes et des lignes.
 - Profils de grille par écran pour adapter le Launchpad à chaque moniteur connecté.
 - Choix du mode de navigation du Launchpad : scroll vertical continu ou pages horizontales.

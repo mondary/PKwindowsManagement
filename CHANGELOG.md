@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.31] - 2026-10-07
+### Fixed
+- Le mode sans catégories masque désormais les en-têtes sans réinitialiser l’ordre : les apps restent aplaties dans l’ordre des catégories et des apps sélectionné
+
 ## [2026.10.30] - 2026-10-07
 ### Fixed
 - Correction de l’inférence Swift du regroupement des catégories pour compiler le build Dev

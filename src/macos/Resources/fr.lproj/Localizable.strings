@@ -325,6 +325,7 @@
 "Category order" = "Ordre des catégories";
 "Drag category chips in the Launchpad to arrange them." = "Glissez les catégories dans le Launchpad pour les réordonner.";
 "Drag app tiles in the Launchpad to arrange them." = "Glissez les apps dans le Launchpad pour les réordonner.";
+"Hiding category headers keeps the selected category and app order." = "Masquer les titres conserve le tri choisi pour les catégories et les apps.";
 "Move to Category" = "Changer de catégorie";
 "Reset Category" = "Catégorie automatique";
 "Local AI" = "IA locale";

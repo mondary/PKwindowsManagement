@@ -12,6 +12,7 @@ struct LaunchpadView: View {
 
     var body: some View {
         let apps = filteredApps
+        let flatApps = orderedFlatApps(apps)
         VStack(alignment: .leading, spacing: 16) {
             activationSettings
                 .padding(.horizontal, 24)
@@ -42,8 +43,8 @@ struct LaunchpadView: View {
                     .padding(24)
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 14)], spacing: 14) {
-                        ForEach(apps) { app in
-                            reorderableAppTile(app, allApps: apps)
+                        ForEach(flatApps) { app in
+                            reorderableAppTile(app, allApps: flatApps)
                         }
                     }
                     .padding(24)
@@ -137,6 +138,14 @@ struct LaunchpadView: View {
                     Toggle("Group by category", isOn: $settings.launchpadGroupedByCategory)
                         .font(.subheadline)
 
+                    if !settings.launchpadGroupedByCategory {
+                        Text("Hiding category headers keeps the selected category and app order.")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .frame(width: 190, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
                     if settings.launchpadGroupedByCategory {
                         Picker("Category order", selection: $settings.launchpadCategorySortMode) {
                             ForEach(LaunchpadCategorySortMode.allCases) { mode in
@@ -204,6 +213,10 @@ struct LaunchpadView: View {
             sortMode: settings.launchpadCategorySortMode,
             customOrder: settings.launchpadCustomCategoryOrder
         )
+    }
+
+    private func orderedFlatApps(_ apps: [LaunchableApp]) -> [LaunchableApp] {
+        categoryGroups(apps).flatMap(\.apps)
     }
 
     @ViewBuilder

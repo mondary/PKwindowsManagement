@@ -30,6 +30,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Full-screen Launchpad with search, recent applications, and custom shortcuts.
 - Sort Launchpad apps by last launch, name, dominant icon color, or a custom drag-and-drop order.
 - Group apps into categories and sort categories independently by app count, alphabetically, or with a custom drag-and-drop order; the app sort mode still applies inside each category.
+- Disable category grouping to hide headers while keeping the same flat display order.
 - Keyboard Launchpad navigation: type to filter, use arrows to select, and press `Enter` to launch.
 - Global per-application shortcuts that work anywhere on macOS while Launchpad is closed.
 - Left/right modifier key distinction: Command, Option, and Shift (e.g. Right Command + A ≠ Left Command + A).
