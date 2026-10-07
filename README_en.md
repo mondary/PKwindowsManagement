@@ -28,6 +28,8 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Customize keyboard shortcuts from a SwiftUI preferences screen.
 - Control the focused window through macOS Accessibility APIs.
 - Full-screen Launchpad with search, recent applications, and custom shortcuts.
+- Sort Launchpad apps by last launch, name, dominant icon color, or a custom drag-and-drop order.
+- Group apps into categories and sort categories independently by app count, alphabetically, or with a custom drag-and-drop order; the app sort mode still applies inside each category.
 - Keyboard Launchpad navigation: type to filter, use arrows to select, and press `Enter` to launch.
 - Global per-application shortcuts that work anywhere on macOS while Launchpad is closed.
 - Left/right modifier key distinction: Command, Option, and Shift (e.g. Right Command + A ≠ Left Command + A).
@@ -87,6 +89,8 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Assigned shortcuts appear as key badges over application icons.
 - Shortcuts can also be captured with a `Record` button.
 - `Scripts` and `URLs` are split into separate preferences sections.
+- In `Appearance`, sort Launchpad apps by `Last Used`, `Name`, `Icon Color`, or `Custom Order` (drag tiles in Launchpad).
+- In `Launchpad` → `Organization`, enable category grouping and sort categories by app count, alphabetically, or custom order (drag category chips in Launchpad).
 - Launchpad grid customization: columns/rows count, icon size, column and row spacing.
 - Per-display Launchpad grid profiles are available in Appearance settings.
 - Launchpad navigation mode: vertical scroll or horizontal pages.
@@ -98,7 +102,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 
 ## 🧾 Commands
 - Left-click the menu bar icon to open or close Launchpad.
-- Right-click the menu bar icon to show `Open Launchpad`, `Open Big Year`, `Open Preferences`, and `Quit`.
+- Right-click the menu bar icon for Launchpad/Big Year actions and shortcuts, followed by `Check for Updates`, `Open Preferences`, Ko-fi, and `Quit`.
 - `Open Big Year`: opens the full-screen year view. `Escape` or `Cmd + W` closes it, `Cmd + Q` quits the app.
 - `Cmd + ,`: open settings.
 

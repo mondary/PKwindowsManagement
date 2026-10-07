@@ -39,7 +39,8 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Snippet `DL2desk` présent par défaut : déplace le contenu de `Downloads` vers le Bureau, avec renommage automatique en cas de conflit et raccourci `Right Cmd + L`.
 - Icône dossier pour les snippets Finder qui ouvrent `Applications`, `Home` ou `Documents`.
 - Gestionnaire d'URLs avec choix du navigateur et raccourcis globaux.
-- Tri configurable des applications du Launchpad par nom, dernière utilisation ou couleur dominante de l'icône.
+- Tri configurable des applications du Launchpad par dernier lancement, nom, couleur dominante ou ordre personnalisé par glisser-déposer.
+- Regroupement par catégories avec tri indépendant : catégories les plus fournies, ordre alphabétique ou ordre personnalisé par glisser-déposer ; les apps gardent leur propre critère de tri dans chaque catégorie.
 - Paramétrage fin de la grille du Launchpad : colonnes, lignes, taille des icônes, espacement des colonnes et des lignes.
 - Profils de grille par écran pour adapter le Launchpad à chaque moniteur connecté.
 - Choix du mode de navigation du Launchpad : scroll vertical continu ou pages horizontales.
@@ -94,7 +95,8 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Les raccourcis attribués apparaissent sur les icônes sous forme de touches.
 - Enregistrement des raccourcis via un bouton `Record`.
 - Gestion des snippets `Scripts` et `URLs` dans des onglets séparés des réglages.
-- Ordre des applications du Launchpad configurable dans `Appearance` : `Last Used`, `Name` ou `Icon Color`.
+- Ordre des applications du Launchpad configurable dans `Appearance` : `Last Used`, `Name`, `Icon Color` ou `Custom Order` (glisser-déposer dans le Launchpad).
+- Dans `Launchpad` → `Organization`, active le regroupement par catégorie et choisis leur ordre : catégories les plus fournies, alphabétique ou personnalisé (glisser-déposer les pastilles dans le Launchpad).
 - Paramétrage de la grille du Launchpad : nombre de colonnes/lignes, taille des icônes, espacement des colonnes et des lignes.
 - Possibilité de définir une grille spécifique par écran dans les réglages d'apparence.
 - Choix du mode de navigation du Launchpad : scroll vertical ou pages horizontales.
@@ -106,7 +108,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 
 ## 🧾 Commandes
 - Clic gauche sur l'icône de barre de menu : ouvre ou ferme le Launchpad.
-- Clic droit sur l'icône de barre de menu : affiche `Open Launchpad`, `Open Big Year`, `Open Preferences` et `Quit`.
+- Clic droit sur l'icône de barre de menu : affiche les actions Launchpad/Big Year, les raccourcis configurés, puis `Check for Updates`, `Open Preferences`, Ko-fi et `Quit`.
 - `Open Big Year` : ouvre la vue annuelle plein écran. `Échap` ou `Cmd + W` la ferment, `Cmd + Q` quitte l'app.
 - `Cmd + ,` : ouvre les réglages.
 

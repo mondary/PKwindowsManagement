@@ -268,12 +268,35 @@ enum AppCategorizer {
     /// Groups a flat app list into ordered non-empty sections.
     static func grouped(
         _ apps: [LaunchableApp],
-        overrides: [String: String] = [:]
+        overrides: [String: String] = [:],
+        sortMode: LaunchpadCategorySortMode = .mostApps,
+        customOrder: [String] = []
     ) -> [LaunchpadAppGroup] {
         let byGroup = Dictionary(grouping: apps) { effectiveGroup(for: $0, overrides: overrides) }
-        return LaunchpadGroup.allCases.compactMap { group in
+        let groups = LaunchpadGroup.allCases.compactMap { group in
             guard let members = byGroup[group], !members.isEmpty else { return nil }
             return LaunchpadAppGroup(group: group, apps: members)
+        }
+        switch sortMode {
+        case .mostApps:
+            return groups.sorted { lhs, rhs in
+                if lhs.apps.count != rhs.apps.count { return lhs.apps.count > rhs.apps.count }
+                return LaunchpadGroup.allCases.firstIndex(of: lhs.group)! < LaunchpadGroup.allCases.firstIndex(of: rhs.group)!
+            }
+        case .name:
+            return groups.sorted {
+                $0.group.title.localizedCaseInsensitiveCompare($1.group.title) == .orderedAscending
+            }
+        case .custom:
+            let ranks = customOrder.enumerated().reduce(into: [String: Int]()) { ranks, entry in
+                if ranks[entry.element] == nil { ranks[entry.element] = entry.offset }
+            }
+            return groups.sorted { lhs, rhs in
+                let leftRank = ranks[lhs.group.rawValue] ?? Int.max
+                let rightRank = ranks[rhs.group.rawValue] ?? Int.max
+                if leftRank != rightRank { return leftRank < rightRank }
+                return LaunchpadGroup.allCases.firstIndex(of: lhs.group)! < LaunchpadGroup.allCases.firstIndex(of: rhs.group)!
+            }
         }
     }
 

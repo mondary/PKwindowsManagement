@@ -1,11 +1,13 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct LaunchpadView: View {
     @ObservedObject var settings: AppSettings
     @State private var query = ""
     @State private var shortcutTarget: LaunchableApp?
     @State private var commandFeedbackMessage: String?
+    @State private var draggingAppBundleID: String?
     private let launcher = AppLauncherService()
 
     var body: some View {
@@ -26,12 +28,12 @@ struct LaunchpadView: View {
             ScrollView {
                 if settings.launchpadGroupedByCategory && !isSearching {
                     VStack(alignment: .leading, spacing: 20) {
-                        ForEach(AppCategorizer.grouped(apps, overrides: settings.launchpadCategoryOverrides)) { section in
+                        ForEach(categoryGroups(apps)) { section in
                             VStack(alignment: .leading, spacing: 10) {
                                 sectionHeader(section.group, count: section.apps.count)
                                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 14)], spacing: 14) {
                                     ForEach(section.apps) { app in
-                                        appTile(app)
+                                        reorderableAppTile(app, allApps: apps)
                                     }
                                 }
                             }
@@ -41,7 +43,7 @@ struct LaunchpadView: View {
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 14)], spacing: 14) {
                         ForEach(apps) { app in
-                            appTile(app)
+                            reorderableAppTile(app, allApps: apps)
                         }
                     }
                     .padding(24)
@@ -135,6 +137,23 @@ struct LaunchpadView: View {
                     Toggle("Group by category", isOn: $settings.launchpadGroupedByCategory)
                         .font(.subheadline)
 
+                    if settings.launchpadGroupedByCategory {
+                        Picker("Category order", selection: $settings.launchpadCategorySortMode) {
+                            ForEach(LaunchpadCategorySortMode.allCases) { mode in
+                                Text(mode.title).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.menu)
+
+                        if settings.launchpadCategorySortMode == .custom {
+                            Text("Drag category chips in the Launchpad to arrange them.")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .frame(width: 190, alignment: .leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
                     Text("Sort applications into sections (Development, Internet, Creation…).")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -146,6 +165,14 @@ struct LaunchpadView: View {
                         .foregroundStyle(.tertiary)
                         .frame(width: 190, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
+
+                    if settings.launchpadAppSortMode == .custom {
+                        Text("Drag app tiles in the Launchpad to arrange them.")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .frame(width: 190, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
@@ -167,6 +194,37 @@ struct LaunchpadView: View {
             || $0.bundleID.lowercased().contains(needle)
             || $0.snippet?.searchText.lowercased().contains(needle) == true
             || matchesLauncherCommand($0, needle: needle)
+        }
+    }
+
+    private func categoryGroups(_ apps: [LaunchableApp]) -> [LaunchpadAppGroup] {
+        AppCategorizer.grouped(
+            apps,
+            overrides: settings.launchpadCategoryOverrides,
+            sortMode: settings.launchpadCategorySortMode,
+            customOrder: settings.launchpadCustomCategoryOrder
+        )
+    }
+
+    @ViewBuilder
+    private func reorderableAppTile(_ app: LaunchableApp, allApps: [LaunchableApp]) -> some View {
+        if settings.launchpadAppSortMode == .custom, app.commandSymbolName == nil, app.snippet == nil {
+            appTile(app)
+                .onDrag {
+                    draggingAppBundleID = app.bundleID
+                    return NSItemProvider(object: app.bundleID as NSString)
+                }
+                .onDrop(
+                    of: [UTType.text],
+                    delegate: LaunchpadAppDropDelegate(
+                        targetBundleID: app.bundleID,
+                        settings: settings,
+                        fallbackOrder: allApps.map(\.bundleID),
+                        draggingBundleID: $draggingAppBundleID
+                    )
+                )
+        } else {
+            appTile(app)
         }
     }
 

@@ -319,6 +319,12 @@
 "All" = "Toutes";
 "Current category" = "Catégorie actuelle";
 "Right-click an app tile to change its category." = "Clic droit sur une app pour changer sa catégorie.";
+"Most Apps First" = "Catégories les plus fournies d’abord";
+"Alphabetical" = "Ordre alphabétique";
+"Custom Order" = "Ordre personnalisé";
+"Category order" = "Ordre des catégories";
+"Drag category chips in the Launchpad to arrange them." = "Glissez les catégories dans le Launchpad pour les réordonner.";
+"Drag app tiles in the Launchpad to arrange them." = "Glissez les apps dans le Launchpad pour les réordonner.";
 "Move to Category" = "Changer de catégorie";
 "Reset Category" = "Catégorie automatique";
 "Local AI" = "IA locale";

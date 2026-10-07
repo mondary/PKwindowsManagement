@@ -4,6 +4,7 @@ Skills used for this project:
 
 - `macos-patterns` — native macOS app and UserDefaults/SwiftUI update-channel behavior.
 - `macos-settings-ui` — macOS settings pane labels and update-version comparison layout.
-- `macos-build` — build verification workflow; local compilation is currently blocked by the installed CommandLineTools SwiftUI macro plugin issue.
-- `app-presence-sync` — checked synchronized French/English product descriptions; they remain accurate, so no landing or hub changes are needed for this About-screen layout refinement.
-- `pk-commits` — CalVer changelog bump and synchronized project documentation.
+- `macos-build` — build verification; use the Dev GitHub Actions workflow because this environment lacks a working Xcode toolchain.
+- `app-presence-sync` — mirrored the new Launchpad sorting options in the French and English READMEs; defer landing/hub publication until the Dev UI has been tested.
+- `macos-menu-and-settings` — menu-bar action placement and aligned icons.
+- `pk-commits` — CalVer bump to `2026.10.29`, changelog, and synchronized French/English documentation.
