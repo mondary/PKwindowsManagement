@@ -14,9 +14,9 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 ![Big Year — calendrier annuel natif, thème Poster bleu](store/website/screenshots/year-poster.webp)
 
 - [Démo vidéo](store/website/videos/window-flow.mp4) · [GIF animé](store/website/gifs/window-flow-wide.gif)
-- [Télécharger le DMG Apple Silicon v2026.09.08](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_aarch64.dmg) : montez le DMG, glissez l'app dans Applications et autorisez l'Accessibilité. Build local pour macOS 13+, sans garantie de notarisation.
+- [Télécharger le dernier Stable publié — v2026.10.32](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg) : montez le DMG, glissez l'app dans Applications et autorisez l'Accessibilité. Build pour macOS 13+.
 - Homebrew : `brew install --cask mondary/tap/pk-windows-management` (mise à jour : `brew upgrade --cask pk-windows-management`).
-- curl : `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_aarch64.dmg`
+- curl : `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg`
 - [Sources et limites des captures](store/media-kit/README.md)
 
 ## ✅ Fonctionnalités
@@ -39,7 +39,9 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Snippet `DL2desk` présent par défaut : déplace le contenu de `Downloads` vers le Bureau, avec renommage automatique en cas de conflit et raccourci `Right Cmd + L`.
 - Icône dossier pour les snippets Finder qui ouvrent `Applications`, `Home` ou `Documents`.
 - Gestionnaire d'URLs avec choix du navigateur et raccourcis globaux.
-- Tri configurable des applications du Launchpad par nom, dernière utilisation ou couleur dominante de l'icône.
+- Tri configurable des applications du Launchpad par dernier lancement, nom, couleur dominante ou ordre personnalisé par glisser-déposer.
+- Regroupement par catégories avec tri indépendant : catégories les plus fournies, ordre alphabétique ou ordre personnalisé par glisser-déposer ; les apps gardent leur propre critère de tri dans chaque catégorie.
+- Le tri général choisi dans `Appearance` (dernier lancement, nom, couleur ou personnalisé) s'applique aussi quand le regroupement par catégorie est désactivé ; l'ordre des catégories ne concerne que l'affichage groupé.
 - Paramétrage fin de la grille du Launchpad : colonnes, lignes, taille des icônes, espacement des colonnes et des lignes.
 - Profils de grille par écran pour adapter le Launchpad à chaque moniteur connecté.
 - Choix du mode de navigation du Launchpad : scroll vertical continu ou pages horizontales.
@@ -51,7 +53,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Commande `Empty Trash` dans le Launchpad pour vider la Corbeille via Finder.
 - Ouverture du Launchpad avec `Option + Espace`, le coin supérieur gauche ou un clic sur l'icône de barre de menu.
 - L'icône officielle de l'app s'affiche dans la barre de menu (en couleur) ; menu contextuel pour ouvrir les préférences ou quitter.
-- Mises à jour Sparkle : choisis le canal Stable ou Dev et compare les versions installée, stable et dev dans Général ou À propos.
+- Mises à jour Sparkle dans `À propos` : compare la version installée aux dernières versions Stable et Dev ; chaque canal indique s'il est à jour, propose une mise à jour ou correspond à l'autre canal.
 - Chargement plus léger au démarrage : les raccourcis globaux n'ont plus besoin de charger toutes les icônes d'applications, et l'analyse couleur ne se fait que pour le tri `Icon Color`.
 
 ## 🧠 Utilisation
@@ -94,19 +96,21 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Les raccourcis attribués apparaissent sur les icônes sous forme de touches.
 - Enregistrement des raccourcis via un bouton `Record`.
 - Gestion des snippets `Scripts` et `URLs` dans des onglets séparés des réglages.
-- Ordre des applications du Launchpad configurable dans `Appearance` : `Last Used`, `Name` ou `Icon Color`.
+- Ordre des applications du Launchpad configurable dans `Appearance` : `Last Used`, `Name`, `Icon Color` ou `Custom Order` (glisser-déposer dans le Launchpad).
+- Dans `Launchpad` → `Organization`, active le regroupement par catégorie et choisis leur ordre : catégories les plus fournies, alphabétique ou personnalisé (glisser-déposer les pastilles dans le Launchpad).
 - Paramétrage de la grille du Launchpad : nombre de colonnes/lignes, taille des icônes, espacement des colonnes et des lignes.
 - Possibilité de définir une grille spécifique par écran dans les réglages d'apparence.
 - Choix du mode de navigation du Launchpad : scroll vertical ou pages horizontales.
 - Les changements sont sauvegardés dans `UserDefaults`.
 - Dans `Général` ou `À propos`, choisis le canal de mise à jour `Stable` ou `Dev` et compare la version installée aux dernières versions publiées sur chaque canal. Le canal Dev installe les builds automatiquement ; Stable conserve la confirmation avant installation.
+- La barre latérale garde la version installée et la version disponible sur une même ligne, sans déplacer les drapeaux ; clique sur la version proposée pour lancer l'installation. Les vérifications manuelles s'appuient sur l'appcast frais et l'archive signée du canal.
 - Import/export manuel des réglages au format JSON.
 - Auto-backup : choisis un dossier (ex : Google Drive) et exporte un backup JSON horodaté à chaque modification des réglages.
 - Dans le calendrier ou sa section dédiée `Big Year` des réglages, utilise l’aperçu vivant, choisis la zone scolaire, le thème et l’apparence : anniversaires ou noms des mois en gras au choix (le `!` reste prioritaire), et couleurs personnalisées pour chaque élément (fond, jours fériés, anniversaires, événements, zones, texte…). Puis saisis un anniversaire par ligne au format `JJ.MM,Prénom` ou `JJMM,Prénom` (par exemple `11.02,Clément` ou `0112,Marie`). Préfixe le prénom par `!` pour un événement important en gras. Clique aussi directement sur une journée pour créer un événement d'un jour ou une plage, ou utilise le format texte `JJ.MM-JJ.MM,Titre`. Active `Calendriers macOS / Google` pour importer les événements journée entière des comptes configurés dans Calendrier macOS.
 
 ## 🧾 Commandes
 - Clic gauche sur l'icône de barre de menu : ouvre ou ferme le Launchpad.
-- Clic droit sur l'icône de barre de menu : affiche `Open Launchpad`, `Open Big Year`, `Open Preferences` et `Quit`.
+- Clic droit sur l'icône de barre de menu : affiche les actions Launchpad/Big Year, les raccourcis configurés, puis `Check for Updates`, `Open Preferences`, Ko-fi et `Quit`.
 - `Open Big Year` : ouvre la vue annuelle plein écran. `Échap` ou `Cmd + W` la ferment, `Cmd + Q` quitte l'app.
 - `Cmd + ,` : ouvre les réglages.
 
@@ -143,6 +147,14 @@ src/script/release.sh
 - Au premier usage, valide l'accès à l'accessibilité dans `Réglages Système > Confidentialité et sécurité > Accessibilité`. Cette permission est nécessaire pour gérer les fenêtres et écouter les raccourcis globaux.
 - Pour `Empty Trash`, valide aussi l'autorisation d'automatisation Finder quand macOS la demande. Cette commande passe par Finder car macOS bloque l'accès direct au dossier `~/.Trash`.
 - Si l'app n'agit pas sur les fenêtres, vérifie aussi les permissions de l'app cible si nécessaire.
+
+## 🙏 Crédits
+
+PKwindowsManagement s'appuie sur des projets open source et s'en inspire — les crédits sont dans l'app, dans la section dédiée **Crédits & inspirations** :
+
+- [Rooms](https://github.com/saragordic/rooms) (Sara Gordić, MIT) — concept des rooms et moteur de disposition porté en RoomTiler.
+- [Sparkle 2](https://github.com/sparkle-project/Sparkle) (MIT) — mises à jour automatiques Stable/Dev.
+- [Laya](https://huggingface.co/convaiinnovations/laya) (Convai Innovations, Apache-2.0) — modèle de décision local derrière l'IA intégrée.
 
 ## 🧾 Changelog
 - Voir [CHANGELOG.md](CHANGELOG.md) pour l'historique complet.

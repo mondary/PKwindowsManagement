@@ -1,11 +1,13 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct LaunchpadView: View {
     @ObservedObject var settings: AppSettings
     @State private var query = ""
     @State private var shortcutTarget: LaunchableApp?
     @State private var commandFeedbackMessage: String?
+    @State private var draggingAppBundleID: String?
     private let launcher = AppLauncherService()
 
     var body: some View {
@@ -24,24 +26,28 @@ struct LaunchpadView: View {
             .padding(.horizontal, 24)
 
             ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 14)], spacing: 14) {
-                    ForEach(apps) { app in
-                        VStack(spacing: 8) {
-                            Button {
-                                commandFeedbackMessage = launcher.launch(app, settings: settings)
-                            } label: {
-                                LaunchpadAppTile(app: app)
+                if settings.launchpadGroupedByCategory && !isSearching {
+                    VStack(alignment: .leading, spacing: 20) {
+                        ForEach(categoryGroups(apps)) { section in
+                            VStack(alignment: .leading, spacing: 10) {
+                                sectionHeader(section.group, count: section.apps.count)
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 14)], spacing: 14) {
+                                    ForEach(section.apps) { app in
+                                        reorderableAppTile(app, allApps: apps)
+                                    }
+                                }
                             }
-                            .buttonStyle(.plain)
-
-                            Button(app.shortcut == nil ? localizedString("Assign shortcut") : shortcutLabel(for: app.shortcut)) {
-                                shortcutTarget = app
-                            }
-                            .font(.system(size: 11, weight: .semibold))
                         }
                     }
+                    .padding(24)
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 14)], spacing: 14) {
+                        ForEach(apps) { app in
+                            reorderableAppTile(app, allApps: apps)
+                        }
+                    }
+                    .padding(24)
                 }
-                .padding(24)
             }
         }
         .sheet(item: $shortcutTarget) { app in
@@ -123,11 +129,60 @@ struct LaunchpadView: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Organization")
+                        .font(.subheadline.weight(.semibold))
+
+                    Toggle("Group by category", isOn: $settings.launchpadGroupedByCategory)
+                        .font(.subheadline)
+
+                    if settings.launchpadGroupedByCategory {
+                        Picker("Category order", selection: $settings.launchpadCategorySortMode) {
+                            ForEach(LaunchpadCategorySortMode.allCases) { mode in
+                                Text(mode.title).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.menu)
+
+                        if settings.launchpadCategorySortMode == .custom {
+                            Text("Drag category chips in the Launchpad to arrange them.")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .frame(width: 190, alignment: .leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    Text("Sort applications into sections (Development, Internet, Creation…).")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 190, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Right-click an app tile to change its category.")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .frame(width: 190, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if settings.launchpadAppSortMode == .custom {
+                        Text("Drag app tiles in the Launchpad to arrange them.")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .frame(width: 190, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             }
         }
         .padding(14)
         .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .animation(.easeInOut(duration: 0.18), value: settings.launchpadStyle)
+    }
+
+    private var isSearching: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var filteredApps: [LaunchableApp] {
@@ -139,6 +194,88 @@ struct LaunchpadView: View {
             || $0.bundleID.lowercased().contains(needle)
             || $0.snippet?.searchText.lowercased().contains(needle) == true
             || matchesLauncherCommand($0, needle: needle)
+        }
+    }
+
+    private func categoryGroups(_ apps: [LaunchableApp]) -> [LaunchpadAppGroup] {
+        AppCategorizer.grouped(
+            apps,
+            overrides: settings.launchpadCategoryOverrides,
+            sortMode: settings.launchpadCategorySortMode,
+            customOrder: settings.launchpadCustomCategoryOrder
+        )
+    }
+
+    @ViewBuilder
+    private func reorderableAppTile(_ app: LaunchableApp, allApps: [LaunchableApp]) -> some View {
+        if settings.launchpadAppSortMode == .custom, app.commandSymbolName == nil, app.snippet == nil {
+            appTile(app)
+                .onDrag {
+                    draggingAppBundleID = app.bundleID
+                    return NSItemProvider(object: app.bundleID as NSString)
+                }
+                .onDrop(
+                    of: [UTType.text],
+                    delegate: LaunchpadAppDropDelegate(
+                        targetBundleID: app.bundleID,
+                        settings: settings,
+                        fallbackOrder: allApps.map(\.bundleID),
+                        draggingBundleID: $draggingAppBundleID
+                    )
+                )
+        } else {
+            appTile(app)
+        }
+    }
+
+    private func appTile(_ app: LaunchableApp) -> some View {
+        VStack(spacing: 8) {
+            Button {
+                commandFeedbackMessage = launcher.launch(app, settings: settings)
+            } label: {
+                LaunchpadAppTile(app: app)
+            }
+            .buttonStyle(.plain)
+
+            Button(app.shortcut == nil ? localizedString("Assign shortcut") : shortcutLabel(for: app.shortcut)) {
+                shortcutTarget = app
+            }
+            .font(.system(size: 11, weight: .semibold))
+        }
+        .contextMenu {
+            if app.commandSymbolName == nil, app.snippet == nil {
+                Text("\(localizedString("Current category")): \(AppCategorizer.effectiveGroup(for: app, overrides: settings.launchpadCategoryOverrides).title)")
+                Menu(localizedString("Move to Category")) {
+                    ForEach(LaunchpadGroup.allCases.filter { $0 != .actions && $0 != .snippets }) { group in
+                        Button {
+                            settings.setLaunchpadCategoryOverride(group, for: app.bundleID)
+                        } label: {
+                            if AppCategorizer.effectiveGroup(for: app, overrides: settings.launchpadCategoryOverrides) == group {
+                                Label(group.title, systemImage: "checkmark")
+                            } else {
+                                Text(group.title)
+                            }
+                        }
+                    }
+                    Divider()
+                    Button(localizedString("Reset Category")) {
+                        settings.setLaunchpadCategoryOverride(nil, for: app.bundleID)
+                    }
+                }
+            }
+        }
+    }
+
+    private func sectionHeader(_ group: LaunchpadGroup, count: Int) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: group.icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+            Text(group.title)
+                .font(.headline)
+            Text("\(count)")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
         }
     }
 

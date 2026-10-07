@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct LaunchpadOverlayView: View {
     @ObservedObject var settings: AppSettings
@@ -13,6 +14,9 @@ struct LaunchpadOverlayView: View {
     @State private var appCatalogRevision = 0
     @State private var appCatalog: [LaunchableApp] = []
     @State private var currentPage = 0
+    @State private var selectedCategory: LaunchpadGroup?
+    @State private var draggingAppBundleID: String?
+    @State private var draggingCategory: LaunchpadGroup?
     @State private var scrollAccumulator: CGFloat = 0
     @State private var lastScrollDate = Date.distantPast
     @FocusState private var searchFocused: Bool
@@ -31,6 +35,10 @@ struct LaunchpadOverlayView: View {
                         .padding(.top, 34)
 
                     searchField
+
+                    if settings.launchpadGroupedByCategory && calculationState == nil {
+                        categoryPicker(apps: apps)
+                    }
 
                     if let calculationState {
                         calculatorPanel(for: calculationState)
@@ -52,7 +60,15 @@ struct LaunchpadOverlayView: View {
             .background {
                 LaunchpadKeyEventMonitor { event in
                     guard shortcutTarget == nil, uninstallTarget == nil, uninstallError == nil else { return false }
-                    return handleKeyEvent(event, apps: apps, configuration: gridConfiguration, calculationState: calculationState)
+                    let keyboardApps: [LaunchableApp]
+                    if settings.launchpadGroupedByCategory, let selectedCategory {
+                        keyboardApps = apps.filter {
+                            AppCategorizer.effectiveGroup(for: $0, overrides: settings.launchpadCategoryOverrides) == selectedCategory
+                        }
+                    } else {
+                        keyboardApps = apps
+                    }
+                    return handleKeyEvent(event, apps: keyboardApps, configuration: gridConfiguration, calculationState: calculationState)
                 }
             }
         }
@@ -253,13 +269,31 @@ struct LaunchpadOverlayView: View {
 
     @ViewBuilder
     private func gridContent(apps: [LaunchableApp], metrics: LaunchpadGridMetrics) -> some View {
+        let visibleApps = appsForSelectedCategory(apps)
         switch settings.launchpadGridNavigation {
         case .vertical:
             ScrollViewReader { proxy in
                 ScrollView(.vertical) {
-                    appGrid(apps: apps, metrics: metrics)
+                    if settings.launchpadGroupedByCategory && selectedCategory == nil {
+                        VStack(alignment: .leading, spacing: 24) {
+                            ForEach(categoryGroups(visibleApps)) { section in
+                                VStack(alignment: .leading, spacing: 12) {
+                                    overlaySectionHeader(section.group, count: section.apps.count)
+                                    appGrid(apps: section.apps, metrics: metrics, orderContextApps: apps)
+                                }
+                            }
+                        }
                         .padding(.horizontal, metrics.horizontalPadding)
                         .padding(.vertical, metrics.verticalPadding)
+                    } else {
+                        appGrid(
+                            apps: visibleApps,
+                            metrics: metrics,
+                            orderContextApps: settings.launchpadGroupedByCategory ? apps : visibleApps
+                        )
+                            .padding(.horizontal, metrics.horizontalPadding)
+                            .padding(.vertical, metrics.verticalPadding)
+                    }
                 }
                 .scrollIndicators(.visible)
                 .frame(height: metrics.viewportHeight)
@@ -271,14 +305,18 @@ struct LaunchpadOverlayView: View {
                 }
             }
         case .horizontalPages:
-            let pages = appPages(apps, configuration: settings.launchpadGridConfiguration(for: displayID))
+            let pages = appPages(visibleApps, configuration: settings.launchpadGridConfiguration(for: displayID))
             VStack(spacing: 10) {
                 ScrollViewReader { proxy in
                     ScrollView(.horizontal) {
                         LazyHStack(spacing: 0) {
                             ForEach(Array(pages.enumerated()), id: \.offset) { page, pageApps in
                                 VStack {
-                                    appGrid(apps: pageApps, metrics: metrics)
+                                    appGrid(
+                                        apps: pageApps,
+                                        metrics: metrics,
+                                        orderContextApps: settings.launchpadGroupedByCategory ? apps : visibleApps
+                                    )
                                         .padding(.horizontal, metrics.horizontalPadding)
                                         .padding(.top, metrics.verticalPadding)
                                     Spacer(minLength: 0)
@@ -308,25 +346,145 @@ struct LaunchpadOverlayView: View {
         }
     }
 
-    private func appGrid(apps: [LaunchableApp], metrics: LaunchpadGridMetrics) -> some View {
+    private func appsForSelectedCategory(_ apps: [LaunchableApp]) -> [LaunchableApp] {
+        guard settings.launchpadGroupedByCategory, let selectedCategory else { return apps }
+        return apps.filter {
+            AppCategorizer.effectiveGroup(for: $0, overrides: settings.launchpadCategoryOverrides) == selectedCategory
+        }
+    }
+
+    private func categoryPicker(apps: [LaunchableApp]) -> some View {
+        let groups = categoryGroups(apps)
+        return ScrollView(.horizontal) {
+            HStack(spacing: 8) {
+                categoryChip(nil, title: localizedString("All"), count: apps.count)
+                ForEach(groups) { section in
+                    categoryChip(section.group, title: section.group.title, count: section.apps.count)
+                }
+            }
+            .padding(.horizontal, 42)
+        }
+        .scrollIndicators(.hidden)
+        .frame(height: 34)
+    }
+
+    @ViewBuilder
+    private func categoryChip(_ group: LaunchpadGroup?, title: String, count: Int) -> some View {
+        let selected = selectedCategory == group
+        let chip = Button {
+            selectedCategory = group
+            currentPage = 0
+            selectFirstApp()
+        } label: {
+            HStack(spacing: 6) {
+                if let group {
+                    Image(systemName: group.icon)
+                }
+                Text(title)
+                Text("\(count)")
+                    .opacity(0.65)
+            }
+            .font(.system(size: 12, weight: selected ? .semibold : .medium))
+            .foregroundStyle(.white.opacity(selected ? 1 : 0.72))
+            .padding(.horizontal, 11)
+            .frame(height: 30)
+            .background(selected ? .white.opacity(0.2) : .white.opacity(0.08), in: Capsule())
+        }
+        .buttonStyle(.plain)
+
+        if let group, settings.launchpadCategorySortMode == .custom {
+            chip
+                .onDrag {
+                    draggingCategory = group
+                    return NSItemProvider(object: group.rawValue as NSString)
+                }
+                .onDrop(
+                    of: [UTType.text],
+                    delegate: LaunchpadCategoryDropDelegate(
+                        targetGroup: group,
+                        settings: settings,
+                        draggingGroup: $draggingCategory
+                    )
+                )
+        } else {
+            chip
+        }
+    }
+
+    private func categoryGroups(_ apps: [LaunchableApp]) -> [LaunchpadAppGroup] {
+        AppCategorizer.grouped(
+            apps,
+            overrides: settings.launchpadCategoryOverrides,
+            sortMode: settings.launchpadCategorySortMode,
+            customOrder: settings.launchpadCustomCategoryOrder
+        )
+    }
+
+    private func overlaySectionHeader(_ group: LaunchpadGroup, count: Int) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: group.icon)
+                .foregroundStyle(.white.opacity(0.85))
+            Text(group.title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
+            Text("\(count)")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.55))
+        }
+        .padding(.bottom, 2)
+    }
+
+    private func appGrid(
+        apps: [LaunchableApp],
+        metrics: LaunchpadGridMetrics,
+        orderContextApps: [LaunchableApp]
+    ) -> some View {
         LazyVGrid(columns: metrics.columns, spacing: metrics.rowSpacing) {
             ForEach(apps) { app in
-                Button {
-                    launch(app)
-                } label: {
-                    OverlayAppTile(
-                        app: app,
-                        isSelected: app.id == selectedAppID,
-                        tileSize: metrics.tileSize,
-                        iconSize: metrics.iconSize
-                    )
-                }
-                .buttonStyle(.plain)
+                reorderableOverlayTile(app, metrics: metrics, allApps: orderContextApps)
                 .contextMenu {
                     appContextMenu(for: app)
                 }
                 .id(app.id)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func reorderableOverlayTile(
+        _ app: LaunchableApp,
+        metrics: LaunchpadGridMetrics,
+        allApps: [LaunchableApp]
+    ) -> some View {
+        let tile = Button {
+            launch(app)
+        } label: {
+            OverlayAppTile(
+                app: app,
+                isSelected: app.id == selectedAppID,
+                tileSize: metrics.tileSize,
+                iconSize: metrics.iconSize
+            )
+        }
+        .buttonStyle(.plain)
+
+        if settings.launchpadAppSortMode == .custom, app.commandSymbolName == nil, app.snippet == nil {
+            tile
+                .onDrag {
+                    draggingAppBundleID = app.bundleID
+                    return NSItemProvider(object: app.bundleID as NSString)
+                }
+                .onDrop(
+                    of: [UTType.text],
+                    delegate: LaunchpadAppDropDelegate(
+                        targetBundleID: app.bundleID,
+                        settings: settings,
+                        fallbackOrder: allApps.map(\.bundleID),
+                        draggingBundleID: $draggingAppBundleID
+                    )
+                )
+        } else {
+            tile
         }
     }
 
@@ -521,6 +679,27 @@ struct LaunchpadOverlayView: View {
             shortcutTarget = app
         }
 
+        if app.commandSymbolName == nil, app.snippet == nil {
+            Text("\(localizedString("Current category")): \(AppCategorizer.effectiveGroup(for: app, overrides: settings.launchpadCategoryOverrides).title)")
+            Menu(localizedString("Move to Category")) {
+                ForEach(LaunchpadGroup.allCases.filter { $0 != .actions && $0 != .snippets }) { group in
+                    Button {
+                        settings.setLaunchpadCategoryOverride(group, for: app.bundleID)
+                    } label: {
+                        if AppCategorizer.effectiveGroup(for: app, overrides: settings.launchpadCategoryOverrides) == group {
+                            Label(group.title, systemImage: "checkmark")
+                        } else {
+                            Text(group.title)
+                        }
+                    }
+                }
+                Divider()
+                Button(localizedString("Reset Category")) {
+                    settings.setLaunchpadCategoryOverride(nil, for: app.bundleID)
+                }
+            }
+        }
+
         if launcher.canUninstall(app) {
             Divider()
             Button("Move to Trash...", role: .destructive) {
@@ -572,7 +751,25 @@ struct LaunchpadOverlayView: View {
 
     private var filteredApps: [LaunchableApp] {
         _ = appCatalogRevision
-        let all = launcher.launcherCommands() + launcher.loadSnippets(settings: settings) + appCatalog
+        let orderedCatalog: [LaunchableApp]
+        if settings.launchpadAppSortMode == .custom {
+            let ranks = settings.launchpadCustomAppOrder.enumerated().reduce(into: [String: Int]()) { ranks, entry in
+                if ranks[entry.element] == nil { ranks[entry.element] = entry.offset }
+            }
+            orderedCatalog = appCatalog.sorted { lhs, rhs in
+                let leftRank = ranks[lhs.bundleID]
+                let rightRank = ranks[rhs.bundleID]
+                switch (leftRank, rightRank) {
+                case let (left?, right?) where left != right: return left < right
+                case (_?, nil): return true
+                case (nil, _?): return false
+                default: return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+                }
+            }
+        } else {
+            orderedCatalog = appCatalog
+        }
+        let all = launcher.launcherCommands() + launcher.loadSnippets(settings: settings) + orderedCatalog
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return all }
         let needle = trimmed.lowercased()

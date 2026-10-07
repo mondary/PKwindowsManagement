@@ -52,6 +52,7 @@ struct PKwindowsManagementApp: App {
 
 private struct RootDashboardView: View {
     @ObservedObject var settings: AppSettings
+    @ObservedObject private var updater = UpdaterManager.shared
     @State private var selection: SettingsSection? = .general
 
     static var appIcon: NSImage? {
@@ -69,29 +70,42 @@ private struct RootDashboardView: View {
 
             Divider()
 
-            Group {
-                switch selection ?? .general {
-                case .general:
-                    GeneralSettingsView(settings: settings)
-                case .windows:
-                    WindowShortcutsPreferencesView(settings: settings)
-                case .launchpad:
-                    LaunchpadView(settings: settings)
-                case .appearance:
-                    AppearanceSettingsView(settings: settings)
-                case .bigYear:
-                    BigYearSettingsView(settings: settings)
-                case .snippets:
-                    SnippetsSettingsView(settings: settings)
-                case .urls:
-                    URLSnippetsSettingsView(settings: settings)
-                case .support:
-                    SupportSettingsView()
-                case .library:
-                    ProjectLibraryView()
-                case .about:
-                    AboutSettingsView()
+            VStack(spacing: 0) {
+                Group {
+                    switch selection ?? .general {
+                    case .general:
+                        GeneralSettingsView(settings: settings)
+                    case .windows:
+                        WindowShortcutsPreferencesView(settings: settings)
+                    case .launchpad:
+                        LaunchpadView(settings: settings)
+                    case .appearance:
+                        AppearanceSettingsView(settings: settings)
+                    case .bigYear:
+                        BigYearSettingsView(settings: settings)
+                    case .snippets:
+                        SnippetsSettingsView(settings: settings)
+                    case .urls:
+                        URLSnippetsSettingsView(settings: settings)
+                    case .ai:
+                        AISettingsView()
+                    case .support:
+                        SupportSettingsView()
+                    case .library:
+                        ProjectLibraryView()
+                    case .about:
+                        AboutSettingsView()
+                    case .credits:
+                        CreditsInspirationsSettingsView()
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                Divider()
+
+                SettingsFooterView()
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -185,11 +199,34 @@ private struct RootDashboardView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 10)
 
-            Text(appVersionLabel)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 18)
+            HStack(spacing: 5) {
+                Text(appVersionLabel)
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                if let version = updater.availableUpdateVersion {
+                    Button {
+                        updater.checkForUpdatesOrSwitch()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "arrow.down.circle.fill")
+                            Text(version)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(format: localizedString("Update available — %@"), version))
+                    .help(String(format: localizedString("Update available — %@"), version))
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 18)
         }
     }
 
@@ -260,6 +297,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     case bigYear
     case snippets
     case urls
+    case ai
+    case credits
     case library
     case support
     case about
@@ -268,13 +307,14 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
     /// Sidebar grouping; Apparence sits right after Launchpad because it is
     /// the Launchpad's appearance.
-    static let categoryOrder = ["APP", "FEATURES", "PK PROJECTS"]
+    static let categoryOrder = ["APP", "FEATURES", "AI", "PK PROJECTS"]
 
     var category: String {
         switch self {
         case .general: "APP"
         case .windows, .launchpad, .appearance, .bigYear, .snippets, .urls: "FEATURES"
-        case .library, .support, .about: "PK PROJECTS"
+        case .ai: "AI"
+        case .library, .support, .about, .credits: "PK PROJECTS"
         }
     }
 
@@ -282,6 +322,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         switch category {
         case "APP": localizedString("App")
         case "FEATURES": localizedString("Features")
+        case "AI": localizedString("Local AI")
         default: localizedString("PK Projects")
         }
     }
@@ -299,9 +340,11 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .appearance: localizedString("Appearance")
         case .snippets: localizedString("Snippets")
         case .urls: "URLs"
+        case .ai: localizedString("Local AI")
         case .library: localizedString("Project Library")
         case .support: localizedString("Support")
         case .about: localizedString("About")
+        case .credits: localizedString("Credits")
         }
     }
 
@@ -314,9 +357,11 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .appearance: "paintbrush"
         case .snippets: "doc.on.doc"
         case .urls: "link"
+        case .ai: "sparkles"
         case .support: "heart.fill"
         case .library: "square.grid.2x2"
         case .about: "info.circle"
+        case .credits: "text.quote"
         }
     }
 

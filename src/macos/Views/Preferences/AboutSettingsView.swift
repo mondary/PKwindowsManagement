@@ -5,7 +5,6 @@ struct AboutSettingsView: View {
     @State private var selectedChannel = UpdaterManager.shared.channel
 
     private let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "—"
-    private let appBuild = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "—"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,8 +17,8 @@ struct AboutSettingsView: View {
                     Text("PKwindowsManagement")
                         .font(.system(size: 24, weight: .bold))
 
-                    Text("Version \(appVersion) (\(appBuild))")
-                        .font(.system(size: 13))
+                    Text(String(format: localizedString("Installed version %@"), appVersion))
+                        .font(.system(size: 13, weight: .medium, design: .monospaced))
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
 
@@ -31,20 +30,17 @@ struct AboutSettingsView: View {
 
                     aboutText
                         .frame(maxWidth: 480)
-                        .padding(.bottom, 32)
-
-                    updateSection
-                        .frame(maxWidth: 480)
-                        .padding(.bottom, 32)
+                        .padding(.bottom, 40)
                 }
                 .frame(maxWidth: .infinity)
             }
 
             Divider()
 
-            footer
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
+            updateSection
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
@@ -57,13 +53,23 @@ struct AboutSettingsView: View {
     }
 
     private var updateSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(localizedString("Updates"))
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                versionColumn(
+                    title: localizedString("Stable version"),
+                    value: updater.latestStableVersion ?? localizedString("Not published"),
+                    symbol: "checkmark.seal",
+                    status: updater.versionStatus(for: .stable)
+                )
+                versionColumn(
+                    title: localizedString("Dev version"),
+                    value: updater.latestDevVersion ?? localizedString("Not published"),
+                    symbol: "hammer",
+                    status: updater.versionStatus(for: .dev)
+                )
+            }
 
             HStack(spacing: 12) {
-                Text(localizedString("Update channel"))
-                    .font(.subheadline.weight(.medium))
                 Picker(localizedString("Update channel"), selection: $selectedChannel) {
                     ForEach(UpdateChannel.allCases) { channel in
                         Text(channel.title).tag(channel)
@@ -74,38 +80,21 @@ struct AboutSettingsView: View {
                 .accessibilityLabel(localizedString("Update channel"))
                 .frame(width: 190)
                 Spacer(minLength: 0)
+                Button {
+                    updater.checkForUpdatesOrSwitch()
+                } label: {
+                    Label(updateButtonTitle, systemImage: updater.availableUpdateVersion == nil
+                        ? "arrow.triangle.2.circlepath"
+                        : "arrow.down.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(updater.installingSwitch)
             }
 
             Text(selectedChannel.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-
-            HStack(alignment: .top, spacing: 0) {
-                versionColumn(
-                    title: localizedString("Stable version"),
-                    value: updater.latestStableVersion ?? localizedString("Not published"),
-                    symbol: "checkmark.seal",
-                    isInstalled: !isDevBuild
-                )
-                Divider().frame(height: 42)
-                versionColumn(
-                    title: localizedString("Dev version"),
-                    value: updater.latestDevVersion ?? localizedString("Not published"),
-                    symbol: "hammer",
-                    isInstalled: isDevBuild
-                )
-            }
-            .padding(.vertical, 12)
-            .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.045)))
-
-            Button {
-                updater.refreshAvailableVersions()
-                updater.checkForUpdates()
-            } label: {
-                Label(localizedString("Check for Updates…"), systemImage: "arrow.triangle.2.circlepath")
-            }
-            .buttonStyle(.bordered)
-            .disabled(updater.installingSwitch)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             if updater.installingSwitch {
                 HStack(spacing: 8) {
@@ -123,46 +112,60 @@ struct AboutSettingsView: View {
                     .foregroundStyle(.red)
             }
         }
-        .padding(16)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.025)))
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.035)))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.08), lineWidth: 1))
-        .alert(localizedString("Switch channel?"), isPresented: switchOfferPresented) {
+        .alert(localizedString(updater.switchOffer?.isUpdate == true ? "Install update?" : "Switch channel?"), isPresented: switchOfferPresented) {
             Button(localizedString("Install and relaunch")) { updater.performSwitchInstall() }
             Button(localizedString("Cancel"), role: .cancel) { updater.cancelSwitchOffer() }
         } message: {
             if let offer = updater.switchOffer {
-                Text(String(
-                    format: localizedString("You are using %1$@. Install %2$@ from the %3$@ channel?"),
-                    appVersion, offer.version, offer.channel.title
-                ))
+                if offer.isUpdate {
+                    Text(String(format: localizedString("Install version %@ from the %@ channel?"), offer.version, offer.channel.title))
+                } else {
+                    Text(String(
+                        format: localizedString("You are using %1$@. Install %2$@ from the %3$@ channel?"),
+                        appVersion, offer.version, offer.channel.title
+                    ))
+                }
             }
         }
     }
 
-    private func versionColumn(title: String, value: String, symbol: String, isInstalled: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
+    private func versionColumn(
+        title: String,
+        value: String,
+        symbol: String,
+        status: ChannelVersionStatus
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
             Label(title, systemImage: symbol)
-                .font(.caption)
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+
             Text(value)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .font(.system(size: 16, weight: .semibold, design: .monospaced))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
                 .help(value)
-            if isInstalled {
-                Label(localizedString("Installed version"), systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.green)
-                    .padding(.top, 2)
-            }
+
+            Label(status.title, systemImage: status.symbol)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(status.color)
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 8)
+        .padding(12)
+        .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
-    private var isDevBuild: Bool {
-        appVersion.localizedCaseInsensitiveContains("-dev")
+    private var updateButtonTitle: String {
+        guard let version = updater.availableUpdateVersion else {
+            return localizedString("Check for Updates…")
+        }
+        return String(format: localizedString("Install %@"), version)
     }
 
     private var switchOfferPresented: Binding<Bool> {
@@ -226,40 +229,35 @@ struct AboutSettingsView: View {
         }
     }
 
-    private var footer: some View {
-        HStack(alignment: .center, spacing: 16) {
-            Link(destination: URL(string: "https://github.com/mondary/PKwindowsManagement")!) {
-                Label("GitHub", systemImage: "network")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Link(destination: URL(string: "https://github.com/mondary/PKwindowsManagement/issues")!) {
-                Label("Issues", systemImage: "exclamationmark.bubble")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Link(destination: URL(string: "https://ko-fi.com/pouark")!) {
-                HStack(spacing: 4) {
-                    if let image = AppLocalization.assetImage("kofi-logo") {
-                        Image(nsImage: image)
-                            .resizable()
-                            .frame(width: 12, height: 12)
-                    }
-                    Text(localizedString("Support me on Ko-fi"))
-                }
-                .font(.caption)
-                .foregroundStyle(Color(red: 1.0, green: 0.37, blue: 0.36))
-            }
-            Spacer()
-            Text(localizedString("MIT License"))
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-            Text("·")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-            Text("macOS 13+")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+}
+
+private extension ChannelVersionStatus {
+    var title: String {
+        switch self {
+        case .updateAvailable: localizedString("Update available")
+        case .upToDate: localizedString("Up to date")
+        case .installedAhead: localizedString("Installed version is newer")
+        case .otherChannel: localizedString("Other channel")
+        case .unavailable: localizedString("Version unavailable")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .updateAvailable: "arrow.down.circle.fill"
+        case .upToDate: "checkmark.circle.fill"
+        case .installedAhead: "arrow.up.circle.fill"
+        case .otherChannel: "circle.dashed"
+        case .unavailable: "questionmark.circle"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .updateAvailable: .accentColor
+        case .upToDate: .green
+        case .installedAhead: .orange
+        case .otherChannel, .unavailable: .secondary
         }
     }
 }

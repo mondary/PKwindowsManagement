@@ -14,9 +14,9 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 ![Big Year — native annual calendar, Blue Poster theme](store/website/screenshots/year-poster.webp)
 
 - [Video demo](store/website/videos/window-flow.mp4) · [Animated GIF](store/website/gifs/window-flow-wide.gif)
-- [Download the Apple Silicon DMG v2026.09.08](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_aarch64.dmg): open the DMG, move the app to Applications and enable Accessibility. Local macOS 13+ build, with no notarization guarantee.
+- [Download the latest published Stable — v2026.10.32](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg): open the DMG, move the app to Applications and enable Accessibility. macOS 13+ build.
 - Homebrew: `brew install --cask mondary/tap/pk-windows-management` (upgrade: `brew upgrade --cask pk-windows-management`).
-- curl: `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_aarch64.dmg`
+- curl: `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg`
 - [Capture sources and limitations](store/media-kit/README.md)
 
 ## ✅ Features
@@ -28,6 +28,9 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Customize keyboard shortcuts from a SwiftUI preferences screen.
 - Control the focused window through macOS Accessibility APIs.
 - Full-screen Launchpad with search, recent applications, and custom shortcuts.
+- Sort Launchpad apps by last launch, name, dominant icon color, or a custom drag-and-drop order.
+- Group apps into categories and sort categories independently by app count, alphabetically, or with a custom drag-and-drop order; the app sort mode still applies inside each category.
+- The global app sort selected in `Appearance` (last launch, name, icon color, or custom) also applies when category grouping is disabled; category order only affects grouped display.
 - Keyboard Launchpad navigation: type to filter, use arrows to select, and press `Enter` to launch.
 - Global per-application shortcuts that work anywhere on macOS while Launchpad is closed.
 - Left/right modifier key distinction: Command, Option, and Shift (e.g. Right Command + A ≠ Left Command + A).
@@ -46,7 +49,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Application context menu for assigning shortcuts or moving applications to Trash.
 - Open Launchpad with `Option + Space`, the top-left hot corner, or a menu bar icon click.
 - The app's official icon is shown in the menu bar (full color); context menu to open preferences or quit.
-- Sparkle updates: choose the Stable or Dev channel and compare the installed, stable, and dev versions in General or About.
+- Sparkle updates in `About`: compare the installed version with the latest Stable and Dev releases; each channel shows whether it is up to date, has an update, or is the other channel.
 - Lighter startup path: global shortcuts no longer need to load every application icon, and dominant-color analysis only runs for the `Icon Color` sort mode.
 
 ## 🧠 Usage
@@ -87,18 +90,21 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Assigned shortcuts appear as key badges over application icons.
 - Shortcuts can also be captured with a `Record` button.
 - `Scripts` and `URLs` are split into separate preferences sections.
+- In `Appearance`, sort Launchpad apps by `Last Used`, `Name`, `Icon Color`, or `Custom Order` (drag tiles in Launchpad).
+- In `Launchpad` → `Organization`, enable category grouping and sort categories by app count, alphabetically, or custom order (drag category chips in Launchpad).
 - Launchpad grid customization: columns/rows count, icon size, column and row spacing.
 - Per-display Launchpad grid profiles are available in Appearance settings.
 - Launchpad navigation mode: vertical scroll or horizontal pages.
 - Changes are persisted in `UserDefaults`.
 - In `General` or `About`, choose the `Stable` or `Dev` update channel and compare the installed version with the latest release on each channel. Dev builds install automatically; Stable asks before installing.
+- The sidebar keeps the installed and available versions on one line without moving the language flags; click the offered version to install it. Manual checks use the fresh appcast and the channel's signed archive.
 - Manual settings import/export in JSON format.
 - Auto-backup: choose a folder (e.g. Google Drive) and export a timestamped JSON backup on every settings change.
 - In the calendar or its dedicated `Big Year` settings section, use the live preview, choose the school zone, theme, and appearance: birthdays or month names in bold as you prefer (the `!` marker still wins), plus custom colors for each element (background, holidays, birthdays, events, zones, text…). Then enter one birthday per line as `DD.MM,Name` or `DDMM,Name` (for example `11.02,Clément` or `0112,Marie`). Prefix the name with `!` to emphasize it in bold. Click a day directly to create a single-day or date-range event, or use the `DD.MM-DD.MM,Title` text format. Enable `macOS / Google Calendars` to import all-day events from accounts configured in macOS Calendar.
 
 ## 🧾 Commands
 - Left-click the menu bar icon to open or close Launchpad.
-- Right-click the menu bar icon to show `Open Launchpad`, `Open Big Year`, `Open Preferences`, and `Quit`.
+- Right-click the menu bar icon for Launchpad/Big Year actions and shortcuts, followed by `Check for Updates`, `Open Preferences`, Ko-fi, and `Quit`.
 - `Open Big Year`: opens the full-screen year view. `Escape` or `Cmd + W` closes it, `Cmd + Q` quits the app.
 - `Cmd + ,`: open settings.
 
@@ -132,6 +138,14 @@ src/script/release.sh
 - Run `src/script/release.sh` to build and install `/Applications/PKwindowsManagement.app`.
 - On first launch, grant Accessibility access in `System Settings > Privacy & Security > Accessibility`. This permission is required for window management and global shortcuts.
 - If the app cannot control windows, check the target app permissions as well.
+
+## 🙏 Credits
+
+PKwindowsManagement builds on and draws inspiration from open-source projects — credits live in the dedicated **Credits & Inspirations** settings section:
+
+- [Rooms](https://github.com/saragordic/rooms) (Sara Gordić, MIT) — rooms concept and layout engine ported as RoomTiler.
+- [Sparkle 2](https://github.com/sparkle-project/Sparkle) (MIT) — Stable/Dev auto-updates.
+- [Laya](https://huggingface.co/convaiinnovations/laya) (Convai Innovations, Apache-2.0) — local decision model behind the integrated AI.
 
 ## 🧾 Changelog
 - See [CHANGELOG.md](CHANGELOG.md) for full history.

@@ -107,13 +107,18 @@ struct AppearanceSettingsView: View {
                 Spacer()
             }
 
-            Text(localizedString(settings.launchpadAppSortMode == .color
-                 ? "Heuristic sort based on the dominant icon color."
-                 : settings.launchpadAppSortMode == .recent
-                 ? "Most recently used apps are shown first."
-                 : "Apps are sorted alphabetically."))
+            Text(localizedString(sortDescription))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var sortDescription: String {
+        switch settings.launchpadAppSortMode {
+        case .recent: "Most recently used apps are shown first."
+        case .name: "Apps are sorted alphabetically."
+        case .color: "Heuristic sort based on the dominant icon color."
+        case .custom: "Drag app tiles in the Launchpad to arrange them."
         }
     }
 
@@ -167,6 +172,23 @@ struct AppearanceSettingsView: View {
                     }
                 }
             }
+        case .custom:
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(0..<3, id: \.self) { row in
+                    HStack(spacing: 6) {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.8))
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(Color.white.opacity(row == 0 ? 0.9 : 0.45))
+                            .frame(width: 15, height: 15)
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(Color.white.opacity(0.45))
+                            .frame(height: 4)
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
         }
     }
 

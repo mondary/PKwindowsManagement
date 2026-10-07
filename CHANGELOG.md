@@ -1,5 +1,109 @@
 # Changelog
 
+## [2026.10.44] - 2026-10-07
+### Fixed
+- Les installations manuelles vérifient la signature EdDSA, le bundle ID et les deux versions avant le swap ; le script restaure l’ancienne app si le remplacement ou le relancement échoue, et le parseur garde l’URL et la signature du même premier élément d’appcast.
+### Changed
+- Crédits utilisent les pictogrammes officiels et chaque ligne est entièrement cliquable ; footer GitHub/Issues/Ko-fi/licence affiché dans toutes les pages des réglages.
+- README et vitrine pointent désormais vers le dernier Stable réellement publié ; la source locale non publiée reste distinguée.
+
+## [2026.10.43] - 2026-10-07
+### Fixed
+- Indicateur de mise à jour déplacé sur la ligne de la version installée sans décaler les drapeaux ; affiche la version cible en une ligne
+- Cartes Stable/Dev indiquent désormais le vrai statut de la build installée au lieu de marquer comme installée toute version du même canal
+- Version installée affichée explicitement dans À propos
+
+## [2026.10.42] - 2026-10-07
+### Fixed
+- Les contrôles manuels d'update utilisent la version vérifiée directement dans le feed frais au lieu de déléguer systématiquement à Sparkle, qui pouvait présenter un appcast Dev périmé
+
+## [2026.10.41] - 2026-10-07
+### Changed
+- Refonte du panneau de mise à jour avec cartes Stable/Dev et statuts explicites ; accès toujours visible dans la sidebar, bouton adapté lorsqu'une version est disponible
+
+## [2026.10.40] - 2026-10-07
+### Changed
+- Panneau de mise à jour simplifié en deux rangées : versions Stable/Dev côte à côte, puis sélecteur et bouton ; description du canal utilise toute la largeur
+
+## [2026.10.39] - 2026-10-07
+### Added
+- Indicateur de mise à jour disponible près des langues et de la version dans la sidebar, et libellé dynamique dans le menu ; menu affiche l'app et sa version installée
+- Contrôle des feeds au lancement et toutes les six heures
+### Changed
+- Panneau des mises à jour épinglé en bas de À propos, pleine largeur ; la présentation éditoriale reste dans sa zone défilante
+
+## [2026.10.38] - 2026-10-07
+### Changed
+- En-tête de Bibliothèque de projets harmonisé avec Crédits, À propos et Soutenir : icône colorée, titre et sous-titre centrés
+
+## [2026.10.37] - 2026-10-07
+### Changed
+- Libellé de sidebar raccourci en « Crédits » ; titre de page centré avec pictogramme ; icônes colorées par outil/inspiration ; « Project Library » localisée en français et en allemand
+
+## [2026.10.36] - 2026-10-07
+### Fixed
+- Le contrôle de version et Sparkle contournaient désormais le cache CDN de raw.githubusercontent.com avec une URL de feed unique à chaque vérification ; évite d'afficher une version Dev périmée après publication
+
+## [2026.10.35] - 2026-10-07
+### Changed
+- Déplacement de « Crédits & inspirations » dans le groupe Projets PK, juste au-dessus de Project Library dans la barre latérale
+
+## [2026.10.34] - 2026-10-07
+### Changed
+- Déplacement des crédits hors de la page À propos vers une section dédiée « Crédits & inspirations », à côté d'À propos et Soutenir ; retrait de Pulse de la liste, qui n'est pas un crédit obligatoire
+
+## [2026.10.33] - 2026-10-07
+### Added
+- Section « Crédits » dans À propos : dépendances réelles (Sparkle 2, Laya) et inspirations (Rooms, Pulse) avec auteur, usage, licence et lien vérifié pour chacune ; lien Laya pointé vers Hugging Face car le repo GitHub amont n'existe pas
+
+## [2026.10.32] - 2026-10-07
+### Fixed
+- Le tri général des apps (dernier lancement, nom, couleur ou personnalisé) reste indépendant du regroupement ; le tri des catégories ne s’applique qu’aux sections groupées
+
+## [2026.10.31] - 2026-10-07
+### Fixed
+- Le mode sans catégories masque désormais les en-têtes sans réinitialiser l’ordre : les apps restent aplaties dans l’ordre des catégories et des apps sélectionné
+
+## [2026.10.30] - 2026-10-07
+### Fixed
+- Correction de l’inférence Swift du regroupement des catégories pour compiler le build Dev
+
+## [2026.10.29] - 2026-10-07
+### Added
+- Tri indépendant des catégories du Launchpad (les plus fournies, alphabétique ou personnalisé) et des apps (dernier lancement, nom, couleur ou personnalisé)
+- Réorganisation par glisser-déposer des catégories et des apps en mode personnalisé, avec persistance et inclusion dans les sauvegardes
+
+## [2026.10.28] - 2026-10-07
+### Changed
+- Ajout d’icônes cohérentes aux entrées « Rechercher les mises à jour », « Ouvrir les réglages » et « Quitter » ; Quitter est séparé du bloc d’actions
+
+## [2026.10.27] - 2026-10-07
+### Fixed
+- Correction de la compilation Dev du Launchpad : le filtrage par catégorie est maintenant calculé hors du `ViewBuilder`
+
+## [2026.10.26] - 2026-10-07
+### Changed
+- Les commandes « Rechercher les mises à jour » et « Ouvrir les réglages » sont regroupées en bas du menu de la barre des menus, avec le soutien Ko-fi et Quitter
+
+## [2026.10.25] - 2026-10-07
+### Fixed
+- Le regroupement par catégorie apparaît maintenant dans le vrai Launchpad (filtres de catégorie visibles, groupes dans la grille verticale) ; menu contextuel par app pour changer de catégorie ou revenir au classement automatique, persistance par bundle ID
+### Added
+- Section IA locale avec statut/taille du modèle Laya partagé (2,2 Go), téléchargement, chargement/déchargement du serveur et suppression confirmée du cache Hugging Face commun
+### Changed
+- Le sidecar Laya runtime est rangé dans `~/Library/Application Support/PK/LayaServer` ; les poids restent dans le cache Hugging Face partagé, jamais dans le dépôt d'une app ou dans `-projects`
+- Les scripts source du sidecar sont embarqués comme petites ressources de l'app puis installés dans Application Support au premier usage ; les 2,2 Go de poids ne sont jamais embarqués
+
+## [2026.10.24] - 2026-10-07
+### Added
+- Catégorisation du Launchpad par règles intégrées : sections Actions, Snippets, Développement, Internet, Création, Média, Bureautique, Communication, Jeux, Utilitaires, Système, Divers (réglages → Launchpad → Organisation, activé par défaut, désactivable)
+### Fixed
+- Retour au canal Stable déterministe : le bouton « Rechercher les mises à jour » lit lui-même les numéros techniques des feeds et propose directement l'installation du canal choisi quand celui-ci est plus ancien, au lieu de dépendre du callback Sparkle qui ne se déclenchait pas
+
+## [2026.10.23] - 2026-10-07
+### Fixed
+- Le workflow Dev ne saute plus les commits dont le message mentionne « appcast » : le filtre cible désormais l'auteur (bot) et non le texte du commit
+
 ## [2026.10.22] - 2026-10-07
 ### Fixed
 - Les raccourcis de fenêtre s'appliquent aussi quand PKwindowsManagement est l'app active : sa propre fenêtre de réglages se déplace et se redimensionne comme une fenêtre classique (les raccourcis de lancement restent inertes pendant la saisie dans ses champs)

@@ -16,6 +16,11 @@ final class AppSettings: ObservableObject {
         static let launchpadDisplayProfiles = "launchpad-display-profiles"
         static let launchpadGridNavigation = "launchpad-grid-navigation"
         static let launchpadStyle = "launchpad-style"
+        static let launchpadGroupedByCategory = "launchpad-grouped-by-category"
+        static let launchpadCategoryOverrides = "launchpad-category-overrides"
+        static let launchpadCategorySortMode = "launchpad-category-sort-mode"
+        static let launchpadCustomCategoryOrder = "launchpad-custom-category-order"
+        static let launchpadCustomAppOrder = "launchpad-custom-app-order"
         static let compactLaunchpadTheme = "compact-launchpad-theme"
         static let launchpadAppSortMode = "launchpad-app-sort-mode"
         static let launchpadIconSize = "launchpad-icon-size"
@@ -55,6 +60,21 @@ final class AppSettings: ObservableObject {
 
     @Published private(set) var recentBundleIDs: [String]
     @Published private(set) var launchShortcuts: [String: KeyboardShortcutSetting]
+    @Published private(set) var launchpadCategoryOverrides: [String: String] {
+        didSet {
+            guard let data = try? JSONEncoder().encode(launchpadCategoryOverrides) else { return }
+            defaults.set(data, forKey: Keys.launchpadCategoryOverrides)
+        }
+    }
+    @Published var launchpadCategorySortMode: LaunchpadCategorySortMode {
+        didSet { defaults.set(launchpadCategorySortMode.rawValue, forKey: Keys.launchpadCategorySortMode) }
+    }
+    @Published private(set) var launchpadCustomCategoryOrder: [String] {
+        didSet { defaults.set(launchpadCustomCategoryOrder, forKey: Keys.launchpadCustomCategoryOrder) }
+    }
+    @Published private(set) var launchpadCustomAppOrder: [String] {
+        didSet { defaults.set(launchpadCustomAppOrder, forKey: Keys.launchpadCustomAppOrder) }
+    }
     @Published private(set) var snippets: [SnippetDefinition]
     @Published private(set) var launchpadDisplayProfiles: [LaunchpadDisplayProfile]
     @Published var launchpadAppSortMode: LaunchpadAppSortMode {
@@ -97,6 +117,9 @@ final class AppSettings: ObservableObject {
     }
     @Published var launchpadStyle: LaunchpadStyle {
         didSet { defaults.set(launchpadStyle.rawValue, forKey: Keys.launchpadStyle) }
+    }
+    @Published var launchpadGroupedByCategory: Bool {
+        didSet { defaults.set(launchpadGroupedByCategory, forKey: Keys.launchpadGroupedByCategory) }
     }
     @Published var compactLaunchpadTheme: CompactLaunchpadTheme {
         didSet { defaults.set(compactLaunchpadTheme.rawValue, forKey: Keys.compactLaunchpadTheme) }
@@ -212,6 +235,16 @@ final class AppSettings: ObservableObject {
         recentBundleIDs = defaults.stringArray(forKey: Keys.launchRecents) ?? []
         let loadedLaunchShortcuts = Self.loadLaunchShortcuts(from: defaults)
         launchShortcuts = loadedLaunchShortcuts
+        launchpadCategoryOverrides = (try? JSONDecoder().decode(
+            [String: String].self,
+            from: defaults.data(forKey: Keys.launchpadCategoryOverrides) ?? Data()
+        )) ?? [:]
+        launchpadCategorySortMode = LaunchpadCategorySortMode(
+            rawValue: defaults.string(forKey: Keys.launchpadCategorySortMode) ?? LaunchpadCategorySortMode.mostApps.rawValue
+        ) ?? .mostApps
+        launchpadCustomCategoryOrder = defaults.stringArray(forKey: Keys.launchpadCustomCategoryOrder)
+            ?? LaunchpadGroup.allCases.map(\.rawValue)
+        launchpadCustomAppOrder = defaults.stringArray(forKey: Keys.launchpadCustomAppOrder) ?? []
         let hadStoredSnippets = defaults.object(forKey: Keys.snippets) != nil
         let loadedSnippets = Self.loadSnippets(from: defaults)
         let shouldSeedDefaultSnippets = !hadStoredSnippets && loadedSnippets.isEmpty
@@ -252,6 +285,7 @@ final class AppSettings: ObservableObject {
         launchpadGridNavigation = LaunchpadGridNavigation(rawValue: navigationRaw) ?? .vertical
         let styleRaw = defaults.string(forKey: Keys.launchpadStyle) ?? LaunchpadStyle.fullscreen.rawValue
         launchpadStyle = LaunchpadStyle(rawValue: styleRaw) ?? .fullscreen
+        launchpadGroupedByCategory = defaults.object(forKey: Keys.launchpadGroupedByCategory) as? Bool ?? true
         let themeRaw = defaults.string(forKey: Keys.compactLaunchpadTheme) ?? CompactLaunchpadTheme.dark.rawValue
         compactLaunchpadTheme = CompactLaunchpadTheme(rawValue: themeRaw) ?? .dark
         launchpadIconSize = min(max(defaults.object(forKey: Keys.launchpadIconSize) as? Int ?? 48, 28), 96)
@@ -472,6 +506,54 @@ final class AppSettings: ObservableObject {
         saveLaunchShortcuts()
     }
 
+    /// Manual category for one application: `nil` falls back to the rules.
+    func setLaunchpadCategoryOverride(_ group: LaunchpadGroup?, for bundleID: String) {
+        if let group {
+            launchpadCategoryOverrides[bundleID] = group.rawValue
+        } else {
+            launchpadCategoryOverrides.removeValue(forKey: bundleID)
+        }
+    }
+
+    func moveLaunchpadApp(_ sourceID: String, toward targetID: String, fallbackOrder: [String]) {
+        guard sourceID != targetID else { return }
+        var order = launchpadCustomAppOrder
+        if order.isEmpty {
+            for id in fallbackOrder where !order.contains(id) { order.append(id) }
+        } else {
+            order = order.reduce(into: [String]()) { unique, id in
+                if !unique.contains(id) { unique.append(id) }
+            }
+        }
+        for id in fallbackOrder where !order.contains(id) { order.append(id) }
+        guard let sourceIndex = order.firstIndex(of: sourceID),
+              let originalTargetIndex = order.firstIndex(of: targetID)
+        else { return }
+        order.remove(at: sourceIndex)
+        guard let targetIndex = order.firstIndex(of: targetID) else {
+            order.insert(sourceID, at: min(sourceIndex, order.count))
+            launchpadCustomAppOrder = order
+            return
+        }
+        let insertionIndex = targetIndex + (sourceIndex < originalTargetIndex ? 1 : 0)
+        order.insert(sourceID, at: insertionIndex)
+        launchpadCustomAppOrder = order
+    }
+
+    func moveLaunchpadCategory(_ source: LaunchpadGroup, toward target: LaunchpadGroup) {
+        guard source != target else { return }
+        var order = launchpadCustomCategoryOrder
+        for group in LaunchpadGroup.allCases where !order.contains(group.rawValue) { order.append(group.rawValue) }
+        guard let sourceIndex = order.firstIndex(of: source.rawValue),
+              let originalTargetIndex = order.firstIndex(of: target.rawValue)
+        else { return }
+        order.remove(at: sourceIndex)
+        guard let targetIndex = order.firstIndex(of: target.rawValue) else { return }
+        let insertionIndex = targetIndex + (sourceIndex < originalTargetIndex ? 1 : 0)
+        order.insert(source.rawValue, at: insertionIndex)
+        launchpadCustomCategoryOrder = order
+    }
+
     func snippet(for id: String) -> SnippetDefinition? {
         snippets.first { $0.id == id }
     }
@@ -531,7 +613,7 @@ final class AppSettings: ObservableObject {
 
     func exportBackup() throws -> Data {
         let backup = SettingsBackup(
-            version: 8,
+            version: 11,
             windowShortcuts: Dictionary(uniqueKeysWithValues: shortcuts.map { ($0.key.rawValue, $0.value) }),
             launchShortcuts: launchShortcuts,
             snippets: snippets,
@@ -544,6 +626,11 @@ final class AppSettings: ObservableObject {
             launchpadDisplayProfiles: launchpadDisplayProfiles,
             launchpadGridNavigation: launchpadGridNavigation,
             launchpadAppSortMode: launchpadAppSortMode,
+            launchpadGroupedByCategory: launchpadGroupedByCategory,
+            launchpadCategoryOverrides: launchpadCategoryOverrides,
+            launchpadCategorySortMode: launchpadCategorySortMode,
+            launchpadCustomCategoryOrder: launchpadCustomCategoryOrder,
+            launchpadCustomAppOrder: launchpadCustomAppOrder,
             launchpadIconSize: launchpadIconSize,
             launchpadColumnSpacing: launchpadColumnSpacing,
             launchpadRowSpacing: launchpadRowSpacing,
@@ -585,7 +672,7 @@ final class AppSettings: ObservableObject {
 
     func importBackup(_ data: Data) throws {
         let backup = try JSONDecoder().decode(SettingsBackup.self, from: data)
-        guard (1...8).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
+        guard (1...11).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
 
         shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.compactMap { action in
             backup.windowShortcuts[action.rawValue].map { (action, $0) } ?? action.defaultShortcut.map { (action, $0) }
@@ -604,6 +691,11 @@ final class AppSettings: ObservableObject {
         launchpadDisplayProfiles = backup.launchpadDisplayProfiles?.map { $0.clamped() } ?? []
         launchpadGridNavigation = backup.launchpadGridNavigation
         launchpadAppSortMode = backup.launchpadAppSortMode ?? .recent
+        launchpadGroupedByCategory = backup.launchpadGroupedByCategory ?? true
+        launchpadCategoryOverrides = backup.launchpadCategoryOverrides ?? [:]
+        launchpadCategorySortMode = backup.launchpadCategorySortMode ?? .mostApps
+        launchpadCustomCategoryOrder = backup.launchpadCustomCategoryOrder ?? LaunchpadGroup.allCases.map(\.rawValue)
+        launchpadCustomAppOrder = backup.launchpadCustomAppOrder ?? []
         launchpadIconSize = backup.launchpadIconSize ?? 48
         launchpadColumnSpacing = backup.launchpadColumnSpacing ?? 16
         launchpadRowSpacing = backup.launchpadRowSpacing ?? 12
@@ -963,6 +1055,11 @@ private struct SettingsBackup: Codable {
     let launchpadDisplayProfiles: [LaunchpadDisplayProfile]?
     let launchpadGridNavigation: LaunchpadGridNavigation
     let launchpadAppSortMode: LaunchpadAppSortMode?
+    let launchpadGroupedByCategory: Bool?
+    let launchpadCategoryOverrides: [String: String]?
+    let launchpadCategorySortMode: LaunchpadCategorySortMode?
+    let launchpadCustomCategoryOrder: [String]?
+    let launchpadCustomAppOrder: [String]?
     let launchpadIconSize: Int?
     let launchpadColumnSpacing: Int?
     let launchpadRowSpacing: Int?
@@ -1037,6 +1134,7 @@ enum LaunchpadAppSortMode: String, CaseIterable, Identifiable, Codable {
     case recent
     case name
     case color
+    case custom
 
     var id: String { rawValue }
 
@@ -1045,6 +1143,23 @@ enum LaunchpadAppSortMode: String, CaseIterable, Identifiable, Codable {
         case .recent: localizedString("Last Used")
         case .name: localizedString("Name")
         case .color: localizedString("Icon Color")
+        case .custom: localizedString("Custom Order")
+        }
+    }
+}
+
+enum LaunchpadCategorySortMode: String, CaseIterable, Identifiable, Codable {
+    case mostApps
+    case name
+    case custom
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .mostApps: localizedString("Most Apps First")
+        case .name: localizedString("Alphabetical")
+        case .custom: localizedString("Custom Order")
         }
     }
 }

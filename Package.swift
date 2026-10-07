@@ -26,7 +26,8 @@ let package = Package(
             exclude: [
                 // Copied verbatim into the app bundle by src/script/package_app.sh.
                 "Resources/ProjectIcons",
-                "Resources/ProjectScreenshots"
+                "Resources/ProjectScreenshots",
+                "Resources/CreditIcons"
             ],
             resources: [.process("Resources")]
         )

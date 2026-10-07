@@ -121,6 +121,24 @@ final class AppLauncherService {
                 }
                 return lhs.app.name.localizedCaseInsensitiveCompare(rhs.app.name) == .orderedAscending
             }.map(\.app)
+        case .custom:
+            let order = settings.launchpadCustomAppOrder.enumerated().reduce(into: [String: Int]()) { ranks, entry in
+                if ranks[entry.element] == nil { ranks[entry.element] = entry.offset }
+            }
+            return apps.sorted { lhs, rhs in
+                let leftRank = order[lhs.bundleID]
+                let rightRank = order[rhs.bundleID]
+                switch (leftRank, rightRank) {
+                case let (left?, right?) where left != right:
+                    return left < right
+                case (_?, nil):
+                    return true
+                case (nil, _?):
+                    return false
+                default:
+                    return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+                }
+            }
         }
     }
 
