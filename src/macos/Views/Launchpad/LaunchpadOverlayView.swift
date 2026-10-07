@@ -65,10 +65,8 @@ struct LaunchpadOverlayView: View {
                         keyboardApps = apps.filter {
                             AppCategorizer.effectiveGroup(for: $0, overrides: settings.launchpadCategoryOverrides) == selectedCategory
                         }
-                    } else if settings.launchpadGroupedByCategory {
-                        keyboardApps = apps
                     } else {
-                        keyboardApps = orderedFlatApps(apps)
+                        keyboardApps = apps
                     }
                     return handleKeyEvent(event, apps: keyboardApps, configuration: gridConfiguration, calculationState: calculationState)
                 }
@@ -271,9 +269,7 @@ struct LaunchpadOverlayView: View {
 
     @ViewBuilder
     private func gridContent(apps: [LaunchableApp], metrics: LaunchpadGridMetrics) -> some View {
-        let visibleApps = settings.launchpadGroupedByCategory
-            ? appsForSelectedCategory(apps)
-            : orderedFlatApps(apps)
+        let visibleApps = appsForSelectedCategory(apps)
         switch settings.launchpadGridNavigation {
         case .vertical:
             ScrollViewReader { proxy in
@@ -422,10 +418,6 @@ struct LaunchpadOverlayView: View {
             sortMode: settings.launchpadCategorySortMode,
             customOrder: settings.launchpadCustomCategoryOrder
         )
-    }
-
-    private func orderedFlatApps(_ apps: [LaunchableApp]) -> [LaunchableApp] {
-        categoryGroups(apps).flatMap(\.apps)
     }
 
     private func overlaySectionHeader(_ group: LaunchpadGroup, count: Int) -> some View {

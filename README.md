@@ -14,9 +14,9 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 ![Big Year — calendrier annuel natif, thème Poster bleu](store/website/screenshots/year-poster.webp)
 
 - [Démo vidéo](store/website/videos/window-flow.mp4) · [GIF animé](store/website/gifs/window-flow-wide.gif)
-- [Télécharger le DMG Apple Silicon v2026.09.08](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_aarch64.dmg) : montez le DMG, glissez l'app dans Applications et autorisez l'Accessibilité. Build local pour macOS 13+, sans garantie de notarisation.
+- [Télécharger le DMG Apple Silicon v2026.10.32](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg) : montez le DMG, glissez l'app dans Applications et autorisez l'Accessibilité. Build pour macOS 13+.
 - Homebrew : `brew install --cask mondary/tap/pk-windows-management` (mise à jour : `brew upgrade --cask pk-windows-management`).
-- curl : `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_aarch64.dmg`
+- curl : `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg`
 - [Sources et limites des captures](store/media-kit/README.md)
 
 ## ✅ Fonctionnalités
@@ -41,7 +41,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Gestionnaire d'URLs avec choix du navigateur et raccourcis globaux.
 - Tri configurable des applications du Launchpad par dernier lancement, nom, couleur dominante ou ordre personnalisé par glisser-déposer.
 - Regroupement par catégories avec tri indépendant : catégories les plus fournies, ordre alphabétique ou ordre personnalisé par glisser-déposer ; les apps gardent leur propre critère de tri dans chaque catégorie.
-- Désactiver les catégories masque leurs en-têtes sans perdre cet ordre : les apps restent affichées à plat dans le même ordre.
+- Le tri général choisi dans `Appearance` (dernier lancement, nom, couleur ou personnalisé) s'applique aussi quand le regroupement par catégorie est désactivé ; l'ordre des catégories ne concerne que l'affichage groupé.
 - Paramétrage fin de la grille du Launchpad : colonnes, lignes, taille des icônes, espacement des colonnes et des lignes.
 - Profils de grille par écran pour adapter le Launchpad à chaque moniteur connecté.
 - Choix du mode de navigation du Launchpad : scroll vertical continu ou pages horizontales.

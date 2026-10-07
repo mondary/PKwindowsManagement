@@ -14,9 +14,9 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 ![Big Year — native annual calendar, Blue Poster theme](store/website/screenshots/year-poster.webp)
 
 - [Video demo](store/website/videos/window-flow.mp4) · [Animated GIF](store/website/gifs/window-flow-wide.gif)
-- [Download the Apple Silicon DMG v2026.09.08](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_aarch64.dmg): open the DMG, move the app to Applications and enable Accessibility. Local macOS 13+ build, with no notarization guarantee.
+- [Download the Apple Silicon DMG v2026.10.32](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg): open the DMG, move the app to Applications and enable Accessibility. macOS 13+ build.
 - Homebrew: `brew install --cask mondary/tap/pk-windows-management` (upgrade: `brew upgrade --cask pk-windows-management`).
-- curl: `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_aarch64.dmg`
+- curl: `curl -L -o PKwindowsManagement.dmg https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.32.dmg`
 - [Capture sources and limitations](store/media-kit/README.md)
 
 ## ✅ Features
@@ -30,7 +30,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Full-screen Launchpad with search, recent applications, and custom shortcuts.
 - Sort Launchpad apps by last launch, name, dominant icon color, or a custom drag-and-drop order.
 - Group apps into categories and sort categories independently by app count, alphabetically, or with a custom drag-and-drop order; the app sort mode still applies inside each category.
-- Disable category grouping to hide headers while keeping the same flat display order.
+- The global app sort selected in `Appearance` (last launch, name, icon color, or custom) also applies when category grouping is disabled; category order only affects grouped display.
 - Keyboard Launchpad navigation: type to filter, use arrows to select, and press `Enter` to launch.
 - Global per-application shortcuts that work anywhere on macOS while Launchpad is closed.
 - Left/right modifier key distinction: Command, Option, and Shift (e.g. Right Command + A ≠ Left Command + A).

@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.32] - 2026-10-07
+### Fixed
+- Le tri général des apps (dernier lancement, nom, couleur ou personnalisé) reste indépendant du regroupement ; le tri des catégories ne s’applique qu’aux sections groupées
+
 ## [2026.10.31] - 2026-10-07
 ### Fixed
 - Le mode sans catégories masque désormais les en-têtes sans réinitialiser l’ordre : les apps restent aplaties dans l’ordre des catégories et des apps sélectionné
