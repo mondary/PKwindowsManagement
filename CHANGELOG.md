@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.30] - 2026-10-07
+### Fixed
+- Correction de l’inférence Swift du regroupement des catégories pour compiler le build Dev
+
 ## [2026.10.29] - 2026-10-07
 ### Added
 - Tri indépendant des catégories du Launchpad (les plus fournies, alphabétique ou personnalisé) et des apps (dernier lancement, nom, couleur ou personnalisé)

@@ -273,7 +273,7 @@ enum AppCategorizer {
         customOrder: [String] = []
     ) -> [LaunchpadAppGroup] {
         let byGroup = Dictionary(grouping: apps) { effectiveGroup(for: $0, overrides: overrides) }
-        let groups = LaunchpadGroup.allCases.compactMap { group in
+        let groups: [LaunchpadAppGroup] = LaunchpadGroup.allCases.compactMap { group in
             guard let members = byGroup[group], !members.isEmpty else { return nil }
             return LaunchpadAppGroup(group: group, apps: members)
         }
