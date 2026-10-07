@@ -17,6 +17,7 @@ final class AppSettings: ObservableObject {
         static let launchpadGridNavigation = "launchpad-grid-navigation"
         static let launchpadStyle = "launchpad-style"
         static let launchpadGroupedByCategory = "launchpad-grouped-by-category"
+        static let launchpadCategoryOverrides = "launchpad-category-overrides"
         static let compactLaunchpadTheme = "compact-launchpad-theme"
         static let launchpadAppSortMode = "launchpad-app-sort-mode"
         static let launchpadIconSize = "launchpad-icon-size"
@@ -56,6 +57,12 @@ final class AppSettings: ObservableObject {
 
     @Published private(set) var recentBundleIDs: [String]
     @Published private(set) var launchShortcuts: [String: KeyboardShortcutSetting]
+    @Published private(set) var launchpadCategoryOverrides: [String: String] {
+        didSet {
+            guard let data = try? JSONEncoder().encode(launchpadCategoryOverrides) else { return }
+            defaults.set(data, forKey: Keys.launchpadCategoryOverrides)
+        }
+    }
     @Published private(set) var snippets: [SnippetDefinition]
     @Published private(set) var launchpadDisplayProfiles: [LaunchpadDisplayProfile]
     @Published var launchpadAppSortMode: LaunchpadAppSortMode {
@@ -216,6 +223,10 @@ final class AppSettings: ObservableObject {
         recentBundleIDs = defaults.stringArray(forKey: Keys.launchRecents) ?? []
         let loadedLaunchShortcuts = Self.loadLaunchShortcuts(from: defaults)
         launchShortcuts = loadedLaunchShortcuts
+        launchpadCategoryOverrides = (try? JSONDecoder().decode(
+            [String: String].self,
+            from: defaults.data(forKey: Keys.launchpadCategoryOverrides) ?? Data()
+        )) ?? [:]
         let hadStoredSnippets = defaults.object(forKey: Keys.snippets) != nil
         let loadedSnippets = Self.loadSnippets(from: defaults)
         let shouldSeedDefaultSnippets = !hadStoredSnippets && loadedSnippets.isEmpty
@@ -477,6 +488,15 @@ final class AppSettings: ObservableObject {
         saveLaunchShortcuts()
     }
 
+    /// Manual category for one application: `nil` falls back to the rules.
+    func setLaunchpadCategoryOverride(_ group: LaunchpadGroup?, for bundleID: String) {
+        if let group {
+            launchpadCategoryOverrides[bundleID] = group.rawValue
+        } else {
+            launchpadCategoryOverrides.removeValue(forKey: bundleID)
+        }
+    }
+
     func snippet(for id: String) -> SnippetDefinition? {
         snippets.first { $0.id == id }
     }
@@ -536,7 +556,7 @@ final class AppSettings: ObservableObject {
 
     func exportBackup() throws -> Data {
         let backup = SettingsBackup(
-            version: 8,
+            version: 9,
             windowShortcuts: Dictionary(uniqueKeysWithValues: shortcuts.map { ($0.key.rawValue, $0.value) }),
             launchShortcuts: launchShortcuts,
             snippets: snippets,
@@ -549,6 +569,8 @@ final class AppSettings: ObservableObject {
             launchpadDisplayProfiles: launchpadDisplayProfiles,
             launchpadGridNavigation: launchpadGridNavigation,
             launchpadAppSortMode: launchpadAppSortMode,
+            launchpadGroupedByCategory: launchpadGroupedByCategory,
+            launchpadCategoryOverrides: launchpadCategoryOverrides,
             launchpadIconSize: launchpadIconSize,
             launchpadColumnSpacing: launchpadColumnSpacing,
             launchpadRowSpacing: launchpadRowSpacing,
@@ -590,7 +612,7 @@ final class AppSettings: ObservableObject {
 
     func importBackup(_ data: Data) throws {
         let backup = try JSONDecoder().decode(SettingsBackup.self, from: data)
-        guard (1...8).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
+        guard (1...9).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
 
         shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.compactMap { action in
             backup.windowShortcuts[action.rawValue].map { (action, $0) } ?? action.defaultShortcut.map { (action, $0) }
@@ -609,6 +631,8 @@ final class AppSettings: ObservableObject {
         launchpadDisplayProfiles = backup.launchpadDisplayProfiles?.map { $0.clamped() } ?? []
         launchpadGridNavigation = backup.launchpadGridNavigation
         launchpadAppSortMode = backup.launchpadAppSortMode ?? .recent
+        launchpadGroupedByCategory = backup.launchpadGroupedByCategory ?? true
+        launchpadCategoryOverrides = backup.launchpadCategoryOverrides ?? [:]
         launchpadIconSize = backup.launchpadIconSize ?? 48
         launchpadColumnSpacing = backup.launchpadColumnSpacing ?? 16
         launchpadRowSpacing = backup.launchpadRowSpacing ?? 12
@@ -968,6 +992,8 @@ private struct SettingsBackup: Codable {
     let launchpadDisplayProfiles: [LaunchpadDisplayProfile]?
     let launchpadGridNavigation: LaunchpadGridNavigation
     let launchpadAppSortMode: LaunchpadAppSortMode?
+    let launchpadGroupedByCategory: Bool?
+    let launchpadCategoryOverrides: [String: String]?
     let launchpadIconSize: Int?
     let launchpadColumnSpacing: Int?
     let launchpadRowSpacing: Int?

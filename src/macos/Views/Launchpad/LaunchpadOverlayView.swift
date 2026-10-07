@@ -13,6 +13,7 @@ struct LaunchpadOverlayView: View {
     @State private var appCatalogRevision = 0
     @State private var appCatalog: [LaunchableApp] = []
     @State private var currentPage = 0
+    @State private var selectedCategory: LaunchpadGroup?
     @State private var scrollAccumulator: CGFloat = 0
     @State private var lastScrollDate = Date.distantPast
     @FocusState private var searchFocused: Bool
@@ -31,6 +32,10 @@ struct LaunchpadOverlayView: View {
                         .padding(.top, 34)
 
                     searchField
+
+                    if settings.launchpadGroupedByCategory && calculationState == nil {
+                        categoryPicker(apps: apps)
+                    }
 
                     if let calculationState {
                         calculatorPanel(for: calculationState)
@@ -52,7 +57,15 @@ struct LaunchpadOverlayView: View {
             .background {
                 LaunchpadKeyEventMonitor { event in
                     guard shortcutTarget == nil, uninstallTarget == nil, uninstallError == nil else { return false }
-                    return handleKeyEvent(event, apps: apps, configuration: gridConfiguration, calculationState: calculationState)
+                    let keyboardApps: [LaunchableApp]
+                    if settings.launchpadGroupedByCategory, let selectedCategory {
+                        keyboardApps = apps.filter {
+                            AppCategorizer.effectiveGroup(for: $0, overrides: settings.launchpadCategoryOverrides) == selectedCategory
+                        }
+                    } else {
+                        keyboardApps = apps
+                    }
+                    return handleKeyEvent(event, apps: keyboardApps, configuration: gridConfiguration, calculationState: calculationState)
                 }
             }
         }
@@ -253,13 +266,34 @@ struct LaunchpadOverlayView: View {
 
     @ViewBuilder
     private func gridContent(apps: [LaunchableApp], metrics: LaunchpadGridMetrics) -> some View {
+        let visibleApps: [LaunchableApp]
+        if settings.launchpadGroupedByCategory, let selectedCategory {
+            visibleApps = apps.filter {
+                AppCategorizer.effectiveGroup(for: $0, overrides: settings.launchpadCategoryOverrides) == selectedCategory
+            }
+        } else {
+            visibleApps = apps
+        }
         switch settings.launchpadGridNavigation {
         case .vertical:
             ScrollViewReader { proxy in
                 ScrollView(.vertical) {
-                    appGrid(apps: apps, metrics: metrics)
+                    if settings.launchpadGroupedByCategory && selectedCategory == nil {
+                        VStack(alignment: .leading, spacing: 24) {
+                            ForEach(AppCategorizer.grouped(visibleApps, overrides: settings.launchpadCategoryOverrides)) { section in
+                                VStack(alignment: .leading, spacing: 12) {
+                                    overlaySectionHeader(section.group, count: section.apps.count)
+                                    appGrid(apps: section.apps, metrics: metrics)
+                                }
+                            }
+                        }
                         .padding(.horizontal, metrics.horizontalPadding)
                         .padding(.vertical, metrics.verticalPadding)
+                    } else {
+                        appGrid(apps: visibleApps, metrics: metrics)
+                            .padding(.horizontal, metrics.horizontalPadding)
+                            .padding(.vertical, metrics.verticalPadding)
+                    }
                 }
                 .scrollIndicators(.visible)
                 .frame(height: metrics.viewportHeight)
@@ -271,7 +305,7 @@ struct LaunchpadOverlayView: View {
                 }
             }
         case .horizontalPages:
-            let pages = appPages(apps, configuration: settings.launchpadGridConfiguration(for: displayID))
+            let pages = appPages(visibleApps, configuration: settings.launchpadGridConfiguration(for: displayID))
             VStack(spacing: 10) {
                 ScrollViewReader { proxy in
                     ScrollView(.horizontal) {
@@ -306,6 +340,59 @@ struct LaunchpadOverlayView: View {
                 pageIndicator(pageCount: pages.count)
             }
         }
+    }
+
+    private func categoryPicker(apps: [LaunchableApp]) -> some View {
+        let groups = AppCategorizer.grouped(apps, overrides: settings.launchpadCategoryOverrides)
+        return ScrollView(.horizontal) {
+            HStack(spacing: 8) {
+                categoryChip(nil, title: localizedString("All"), count: apps.count)
+                ForEach(groups) { section in
+                    categoryChip(section.group, title: section.group.title, count: section.apps.count)
+                }
+            }
+            .padding(.horizontal, 42)
+        }
+        .scrollIndicators(.hidden)
+        .frame(height: 34)
+    }
+
+    private func categoryChip(_ group: LaunchpadGroup?, title: String, count: Int) -> some View {
+        let selected = selectedCategory == group
+        return Button {
+            selectedCategory = group
+            currentPage = 0
+            selectFirstApp()
+        } label: {
+            HStack(spacing: 6) {
+                if let group {
+                    Image(systemName: group.icon)
+                }
+                Text(title)
+                Text("\(count)")
+                    .opacity(0.65)
+            }
+            .font(.system(size: 12, weight: selected ? .semibold : .medium))
+            .foregroundStyle(.white.opacity(selected ? 1 : 0.72))
+            .padding(.horizontal, 11)
+            .frame(height: 30)
+            .background(selected ? .white.opacity(0.2) : .white.opacity(0.08), in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func overlaySectionHeader(_ group: LaunchpadGroup, count: Int) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: group.icon)
+                .foregroundStyle(.white.opacity(0.85))
+            Text(group.title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
+            Text("\(count)")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.55))
+        }
+        .padding(.bottom, 2)
     }
 
     private func appGrid(apps: [LaunchableApp], metrics: LaunchpadGridMetrics) -> some View {
@@ -519,6 +606,27 @@ struct LaunchpadOverlayView: View {
     private func appContextMenu(for app: LaunchableApp) -> some View {
         Button(localizedString(app.shortcut == nil ? "Assign Shortcut..." : "Edit Shortcut...")) {
             shortcutTarget = app
+        }
+
+        if app.commandSymbolName == nil, app.snippet == nil {
+            Text("\(localizedString("Current category")): \(AppCategorizer.effectiveGroup(for: app, overrides: settings.launchpadCategoryOverrides).title)")
+            Menu(localizedString("Move to Category")) {
+                ForEach(LaunchpadGroup.allCases.filter { $0 != .actions && $0 != .snippets }) { group in
+                    Button {
+                        settings.setLaunchpadCategoryOverride(group, for: app.bundleID)
+                    } label: {
+                        if AppCategorizer.effectiveGroup(for: app, overrides: settings.launchpadCategoryOverrides) == group {
+                            Label(group.title, systemImage: "checkmark")
+                        } else {
+                            Text(group.title)
+                        }
+                    }
+                }
+                Divider()
+                Button(localizedString("Reset Category")) {
+                    settings.setLaunchpadCategoryOverride(nil, for: app.bundleID)
+                }
+            }
         }
 
         if launcher.canUninstall(app) {

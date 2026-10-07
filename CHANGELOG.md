@@ -1,5 +1,18 @@
 # Changelog
 
+## [2026.10.26] - 2026-10-07
+### Changed
+- Les commandes « Rechercher les mises à jour » et « Ouvrir les réglages » sont regroupées en bas du menu de la barre des menus, avec le soutien Ko-fi et Quitter
+
+## [2026.10.25] - 2026-10-07
+### Fixed
+- Le regroupement par catégorie apparaît maintenant dans le vrai Launchpad (filtres de catégorie visibles, groupes dans la grille verticale) ; menu contextuel par app pour changer de catégorie ou revenir au classement automatique, persistance par bundle ID
+### Added
+- Section IA locale avec statut/taille du modèle Laya partagé (2,2 Go), téléchargement, chargement/déchargement du serveur et suppression confirmée du cache Hugging Face commun
+### Changed
+- Le sidecar Laya runtime est rangé dans `~/Library/Application Support/PK/LayaServer` ; les poids restent dans le cache Hugging Face partagé, jamais dans le dépôt d'une app ou dans `-projects`
+- Les scripts source du sidecar sont embarqués comme petites ressources de l'app puis installés dans Application Support au premier usage ; les 2,2 Go de poids ne sont jamais embarqués
+
 ## [2026.10.24] - 2026-10-07
 ### Added
 - Catégorisation du Launchpad par règles intégrées : sections Actions, Snippets, Développement, Internet, Création, Média, Bureautique, Communication, Jeux, Utilitaires, Système, Divers (réglages → Launchpad → Organisation, activé par défaut, désactivable)

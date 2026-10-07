@@ -158,13 +158,6 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         roomsItem.target = self
         roomsItem.keyEquivalentModifierMask = [.control, .option]
         menu.addItem(roomsItem)
-        let updatesItem = NSMenuItem(title: localizedString("Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
-        updatesItem.target = self
-        menu.addItem(updatesItem)
-        let preferencesItem = NSMenuItem(title: localizedString("Open Preferences"), action: #selector(openPreferences), keyEquivalent: ",")
-        preferencesItem.target = self
-        menu.addItem(preferencesItem)
-
         menu.addItem(.separator())
 
         let settings = AppRuntime.shared.settings
@@ -205,6 +198,13 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             }
             menu.addItem(.separator())
         }
+
+        let updatesItem = NSMenuItem(title: localizedString("Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
+        updatesItem.target = self
+        menu.addItem(updatesItem)
+        let preferencesItem = NSMenuItem(title: localizedString("Open Preferences"), action: #selector(openPreferences), keyEquivalent: ",")
+        preferencesItem.target = self
+        menu.addItem(preferencesItem)
 
         let coffeeItem = NSMenuItem(title: localizedString("Support on Ko-fi"), action: #selector(openCoffee), keyEquivalent: "")
         coffeeItem.target = self

@@ -55,6 +55,12 @@ enum LaunchpadGroup: String, CaseIterable, Identifiable {
     }
 }
 
+struct LaunchpadAppGroup: Identifiable {
+    let group: LaunchpadGroup
+    let apps: [LaunchableApp]
+    var id: String { group.rawValue }
+}
+
 enum AppCategorizer {
     /// Bundl IDs mapped by hand: checked before every other rule.
     private static let curated: [String: LaunchpadGroup] = [
@@ -260,11 +266,22 @@ enum AppCategorizer {
     }
 
     /// Groups a flat app list into ordered non-empty sections.
-    static func grouped(_ apps: [LaunchableApp]) -> [(group: LaunchpadGroup, apps: [LaunchableApp])] {
-        let byGroup = Dictionary(grouping: apps, by: group(for:))
+    static func grouped(
+        _ apps: [LaunchableApp],
+        overrides: [String: String] = [:]
+    ) -> [LaunchpadAppGroup] {
+        let byGroup = Dictionary(grouping: apps) { effectiveGroup(for: $0, overrides: overrides) }
         return LaunchpadGroup.allCases.compactMap { group in
             guard let members = byGroup[group], !members.isEmpty else { return nil }
-            return (group, members)
+            return LaunchpadAppGroup(group: group, apps: members)
         }
+    }
+
+    /// The user's manual choice wins over every rule.
+    static func effectiveGroup(for app: LaunchableApp, overrides: [String: String]) -> LaunchpadGroup {
+        if let raw = overrides[app.bundleID], let group = LaunchpadGroup(rawValue: raw) {
+            return group
+        }
+        return group(for: app)
     }
 }

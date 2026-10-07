@@ -26,7 +26,7 @@ struct LaunchpadView: View {
             ScrollView {
                 if settings.launchpadGroupedByCategory && !isSearching {
                     VStack(alignment: .leading, spacing: 20) {
-                        ForEach(AppCategorizer.grouped(apps), id: \.group) { section in
+                        ForEach(AppCategorizer.grouped(apps, overrides: settings.launchpadCategoryOverrides)) { section in
                             VStack(alignment: .leading, spacing: 10) {
                                 sectionHeader(section.group, count: section.apps.count)
                                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 14)], spacing: 14) {
@@ -140,6 +140,12 @@ struct LaunchpadView: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 190, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Right-click an app tile to change its category.")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .frame(width: 190, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -177,6 +183,28 @@ struct LaunchpadView: View {
                 shortcutTarget = app
             }
             .font(.system(size: 11, weight: .semibold))
+        }
+        .contextMenu {
+            if app.commandSymbolName == nil, app.snippet == nil {
+                Text("\(localizedString("Current category")): \(AppCategorizer.effectiveGroup(for: app, overrides: settings.launchpadCategoryOverrides).title)")
+                Menu(localizedString("Move to Category")) {
+                    ForEach(LaunchpadGroup.allCases.filter { $0 != .actions && $0 != .snippets }) { group in
+                        Button {
+                            settings.setLaunchpadCategoryOverride(group, for: app.bundleID)
+                        } label: {
+                            if AppCategorizer.effectiveGroup(for: app, overrides: settings.launchpadCategoryOverrides) == group {
+                                Label(group.title, systemImage: "checkmark")
+                            } else {
+                                Text(group.title)
+                            }
+                        }
+                    }
+                    Divider()
+                    Button(localizedString("Reset Category")) {
+                        settings.setLaunchpadCategoryOverride(nil, for: app.bundleID)
+                    }
+                }
+            }
         }
     }
 

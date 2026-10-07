@@ -85,6 +85,8 @@ private struct RootDashboardView: View {
                     SnippetsSettingsView(settings: settings)
                 case .urls:
                     URLSnippetsSettingsView(settings: settings)
+                case .ai:
+                    AISettingsView()
                 case .support:
                     SupportSettingsView()
                 case .library:
@@ -260,6 +262,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     case bigYear
     case snippets
     case urls
+    case ai
     case library
     case support
     case about
@@ -268,12 +271,13 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
     /// Sidebar grouping; Apparence sits right after Launchpad because it is
     /// the Launchpad's appearance.
-    static let categoryOrder = ["APP", "FEATURES", "PK PROJECTS"]
+    static let categoryOrder = ["APP", "FEATURES", "AI", "PK PROJECTS"]
 
     var category: String {
         switch self {
         case .general: "APP"
         case .windows, .launchpad, .appearance, .bigYear, .snippets, .urls: "FEATURES"
+        case .ai: "AI"
         case .library, .support, .about: "PK PROJECTS"
         }
     }
@@ -282,6 +286,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         switch category {
         case "APP": localizedString("App")
         case "FEATURES": localizedString("Features")
+        case "AI": localizedString("Local AI")
         default: localizedString("PK Projects")
         }
     }
@@ -299,6 +304,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .appearance: localizedString("Appearance")
         case .snippets: localizedString("Snippets")
         case .urls: "URLs"
+        case .ai: localizedString("Local AI")
         case .library: localizedString("Project Library")
         case .support: localizedString("Support")
         case .about: localizedString("About")
@@ -314,6 +320,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .appearance: "paintbrush"
         case .snippets: "doc.on.doc"
         case .urls: "link"
+        case .ai: "sparkles"
         case .support: "heart.fill"
         case .library: "square.grid.2x2"
         case .about: "info.circle"
