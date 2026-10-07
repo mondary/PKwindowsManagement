@@ -265,10 +265,10 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     case snippets
     case urls
     case ai
+    case credits
     case library
     case support
     case about
-    case credits
 
     var id: String { rawValue }
 

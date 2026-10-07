@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.35] - 2026-10-07
+### Changed
+- Déplacement de « Crédits & inspirations » dans le groupe Projets PK, juste au-dessus de Project Library dans la barre latérale
+
 ## [2026.10.34] - 2026-10-07
 ### Changed
 - Déplacement des crédits hors de la page À propos vers une section dédiée « Crédits & inspirations », à côté d'À propos et Soutenir ; retrait de Pulse de la liste, qui n'est pas un crédit obligatoire
