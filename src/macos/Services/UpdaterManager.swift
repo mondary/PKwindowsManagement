@@ -121,8 +121,11 @@ final class UpdaterManager: ObservableObject {
     }
 
     private static func latestInfo(at address: String) async -> AppcastInfo? {
-        guard let url = URL(string: address),
-              let (data, response) = try? await URLSession.shared.data(from: url),
+        guard let url = freshFeedURL(address) else { return nil }
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
+        request.setValue("no-cache, no-store", forHTTPHeaderField: "Cache-Control")
+        request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
               (response as? HTTPURLResponse)?.statusCode == 200
         else { return nil }
         let parser = AppcastVersionParser()
@@ -130,6 +133,17 @@ final class UpdaterManager: ObservableObject {
         xml.delegate = parser
         guard xml.parse() else { return nil }
         return parser.info
+    }
+
+    /// GitHub's raw-content CDN may keep serving an older appcast at a stable
+    /// URL for several minutes. A unique query value bypasses that intermediary
+    /// cache for both our version display and Sparkle's feed request.
+    fileprivate static func freshFeedURL(_ address: String) -> URL? {
+        guard var components = URLComponents(string: address) else { return nil }
+        var items = components.queryItems ?? []
+        items.append(URLQueryItem(name: "_pk_refresh", value: UUID().uuidString))
+        components.queryItems = items
+        return components.url
     }
 
     /// Dev builds install silently; stable builds ask first.
@@ -321,9 +335,10 @@ private final class ChannelFeedProvider: NSObject, SPUUpdaterDelegate {
     var onNoUpdate: ((Bool, SUAppcastItem?) -> Void)?
 
     func feedURLString(for updater: SPUUpdater) -> String? {
-        UserDefaults.standard.string(forKey: UpdaterManager.channelKey) == UpdateChannel.dev.rawValue
+        let address = UserDefaults.standard.string(forKey: UpdaterManager.channelKey) == UpdateChannel.dev.rawValue
             ? UpdaterManager.devFeedURL
             : UpdaterManager.stableFeedURL
+        return UpdaterManager.freshFeedURL(address)?.absoluteString ?? address
     }
 
     func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: NSError) {

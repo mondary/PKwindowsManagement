@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.36] - 2026-10-07
+### Fixed
+- Le contrôle de version et Sparkle contournaient désormais le cache CDN de raw.githubusercontent.com avec une URL de feed unique à chaque vérification ; évite d'afficher une version Dev périmée après publication
+
 ## [2026.10.35] - 2026-10-07
 ### Changed
 - Déplacement de « Crédits & inspirations » dans le groupe Projets PK, juste au-dessus de Project Library dans la barre latérale
