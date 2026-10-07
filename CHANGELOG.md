@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.28] - 2026-10-07
+### Changed
+- Ajout d’icônes cohérentes aux entrées « Rechercher les mises à jour », « Ouvrir les réglages » et « Quitter » ; Quitter est séparé du bloc d’actions
+
 ## [2026.10.27] - 2026-10-07
 ### Fixed
 - Correction de la compilation Dev du Launchpad : le filtrage par catégorie est maintenant calculé hors du `ViewBuilder`

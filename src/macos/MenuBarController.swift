@@ -201,9 +201,11 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
         let updatesItem = NSMenuItem(title: localizedString("Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
         updatesItem.target = self
+        updatesItem.image = menuSymbol("arrow.clockwise", description: localizedString("Check for Updates…"))
         menu.addItem(updatesItem)
         let preferencesItem = NSMenuItem(title: localizedString("Open Preferences"), action: #selector(openPreferences), keyEquivalent: ",")
         preferencesItem.target = self
+        preferencesItem.image = menuSymbol("gearshape", description: localizedString("Open Preferences"))
         menu.addItem(preferencesItem)
 
         let coffeeItem = NSMenuItem(title: localizedString("Support on Ko-fi"), action: #selector(openCoffee), keyEquivalent: "")
@@ -214,10 +216,19 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         }
         menu.addItem(coffeeItem)
 
+        menu.addItem(.separator())
         let quitItem = NSMenuItem(title: localizedString("Quit"), action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
+        quitItem.image = menuSymbol("power", description: localizedString("Quit"))
         menu.addItem(quitItem)
         statusMenu = menu
+    }
+
+    private func menuSymbol(_ name: String, description: String) -> NSImage? {
+        guard let image = NSImage(systemSymbolName: name, accessibilityDescription: description) else { return nil }
+        image.size = NSSize(width: 16, height: 16)
+        image.isTemplate = true
+        return image
     }
 
     private func registerLaunchpadTriggers() {
