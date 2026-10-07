@@ -135,15 +135,19 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --notes "Release ${{ steps.version.outputs.version }} — see CHANGELOG.md." \
-            PKwindowsManagement-app.zip "PKwindowsManagement_${{ steps.version.outputs.version }}.dmg"
+            PKwindowsManagement-app.zip "PKwindowsManagement_${{ steps.version.outputs.version }}.dmg" \
+          || gh release upload "$TAG" PKwindowsManagement-app.zip "PKwindowsManagement_${{ steps.version.outputs.version }}.dmg" --clobber
 
       - name: Commit appcast.xml
+        # The tag checkout is a detached HEAD: commit only the feed file on top
+        # of main through a worktree, then push that single commit.
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git worktree add "$RUNNER_TEMP/mainwt" -b appcast-commit origin/main
+          cp appcast.xml "$RUNNER_TEMP/mainwt/appcast.xml"
+          cd "$RUNNER_TEMP/mainwt"
           git add appcast.xml
           git commit -m "MAJ: appcast stable ${{ steps.version.outputs.version }} [skip ci]" || exit 0
-          git stash push -m "CI generated build state before appcast rebase" || true
-          git fetch origin main
-          git rebase origin/main
-          git push origin main
+          git push origin appcast-commit:main
