@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.38] - 2026-10-07
+### Changed
+- En-tête de Bibliothèque de projets harmonisé avec Crédits, À propos et Soutenir : icône colorée, titre et sous-titre centrés
+
 ## [2026.10.37] - 2026-10-07
 ### Changed
 - Libellé de sidebar raccourci en « Crédits » ; titre de page centré avec pictogramme ; icônes colorées par outil/inspiration ; « Project Library » localisée en français et en allemand

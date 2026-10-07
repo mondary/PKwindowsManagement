@@ -8,6 +8,7 @@ struct ProjectLibraryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
+                    .padding(.bottom, 6)
                 featuredCard(featured)
                 Text(localizedString("More projects"))
                     .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -23,7 +24,9 @@ struct ProjectLibraryView: View {
                 .buttonStyle(.borderedProminent)
                 .padding(.top, 4)
             }
-            .padding(28)
+            .padding(.horizontal, 28)
+            .padding(.top, 36)
+            .padding(.bottom, 28)
             .frame(maxWidth: 860)
             .frame(maxWidth: .infinity)
         }
@@ -35,23 +38,20 @@ struct ProjectLibraryView: View {
     ]
 
     private var header: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(Color.accentColor.opacity(0.12))
-                    .frame(width: 34, height: 34)
-                Image(systemName: "square.grid.2x2")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color.accentColor)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(localizedString("Project Library"))
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                Text(localizedString("Discover the other tools and projects I build."))
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-            }
+        VStack(spacing: 8) {
+            Image(systemName: "square.grid.2x2.fill")
+                .font(.system(size: 36, weight: .medium))
+                .foregroundStyle(Color.accentColor)
+
+            Text(localizedString("Project Library"))
+                .font(.system(size: 20, weight: .bold))
+
+            Text(localizedString("Discover the other tools and projects I build."))
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
+        .frame(maxWidth: .infinity)
         .padding(.bottom, 4)
     }
 
