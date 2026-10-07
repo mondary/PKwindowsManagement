@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.24] - 2026-10-07
+### Added
+- Catégorisation du Launchpad par règles intégrées : sections Actions, Snippets, Développement, Internet, Création, Média, Bureautique, Communication, Jeux, Utilitaires, Système, Divers (réglages → Launchpad → Organisation, activé par défaut, désactivable)
+### Fixed
+- Retour au canal Stable déterministe : le bouton « Rechercher les mises à jour » lit lui-même les numéros techniques des feeds et propose directement l'installation du canal choisi quand celui-ci est plus ancien, au lieu de dépendre du callback Sparkle qui ne se déclenchait pas
+
 ## [2026.10.23] - 2026-10-07
 ### Fixed
 - Le workflow Dev ne saute plus les commits dont le message mentionne « appcast » : le filtre cible désormais l'auteur (bot) et non le texte du commit

@@ -34,6 +34,8 @@ final class UpdaterManager: ObservableObject {
     @Published private(set) var switchOffer: ChannelSwitchOffer?
     @Published private(set) var installingSwitch = false
     @Published private(set) var switchErrorMessage: String?
+    private var stableInfo: AppcastInfo?
+    private var devInfo: AppcastInfo?
 
     private init() {
         selectedChannel = UpdateChannel(
@@ -72,17 +74,53 @@ final class UpdaterManager: ObservableObject {
 
     func refreshAvailableVersions() {
         Task {
-            async let stable = Self.latestVersion(at: Self.stableFeedURL)
-            async let dev = Self.latestVersion(at: Self.devFeedURL)
-            let versions = await (stable, dev)
+            let versions = await (
+                Self.latestInfo(at: Self.stableFeedURL),
+                Self.latestInfo(at: Self.devFeedURL)
+            )
             await MainActor.run {
-                self.latestStableVersion = versions.0
-                self.latestDevVersion = versions.1
+                self.latestStableVersion = versions.0?.short
+                self.latestDevVersion = versions.1?.short
+                self.stableInfo = versions.0
+                self.devInfo = versions.1
             }
         }
     }
 
-    private static func latestVersion(at address: String) async -> String? {
+    /// Button entry point: refresh the feeds, then either hand over to Sparkle
+    /// (a real newer update exists) or offer the channel switch ourselves.
+    /// Sparkle never offers an older build, and going back to the stable
+    /// channel is a legitimate downgrade we must handle deterministically.
+    func checkForUpdatesOrSwitch() {
+        Task {
+            let versions = await (
+                Self.latestInfo(at: Self.stableFeedURL),
+                Self.latestInfo(at: Self.devFeedURL)
+            )
+            await MainActor.run {
+                self.latestStableVersion = versions.0?.short
+                self.latestDevVersion = versions.1?.short
+                self.stableInfo = versions.0
+                self.devInfo = versions.1
+
+                let target = channel == .dev ? versions.1 : versions.0
+                if let target,
+                   let enclosure = target.enclosure,
+                   let installedShort = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+                   let installedTechnical = Int64(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""),
+                   let feedTechnical = Int64(target.technical),
+                   feedTechnical <= installedTechnical,
+                   target.short != installedShort
+                {
+                    switchOffer = ChannelSwitchOffer(channel: channel, version: target.short, url: enclosure)
+                } else {
+                    controller?.checkForUpdates(nil)
+                }
+            }
+        }
+    }
+
+    private static func latestInfo(at address: String) async -> AppcastInfo? {
         guard let url = URL(string: address),
               let (data, response) = try? await URLSession.shared.data(from: url),
               (response as? HTTPURLResponse)?.statusCode == 200
@@ -91,7 +129,7 @@ final class UpdaterManager: ObservableObject {
         let xml = XMLParser(data: data)
         xml.delegate = parser
         guard xml.parse() else { return nil }
-        return parser.version
+        return parser.info
     }
 
     /// Dev builds install silently; stable builds ask first.
@@ -209,7 +247,14 @@ private final class AppcastVersionParser: NSObject, XMLParserDelegate {
     private var insideShortVersion = false
     private var insideSparkleVersion = false
     private var currentText = ""
-    private(set) var version: String?
+    private var shortVersion: String?
+    private var technicalVersion: String?
+    private var enclosureURL: URL?
+
+    var info: AppcastInfo? {
+        guard let shortVersion else { return nil }
+        return AppcastInfo(short: shortVersion, technical: technicalVersion ?? shortVersion, enclosure: enclosureURL)
+    }
 
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
         if elementName == "sparkle:shortVersionString" || qName == "sparkle:shortVersionString" {
@@ -218,6 +263,10 @@ private final class AppcastVersionParser: NSObject, XMLParserDelegate {
         } else if elementName == "sparkle:version" || qName == "sparkle:version" {
             insideSparkleVersion = true
             currentText = ""
+        } else if elementName == "enclosure" || qName == "enclosure" {
+            if let address = attributeDict["url"], let url = URL(string: address) {
+                enclosureURL = url
+            }
         }
     }
 
@@ -227,13 +276,21 @@ private final class AppcastVersionParser: NSObject, XMLParserDelegate {
 
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         if insideShortVersion && (elementName == "sparkle:shortVersionString" || qName == "sparkle:shortVersionString") {
-            version = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+            shortVersion = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
             insideShortVersion = false
         } else if insideSparkleVersion && (elementName == "sparkle:version" || qName == "sparkle:version") {
-            if version == nil { version = currentText.trimmingCharacters(in: .whitespacesAndNewlines) }
+            if technicalVersion == nil { technicalVersion = currentText.trimmingCharacters(in: .whitespacesAndNewlines) }
             insideSparkleVersion = false
         }
     }
+}
+
+/// What the appcast of one channel publishes: display version, Sparkle
+/// technical version, and the downloadable zip.
+struct AppcastInfo {
+    let short: String
+    let technical: String
+    let enclosure: URL?
 }
 
 enum UpdateChannel: String, CaseIterable, Identifiable {

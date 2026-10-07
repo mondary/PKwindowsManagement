@@ -99,8 +99,7 @@ struct AboutSettingsView: View {
             .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.045)))
 
             Button {
-                updater.refreshAvailableVersions()
-                updater.checkForUpdates()
+                updater.checkForUpdatesOrSwitch()
             } label: {
                 Label(localizedString("Check for Updates…"), systemImage: "arrow.triangle.2.circlepath")
             }

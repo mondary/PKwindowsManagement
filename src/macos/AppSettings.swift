@@ -16,6 +16,7 @@ final class AppSettings: ObservableObject {
         static let launchpadDisplayProfiles = "launchpad-display-profiles"
         static let launchpadGridNavigation = "launchpad-grid-navigation"
         static let launchpadStyle = "launchpad-style"
+        static let launchpadGroupedByCategory = "launchpad-grouped-by-category"
         static let compactLaunchpadTheme = "compact-launchpad-theme"
         static let launchpadAppSortMode = "launchpad-app-sort-mode"
         static let launchpadIconSize = "launchpad-icon-size"
@@ -97,6 +98,9 @@ final class AppSettings: ObservableObject {
     }
     @Published var launchpadStyle: LaunchpadStyle {
         didSet { defaults.set(launchpadStyle.rawValue, forKey: Keys.launchpadStyle) }
+    }
+    @Published var launchpadGroupedByCategory: Bool {
+        didSet { defaults.set(launchpadGroupedByCategory, forKey: Keys.launchpadGroupedByCategory) }
     }
     @Published var compactLaunchpadTheme: CompactLaunchpadTheme {
         didSet { defaults.set(compactLaunchpadTheme.rawValue, forKey: Keys.compactLaunchpadTheme) }
@@ -252,6 +256,7 @@ final class AppSettings: ObservableObject {
         launchpadGridNavigation = LaunchpadGridNavigation(rawValue: navigationRaw) ?? .vertical
         let styleRaw = defaults.string(forKey: Keys.launchpadStyle) ?? LaunchpadStyle.fullscreen.rawValue
         launchpadStyle = LaunchpadStyle(rawValue: styleRaw) ?? .fullscreen
+        launchpadGroupedByCategory = defaults.object(forKey: Keys.launchpadGroupedByCategory) as? Bool ?? true
         let themeRaw = defaults.string(forKey: Keys.compactLaunchpadTheme) ?? CompactLaunchpadTheme.dark.rawValue
         compactLaunchpadTheme = CompactLaunchpadTheme(rawValue: themeRaw) ?? .dark
         launchpadIconSize = min(max(defaults.object(forKey: Keys.launchpadIconSize) as? Int ?? 48, 28), 96)

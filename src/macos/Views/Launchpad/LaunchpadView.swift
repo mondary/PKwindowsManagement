@@ -24,24 +24,28 @@ struct LaunchpadView: View {
             .padding(.horizontal, 24)
 
             ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 14)], spacing: 14) {
-                    ForEach(apps) { app in
-                        VStack(spacing: 8) {
-                            Button {
-                                commandFeedbackMessage = launcher.launch(app, settings: settings)
-                            } label: {
-                                LaunchpadAppTile(app: app)
+                if settings.launchpadGroupedByCategory && !isSearching {
+                    VStack(alignment: .leading, spacing: 20) {
+                        ForEach(AppCategorizer.grouped(apps), id: \.group) { section in
+                            VStack(alignment: .leading, spacing: 10) {
+                                sectionHeader(section.group, count: section.apps.count)
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 14)], spacing: 14) {
+                                    ForEach(section.apps) { app in
+                                        appTile(app)
+                                    }
+                                }
                             }
-                            .buttonStyle(.plain)
-
-                            Button(app.shortcut == nil ? localizedString("Assign shortcut") : shortcutLabel(for: app.shortcut)) {
-                                shortcutTarget = app
-                            }
-                            .font(.system(size: 11, weight: .semibold))
                         }
                     }
+                    .padding(24)
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 14)], spacing: 14) {
+                        ForEach(apps) { app in
+                            appTile(app)
+                        }
+                    }
+                    .padding(24)
                 }
-                .padding(24)
             }
         }
         .sheet(item: $shortcutTarget) { app in
@@ -123,11 +127,29 @@ struct LaunchpadView: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Organization")
+                        .font(.subheadline.weight(.semibold))
+
+                    Toggle("Group by category", isOn: $settings.launchpadGroupedByCategory)
+                        .font(.subheadline)
+
+                    Text("Sort applications into sections (Development, Internet, Creation…).")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 190, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .padding(14)
         .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .animation(.easeInOut(duration: 0.18), value: settings.launchpadStyle)
+    }
+
+    private var isSearching: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var filteredApps: [LaunchableApp] {
@@ -139,6 +161,35 @@ struct LaunchpadView: View {
             || $0.bundleID.lowercased().contains(needle)
             || $0.snippet?.searchText.lowercased().contains(needle) == true
             || matchesLauncherCommand($0, needle: needle)
+        }
+    }
+
+    private func appTile(_ app: LaunchableApp) -> some View {
+        VStack(spacing: 8) {
+            Button {
+                commandFeedbackMessage = launcher.launch(app, settings: settings)
+            } label: {
+                LaunchpadAppTile(app: app)
+            }
+            .buttonStyle(.plain)
+
+            Button(app.shortcut == nil ? localizedString("Assign shortcut") : shortcutLabel(for: app.shortcut)) {
+                shortcutTarget = app
+            }
+            .font(.system(size: 11, weight: .semibold))
+        }
+    }
+
+    private func sectionHeader(_ group: LaunchpadGroup, count: Int) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: group.icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+            Text(group.title)
+                .font(.headline)
+            Text("\(count)")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
         }
     }
 
