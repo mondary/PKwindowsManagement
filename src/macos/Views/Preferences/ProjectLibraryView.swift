@@ -24,8 +24,8 @@ struct ProjectLibraryView: View {
                 .padding(.top, 4)
             }
             .padding(28)
-            .frame(maxWidth: 860, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: 860)
+            .frame(maxWidth: .infinity)
         }
     }
 

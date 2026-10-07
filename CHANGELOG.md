@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.22] - 2026-10-07
+### Fixed
+- Les raccourcis de fenêtre s'appliquent aussi quand PKwindowsManagement est l'app active : sa propre fenêtre de réglages se déplace et se redimensionne comme une fenêtre classique (les raccourcis de lancement restent inertes pendant la saisie dans ses champs)
+- La grille de la Project Library est centrée dans la fenêtre au lieu d'être alignée à gauche
+- Le workflow Stable commite l'appcast via un worktree (l'ancien push depuis HEAD détachée échouait) et la release devient ré-exécutable
+
 ## [2026.10.21] - 2026-10-06
 ### Added
 - Barre latérale refaite sur le modèle de PK Monitor : recherche dans les réglages, sections groupées (App / Fonctionnalités / Projets PK), en-tête avec icône et version en pied, drapeaux FR/EN/ES/DE de changement de langue immédiat en bas de la barre

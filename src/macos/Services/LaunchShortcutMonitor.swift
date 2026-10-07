@@ -135,17 +135,20 @@ final class LaunchShortcutMonitor {
             modifierState.update(with: event)
             return .passUnretained(event)
         case .keyDown:
-            if NSApp.isActive || NSWorkspace.shared.frontmostApplication?.processIdentifier == ProcessInfo.processInfo.processIdentifier {
-                return .passUnretained(event)
-            }
+            // Launch shortcuts stay inert while our own UI is focused (typing
+            // in its fields must not launch apps), but window actions keep
+            // working so the settings window snaps like any other window.
+            let ownAppIsActive = NSApp.isActive
+                || NSWorkspace.shared.frontmostApplication?.processIdentifier == ProcessInfo.processInfo.processIdentifier
             var consumed = false
-            if let app = match(event: event) {
+            if !ownAppIsActive, let app = match(event: event) {
                 let captured = app
                 DispatchQueue.main.async { [weak self] in
                     self?.launchHandler?(captured)
                 }
                 consumed = true
-            } else if let windowAction = matchWindowShortcut(event: event) {
+            }
+            if !consumed, let windowAction = matchWindowShortcut(event: event) {
                 let captured = windowAction
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
