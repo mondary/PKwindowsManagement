@@ -29,15 +29,15 @@ if [[ -z "$VERSION" ]]; then
   exit 1
 fi
 
-# Dev builds (PK_DEV_BUILD=1, CI pushes on main): CFBundleVersion is the epoch
-# — always growing, always above any stable CalVer, so any installed app gets
-# offered the dev build. Stable keeps the CalVer everywhere.
+# Sparkle compares CFBundleVersion numerically across channels. Use a monotonic
+# epoch build number for both release types, while keeping the user-facing
+# CalVer (and -dev marker) in CFBundleShortVersionString.
 if [[ "${PK_DEV_BUILD:-0}" == "1" ]]; then
   EPOCH="$(date +%s)"
   BUNDLE_VERSION="$EPOCH"
-  SHORT_VERSION="$VERSION-dev.$(echo "$EPOCH" | tail -c 5)"
+  SHORT_VERSION="$VERSION-dev"
 else
-  BUNDLE_VERSION="$VERSION"
+  BUNDLE_VERSION="${PK_BUNDLE_VERSION:-$(date +%s)}"
   SHORT_VERSION="$VERSION"
 fi
 
@@ -74,6 +74,14 @@ if [[ -d "$RESOURCE_BUNDLE" ]]; then
   cp -R "$RESOURCE_BUNDLE" "$RESOURCES_DIR/"
   find "$RESOURCE_BUNDLE" -maxdepth 1 -type d -name '*.lproj' -exec cp -R {} "$RESOURCES_DIR/" \;
 fi
+
+# Project Library assets (icons + screenshots), excluded from SPM and copied
+# as plain directories so Bundle.main can load them by subdirectory.
+for RES_SUBDIR in ProjectIcons ProjectScreenshots; do
+  if [[ -d "$ROOT_DIR/src/macos/Resources/$RES_SUBDIR" ]]; then
+    cp -R "$ROOT_DIR/src/macos/Resources/$RES_SUBDIR" "$RESOURCES_DIR/"
+  fi
+done
 
 if [[ -f "$ICON_SOURCE" ]]; then
   rm -rf "$ICONSET_DIR"
