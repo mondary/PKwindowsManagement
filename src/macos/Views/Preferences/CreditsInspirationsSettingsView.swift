@@ -6,6 +6,8 @@ struct CreditsInspirationsSettingsView: View {
         let author: String
         let roleKey: String
         let license: String
+        let symbol: String
+        let tint: Color
         let url: URL
     }
 
@@ -15,6 +17,8 @@ struct CreditsInspirationsSettingsView: View {
             author: "Sparkle project",
             roleKey: "Stable and Dev auto-updates.",
             license: "MIT",
+            symbol: "sparkles",
+            tint: Color(red: 0.96, green: 0.68, blue: 0.18),
             url: URL(string: "https://github.com/sparkle-project/Sparkle")!
         ),
         CreditEntry(
@@ -22,6 +26,8 @@ struct CreditsInspirationsSettingsView: View {
             author: "Convai Innovations",
             roleKey: "Local decision model behind the integrated AI.",
             license: "Apache-2.0",
+            symbol: "brain.head.profile",
+            tint: Color(red: 0.62, green: 0.42, blue: 0.88),
             url: URL(string: "https://huggingface.co/convaiinnovations/laya")!
         )
     ]
@@ -32,38 +38,49 @@ struct CreditsInspirationsSettingsView: View {
             author: "Sara Gordić",
             roleKey: "Rooms concept and layout engine, ported as RoomTiler.",
             license: "MIT",
+            symbol: "book.closed.fill",
+            tint: Color(red: 0.25, green: 0.62, blue: 0.86),
             url: URL(string: "https://github.com/saragordic/rooms")!
         )
     ]
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(spacing: 24) {
                 pageHeader
-                creditGroup(title: localizedString("Tools and dependencies"), entries: dependencies)
-                creditGroup(title: localizedString("Inspirations"), entries: inspirations)
+                VStack(alignment: .leading, spacing: 22) {
+                    creditGroup(title: localizedString("Tools and dependencies"), entries: dependencies)
+                    creditGroup(title: localizedString("Inspirations"), entries: inspirations)
+                }
+                .frame(maxWidth: 480, alignment: .leading)
 
                 Text(localizedString("Built with Apple's native frameworks: SwiftUI, AppKit and the Accessibility API."))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: 480, alignment: .leading)
             }
-            .frame(maxWidth: 520)
+            .frame(maxWidth: 560)
             .padding(.horizontal, 36)
-            .padding(.vertical, 32)
+            .padding(.top, 36)
+            .padding(.bottom, 32)
             .frame(maxWidth: .infinity)
         }
     }
 
     private var pageHeader: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(localizedString("Credits & inspirations"))
-                .font(.system(size: 24, weight: .bold))
+        VStack(spacing: 8) {
+            Image(systemName: "quote.opening")
+                .font(.system(size: 36, weight: .medium))
+                .foregroundStyle(Color.accentColor)
+
+            Text(localizedString("Credits"))
+                .font(.system(size: 20, weight: .bold))
             Text(localizedString("Projects and tools that inform or power PKwindowsManagement."))
-                .font(.subheadline)
+                .font(.system(size: 13))
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
     }
 
     private func creditGroup(title: String, entries: [CreditEntry]) -> some View {
@@ -86,7 +103,13 @@ struct CreditsInspirationsSettingsView: View {
     }
 
     private func creditRow(_ entry: CreditEntry) -> some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: entry.symbol)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(entry.tint)
+                .frame(width: 38, height: 38)
+                .background(entry.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Link(entry.id, destination: entry.url)

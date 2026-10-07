@@ -236,6 +236,7 @@
 "Window snapping, compact or fullscreen launchpad, script snippets, app shortcuts — all from the keyboard, without leaving your flow. Multi-display, native binary, zero dependencies." = "Snapping de fenêtres, launchpad compact ou plein écran, snippets de scripts, raccourcis d’apps — tout au clavier, sans quitter son flux. Multi-écrans, binaire natif, zéro dépendance.";
 "Built with care for the Mac community. Unobtrusive when you don't need it, there when you look at it." = "Construit avec soin pour la communauté Mac. Discret quand tu n’as pas besoin de lui, présent quand tu le regardes.";
 "Credits & inspirations" = "Crédits & inspirations";
+"Credits" = "Crédits";
 "Projects and tools that inform or power PKwindowsManagement." = "Projets et outils qui inspirent ou font fonctionner PKwindowsManagement.";
 "Tools and dependencies" = "Outils et dépendances";
 "Inspirations" = "Inspirations";
@@ -299,7 +300,7 @@
 "You are using %1$@. Install %2$@ from the %3$@ channel?" = "Vous utilisez %1$@. Installer %2$@ du canal %3$@ ?";
 "Installing update…" = "Installation de la mise à jour…";
 "Install failed: %@" = "Échec de l'installation : %@";
-"Project Library" = "Project Library";
+"Project Library" = "Bibliothèque de projets";
 "Search settings" = "Rechercher";
 "App" = "App";
 "Features" = "Fonctionnalités";

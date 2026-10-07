@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.37] - 2026-10-07
+### Changed
+- Libellé de sidebar raccourci en « Crédits » ; titre de page centré avec pictogramme ; icônes colorées par outil/inspiration ; « Project Library » localisée en français et en allemand
+
 ## [2026.10.36] - 2026-10-07
 ### Fixed
 - Le contrôle de version et Sparkle contournaient désormais le cache CDN de raw.githubusercontent.com avec une URL de feed unique à chaque vérification ; évite d'afficher une version Dev périmée après publication

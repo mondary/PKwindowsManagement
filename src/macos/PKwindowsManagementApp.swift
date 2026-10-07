@@ -311,7 +311,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .library: localizedString("Project Library")
         case .support: localizedString("Support")
         case .about: localizedString("About")
-        case .credits: localizedString("Credits & inspirations")
+        case .credits: localizedString("Credits")
         }
     }
 
