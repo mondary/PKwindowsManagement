@@ -93,6 +93,8 @@ private struct RootDashboardView: View {
                     ProjectLibraryView()
                 case .about:
                     AboutSettingsView()
+                case .credits:
+                    CreditsInspirationsSettingsView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -266,6 +268,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     case library
     case support
     case about
+    case credits
 
     var id: String { rawValue }
 
@@ -278,7 +281,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .general: "APP"
         case .windows, .launchpad, .appearance, .bigYear, .snippets, .urls: "FEATURES"
         case .ai: "AI"
-        case .library, .support, .about: "PK PROJECTS"
+        case .library, .support, .about, .credits: "PK PROJECTS"
         }
     }
 
@@ -308,6 +311,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .library: localizedString("Project Library")
         case .support: localizedString("Support")
         case .about: localizedString("About")
+        case .credits: localizedString("Credits & inspirations")
         }
     }
 
@@ -324,6 +328,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .support: "heart.fill"
         case .library: "square.grid.2x2"
         case .about: "info.circle"
+        case .credits: "text.quote"
         }
     }
 

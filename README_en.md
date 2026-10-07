@@ -140,12 +140,11 @@ src/script/release.sh
 
 ## 🙏 Credits
 
-PKwindowsManagement builds on and draws inspiration from open-source projects — the full credits also live in the app, under About:
+PKwindowsManagement builds on and draws inspiration from open-source projects — credits live in the dedicated **Credits & Inspirations** settings section:
 
 - [Rooms](https://github.com/saragordic/rooms) (Sara Gordić, MIT) — rooms concept and layout engine ported as RoomTiler.
 - [Sparkle 2](https://github.com/sparkle-project/Sparkle) (MIT) — Stable/Dev auto-updates.
 - [Laya](https://huggingface.co/convaiinnovations/laya) (Convai Innovations, Apache-2.0) — local decision model behind the integrated AI.
-- [Pulse](https://github.com/qunqin24/Pulse) (Apache-2.0) — inspiration for the credits section.
 
 ## 🧾 Changelog
 - See [CHANGELOG.md](CHANGELOG.md) for full history.

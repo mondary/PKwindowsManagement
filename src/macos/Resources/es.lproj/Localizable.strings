@@ -234,11 +234,13 @@
 "PKwindowsManagement was born from a simple frustration: managing windows and launching apps without cluttering the screen." = "PKwindowsManagement nació de una frustración simple: gestionar ventanas y abrir apps sin llenar la pantalla.";
 "Window snapping, compact or fullscreen launchpad, script snippets, app shortcuts — all from the keyboard, without leaving your flow. Multi-display, native binary, zero dependencies." = "Ajuste de ventanas, launchpad compacto o a pantalla completa, snippets de scripts, atajos de apps: todo desde el teclado, sin salir de tu flujo. Multi pantalla, binario nativo, cero dependencias.";
 "Built with care for the Mac community. Unobtrusive when you don't need it, there when you look at it." = "Creado con cariño para la comunidad Mac. Discreto cuando no lo necesitas, presente cuando lo miras.";
-"Credits" = "Créditos";
+"Credits & inspirations" = "Créditos e inspiraciones";
+"Projects and tools that inform or power PKwindowsManagement." = "Proyectos y herramientas que inspiran o hacen funcionar PKwindowsManagement.";
+"Tools and dependencies" = "Herramientas y dependencias";
+"Inspirations" = "Inspiraciones";
 "Rooms concept and layout engine, ported as RoomTiler." = "Concepto de rooms y motor de disposición, portados como RoomTiler.";
 "Stable and Dev auto-updates." = "Actualizaciones automáticas Stable y Dev.";
 "Local decision model behind the integrated AI." = "Modelo de decisión local detrás de la IA integrada.";
-"Credits section presentation." = "Presentación de esta sección de créditos.";
 "Built with Apple's native frameworks: SwiftUI, AppKit and the Accessibility API." = "Construido con los frameworks nativos de Apple: SwiftUI, AppKit y la API de Accesibilidad.";
 
 /* Store */

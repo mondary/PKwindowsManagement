@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.34] - 2026-10-07
+### Changed
+- Déplacement des crédits hors de la page À propos vers une section dédiée « Crédits & inspirations », à côté d'À propos et Soutenir ; retrait de Pulse de la liste, qui n'est pas un crédit obligatoire
+
 ## [2026.10.33] - 2026-10-07
 ### Added
 - Section « Crédits » dans À propos : dépendances réelles (Sparkle 2, Laya) et inspirations (Rooms, Pulse) avec auteur, usage, licence et lien vérifié pour chacune ; lien Laya pointé vers Hugging Face car le repo GitHub amont n'existe pas
