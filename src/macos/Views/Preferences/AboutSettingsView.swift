@@ -5,7 +5,6 @@ struct AboutSettingsView: View {
     @State private var selectedChannel = UpdaterManager.shared.channel
 
     private let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "—"
-    private let appBuild = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "—"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,8 +17,8 @@ struct AboutSettingsView: View {
                     Text("PKwindowsManagement")
                         .font(.system(size: 24, weight: .bold))
 
-                    Text("Version \(appVersion) (\(appBuild))")
-                        .font(.system(size: 13))
+                    Text(String(format: localizedString("Installed version %@"), appVersion))
+                        .font(.system(size: 13, weight: .medium, design: .monospaced))
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
 
@@ -66,15 +65,13 @@ struct AboutSettingsView: View {
                     title: localizedString("Stable version"),
                     value: updater.latestStableVersion ?? localizedString("Not published"),
                     symbol: "checkmark.seal",
-                    isInstalled: !isDevBuild,
-                    isUpdateAvailable: selectedChannel == .stable && updater.availableUpdateVersion != nil
+                    status: updater.versionStatus(for: .stable)
                 )
                 versionColumn(
                     title: localizedString("Dev version"),
                     value: updater.latestDevVersion ?? localizedString("Not published"),
                     symbol: "hammer",
-                    isInstalled: isDevBuild,
-                    isUpdateAvailable: selectedChannel == .dev && updater.availableUpdateVersion != nil
+                    status: updater.versionStatus(for: .dev)
                 )
             }
 
@@ -145,8 +142,7 @@ struct AboutSettingsView: View {
         title: String,
         value: String,
         symbol: String,
-        isInstalled: Bool,
-        isUpdateAvailable: Bool
+        status: ChannelVersionStatus
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(title, systemImage: symbol)
@@ -160,12 +156,9 @@ struct AboutSettingsView: View {
                 .minimumScaleFactor(0.75)
                 .help(value)
 
-            Label(
-                localizedString(isUpdateAvailable ? "Update available" : (isInstalled ? "Installed version" : "Latest version")),
-                systemImage: isUpdateAvailable ? "arrow.down.circle.fill" : (isInstalled ? "checkmark.circle.fill" : "sparkle")
-            )
+            Label(status.title, systemImage: status.symbol)
             .font(.system(size: 10, weight: .medium))
-            .foregroundStyle(isUpdateAvailable ? Color.accentColor : (isInstalled ? Color.green : Color.secondary))
+            .foregroundStyle(status.color)
             .lineLimit(1)
             .minimumScaleFactor(0.85)
         }
@@ -179,10 +172,6 @@ struct AboutSettingsView: View {
             return localizedString("Check for Updates…")
         }
         return String(format: localizedString("Install %@"), version)
-    }
-
-    private var isDevBuild: Bool {
-        appVersion.localizedCaseInsensitiveContains("-dev")
     }
 
     private var switchOfferPresented: Binding<Bool> {
@@ -280,6 +269,37 @@ struct AboutSettingsView: View {
             Text("macOS 13+")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
+        }
+    }
+}
+
+private extension ChannelVersionStatus {
+    var title: String {
+        switch self {
+        case .updateAvailable: localizedString("Update available")
+        case .upToDate: localizedString("Up to date")
+        case .installedAhead: localizedString("Installed version is newer")
+        case .otherChannel: localizedString("Other channel")
+        case .unavailable: localizedString("Version unavailable")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .updateAvailable: "arrow.down.circle.fill"
+        case .upToDate: "checkmark.circle.fill"
+        case .installedAhead: "arrow.up.circle.fill"
+        case .otherChannel: "circle.dashed"
+        case .unavailable: "questionmark.circle"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .updateAvailable: .accentColor
+        case .upToDate: .green
+        case .installedAhead: .orange
+        case .otherChannel, .unavailable: .secondary
         }
     }
 }

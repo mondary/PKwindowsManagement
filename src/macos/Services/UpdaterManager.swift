@@ -13,6 +13,14 @@ struct ChannelSwitchOffer: Identifiable {
     let isUpdate: Bool
 }
 
+enum ChannelVersionStatus {
+    case updateAvailable
+    case upToDate
+    case installedAhead
+    case otherChannel
+    case unavailable
+}
+
 /// Sparkle auto-updates with two channels (pattern proven in Macos_PKmonitor):
 /// - stable: `appcast.xml`, fed by `v*` tag releases;
 /// - dev: `appcast-dev.xml`, one fresh item per push on main, installed
@@ -188,6 +196,22 @@ final class UpdaterManager: ObservableObject {
         if availableUpdateVersion != previousVersion {
             NotificationCenter.default.post(name: Self.availabilityDidChange, object: self)
         }
+    }
+
+    func versionStatus(for channel: UpdateChannel) -> ChannelVersionStatus {
+        let installedVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let installedIsDev = installedVersion.localizedCaseInsensitiveContains("-dev")
+        guard (channel == .dev) == installedIsDev else { return .otherChannel }
+
+        let info = channel == .dev ? devInfo : stableInfo
+        guard let info,
+              let installedTechnical = Int64(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""),
+              let feedTechnical = Int64(info.technical)
+        else { return .unavailable }
+
+        if feedTechnical > installedTechnical { return .updateAvailable }
+        if feedTechnical == installedTechnical { return .upToDate }
+        return .installedAhead
     }
 
     /// Dev builds install silently; stable builds ask first.

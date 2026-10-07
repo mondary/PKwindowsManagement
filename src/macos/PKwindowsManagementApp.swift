@@ -190,39 +190,34 @@ private struct RootDashboardView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 10)
 
-            Button {
-                updater.checkForUpdatesOrSwitch()
-            } label: {
-                Label(
-                    updater.availableUpdateVersion == nil
-                        ? localizedString("Check for Updates…")
-                        : localizedString("New version available"),
-                    systemImage: updater.availableUpdateVersion == nil
-                        ? "arrow.clockwise"
-                        : "arrow.down.circle.fill"
-                )
-                .font(.system(size: 11, weight: updater.availableUpdateVersion == nil ? .medium : .semibold))
-                .foregroundStyle(updater.availableUpdateVersion == nil ? Color.secondary : Color.accentColor)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(
-                    updater.availableUpdateVersion == nil ? Color.primary.opacity(0.035) : Color.accentColor.opacity(0.11),
-                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                )
-            }
-            .buttonStyle(.plain)
-            .help(updater.availableUpdateVersion.map {
-                String(format: localizedString("Update available — %@"), $0)
-            } ?? localizedString("Check for Updates…"))
-            .padding(.horizontal, 14)
-            .padding(.bottom, 8)
+            HStack(spacing: 5) {
+                Text(appVersionLabel)
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
 
-            Text(appVersionLabel)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 18)
+                if let version = updater.availableUpdateVersion {
+                    Button {
+                        updater.checkForUpdatesOrSwitch()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "arrow.down.circle.fill")
+                            Text(version)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(format: localizedString("Update available — %@"), version))
+                    .help(String(format: localizedString("Update available — %@"), version))
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 18)
         }
     }
 

@@ -300,6 +300,11 @@
 "Install %@" = "Instalar %@";
 "Install update?" = "¿Instalar actualización?";
 "Install version %@ from the %@ channel?" = "¿Instalar la versión %@ del canal %@?";
+"Installed version %@" = "Versión instalada: %@";
+"Up to date" = "Actualizada";
+"Installed version is newer" = "La versión instalada es más reciente";
+"Other channel" = "Otro canal";
+"Version unavailable" = "Versión no disponible";
 "Support me on Ko-fi" = "Apóyame en Ko-fi";
 "Switch channel?" = "¿Cambiar de canal?";
 "Install and relaunch" = "Instalar y reiniciar";

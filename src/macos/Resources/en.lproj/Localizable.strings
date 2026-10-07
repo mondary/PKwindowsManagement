@@ -42,6 +42,11 @@
 "Install %@" = "Install %@";
 "Install update?" = "Install update?";
 "Install version %@ from the %@ channel?" = "Install version %@ from the %@ channel?";
+"Installed version %@" = "Installed version %@";
+"Up to date" = "Up to date";
+"Installed version is newer" = "Installed version is newer";
+"Other channel" = "Other channel";
+"Version unavailable" = "Version unavailable";
 "Credits & inspirations" = "Credits & Inspirations";
 "Credits" = "Credits";
 "Projects and tools that inform or power PKwindowsManagement." = "Projects and tools that inform or power PKwindowsManagement.";

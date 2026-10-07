@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.43] - 2026-10-07
+### Fixed
+- Indicateur de mise à jour déplacé sur la ligne de la version installée sans décaler les drapeaux ; affiche la version cible en une ligne
+- Cartes Stable/Dev indiquent désormais le vrai statut de la build installée au lieu de marquer comme installée toute version du même canal
+- Version installée affichée explicitement dans À propos
+
 ## [2026.10.42] - 2026-10-07
 ### Fixed
 - Les contrôles manuels d'update utilisent la version vérifiée directement dans le feed frais au lieu de déléguer systématiquement à Sparkle, qui pouvait présenter un appcast Dev périmé
