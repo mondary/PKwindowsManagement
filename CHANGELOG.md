@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.47] - 2026-10-08
+### Fixed
+- Le script d'installation Dev utilise le chemin macOS valide de `mv`, évitant que l'application quitte sans remplacer ni relancer la nouvelle version.
+
 ## [2026.10.46] - 2026-10-08
 ### Fixed
 - Les identifiants de fenêtres envoyés à SkyLight sont désormais encodés en CFNumber SInt32 comme attendu ; les raccourcis Spaces indiquent la cause d’un déplacement impossible au lieu d’échouer silencieusement.

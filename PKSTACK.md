@@ -9,3 +9,4 @@ Skills used for this project:
 - `premium-promo-media` — audited the existing landing/media pipeline; defer feature claims, refreshed captures, hub, and FTP until a Dev build can be tested.
 - `macos-menu-and-settings` — menu-bar action placement and aligned icons.
 - `pk-settings-shell` — Shared settings shell; Credits uses official project icons and full-row links, with one persistent footer across every settings page.
+- `pk-commits` — CalVer bump, changelog, commit and Dev-channel publication workflow.

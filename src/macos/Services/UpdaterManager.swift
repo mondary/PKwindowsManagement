@@ -327,18 +327,26 @@ final class UpdaterManager: ObservableObject {
         try """
         #!/bin/bash
         sleep 2
-        /usr/bin/mv \(installedPath) \(backupPath) || exit 1
-        if /usr/bin/mv \(stagedPath) \(installedPath); then
+        # macOS ships mv at /bin/mv, not /usr/bin/mv.
+        if ! /bin/mv \(installedPath) \(backupPath); then
+          /usr/bin/open \(installedPath) || true
+          exit 1
+        fi
+        if /bin/mv \(stagedPath) \(installedPath); then
           if /usr/bin/open \(installedPath); then
             /bin/rm -rf \(backupPath) \(workPath)
           else
-            /usr/bin/mv \(installedPath) \(stagedPath)
-            /usr/bin/mv \(backupPath) \(installedPath)
+            /bin/mv \(installedPath) \(stagedPath) || true
+            if /bin/mv \(backupPath) \(installedPath); then
+              /usr/bin/open \(installedPath) || true
+            fi
             /bin/rm -rf \(stagedPath) \(workPath)
             exit 1
           fi
         else
-          /usr/bin/mv \(backupPath) \(installedPath)
+          if /bin/mv \(backupPath) \(installedPath); then
+            /usr/bin/open \(installedPath) || true
+          fi
           /bin/rm -rf \(stagedPath) \(workPath)
           exit 1
         fi
