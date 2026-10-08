@@ -244,6 +244,23 @@
 "Stable and Dev auto-updates." = "Mises à jour automatiques Stable et Dev.";
 "Local decision model behind the integrated AI." = "Modèle de décision local au cœur de l’IA intégrée.";
 "Built with Apple's native frameworks: SwiftUI, AppKit and the Accessibility API." = "Construit avec les frameworks natifs d’Apple : SwiftUI, AppKit et l’API d’accessibilité.";
+"Desktops" = "Bureaux";
+"New Desktop" = "Nouveau bureau";
+"Close Current Desktop" = "Fermer le bureau actuel";
+"Move Window to Next Desktop" = "Déplacer la fenêtre vers le bureau suivant";
+"Move Window to Previous Desktop" = "Déplacer la fenêtre vers le bureau précédent";
+"New Desktop Options" = "Options du nouveau bureau";
+"Random wallpaper for new desktops" = "Fond d’écran aléatoire pour les nouveaux bureaux";
+"Picks a different image each time a desktop is created." = "Choisit une image différente à chaque création d’un bureau.";
+"Wallpaper folder" = "Dossier des fonds d’écran";
+"No folder selected" = "Aucun dossier sélectionné";
+"Choose…" = "Choisir…";
+"Pick the folder that stores your wallpapers." = "Choisissez le dossier qui contient vos fonds d’écran.";
+"Follow window when moving" = "Suivre la fenêtre lors du déplacement";
+"Switch to the destination desktop after moving a window." = "Bascule vers le bureau cible après le déplacement d’une fenêtre.";
+"Creating or closing a desktop—and following a moved window when enabled—briefly shows Mission Control. Private macOS APIs may change after system updates." = "Créer ou fermer un bureau — ou suivre la fenêtre déplacée si cette option est activée — affiche brièvement Mission Control. Les API privées de macOS peuvent changer après une mise à jour du système.";
+"Mission Control accessibility and Space-management techniques." = "Techniques d’accessibilité de Mission Control et de gestion des espaces.";
+"SkyLight compatibility techniques for moving windows between Spaces." = "Techniques de compatibilité SkyLight pour déplacer les fenêtres entre les espaces.";
 
 /* Store */
 "More Apps by PK" = "Autres apps de PK";

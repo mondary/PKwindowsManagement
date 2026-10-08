@@ -25,6 +25,8 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - `Maximize All Windows (Current App)`: same, limited to the windows of the frontmost application, default shortcut `Ctrl + Shift + D`.
 - `Tile All Windows`: lays out the visible windows of the frontmost app in a screen-filling grid (4 → 2×2, 6 → 3×2…), default shortcut `Ctrl + Option + T`.
 - Move a window to the next or previous display.
+- Experimental macOS desktop (Space) controls: create/close desktops, move the active window to an adjacent desktop, and optionally assign a random wallpaper from a chosen folder.
+- These commands use private macOS APIs; Mission Control may briefly appear, and a system update may require adjustments.
 - Customize keyboard shortcuts from a SwiftUI preferences screen.
 - Control the focused window through macOS Accessibility APIs.
 - Full-screen Launchpad with search, recent applications, and custom shortcuts.
@@ -82,9 +84,14 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - `Ctrl + Option + ]` : next display
 - `Ctrl + Option + =` : enlarge from the center
 - `Ctrl + Option + -` : shrink from the center
+- `Ctrl + Option + B` : create a desktop
+- `Ctrl + Option + W` : close the current desktop
+- `Ctrl + Shift + →` / `←` : move the active window to the next / previous desktop
 
 ## ⚙️ Settings
 - Shortcuts can be edited in the preferences window.
+- In `Window Shortcuts` → `Desktops`, configure create, close, and move-between-Space actions. Choose a wallpaper folder, enable random selection for new desktops, and decide whether to switch to the destination desktop after moving a window.
+- Spaces management is experimental: it relies on private SkyLight APIs and the Mission Control/WindowManager accessibility tree. Creating or closing desktops, and following a moved window, may briefly show Mission Control; a major macOS update may break these calls.
 - Available modifiers: Control+Option, Command, Left/Right Command, Option, Left/Right Option, Shift, Left/Right Shift, Fn+Shift.
 - Right-click an application to assign or edit its global shortcut.
 - Assigned shortcuts appear as key badges over application icons.
@@ -146,6 +153,8 @@ PKwindowsManagement builds on and draws inspiration from open-source projects �
 - [Rooms](https://github.com/saragordic/rooms) (Sara Gordić, MIT) — rooms concept and layout engine ported as RoomTiler.
 - [Sparkle 2](https://github.com/sparkle-project/Sparkle) (MIT) — Stable/Dev auto-updates.
 - [Laya](https://huggingface.co/convaiinnovations/laya) (Convai Innovations, Apache-2.0) — local decision model behind the integrated AI.
+- [Hammerspoon](https://github.com/Hammerspoon/hammerspoon) (MIT) — Mission Control accessibility and Space-management techniques.
+- [yabai](https://github.com/asmvik/yabai) (MIT) — SkyLight compatibility techniques for moving windows between Spaces.
 
 ## 🧾 Changelog
 - See [CHANGELOG.md](CHANGELOG.md) for full history.

@@ -25,6 +25,8 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - `Tout maximiser (app active)` : idem, limité aux fenêtres de l'application au premier plan, raccourci par défaut `Ctrl + Shift + D`.
 - `Carreler toutes les fenêtres` : dispose les fenêtres visibles de l'app au premier plan en grille sur l'écran (4 → 2×2, 6 → 3×2…), raccourci par défaut `Ctrl + Option + T`.
 - Déplacement de la fenêtre vers l'écran suivant ou précédent.
+- Gestion expérimentale des bureaux macOS (Spaces) : création/fermeture, déplacement de la fenêtre active vers le bureau voisin et fond d’écran aléatoire optionnel depuis un dossier choisi.
+- Ces commandes utilisent des API privées de macOS ; Mission Control peut apparaître brièvement et une mise à jour système peut nécessiter une adaptation.
 - Raccourcis clavier configurables depuis une interface SwiftUI.
 - Contrôle de la fenêtre focalisée via les API d'accessibilité macOS.
 - Launchpad plein écran avec recherche, applications récentes et raccourcis personnalisés.
@@ -88,9 +90,14 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - `Ctrl + Option + ]` : écran suivant
 - `Ctrl + Option + =` : agrandir depuis le centre
 - `Ctrl + Option + -` : réduire depuis le centre
+- `Ctrl + Option + B` : créer un bureau
+- `Ctrl + Option + W` : fermer le bureau actuel
+- `Ctrl + Shift + →` / `←` : déplacer la fenêtre active vers le bureau suivant / précédent
 
 ## ⚙️ Réglages
 - Les raccourcis sont modifiables dans l'écran de préférences.
+- Dans `Raccourcis fenêtre` → `Bureaux`, configure la création, la fermeture et le déplacement entre Spaces. Tu peux choisir un dossier de fonds d’écran, activer la sélection aléatoire à la création et décider si l’app bascule vers le bureau de destination après un déplacement.
+- La gestion des Spaces est expérimentale : elle s’appuie sur des API privées SkyLight et l’arbre d’accessibilité de Mission Control/WindowManager. La création et la fermeture, ainsi que le suivi après déplacement, peuvent brièvement afficher Mission Control ; une mise à jour majeure de macOS peut casser ces appels.
 - Modificateurs disponibles : Control+Option, Command, Left/Right Command, Option, Left/Right Option, Shift, Left/Right Shift, Fn+Shift.
 - Un clic droit sur une application permet d'attribuer ou modifier son raccourci global.
 - Les raccourcis attribués apparaissent sur les icônes sous forme de touches.
@@ -155,6 +162,8 @@ PKwindowsManagement s'appuie sur des projets open source et s'en inspire — les
 - [Rooms](https://github.com/saragordic/rooms) (Sara Gordić, MIT) — concept des rooms et moteur de disposition porté en RoomTiler.
 - [Sparkle 2](https://github.com/sparkle-project/Sparkle) (MIT) — mises à jour automatiques Stable/Dev.
 - [Laya](https://huggingface.co/convaiinnovations/laya) (Convai Innovations, Apache-2.0) — modèle de décision local derrière l'IA intégrée.
+- [Hammerspoon](https://github.com/Hammerspoon/hammerspoon) (MIT) — techniques d’accessibilité Mission Control et de gestion des Spaces.
+- [yabai](https://github.com/asmvik/yabai) (MIT) — techniques de compatibilité SkyLight pour déplacer les fenêtres entre Spaces.
 
 ## 🧾 Changelog
 - Voir [CHANGELOG.md](CHANGELOG.md) pour l'historique complet.

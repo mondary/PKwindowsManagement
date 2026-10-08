@@ -176,6 +176,10 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case windowCenterThreeFourths
     case windowLastThreeFourths
     case windowTileAll
+    case desktopCreate
+    case desktopCloseCurrent
+    case windowNextDesktop
+    case windowPreviousDesktop
 
     var id: String { rawValue }
 
@@ -231,6 +235,10 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowCenterThreeFourths: localizedString("Center Three Fourths")
         case .windowLastThreeFourths: localizedString("Last Three Fourths")
         case .windowTileAll: localizedString("Tile All Windows")
+        case .desktopCreate: localizedString("New Desktop")
+        case .desktopCloseCurrent: localizedString("Close Current Desktop")
+        case .windowNextDesktop: localizedString("Move Window to Next Desktop")
+        case .windowPreviousDesktop: localizedString("Move Window to Previous Desktop")
         }
     }
 
@@ -263,6 +271,10 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowFullScreen: .init(key: "return", modifier: .controlOption)
         case .windowNextDisplay: .init(key: "space", modifier: .controlOption)
         case .windowPreviousDisplay: .init(key: "[", modifier: .controlOption)
+        case .desktopCreate: .init(key: "b", modifier: .controlOption)
+        case .desktopCloseCurrent: .init(key: "w", modifier: .controlOption)
+        case .windowNextDesktop: .init(key: "right", modifier: .controlShift)
+        case .windowPreviousDesktop: .init(key: "left", modifier: .controlShift)
         case .windowMakeLarger: .init(key: "=", modifier: .controlOption)
         case .windowMakeSmaller: .init(key: "-", modifier: .controlOption)
         case .windowToggleFullScreen, .windowMaximizeHeight, .windowMaximizeWidth,
@@ -274,6 +286,18 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
              .windowFirstThreeFourths, .windowCenterThreeFourths, .windowLastThreeFourths,
              .windowTileAll:
             nil
+        }
+    }
+
+    /// Desktop (Spaces) actions are handled by SpaceManagementService rather
+    /// than the window snap pipeline.
+    var spaceAction: SpaceAction? {
+        switch self {
+        case .desktopCreate: .createDesktop
+        case .desktopCloseCurrent: .closeCurrentDesktop
+        case .windowNextDesktop: .moveWindowToNextDesktop
+        case .windowPreviousDesktop: .moveWindowToPreviousDesktop
+        default: nil
         }
     }
 }

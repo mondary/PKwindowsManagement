@@ -701,6 +701,8 @@ extension ShortcutAction {
         case .windowCenterThreeFourths: .centerThreeFourths
         case .windowLastThreeFourths: .lastThreeFourths
         case .windowTileAll: .tileAll
+        case .desktopCreate, .desktopCloseCurrent, .windowNextDesktop, .windowPreviousDesktop:
+            nil
         }
     }
 }

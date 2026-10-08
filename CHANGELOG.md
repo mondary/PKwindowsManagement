@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.10.45] - 2026-10-08
+### Added
+- Raccourcis configurables pour créer/fermer un bureau macOS et déplacer la fenêtre active vers un Space voisin ; réglages pour choisir un fond aléatoire à la création et suivre ou non la fenêtre déplacée.
+- Attribution des techniques d’accessibilité Mission Control à Hammerspoon et de compatibilité SkyLight à yabai.
+### Changed
+- Détection de l’arbre Mission Control sous WindowManager sur macOS 27 et vérification effective des changements de Space après déplacement/création/fermeture ; API privées signalées comme expérimentales.
+
 ## [2026.10.44] - 2026-10-07
 ### Fixed
 - Les installations manuelles vérifient la signature EdDSA, le bundle ID et les deux versions avant le swap ; le script restaure l’ancienne app si le remplacement ou le relancement échoue, et le parseur garde l’URL et la signature du même premier élément d’appcast.

@@ -90,6 +90,15 @@ struct WindowShortcutsPreferencesView: View {
         ]
     }
 
+    private var desktopsEntries: [WindowCommandSpec] {
+        [
+            .bound("New Desktop", "plus.rectangle.on.rectangle", .desktopCreate),
+            .bound("Close Current Desktop", "minus.rectangle", .desktopCloseCurrent),
+            .bound("Move Window to Next Desktop", "arrow.right.square", .windowNextDesktop),
+            .bound("Move Window to Previous Desktop", "arrow.left.square", .windowPreviousDesktop),
+        ]
+    }
+
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
@@ -138,6 +147,11 @@ struct WindowShortcutsPreferencesView: View {
             sectionCard(title: "Displays", entries: displaysEntries)
         }
 
+        HStack(alignment: .top, spacing: 16) {
+            sectionCard(title: "Desktops", entries: desktopsEntries)
+            desktopOptionsCard()
+        }
+
         sizeSection()
     }
 
@@ -154,6 +168,8 @@ struct WindowShortcutsPreferencesView: View {
         sectionCard(title: "Horizontal", entries: horizontalEntries)
         sectionCard(title: "Sixths", entries: sixthsEntries)
         sectionCard(title: "Displays", entries: displaysEntries)
+        sectionCard(title: "Desktops", entries: desktopsEntries)
+        desktopOptionsCard()
         sizeSection()
     }
 
@@ -209,6 +225,102 @@ struct WindowShortcutsPreferencesView: View {
             .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func desktopOptionsCard() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(localizedString("New Desktop Options"))
+                .font(.headline)
+            VStack(spacing: 0) {
+                Toggle(isOn: $settings.spaceWallpaperOnCreate) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(localizedString("Random wallpaper for new desktops"))
+                        Text(localizedString("Picks a different image each time a desktop is created."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+
+                Divider()
+
+                wallpaperFolderRow
+
+                Divider()
+
+                Toggle(isOn: $settings.spaceFollowMovedWindow) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(localizedString("Follow window when moving"))
+                        Text(localizedString("Switch to the destination desktop after moving a window."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+
+                Divider()
+
+                Text(localizedString("Creating or closing a desktop—and following a moved window when enabled—briefly shows Mission Control. Private macOS APIs may change after system updates."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+            }
+            .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var wallpaperFolderRow: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "photo.on.rectangle.angled")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(localizedString("Wallpaper folder"))
+                    .font(.body)
+                Text(settings.spaceWallpaperFolder?.path ?? localizedString("No folder selected"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            Spacer()
+            Button(localizedString("Choose…")) {
+                chooseWallpaperFolder()
+            }
+            .controlSize(.small)
+            if settings.spaceWallpaperFolder != nil {
+                Button {
+                    settings.spaceWallpaperFolder = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(localizedString("Clear"))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+    }
+
+    private func chooseWallpaperFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.message = localizedString("Pick the folder that stores your wallpapers.")
+        if panel.runModal() == .OK, let url = panel.url {
+            settings.spaceWallpaperFolder = url
+        }
     }
 
     private func generalMarginSection() -> some View {

@@ -11,16 +11,24 @@ final class LaunchShortcutMonitor {
     private var settings: AppSettings?
     private var launchHandler: ((LaunchableApp) -> Void)?
     private var windowHandler: ((WindowSnapAction) -> Void)?
+    private var spaceHandler: ((SpaceAction) -> Void)?
     private var modifierState = ModifierState()
     private var appsByBundleID: [String: LaunchableApp] = [:]
     private var retryTimer: Timer?
     private var healthTimer: Timer?
     private var didRequestAccessibility = false
 
-    func start(settings: AppSettings, apps: [LaunchableApp], launchHandler: @escaping (LaunchableApp) -> Void, windowHandler: @escaping (WindowSnapAction) -> Void) {
+    func start(
+        settings: AppSettings,
+        apps: [LaunchableApp],
+        launchHandler: @escaping (LaunchableApp) -> Void,
+        windowHandler: @escaping (WindowSnapAction) -> Void,
+        spaceHandler: @escaping (SpaceAction) -> Void
+    ) {
         self.settings = settings
         self.launchHandler = launchHandler
         self.windowHandler = windowHandler
+        self.spaceHandler = spaceHandler
         self.appsByBundleID = Dictionary(uniqueKeysWithValues: apps.map { ($0.bundleID, $0) })
 
         requestAccessibilityOnce()
@@ -161,6 +169,13 @@ final class LaunchShortcutMonitor {
                 }
                 consumed = true
             }
+            if !consumed, let spaceAction = matchSpaceShortcut(event: event) {
+                let captured = spaceAction
+                DispatchQueue.main.async { [weak self] in
+                    self?.spaceHandler?(captured)
+                }
+                consumed = true
+            }
             return consumed ? nil : .passUnretained(event)
         default:
             return .passUnretained(event)
@@ -208,6 +223,24 @@ final class LaunchShortcutMonitor {
                   let snapAction = action.windowSnapAction
             else { continue }
             return snapAction
+        }
+        return nil
+    }
+
+    private func matchSpaceShortcut(event: CGEvent) -> SpaceAction? {
+        guard let settings else { return nil }
+        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+        let flags = event.flags
+
+        guard let eventKey = keyString(from: event, keyCode: keyCode) else { return nil }
+
+        for action in ShortcutAction.allCases {
+            guard let shortcut = settings.shortcut(for: action) else { continue }
+            guard shortcut.key.lowercased() == eventKey,
+                  modifierState.matches(shortcut.modifier, flags: flags),
+                  let spaceAction = action.spaceAction
+            else { continue }
+            return spaceAction
         }
         return nil
     }

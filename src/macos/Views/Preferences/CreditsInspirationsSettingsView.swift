@@ -51,6 +51,28 @@ struct CreditsInspirationsSettingsView: View {
             symbol: "book.closed.fill",
             tint: Color(red: 0.25, green: 0.62, blue: 0.86),
             url: URL(string: "https://github.com/saragordic/rooms")!
+        ),
+        CreditEntry(
+            id: "Hammerspoon",
+            author: "Hammerspoon project",
+            roleKey: "Mission Control accessibility and Space-management techniques.",
+            license: "MIT",
+            iconAsset: "Hammerspoon",
+            usesTemplateIcon: false,
+            symbol: "slider.horizontal.3",
+            tint: Color(red: 0.77, green: 0.43, blue: 0.28),
+            url: URL(string: "https://github.com/Hammerspoon/hammerspoon")!
+        ),
+        CreditEntry(
+            id: "yabai",
+            author: "koekeishiya",
+            roleKey: "SkyLight compatibility techniques for moving windows between Spaces.",
+            license: "MIT",
+            iconAsset: "yabai",
+            usesTemplateIcon: false,
+            symbol: "square.3.layers.3d",
+            tint: Color(red: 0.29, green: 0.57, blue: 0.76),
+            url: URL(string: "https://github.com/asmvik/yabai")!
         )
     ]
 

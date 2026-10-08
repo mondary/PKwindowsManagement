@@ -46,6 +46,9 @@ final class AppSettings: ObservableObject {
         static let bigYearEmphasizeBirthdays = "big-year-emphasize-birthdays"
         static let bigYearEmphasizeMonthNames = "big-year-emphasize-month-names"
         static let bigYearColorOverrides = "big-year-color-overrides"
+        static let spaceWallpaperFolder = "space-wallpaper-folder"
+        static let spaceWallpaperOnCreate = "space-wallpaper-on-create"
+        static let spaceFollowMovedWindow = "space-follow-moved-window"
     }
 
     private let defaults: UserDefaults
@@ -218,6 +221,31 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(bigYearColorOverrides, forKey: Keys.bigYearColorOverrides) }
     }
 
+    @Published var spaceWallpaperFolder: URL? {
+        didSet {
+            if let spaceWallpaperFolder {
+                defaults.set(spaceWallpaperFolder.path, forKey: Keys.spaceWallpaperFolder)
+            } else {
+                defaults.removeObject(forKey: Keys.spaceWallpaperFolder)
+            }
+            scheduleAutoBackup()
+        }
+    }
+
+    @Published var spaceWallpaperOnCreate: Bool {
+        didSet {
+            defaults.set(spaceWallpaperOnCreate, forKey: Keys.spaceWallpaperOnCreate)
+            scheduleAutoBackup()
+        }
+    }
+
+    @Published var spaceFollowMovedWindow: Bool {
+        didSet {
+            defaults.set(spaceFollowMovedWindow, forKey: Keys.spaceFollowMovedWindow)
+            scheduleAutoBackup()
+        }
+    }
+
     var bigYearColors: BigYearColors {
         bigYearTheme.colors.applying(overrides: bigYearColorOverrides)
     }
@@ -310,6 +338,13 @@ final class AppSettings: ObservableObject {
         bigYearEmphasizeBirthdays = defaults.object(forKey: Keys.bigYearEmphasizeBirthdays) as? Bool ?? true
         bigYearEmphasizeMonthNames = defaults.object(forKey: Keys.bigYearEmphasizeMonthNames) as? Bool ?? true
         bigYearColorOverrides = (defaults.dictionary(forKey: Keys.bigYearColorOverrides) as? [String: String]) ?? [:]
+        if let wallpaperPath = defaults.string(forKey: Keys.spaceWallpaperFolder) {
+            spaceWallpaperFolder = URL(fileURLWithPath: wallpaperPath)
+        } else {
+            spaceWallpaperFolder = nil
+        }
+        spaceWallpaperOnCreate = defaults.object(forKey: Keys.spaceWallpaperOnCreate) as? Bool ?? true
+        spaceFollowMovedWindow = defaults.object(forKey: Keys.spaceFollowMovedWindow) as? Bool ?? true
 
         if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()
@@ -613,7 +648,7 @@ final class AppSettings: ObservableObject {
 
     func exportBackup() throws -> Data {
         let backup = SettingsBackup(
-            version: 11,
+            version: 12,
             windowShortcuts: Dictionary(uniqueKeysWithValues: shortcuts.map { ($0.key.rawValue, $0.value) }),
             launchShortcuts: launchShortcuts,
             snippets: snippets,
@@ -642,7 +677,10 @@ final class AppSettings: ObservableObject {
             bigYearTheme: bigYearTheme,
             bigYearEmphasizeBirthdays: bigYearEmphasizeBirthdays,
             bigYearEmphasizeMonthNames: bigYearEmphasizeMonthNames,
-            bigYearColorOverrides: bigYearColorOverrides
+            bigYearColorOverrides: bigYearColorOverrides,
+            spaceWallpaperFolderPath: spaceWallpaperFolder?.path,
+            spaceWallpaperOnCreate: spaceWallpaperOnCreate,
+            spaceFollowMovedWindow: spaceFollowMovedWindow
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -672,7 +710,7 @@ final class AppSettings: ObservableObject {
 
     func importBackup(_ data: Data) throws {
         let backup = try JSONDecoder().decode(SettingsBackup.self, from: data)
-        guard (1...11).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
+        guard (1...12).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
 
         shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.compactMap { action in
             backup.windowShortcuts[action.rawValue].map { (action, $0) } ?? action.defaultShortcut.map { (action, $0) }
@@ -708,6 +746,11 @@ final class AppSettings: ObservableObject {
         bigYearEmphasizeBirthdays = backup.bigYearEmphasizeBirthdays ?? bigYearEmphasizeBirthdays
         bigYearEmphasizeMonthNames = backup.bigYearEmphasizeMonthNames ?? bigYearEmphasizeMonthNames
         bigYearColorOverrides = backup.bigYearColorOverrides ?? bigYearColorOverrides
+        if backup.version >= 12 {
+            spaceWallpaperFolder = backup.spaceWallpaperFolderPath.map(URL.init(fileURLWithPath:))
+        }
+        spaceWallpaperOnCreate = backup.spaceWallpaperOnCreate ?? spaceWallpaperOnCreate
+        spaceFollowMovedWindow = backup.spaceFollowMovedWindow ?? spaceFollowMovedWindow
 
         saveShortcuts()
         clearedWindowShortcuts = []
@@ -1072,6 +1115,9 @@ private struct SettingsBackup: Codable {
     let bigYearEmphasizeBirthdays: Bool?
     let bigYearEmphasizeMonthNames: Bool?
     let bigYearColorOverrides: [String: String]?
+    let spaceWallpaperFolderPath: String?
+    let spaceWallpaperOnCreate: Bool?
+    let spaceFollowMovedWindow: Bool?
 }
 
 enum SettingsBackupError: LocalizedError {
