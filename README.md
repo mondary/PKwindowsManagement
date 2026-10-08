@@ -87,12 +87,12 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - `Ctrl + Option + 2` : tiers central
 - `Ctrl + Option + 3` : tiers droit
 - `Ctrl + Option + [` : écran précédent
-- `Ctrl + Option + ]` : écran suivant
+- `Ctrl + Option + Space` : écran suivant
 - `Ctrl + Option + =` : agrandir depuis le centre
 - `Ctrl + Option + -` : réduire depuis le centre
 - `Ctrl + Option + B` : créer un bureau
 - `Ctrl + Option + W` : fermer le bureau actuel
-- `Ctrl + Shift + →` / `←` : déplacer la fenêtre active vers le bureau suivant / précédent
+- `Ctrl + Shift + →` / `←` : déplacer la fenêtre active vers le bureau virtuel (Space) suivant / précédent
 
 ## ⚙️ Réglages
 - Les raccourcis sont modifiables dans l'écran de préférences.

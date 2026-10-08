@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.10.46] - 2026-10-08
+### Fixed
+- Les identifiants de fenêtres envoyés à SkyLight sont désormais encodés en CFNumber SInt32 comme attendu ; les raccourcis Spaces indiquent la cause d’un déplacement impossible au lieu d’échouer silencieusement.
+- Documentation des raccourcis d’écran suivant/précédent alignée sur les affectations réelles.
+
 ## [2026.10.45] - 2026-10-08
 ### Added
 - Raccourcis configurables pour créer/fermer un bureau macOS et déplacer la fenêtre active vers un Space voisin ; réglages pour choisir un fond aléatoire à la création et suivre ou non la fenêtre déplacée.

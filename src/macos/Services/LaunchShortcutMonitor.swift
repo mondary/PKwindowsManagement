@@ -172,6 +172,7 @@ final class LaunchShortcutMonitor {
             if !consumed, let spaceAction = matchSpaceShortcut(event: event) {
                 let captured = spaceAction
                 DispatchQueue.main.async { [weak self] in
+                    NSLog("PKwindowsManagement: Space shortcut matched: %@", captured.rawValue)
                     self?.spaceHandler?(captured)
                 }
                 consumed = true

@@ -81,12 +81,12 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - `Ctrl + Option + 2` : center third
 - `Ctrl + Option + 3` : last third
 - `Ctrl + Option + [` : previous display
-- `Ctrl + Option + ]` : next display
+- `Ctrl + Option + Space` : next display
 - `Ctrl + Option + =` : enlarge from the center
 - `Ctrl + Option + -` : shrink from the center
 - `Ctrl + Option + B` : create a desktop
 - `Ctrl + Option + W` : close the current desktop
-- `Ctrl + Shift + →` / `←` : move the active window to the next / previous desktop
+- `Ctrl + Shift + →` / `←` : move the active window to the next / previous virtual desktop (Space)
 
 ## ⚙️ Settings
 - Shortcuts can be edited in the preferences window.
