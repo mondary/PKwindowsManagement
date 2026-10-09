@@ -111,6 +111,7 @@ final class UpdaterManager: ObservableObject {
     /// This avoids Sparkle presenting a stale CDN copy of an appcast. A channel
     /// switch to an older build is also offered when the short version differs.
     func checkForUpdatesOrSwitch() {
+        guard !installingSwitch else { return }
         switchErrorMessage = nil
         switchOffer = nil
         Task {
@@ -233,7 +234,7 @@ final class UpdaterManager: ObservableObject {
     }
 
     func performSwitchInstall() {
-        guard let offer = switchOffer else { return }
+        guard !installingSwitch, let offer = switchOffer else { return }
         switchOffer = nil
         installingSwitch = true
         switchErrorMessage = nil
@@ -246,7 +247,7 @@ final class UpdaterManager: ObservableObject {
                     signature: offer.signature
                 )
                 await MainActor.run {
-                    installingSwitch = false
+                    // Keep the button disabled until the process exits.
                     NSApp.terminate(nil)
                 }
             } catch {
@@ -277,7 +278,9 @@ final class UpdaterManager: ObservableObject {
             if !handedOffToInstaller { try? FileManager.default.removeItem(at: work) }
         }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 120)
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, http.statusCode == 200, !data.isEmpty else {
             throw NSError(
                 domain: "PKwindowsManagement.Switch", code: 1,
@@ -319,38 +322,11 @@ final class UpdaterManager: ObservableObject {
         }
         try FileManager.default.copyItem(at: extractedApp, to: stagedApp)
 
-        let installedPath = Self.shellQuote(installedApp.path)
-        let stagedPath = Self.shellQuote(stagedApp.path)
-        let backupPath = Self.shellQuote(backupApp.path)
-        let workPath = Self.shellQuote(work.path)
         let scriptURL = work.appendingPathComponent("install.sh")
-        try """
-        #!/bin/bash
-        sleep 2
-        # macOS ships mv at /bin/mv, not /usr/bin/mv.
-        if ! /bin/mv \(installedPath) \(backupPath); then
-          /usr/bin/open \(installedPath) || true
-          exit 1
-        fi
-        if /bin/mv \(stagedPath) \(installedPath); then
-          if /usr/bin/open \(installedPath); then
-            /bin/rm -rf \(backupPath) \(workPath)
-          else
-            /bin/mv \(installedPath) \(stagedPath) || true
-            if /bin/mv \(backupPath) \(installedPath); then
-              /usr/bin/open \(installedPath) || true
-            fi
-            /bin/rm -rf \(stagedPath) \(workPath)
-            exit 1
-          fi
-        else
-          if /bin/mv \(backupPath) \(installedPath); then
-            /usr/bin/open \(installedPath) || true
-          fi
-          /bin/rm -rf \(stagedPath) \(workPath)
-          exit 1
-        fi
-        """.write(to: scriptURL, atomically: true, encoding: .utf8)
+        try UpdateInstallScript.make(
+            installed: installedApp, staged: stagedApp, backup: backupApp, work: work,
+            processID: ProcessInfo.processInfo.processIdentifier
+        ).write(to: scriptURL, atomically: true, encoding: .utf8)
 
         let installer = Process()
         installer.executableURL = URL(fileURLWithPath: "/bin/bash")
@@ -359,10 +335,6 @@ final class UpdaterManager: ObservableObject {
         try installer.run()
         handedOffToInstaller = true
         handedOffStagedApp = true
-    }
-
-    private static func shellQuote(_ value: String) -> String {
-        "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     private func runProcess(_ path: String, _ arguments: [String]) async throws {

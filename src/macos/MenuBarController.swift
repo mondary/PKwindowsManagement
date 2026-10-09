@@ -13,6 +13,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var languageObserver: NSObjectProtocol?
     private var updateAvailabilityObserver: NSObjectProtocol?
     private var canvasObserver: NSObjectProtocol?
+    private let termination = ApplicationTerminationCoordinator()
     private var automaticTerminationActivity: NSObjectProtocol?
     private var hotCornerTimer: Timer?
     private var lastMouseLocation: CGPoint = .zero
@@ -126,8 +127,11 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        HorizontalCanvasService.shared.shutdown { sender.reply(toApplicationShouldTerminate: true) }
-        return .terminateLater
+        termination.request(sender) { completion in
+            LaunchShortcutMonitor.shared.stop()
+            SpaceManagementService.shared.userChangedWindowSelection()
+            HorizontalCanvasService.shared.shutdown(completion: completion)
+        }
     }
 
     @objc private func canvasCommand(_ sender: NSMenuItem) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.55] - 2026-10-09
+### Fixed
+- Blocage après « Installer et relancer » : l’arrêt du Canvas termine désormais sa restauration dans la boucle principale normale avant de redemander la fermeture. Suppression de l’attente `terminateLater` qui bloquait sa propre réponse asynchrone.
+- L’installateur attend la fin réelle du processus avant de remplacer le bundle et de relancer l’app, au lieu d’un délai fixe de deux secondes. Les clics d’installation supplémentaires restent désactivés jusqu’à la fermeture ; délai de téléchargement borné et cache local ignoré.
+- Test AppKit réel sans fenêtre : ancien blocage reproduit, fermeture corrigée validée. Tests du script : attente du processus, remplacement, relancement, retour arrière sur échec et conservation du bundle installé en cas de délai dépassé.
+
 ## [2026.10.54] - 2026-10-09
 ### Fixed
 - Compatibilité du masque d’événements clavier/souris avec le compilateur Swift de GitHub Actions. Reprise de la publication Dev des correctifs de cible persistante et d’alignement Canvas de la version 53, dont la compilation CI avait échoué.

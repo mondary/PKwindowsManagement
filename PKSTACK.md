@@ -14,3 +14,4 @@ Skills used for this project:
 - `pk-commits` — CalVer bump, changelog, commit and Dev-channel publication workflow.
 - `pk-app-release` — Stable release version/tag, GitHub assets, Homebrew cask and Sparkle checklist.
 - `publish-macos-sparkle` — Validate the signed Stable archive and generated appcast workflow.
+- `sparkle-github-updates` — Diagnosed Dev update shutdown deadlock using a live process sample. AppKit termination fixture reproduces the old hang; installer tests verify process-exit gating and rollback without opening user apps.

@@ -89,6 +89,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - `Ctrl + Shift + →` / `←` : move the active window to the next / previous virtual desktop (Space)
 
 ## ⚙️ Settings
+- In-app updates wait for Canvas restoration and actual application exit before replacing and relaunching the app. If an older Dev build stalls at this step, restarting the app may be necessary; see the [CHANGELOG](CHANGELOG.md).
 - **Horizontal Canvas** (Dev channel) in `Window Shortcuts`: `Ctrl+Shift+Space` toggles the strip, `Ctrl+Shift+H/L` selects the previous/next window. Adjustable width and position restoration on exit. At monitor seams, off-strip windows stack behind visible windows at the same height. Experimental; see the [CHANGELOG](CHANGELOG.md).
 - In `Window Shortcuts` → `Desktops`, bind **Move Desktop Left/Right** to reorder the desktop with its contents. Mission Control appears briefly; disable automatic Spaces rearrangement in macOS to keep your order. Actual thumbnail dragging is being validated on Dev.
 - Shortcuts can be edited in the preferences window.
