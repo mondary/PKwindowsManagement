@@ -399,7 +399,7 @@
 "New Canvas window width" = "Largeur des nouvelles fenêtres Canvas";
 "Canvas inactive" = "Canvas inactif";
 "Canvas active" = "Canvas actif";
-"Canvas arranges real windows in a horizontal strip. Exit restores their original positions. Each display has its own strip; changing desktop releases that strip." = "Le Canvas dispose les vraies fenêtres sur un ruban horizontal. La sortie restaure leurs positions d’origine. Chaque écran a son ruban ; changer de bureau libère celui-ci.";
+"Canvas tiles windows in a scrolling grid — three columns × two rows on wide screens, two × two otherwise. Hold Option and swipe or scroll to slide the grid; the previous/next shortcuts move column by column. Exiting restores every window's exact position and size; a snap command leaves the Canvas and applies its placement." = "Le Canvas dispose les fenêtres en grille défilante — trois colonnes × deux lignes sur grand écran, deux × deux sinon. Maintiens Option et balaye ou fais défiler pour faire glisser la grille ; les raccourcis précédent/suivant avancent colonne par colonne. La sortie restaure la position et la taille exactes de chaque fenêtre ; une commande de snap quitte le Canvas et applique son placement.";
 "Canvas needs Accessibility permission." = "Le Canvas a besoin de l’autorisation d’accessibilité.";
 "No display available for Canvas." = "Aucun écran disponible pour le Canvas.";
 "Canvas requires a normal desktop." = "Le Canvas nécessite un bureau normal.";

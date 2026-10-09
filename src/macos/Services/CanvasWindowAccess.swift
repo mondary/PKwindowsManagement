@@ -36,8 +36,7 @@ enum CanvasWindowAccess {
         return CGRect(origin: point, size: size)
     }
 
-    static func setFrame(_ frame: CGRect, window: AXUIElement) -> Bool {
-        var point = frame.origin
+    static func setFrame(_ frame: CGRect, window: AXUIElement) -> Bool {        var point = frame.origin
         var size = frame.size
         guard let p = AXValueCreate(.cgPoint, &point), let s = AXValueCreate(.cgSize, &size) else { return false }
         // Some apps constrain resizing using the old screen/position. Apply
@@ -46,13 +45,6 @@ enum CanvasWindowAccess {
         let sizeResult = AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, s)
         let positionResult = AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, p)
         return sizeResult == .success && positionResult == .success
-    }
-
-    static func resize(_ size: CGSize, window: AXUIElement) -> CGSize? {
-        var size = size
-        guard let value = AXValueCreate(.cgSize, &size),
-              AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, value) == .success else { return nil }
-        return frame(window)?.size
     }
 
     static func windows(pid: pid_t) -> [AXUIElement] {

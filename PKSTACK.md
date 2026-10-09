@@ -15,3 +15,4 @@ Skills used for this project:
 - `pk-app-release` — Stable release version/tag, GitHub assets, Homebrew cask and Sparkle checklist.
 - `publish-macos-sparkle` — Validate the signed Stable archive and generated appcast workflow.
 - `sparkle-github-updates` — Diagnosed Dev update shutdown deadlock using a live process sample. AppKit termination fixture reproduces the old hang; installer tests verify process-exit gating and rollback without opening user apps.
+- Paneru port QA — Dev 56 replaces the custom canvas with a Paneru-modeled scrolling grid (MIT, credited). Grid tests cover page shape, per-row baselines, fit visibility and monitor seams; runtime validation on the real displays pending.

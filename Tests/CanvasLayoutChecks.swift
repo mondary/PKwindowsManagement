@@ -1,54 +1,99 @@
+import CoreGraphics
 import Foundation
 
 @main
 enum CanvasLayoutChecks {
     static func main() {
-        let area = CGRect(x: 12, y: 40, width: 1000, height: 700)
-        let widths: [CGFloat] = [600, 600, 600, 600]
-        assert(CanvasLayout.maximumOffset(widths: [], viewport: 1000) == 0)
-        assert(CanvasLayout.maximumOffset(widths: [600], viewport: 1000) == 0)
-        assert(CanvasLayout.nearest(widths: [], viewport: 1000, offset: 0) == nil)
-        assert(CanvasLayout.reveal(3, widths: widths, viewport: 1000, offset: 0) == 1448)
-        assert(CanvasLayout.reveal(0, widths: widths, viewport: 1000, offset: 1448) == 0)
-        for count in 1...30 {
-            let ws = (0..<count).map { CGFloat(320 + ($0 * 137) % 650) }
-            for index in ws.indices {
-                let offset = CanvasLayout.reveal(index, widths: ws, viewport: area.width, offset: 800)
-                let x = CanvasLayout.origins(widths: ws)[index] - offset
-                assert(x >= -0.01 && x + ws[index] <= area.width + 0.01)
-                assert(offset >= 0 && offset <= CanvasLayout.maximumOffset(widths: ws, viewport: area.width))
+        let area = CGRect(x: 0, y: 0, width: 1800, height: 1000)
+        let geometry = CanvasLayout.Geometry(area: area, rows: 2)
+
+        // Page shape: 3×2 on wide displays (the external screen), 2×2 on MacBooks.
+        assert(CanvasLayout.preferredColumns(forAreaWidth: 1800) == 3)
+        assert(CanvasLayout.preferredColumns(forAreaWidth: 1799) == 2)
+        assert(CanvasLayout.columnCount(windows: 0, rows: 2) == 1)
+        assert(CanvasLayout.columnCount(windows: 1, rows: 2) == 1)
+        assert(CanvasLayout.columnCount(windows: 6, rows: 2) == 3)
+        assert(CanvasLayout.columnCount(windows: 7, rows: 2) == 4)
+
+        let width = geometry.defaultColumnWidth(columns: 3)
+        let widths = Array(repeating: width, count: 4)
+        // A full page spans the content region; the rows span the area.
+        assert(abs(3 * width + 2 * CanvasLayout.gap - geometry.contentWidth) < 0.01)
+        assert(abs(2 * geometry.rowHeight + CanvasLayout.gap - area.height) < 0.01)
+
+        // Regression (Dev 52 "wave"): every row keeps ONE baseline, visible or
+        // parked, whatever the viewport; the selected column becomes fully
+        // visible after fit.
+        for start in stride(from: CGFloat(0), through: 3000, by: 137) {
+            for column in widths.indices {
+                let viewport = CanvasLayout.fitViewport(index: column, widths: widths, geometry: geometry, current: start)
+                for row in 0..<2 {
+                    let placement = CanvasLayout.placement(
+                        column: column, row: row, widths: widths,
+                        geometry: geometry, viewport: viewport, otherDisplays: []
+                    )
+                    assert(placement.frame.minY == geometry.cellY(row: row))
+                    if placement.parked == nil {
+                        assert(placement.frame.minX >= geometry.contentMinX - 0.01)
+                        assert(placement.frame.maxX <= geometry.contentMaxX + 0.01)
+                        assert(placement.frame.height == geometry.rowHeight)
+                    }
+                }
             }
         }
-        let parked = CanvasLayout.placements(widths: widths, area: area, offset: 0, otherDisplays: [])
-        assert(!parked[0].parked && parked[3].parked)
-        assert(parked[3].frame.minX == area.maxX - CanvasLayout.peek)
-        // A right-hand display must never receive overflow from this strip.
-        let neighbor = CGRect(x: 1024, y: 0, width: 1440, height: 900)
-        let safe = CanvasLayout.placements(widths: widths, area: area, offset: 0, otherDisplays: [neighbor])
-        assert(safe.allSatisfy { !$0.frame.intersects(neighbor) })
-        // Also protect bottom/right seams in a three-screen arrangement.
-        let below = CGRect(x: 0, y: 768, width: 1024, height: 768)
-        let surrounded = CanvasLayout.placements(widths: widths, area: area, offset: 0, otherDisplays: [neighbor, below])
-        assert(surrounded.allSatisfy { !$0.frame.intersects(neighbor) && !$0.frame.intersects(below) })
+
+        // An app-min width larger than the page aligns its leading edge.
+        let oversized = [geometry.contentWidth + 300]
+        let oversizedViewport = CanvasLayout.fitViewport(index: 0, widths: oversized, geometry: geometry, current: 0)
+        let oversizedPlacement = CanvasLayout.placement(
+            column: 0, row: 0, widths: oversized,
+            geometry: geometry, viewport: oversizedViewport, otherDisplays: []
+        )
+        assert(oversizedPlacement.parked == nil && oversizedPlacement.frame.minX >= geometry.contentMinX)
+
+        // Parked slivers stay on their own display. With vertical neighbors
+        // (the Samsung-above topology) nothing ever leaks at all; horizontal
+        // neighbors keep Paneru's documented limitation — a column partially
+        // scrolled past the edge bleeds onto the neighbor, exactly like the
+        // reference engine.
         let left = CGRect(x: -1440, y: 0, width: 1440, height: 900)
-        let above = CGRect(x: 0, y: -900, width: 1024, height: 900)
-        // Regression: Dev 52 parked windows at maxY - peek. Every window must
-        // stay on the exact same baseline, regardless of offset or topology.
-        for neighbors in [[], [neighbor], [left], [neighbor, below], [left, neighbor, above, below]] {
-            for offset in stride(from: CGFloat(0), through: 1500, by: 37) {
-                let placements = CanvasLayout.placements(widths: widths, area: area, offset: offset, otherDisplays: neighbors)
-                assert(placements.allSatisfy { $0.frame.minY == area.minY && $0.frame.height == area.height })
-                assert(placements.allSatisfy { placement in !neighbors.contains { $0.intersects(placement.frame) } })
-            }
-            for index in widths.indices {
-                let offset = CanvasLayout.reveal(index, widths: widths, viewport: area.width, offset: 0)
-                let selected = CanvasLayout.placements(widths: widths, area: area, offset: offset, otherDisplays: neighbors)[index]
-                assert(!selected.parked && area.contains(selected.frame))
+        let right = CGRect(x: 1800, y: 0, width: 1440, height: 900)
+        let above = CGRect(x: 0, y: -900, width: 1800, height: 900)
+        let below = CGRect(x: 0, y: 1000, width: 1800, height: 900)
+        func check(
+            _ neighbors: [CGRect], viewport: CGFloat, column: Int, row: Int,
+            when condition: (CanvasLayout.Placement) -> Bool
+        ) {
+            let placement = CanvasLayout.placement(
+                column: column, row: row, widths: widths,
+                geometry: geometry, viewport: viewport, otherDisplays: neighbors
+            )
+            guard condition(placement) else { return }
+            for neighbor in neighbors {
+                assert(!placement.frame.intersects(neighbor))
             }
         }
-        // A minimum width larger than the display keeps its leading edge
-        // accessible rather than shifting the titlebar off to the left.
-        assert(CanvasLayout.reveal(1, widths: [600, 1200], viewport: 1000, offset: 0) == 616)
-        print("Canvas geometry: visibility, bounds, empty strips and monitor seams passed")
+        for viewport in stride(from: CGFloat(0), through: 3000, by: 97) {
+            for column in 0..<4 {
+                for row in 0..<2 {
+                    // Vertical neighbors (the Samsung-above topology): nothing
+                    // ever leaks — visible cells stay inside the display.
+                    check([above, below], viewport: viewport, column: column, row: row, when: { _ in true })
+                    // Horizontal neighbors: only PARKED columns must stay on
+                    // their own display; a partially scrolled column bleeds
+                    // onto the neighbor, Paneru's documented limitation.
+                    check([left], viewport: viewport, column: column, row: row, when: { $0.parked != nil })
+                    check([right], viewport: viewport, column: column, row: row, when: { $0.parked != nil })
+                    check([left, right, above, below], viewport: viewport, column: column, row: row, when: { $0.parked != nil })
+                }
+            }
+        }
+
+        // The viewport never scrolls past the strip's trailing margin.
+        assert(CanvasLayout.maxViewport(widths: [], viewport: geometry.contentWidth) == 0)
+        let maximum = CanvasLayout.maxViewport(widths: widths, viewport: geometry.contentWidth)
+        assert(CanvasLayout.clampViewport(maximum + 500, widths: widths, viewport: geometry.contentWidth) == maximum)
+
+        print("Canvas grid: page shape, row baselines, fit visibility, oversized columns and monitor seams passed")
     }
 }

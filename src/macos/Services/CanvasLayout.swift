@@ -1,66 +1,141 @@
 import CoreGraphics
 import Foundation
 
-/// Pure strip geometry, shared by keyboard navigation and continuous scrolling.
+/// Grid strip geometry, ported from Paneru's model (MIT, see Credits): windows
+/// fill a `columns × rows` grid page; the viewport slides column by column over
+/// an endless strip of those columns; columns fully outside the content region
+/// park as thin slivers inside reserved edge lanes, because macOS reassigns
+/// windows that leave the screen entirely.
 enum CanvasLayout {
-    static let gap: CGFloat = 16
-    static let peek: CGFloat = 12
+    static let gap: CGFloat = 8
+    static let peek: CGFloat = 44
 
-    static func origins(widths: [CGFloat]) -> [CGFloat] {
-        var x: CGFloat = 0
+    struct Geometry {
+        let area: CGRect
+        let contentMinX: CGFloat
+        let contentMaxX: CGFloat
+        let contentWidth: CGFloat
+        let rows: Int
+        let rowHeight: CGFloat
+
+        init(area: CGRect, rows: Int) {
+            self.area = area
+            self.rows = max(1, rows)
+            contentMinX = area.minX + peek
+            contentMaxX = area.maxX - peek
+            contentWidth = max(1, contentMaxX - contentMinX)
+            rowHeight = (area.height - CGFloat(self.rows - 1) * gap) / CGFloat(self.rows)
+        }
+
+        func cellY(row: Int) -> CGFloat {
+            area.minY + CGFloat(row) * (rowHeight + gap)
+        }
+
+        /// Equal width for a full page of `columns` columns.
+        func defaultColumnWidth(columns: Int) -> CGFloat {
+            let count = CGFloat(max(1, columns))
+            return (contentWidth - (count - 1) * gap) / count
+        }
+    }
+
+    static func canvasOrigins(widths: [CGFloat]) -> [CGFloat] {
+        var x: CGFloat = gap
         return widths.map { width in
             defer { x += width + gap }
             return x
         }
     }
 
-    static func maximumOffset(widths: [CGFloat], viewport: CGFloat) -> CGFloat {
-        max(0, widths.reduce(0, +) + CGFloat(max(0, widths.count - 1)) * gap - viewport)
+    static func stripExtent(widths: [CGFloat]) -> CGFloat {
+        guard let width = widths.last else { return 0 }
+        let origins = canvasOrigins(widths: widths)
+        return origins[origins.count - 1] + width + gap
     }
 
-    static func clampedOffset(_ offset: CGFloat, widths: [CGFloat], viewport: CGFloat) -> CGFloat {
-        min(max(0, offset), maximumOffset(widths: widths, viewport: viewport))
+    static func maxViewport(widths: [CGFloat], viewport: CGFloat) -> CGFloat {
+        max(0, stripExtent(widths: widths) - viewport)
     }
 
-    static func reveal(_ index: Int, widths: [CGFloat], viewport: CGFloat, offset: CGFloat) -> CGFloat {
-        guard widths.indices.contains(index) else { return clampedOffset(offset, widths: widths, viewport: viewport) }
-        let x = origins(widths: widths)[index]
-        if widths[index] >= viewport {
-            return clampedOffset(x, widths: widths, viewport: viewport)
+    static func clampViewport(_ value: CGFloat, widths: [CGFloat], viewport: CGFloat) -> CGFloat {
+        min(max(0, value), maxViewport(widths: widths, viewport: viewport))
+    }
+
+    static func columnCount(windows: Int, rows: Int) -> Int {
+        max(1, (max(0, windows) + rows - 1) / rows)
+    }
+
+    /// 3×2 pages on wide displays (the external screen), 2×2 on smaller ones.
+    static func preferredColumns(forAreaWidth width: CGFloat) -> Int {
+        width >= 1800 ? 3 : 2
+    }
+
+    /// "fit": scroll the minimum needed so the whole column is inside the
+    /// content region; an oversized column aligns its leading edge.
+    static func fitViewport(index: Int, widths: [CGFloat], geometry: Geometry, current: CGFloat) -> CGFloat {
+        guard widths.indices.contains(index) else { return current }
+        let x = canvasOrigins(widths: widths)[index]
+        let width = widths[index]
+        var target = current
+        if width >= geometry.contentWidth || x - gap < current {
+            target = x - gap
+        } else if x + width + gap > current + geometry.contentWidth {
+            target = x + width + gap - geometry.contentWidth
+        } else {
+            return current
         }
-        var result = offset
-        if x < offset { result = x }
-        if x + widths[index] > result + viewport { result = x + widths[index] - viewport }
-        return clampedOffset(result, widths: widths, viewport: viewport)
+        return clampViewport(target, widths: widths, viewport: geometry.contentWidth)
     }
 
-    static func nearest(widths: [CGFloat], viewport: CGFloat, offset: CGFloat) -> Int? {
-        let xs = origins(widths: widths)
-        return widths.indices.min { abs(xs[$0] + widths[$0] / 2 - offset - viewport / 2) < abs(xs[$1] + widths[$1] / 2 - offset - viewport / 2) }
+    enum ParkSide {
+        case left, right
     }
 
     struct Placement {
         let frame: CGRect
-        let parked: Bool
+        let parked: ParkSide?
     }
 
-    static func placements(widths: [CGFloat], area: CGRect, offset: CGFloat, otherDisplays: [CGRect]) -> [Placement] {
-        let offset = clampedOffset(offset, widths: widths, viewport: area.width)
-        return zip(origins(widths: widths), widths).map { origin, width in
-            let x = area.minX + origin - offset
-            let visible = x + width > area.minX && x < area.maxX
-            let boundedX = max(area.minX - width + peek, min(x, area.maxX - peek))
-            var frame = CGRect(x: boundedX, y: area.minY, width: width, height: area.height)
-            var parked = !visible
-            // Keep EVERY titlebar on the same horizontal line. Parking below
-            // the screen makes windows jump vertically as they enter the strip.
-            // At a monitor seam use an in-screen horizontal stack, raised behind
-            // the visible windows by the renderer (native windows cannot clip).
-            if otherDisplays.contains(where: { $0.intersects(frame) }) {
-                frame.origin.x = min(max(x, area.minX), max(area.minX, area.maxX - width))
-                parked = true
-            }
-            return Placement(frame: frame, parked: parked)
+    /// Where a cell sits for the current viewport. Columns fully outside the
+    /// content region park as a sliver in their side's lane; a lane that would
+    /// leak onto a neighboring monitor is flipped or kept inside the display.
+    static func placement(
+        column: Int,
+        row: Int,
+        widths: [CGFloat],
+        geometry: Geometry,
+        viewport: CGFloat,
+        otherDisplays: [CGRect]
+    ) -> Placement {
+        let origins = canvasOrigins(widths: widths)
+        guard widths.indices.contains(column) else {
+            return Placement(frame: .null, parked: nil)
         }
+        let x = geometry.contentMinX + origins[column] - viewport
+        let width = widths[column]
+        let frame = CGRect(x: x, y: geometry.cellY(row: row), width: width, height: geometry.rowHeight)
+        guard x < geometry.contentMaxX, x + width > geometry.contentMinX else {
+            let side: ParkSide = x <= geometry.contentMinX ? .left : .right
+            var parked = sliverFrame(side: side, width: width, geometry: geometry, row: row)
+            if otherDisplays.contains(where: { $0.intersects(parked) }) {
+                let flipped = sliverFrame(side: side == .left ? .right : .left, width: width, geometry: geometry, row: row)
+                if !otherDisplays.contains(where: { $0.intersects(flipped) }) {
+                    parked = flipped
+                } else {
+                    parked = CGRect(
+                        x: side == .left ? geometry.area.minX : geometry.area.maxX - peek,
+                        y: geometry.cellY(row: row),
+                        width: peek,
+                        height: geometry.rowHeight
+                    )
+                }
+            }
+            return Placement(frame: parked, parked: side)
+        }
+        return Placement(frame: frame, parked: nil)
+    }
+
+    private static func sliverFrame(side: ParkSide, width: CGFloat, geometry: Geometry, row: Int) -> CGRect {
+        let x = side == .left ? geometry.area.minX - width + peek : geometry.area.maxX - peek
+        return CGRect(x: x, y: geometry.cellY(row: row), width: width, height: geometry.rowHeight)
     }
 }

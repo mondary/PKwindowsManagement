@@ -7,13 +7,15 @@ Approved scope (2026-10-09):
    Status: Dev 2026.10.51, real thumbnail drag pending user validation.
 2. An opt-in strip of real windows on the current desktop: next/previous focus,
    comfortable widths, adoption of new windows and restoration on exit.
-    Status: Dev 2026.10.52 user test reported vertical waves and unstable focus.
-    Dev 2026.10.54 (53 CI build failed) removes vertical parking, measures accepted widths before
-    placement, and retains selection during keyboard navigation. Runtime retest
-    pending; restoration remains best-effort with a persistent retry journal.
-    Modifier + horizontal scrolling is milestone 3.
+   Status: redesigned in Dev 2026.10.56 after the Dev 52/54 user tests, on the
+   Paneru model (MIT, credited): a scrolling 3×2 grid page on wide displays
+   (2×2 on smaller ones) instead of tall columns; Ctrl+Shift+H/L move column by
+   column; Option + trackpad/wheel slides the grid; off-viewport columns park
+   as edge slivers; exact position+size restoration on exit; a PK snap command
+   leaves the Canvas and applies its placement.
 3. Modifier + horizontal trackpad/wheel scrolling and independent display strips.
-   Status: per-display strips shipped in Dev 2026.10.52; scrolling pending.
+   Status: shipped in Dev 2026.10.56, gated on Option alone (no ⌘/⌃) so apps
+   keep their own horizontal scrolling; per-display strips since 2026.10.52.
 
 Native Swift/AppKit and Accessibility. Reuse the existing shortcut/settings
 pipeline. Dev-channel delivery and real macOS validation at each milestone.
@@ -34,7 +36,9 @@ old queued moves and let the next request select the clicked window. Close the
 retained window: no substitute should move until another user selection.
 
 Canvas regression: navigate all windows in both directions on a single display
-and with displays to the left/right/above/below. Every titlebar stays at the
-same Y. The selected window is fully revealed (except an app whose minimum
-width exceeds the screen). At seams, native windows stack behind the visible
-strip rather than moving down the screen. Verify restoration after exit.
+and with displays to the left/right/above/below. Each grid row keeps one
+baseline; the selected column becomes fully visible; parked slivers stay on
+their own display. ⌥ + swipe/wheel slides the grid without stealing plain
+scrolling from apps. Exiting restores every window's exact frame — including a
+quarter-snapped window — and a snap command during the Canvas leaves the mode
+and applies its placement.

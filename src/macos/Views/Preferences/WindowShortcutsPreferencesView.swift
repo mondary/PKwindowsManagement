@@ -187,20 +187,12 @@ struct WindowShortcutsPreferencesView: View {
                 .bound("Restore Canvas", "arrow.uturn.backward", .canvasRestore),
             ])
             HStack {
-                Text(localizedString("New Canvas window width"))
-                Slider(value: $settings.canvasWidthRatio, in: 0.35...1, step: 0.05)
-                    .accessibilityLabel(localizedString("New Canvas window width"))
-                    .frame(maxWidth: 220)
-                Text("\(Int(settings.canvasWidthRatio * 100))%")
-                    .monospacedDigit()
-            }
-            HStack {
                 Button(localizedString("Toggle Horizontal Canvas")) { canvas.perform(.toggle) }
                 Button(localizedString("Restore Canvas")) { canvas.perform(.restore) }
                 Text(localizedString(canvas.activeDisplayIDs.isEmpty ? "Canvas inactive" : "Canvas active"))
                     .foregroundStyle(.secondary)
             }
-            Text(localizedString("Canvas arranges real windows in a horizontal strip. Exit restores their original positions. Each display has its own strip; changing desktop releases that strip."))
+            Text(localizedString("Canvas tiles windows in a scrolling grid — three columns × two rows on wide screens, two × two otherwise. Hold Option and swipe or scroll to slide the grid; the previous/next shortcuts move column by column. Exiting restores every window's exact position and size; a snap command leaves the Canvas and applies its placement."))
                 .font(.caption).foregroundStyle(.secondary)
             if !canvas.message.isEmpty {
                 Text(canvas.message).font(.caption).foregroundStyle(.orange)

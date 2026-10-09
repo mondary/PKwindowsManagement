@@ -70,7 +70,9 @@ final class LaunchShortcutMonitor {
 
     private func installEventTap() {
         guard eventTap == nil else { return }
-        let eventTypes: [CGEventType] = [.keyDown, .flagsChanged, .leftMouseDown, .rightMouseDown, .otherMouseDown]
+        let eventTypes: [CGEventType] = [
+            .keyDown, .flagsChanged, .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel
+        ]
         let mask = eventTypes.reduce(CGEventMask(0)) { mask, type in
             mask | (CGEventMask(1) << type.rawValue)
         }
@@ -151,6 +153,8 @@ final class LaunchShortcutMonitor {
         case .flagsChanged:
             modifierState.update(with: event)
             return .passUnretained(event)
+        case .scrollWheel:
+            return handleScroll(event: event)
         case .keyDown:
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
             if event.flags.contains(.maskCommand), keyCode == 48 || keyCode == 50 {
@@ -210,8 +214,27 @@ final class LaunchShortcutMonitor {
         }
     }
 
-    private func rearmEventTapIfNeeded() {
-        guard let tap = eventTap, CFMachPortIsValid(tap) else {
+    /// Canvas scroll navigation. Only Option (⌥) alone gates it, so apps keep
+    /// their plain and ⌘/⌃-modified scrolling; the event is consumed only when
+    /// a Canvas strip owns the display under the pointer.
+    private func handleScroll(event: CGEvent) -> Unmanaged<CGEvent>? {
+        let flags = event.flags
+        guard flags.contains(.maskAlternate),
+              !flags.contains(.maskCommand),
+              !flags.contains(.maskControl) else {
+            return .passUnretained(event)
+        }
+        let xPoint = event.getIntegerValueField(.scrollWheelEventPointDeltaAxis2)
+        let yPoint = event.getIntegerValueField(.scrollWheelEventPointDeltaAxis1)
+        let yLine = event.getIntegerValueField(.scrollWheelEventDeltaAxis1)
+        var delta = xPoint
+        if delta == 0 { delta = yPoint != 0 ? yPoint : yLine * 12 }
+        guard delta != 0 else { return .passUnretained(event) }
+        let consumed = HorizontalCanvasService.shared.scroll(rawDelta: CGFloat(delta), location: event.location)
+        return consumed ? nil : .passUnretained(event)
+    }
+
+    private func rearmEventTapIfNeeded() {        guard let tap = eventTap, CFMachPortIsValid(tap) else {
             removeEventTap()
             modifierState = ModifierState()
             installEventTap()

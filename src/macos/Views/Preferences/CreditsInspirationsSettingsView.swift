@@ -73,6 +73,17 @@ struct CreditsInspirationsSettingsView: View {
             symbol: "square.3.layers.3d",
             tint: Color(red: 0.29, green: 0.57, blue: 0.76),
             url: URL(string: "https://github.com/asmvik/yabai")!
+        ),
+        CreditEntry(
+            id: "Paneru",
+            author: "karinushka",
+            roleKey: "Scrolling strip layout model behind the horizontal Canvas.",
+            license: "MIT",
+            iconAsset: "Paneru",
+            usesTemplateIcon: true,
+            symbol: "rectangle.split.3x1",
+            tint: Color(red: 0.55, green: 0.4, blue: 0.75),
+            url: URL(string: "https://github.com/karinushka/paneru")!
         )
     ]
 

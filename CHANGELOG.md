@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026.10.56] - 2026-10-09
+### Changed
+- Canvas reconçu d’après le modèle de Paneru (MIT, ajouté aux crédits) : grille défilante 3×2 sur grand écran et 2×2 sur MacBook au lieu de grandes colonnes, viewport glissant colonne par colonne, colonnes hors champ parquées en languettes dans les bords, largeurs réelles négociées par colonne et écritures AX sautées quand la fenêtre est déjà en place.
+### Added
+- Défilement du Canvas : ⌥ + trackpad/molette fait glisser la grille colonne par colonne (Option seule, sans ⌘/⌃, pour que les apps gardent leur défilement horizontal).
+- Restauration exacte à la sortie : position ET taille d’origine (journal persistant, vérification à 3 px) ; une commande de snap PK pendant le Canvas quitte le mode et applique son placement (quart haut-droite, moitié…).
+- Tests de géométrie de la grille : forme des pages, alignement par ligne, visibilité après recentrage, colonnes trop larges et joints d’écrans.
+
 ## [2026.10.55] - 2026-10-09
 ### Fixed
 - Blocage après « Installer et relancer » : l’arrêt du Canvas termine désormais sa restauration dans la boucle principale normale avant de redemander la fermeture. Suppression de l’attente `terminateLater` qui bloquait sa propre réponse asynchrone.
