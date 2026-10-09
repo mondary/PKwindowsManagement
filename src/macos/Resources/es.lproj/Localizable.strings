@@ -387,3 +387,6 @@
 "Creating or closing a desktop—and following a moved window when enabled—briefly shows Mission Control. Private macOS APIs may change after system updates." = "Al crear o cerrar un escritorio —y al seguir la ventana movida si la opción está activada— Mission Control aparece brevemente. Las API privadas de macOS pueden cambiar tras las actualizaciones del sistema.";
 "Mission Control accessibility and Space-management techniques." = "Técnicas de accesibilidad de Mission Control y gestión de Spaces.";
 "SkyLight compatibility techniques for moving windows between Spaces." = "Técnicas de compatibilidad con SkyLight para mover ventanas entre Spaces.";
+"Move Desktop Left" = "Mover escritorio a la izquierda";
+"Move Desktop Right" = "Mover escritorio a la derecha";
+"Desktop reordering keeps its windows together. Disable automatic Spaces rearrangement in macOS to keep your chosen order." = "El escritorio conserva sus ventanas. Desactiva la reorganización automática de Spaces en macOS para mantener el orden elegido.";

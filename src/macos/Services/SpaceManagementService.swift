@@ -14,6 +14,8 @@ enum SpaceAction: String, CaseIterable, Identifiable {
     case closeCurrentDesktop
     case moveWindowToNextDesktop
     case moveWindowToPreviousDesktop
+    case moveDesktopLeft
+    case moveDesktopRight
 
     var id: String { rawValue }
 }
@@ -124,6 +126,10 @@ final class SpaceManagementService {
                 self.moveFocusedWindow(toNext: true, options: options, screens: screens)
             case .moveWindowToPreviousDesktop:
                 self.moveFocusedWindow(toNext: false, options: options, screens: screens)
+            case .moveDesktopLeft:
+                self.reorderDesktop(toNext: false, screens: screens)
+            case .moveDesktopRight:
+                self.reorderDesktop(toNext: true, screens: screens)
             }
         }
     }
@@ -435,6 +441,112 @@ final class SpaceManagementService {
             Thread.sleep(forTimeInterval: 0.1)
         }
         return false
+    }
+
+    // MARK: - Reorder native desktops
+
+    private func reorderDesktop(toNext: Bool, screens: SpaceScreenSnapshot) {
+        guard let sls = SLSBridge.shared, let active = sls.activeSpaceID(),
+              let display = sls.managedDisplays()?.first(where: { $0.currentSpaceID == active }),
+              let source = display.spaceIDs.firstIndex(of: active), display.types[source] == 0,
+              let displayID = screens.displayID(forUUID: display.uuid)
+        else { fail("Could not identify the desktop to reorder"); return }
+        let step = toNext ? 1 : -1
+        var destination = source + step
+        while display.spaceIDs.indices.contains(destination), display.types[destination] != 0 {
+            destination += step
+        }
+        guard let expected = DesktopOrder.moving(display.spaceIDs, from: source, to: destination) else {
+            fail("There is no neighboring desktop to reorder past")
+            return
+        }
+        let focus = focusedWindowID(frontmostPID: screens.frontmostPID).flatMap { windowFocusTarget($0) }
+        let reordered = runInMissionControl(closesItself: false) { mc in
+            guard let group = self.displayGroup(in: mc, displayID: displayID),
+                  let spaces = self.spacesGroup(in: group),
+                  sls.managedDisplays()?.first(where: { $0.uuid == display.uuid })?.spaceIDs == display.spaceIDs
+            else { return false }
+            let thumbs = self.desktopThumbnails(spaces)
+            guard thumbs.count == display.spaceIDs.count,
+                  let from = self.accessibilityFrame(thumbs[source]),
+                  let to = self.accessibilityFrame(thumbs[destination])
+            else { return false }
+            // AXPress switches desktops; only dragging the native thumbnail
+            // changes their order. No window is reassigned to a different Space.
+            guard self.dragDesktopThumbnail(
+                from: CGPoint(x: from.midX, y: from.midY),
+                to: CGPoint(x: toNext ? to.maxX - 8 : to.minX + 8, y: to.midY)
+            ) else { return false }
+            let deadline = ProcessInfo.processInfo.systemUptime + 2
+            while ProcessInfo.processInfo.systemUptime < deadline {
+                if sls.managedDisplays()?.first(where: { $0.uuid == display.uuid })?.spaceIDs == expected {
+                    return true
+                }
+                Thread.sleep(forTimeInterval: 0.05)
+            }
+            return false
+        }
+        guard reordered else { fail("Desktop order was not confirmed after dragging its thumbnail"); return }
+        // Selecting the original ID at its new index keeps the same desktop active.
+        if sls.managedDisplays()?.first(where: { $0.uuid == display.uuid })?.currentSpaceID != active {
+            let selected = runInMissionControl(closesItself: true) { mc in
+                guard sls.managedDisplays()?.first(where: { $0.uuid == display.uuid })?.spaceIDs == expected,
+                      let group = self.displayGroup(in: mc, displayID: displayID),
+                      let spaces = self.spacesGroup(in: group) else { return false }
+                let thumbs = self.desktopThumbnails(spaces)
+                guard thumbs.count == expected.count else { return false }
+                return self.performAction(thumbs[destination], action: "AXPress")
+            }
+            guard selected else { fail("Desktop reordered, but could not return to it"); return }
+        }
+        if let focus, !restoreFocus(focus, onSpace: active, displayUUID: display.uuid, sls: sls) {
+            fail("Desktop reordered, but could not restore window focus")
+            return
+        }
+        guard sls.managedDisplays()?.first(where: { $0.uuid == display.uuid })?.spaceIDs == expected else {
+            fail("Desktop order changed again; check automatic Spaces rearrangement in macOS")
+            return
+        }
+        spacesLogger.notice("Reordered desktop \(active) from index \(source) to \(destination)")
+    }
+
+    private func accessibilityFrame(_ element: AXUIElement) -> CGRect? {
+        guard let position = value(element, kAXPositionAttribute as String),
+              let size = value(element, kAXSizeAttribute as String),
+              CFGetTypeID(position) == AXValueGetTypeID(), CFGetTypeID(size) == AXValueGetTypeID()
+        else { return nil }
+        var point = CGPoint.zero
+        var dimensions = CGSize.zero
+        guard AXValueGetValue(unsafeBitCast(position, to: AXValue.self), .cgPoint, &point),
+              AXValueGetValue(unsafeBitCast(size, to: AXValue.self), .cgSize, &dimensions),
+              dimensions.width > 16, dimensions.height > 16 else { return nil }
+        return CGRect(origin: point, size: dimensions)
+    }
+
+    private func dragDesktopThumbnail(from start: CGPoint, to end: CGPoint) -> Bool {
+        guard let source = CGEventSource(stateID: .privateState),
+              let previous = CGEvent(source: nil)?.location,
+              let down = CGEvent(mouseEventSource: source, mouseType: .leftMouseDown, mouseCursorPosition: start, mouseButton: .left),
+              let up = CGEvent(mouseEventSource: source, mouseType: .leftMouseUp, mouseCursorPosition: end, mouseButton: .left)
+        else { return false }
+        defer {
+            up.post(tap: .cghidEventTap)
+            CGWarpMouseCursorPosition(previous)
+        }
+        CGWarpMouseCursorPosition(start)
+        down.flags = []
+        up.flags = []
+        down.post(tap: .cghidEventTap)
+        Thread.sleep(forTimeInterval: 0.15)
+        for index in 1...24 {
+            let fraction = CGFloat(index) / 24
+            let point = CGPoint(x: start.x + (end.x - start.x) * fraction, y: start.y + (end.y - start.y) * fraction)
+            guard let event = CGEvent(mouseEventSource: source, mouseType: .leftMouseDragged, mouseCursorPosition: point, mouseButton: .left) else { return false }
+            event.flags = []
+            event.post(tap: .cghidEventTap)
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        return true
     }
 
     // MARK: - Wallpaper

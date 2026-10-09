@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.10.51] - 2026-10-09
+### Added
+- Commandes expérimentales de réordonnancement du bureau actif à gauche/droite : glisser de la vignette Mission Control, vérification de l’ordre réel des Spaces et conservation du bureau actif. Raccourcis configurables dans Bureaux, non affectés par défaut.
+- Tests des permutations : identité et ordre des autres bureaux préservés, limites et aller-retour. Validation du glisser réel à effectuer sur Dev.
+
 ## [2026.10.50] - 2026-10-09
 ### Fixed
 - Après un déplacement suivi vers le bureau voisin, restauration et vérification du focus sur la fenêtre déplacée après la transition Mission Control, y compris si l'app possède plusieurs fenêtres.

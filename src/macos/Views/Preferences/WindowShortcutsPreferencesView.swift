@@ -96,6 +96,8 @@ struct WindowShortcutsPreferencesView: View {
             .bound("Close Current Desktop", "minus.rectangle", .desktopCloseCurrent),
             .bound("Move Window to Next Desktop", "arrow.right.square", .windowNextDesktop),
             .bound("Move Window to Previous Desktop", "arrow.left.square", .windowPreviousDesktop),
+            .bound("Move Desktop Left", "rectangle.stack.badge.minus", .desktopMoveLeft),
+            .bound("Move Desktop Right", "rectangle.stack.badge.plus", .desktopMoveRight),
         ]
     }
 
@@ -270,6 +272,10 @@ struct WindowShortcutsPreferencesView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 9)
+                Text(localizedString("Desktop reordering keeps its windows together. Disable automatic Spaces rearrangement in macOS to keep your chosen order."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(12)
             }
             .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }

@@ -138,3 +138,6 @@
 "Creating or closing a desktop—and following a moved window when enabled—briefly shows Mission Control. Private macOS APIs may change after system updates." = "Creating or closing a desktop—and following a moved window when enabled—briefly shows Mission Control. Private macOS APIs may change after system updates.";
 "Mission Control accessibility and Space-management techniques." = "Mission Control accessibility and Space-management techniques.";
 "SkyLight compatibility techniques for moving windows between Spaces." = "SkyLight compatibility techniques for moving windows between Spaces.";
+"Move Desktop Left" = "Move Desktop Left";
+"Move Desktop Right" = "Move Desktop Right";
+"Desktop reordering keeps its windows together. Disable automatic Spaces rearrangement in macOS to keep your chosen order." = "Desktop reordering keeps its windows together. Disable automatic Spaces rearrangement in macOS to keep your chosen order.";

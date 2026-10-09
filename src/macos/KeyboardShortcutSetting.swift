@@ -180,6 +180,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case desktopCloseCurrent
     case windowNextDesktop
     case windowPreviousDesktop
+    case desktopMoveLeft
+    case desktopMoveRight
 
     var id: String { rawValue }
 
@@ -239,6 +241,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .desktopCloseCurrent: localizedString("Close Current Desktop")
         case .windowNextDesktop: localizedString("Move Window to Next Desktop")
         case .windowPreviousDesktop: localizedString("Move Window to Previous Desktop")
+        case .desktopMoveLeft: localizedString("Move Desktop Left")
+        case .desktopMoveRight: localizedString("Move Desktop Right")
         }
     }
 
@@ -284,7 +288,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
              .windowFirstTwoThirds, .windowCenterTwoThirds, .windowLastTwoThirds,
              .windowFirstFourth, .windowSecondFourth, .windowThirdFourth, .windowLastFourth,
              .windowFirstThreeFourths, .windowCenterThreeFourths, .windowLastThreeFourths,
-             .windowTileAll:
+             .desktopMoveLeft, .desktopMoveRight:
             nil
         }
     }
@@ -297,6 +301,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .desktopCloseCurrent: .closeCurrentDesktop
         case .windowNextDesktop: .moveWindowToNextDesktop
         case .windowPreviousDesktop: .moveWindowToPreviousDesktop
+        case .desktopMoveLeft: .moveDesktopLeft
+        case .desktopMoveRight: .moveDesktopRight
         default: nil
         }
     }

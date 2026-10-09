@@ -388,3 +388,6 @@
 "Latest stable" = "Dernière stable";
 "Latest dev" = "Dernière dev";
 "Not published" = "Non publiée";
+"Move Desktop Left" = "Déplacer le bureau à gauche";
+"Move Desktop Right" = "Déplacer le bureau à droite";
+"Desktop reordering keeps its windows together. Disable automatic Spaces rearrangement in macOS to keep your chosen order." = "Le bureau conserve toutes ses fenêtres. Désactivez le réagencement automatique des Spaces dans macOS pour conserver l’ordre choisi.";

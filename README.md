@@ -95,6 +95,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - `Ctrl + Shift + →` / `←` : déplacer la fenêtre active vers le bureau virtuel (Space) suivant / précédent
 
 ## ⚙️ Réglages
+- Dev `2026.10.51` : dans `Raccourcis fenêtre` → `Bureaux`, affecte un raccourci à **Déplacer le bureau à gauche/droite** pour réordonner le bureau avec son contenu. Mission Control apparaît brièvement ; désactive le réagencement automatique des Spaces dans macOS pour conserver ton ordre. Glisser réel en cours de validation.
 - Les raccourcis sont modifiables dans l'écran de préférences.
 - Dans `Raccourcis fenêtre` → `Bureaux`, configure la création, la fermeture et le déplacement entre Spaces. Tu peux choisir un dossier de fonds d’écran, activer la sélection aléatoire à la création et décider si l’app bascule vers le bureau de destination après un déplacement.
 - Dev `2026.10.50` : lorsque le suivi est activé, l'app restaure le focus sur la fenêtre déplacée avant le prochain saut (par exemple bureau 1 → 2 → 3). Correctif en cours de validation sur Dev.
