@@ -11,7 +11,7 @@ final class LaunchShortcutMonitor {
     private var settings: AppSettings?
     private var launchHandler: ((LaunchableApp) -> Void)?
     private var windowHandler: ((WindowSnapAction) -> Void)?
-    private var spaceHandler: ((SpaceAction) -> Void)?
+    private var spaceHandler: ((SpaceAction, UInt64) -> Void)?
     private var modifierState = ModifierState()
     private var appsByBundleID: [String: LaunchableApp] = [:]
     private var retryTimer: Timer?
@@ -23,7 +23,7 @@ final class LaunchShortcutMonitor {
         apps: [LaunchableApp],
         launchHandler: @escaping (LaunchableApp) -> Void,
         windowHandler: @escaping (WindowSnapAction) -> Void,
-        spaceHandler: @escaping (SpaceAction) -> Void
+        spaceHandler: @escaping (SpaceAction, UInt64) -> Void
     ) {
         self.settings = settings
         self.launchHandler = launchHandler
@@ -70,7 +70,9 @@ final class LaunchShortcutMonitor {
 
     private func installEventTap() {
         guard eventTap == nil else { return }
-        let mask = CGEventMask((1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.flagsChanged.rawValue))
+        let mask = CGEventMask((1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
+            | (1 << CGEventType.leftMouseDown.rawValue) | (1 << CGEventType.rightMouseDown.rawValue)
+            | (1 << CGEventType.otherMouseDown.rawValue))
         let callback: CGEventTapCallBack = { _, type, event, refcon in
             guard let refcon else { return Unmanaged.passUnretained(event) }
             let monitor = Unmanaged<LaunchShortcutMonitor>.fromOpaque(refcon).takeUnretainedValue()
@@ -132,6 +134,12 @@ final class LaunchShortcutMonitor {
 
     private func handle(eventType: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         switch eventType {
+        case .leftMouseDown, .rightMouseDown, .otherMouseDown:
+            // Our Mission Control drag events must not invalidate user intent.
+            if event.getIntegerValueField(.eventSourceUnixProcessID) != Int64(ProcessInfo.processInfo.processIdentifier) {
+                SpaceManagementService.shared.userChangedWindowSelection()
+            }
+            return .passUnretained(event)
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             NSLog("PKwindowsManagement: global shortcut listener disabled by macOS (%d); re-enabling", eventType.rawValue)
             modifierState = ModifierState()
@@ -143,6 +151,10 @@ final class LaunchShortcutMonitor {
             modifierState.update(with: event)
             return .passUnretained(event)
         case .keyDown:
+            let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            if event.flags.contains(.maskCommand), keyCode == 48 || keyCode == 50 {
+                SpaceManagementService.shared.userChangedWindowSelection()
+            }
             // Launch shortcuts stay inert while our own UI is focused (typing
             // in its fields must not launch apps), but window actions keep
             // working so the settings window snaps like any other window.
@@ -150,6 +162,7 @@ final class LaunchShortcutMonitor {
                 || NSWorkspace.shared.frontmostApplication?.processIdentifier == ProcessInfo.processInfo.processIdentifier
             var consumed = false
             if !ownAppIsActive, let app = match(event: event) {
+                SpaceManagementService.shared.userChangedWindowSelection()
                 let captured = app
                 DispatchQueue.main.async { [weak self] in
                     self?.launchHandler?(captured)
@@ -157,6 +170,7 @@ final class LaunchShortcutMonitor {
                 consumed = true
             }
             if !consumed, let windowAction = matchWindowShortcut(event: event) {
+                SpaceManagementService.shared.userChangedWindowSelection()
                 let captured = windowAction
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
@@ -171,9 +185,10 @@ final class LaunchShortcutMonitor {
             }
             if !consumed, let spaceAction = matchSpaceShortcut(event: event) {
                 let captured = spaceAction
+                let ticket = SpaceManagementService.shared.windowSelectionTicket()
                 DispatchQueue.main.async { [weak self] in
                     NSLog("PKwindowsManagement: Space shortcut matched: %@", captured.rawValue)
-                    self?.spaceHandler?(captured)
+                    self?.spaceHandler?(captured, ticket)
                 }
                 consumed = true
             }
@@ -182,6 +197,7 @@ final class LaunchShortcutMonitor {
                     guard let canvasAction = action.canvasAction,
                           let shortcut = settings.shortcut(for: action), shortcut.key.lowercased() == eventKey,
                           modifierState.matches(shortcut.modifier, flags: event.flags) else { continue }
+                    SpaceManagementService.shared.userChangedWindowSelection()
                     DispatchQueue.main.async { HorizontalCanvasService.shared.perform(canvasAction) }
                     consumed = true
                     break

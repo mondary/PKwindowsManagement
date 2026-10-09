@@ -104,8 +104,8 @@ final class HorizontalCanvasService: ObservableObject {
         precondition(Thread.isMainThread)
         guard !shuttingDown else { return }
         message = ""
-        let context = Context.capture()
         queue.async {
+            let context = DispatchQueue.main.sync { Context.capture() }
             guard AXIsProcessTrusted() else { self.report("Canvas needs Accessibility permission."); return }
             guard self.loadRecovery(context) else { return }
             if action == .restore { self.releaseAll(context); return }
@@ -135,11 +135,9 @@ final class HorizontalCanvasService: ObservableObject {
             } else if let strip = self.strips[display.id], self.isCurrent(strip) {
                 guard !strip.entries.isEmpty else { return }
                 let now = ProcessInfo.processInfo.systemUptime
-                let livePID = DispatchQueue.main.sync { NSWorkspace.shared.frontmostApplication?.processIdentifier }
-                let liveFocus = CanvasWindowAccess.focusedID(pid: livePID)
-                let baseline = now - strip.lastNavigation < 0.4 ? strip.selected : liveFocus
-                let current = strip.entries.firstIndex(where: { $0.saved.id == baseline })
-                    ?? strip.entries.firstIndex(where: { $0.saved.id == strip.selected }) ?? 0
+                // Navigation follows the strip selection, never an intermediate
+                // AX focus notification generated while raising its neighbors.
+                let current = strip.entries.firstIndex(where: { $0.saved.id == strip.selected }) ?? 0
                 let index = min(max(0, current + (action == .next ? 1 : -1)), strip.entries.count - 1)
                 strip.selected = strip.entries[index].saved.id
                 strip.lastNavigation = now
@@ -167,6 +165,9 @@ final class HorizontalCanvasService: ObservableObject {
     }
 
     private func targetDisplay(_ context: Context, focused: CGWindowID?) -> Display? {
+        if let focused, let strip = strips.values.first(where: { $0.entries.contains(where: { $0.saved.id == focused }) }) {
+            return context.displays.first(where: { $0.id == strip.display.id })
+        }
         if let focused, let info = (CGWindowListCopyWindowInfo(.optionIncludingWindow, focused) as? [[String: Any]])?.first,
            let raw = info[kCGWindowBounds as String] as? [String: Any],
            let frame = CGRect(dictionaryRepresentation: raw as CFDictionary) {
@@ -213,35 +214,52 @@ final class HorizontalCanvasService: ObservableObject {
 
     private func render(_ strip: Strip, context: Context, focus: Bool) {
         guard isCurrent(strip) else { return }
+        // Negotiate application minimum sizes BEFORE computing strip origins.
+        // Updating widths after placement leaves stale gaps until the next key.
+        let entries = strip.entries.filter {
+            CanvasWindowAccess.id($0.window) == $0.saved.id
+                && CanvasWindowAccess.eligible($0.window)
+                && SpaceManagementService.desktops(forWindow: $0.saved.id) == [strip.space]
+        }
+        for entry in entries {
+            if let size = CanvasWindowAccess.resize(CGSize(width: entry.width, height: strip.display.area.height), window: entry.window) {
+                entry.width = size.width
+            }
+        }
+        revealSelected(strip)
         strip.offset = CanvasLayout.clampedOffset(strip.offset, widths: strip.entries.map(\.width), viewport: strip.display.area.width)
         let frames = CanvasLayout.placements(widths: strip.entries.map(\.width), area: strip.display.area,
             offset: strip.offset, otherDisplays: context.displays.filter { $0.id != strip.display.id }.map(\.bounds))
         for (entry, placement) in zip(strip.entries, frames) {
-            guard CanvasWindowAccess.id(entry.window) == entry.saved.id,
-                  CanvasWindowAccess.eligible(entry.window),
-                  SpaceManagementService.desktops(forWindow: entry.saved.id) == [strip.space] else { continue }
-            _ = CanvasWindowAccess.setFrame(placement.frame, window: entry.window)
-            // Respect applications' minimum widths on subsequent layouts.
-            if let actual = CanvasWindowAccess.frame(entry.window), actual.width > entry.width + 2 {
-                entry.width = actual.width
+            guard entries.contains(where: { $0 === entry }) else { continue }
+            let applied = CanvasWindowAccess.setFrame(placement.frame, window: entry.window)
+            if let actual = CanvasWindowAccess.frame(entry.window) {
+                if !applied || abs(actual.minY - placement.frame.minY) > 3 || abs(actual.minX - placement.frame.minX) > 3 {
+                    logger.notice("Canvas window \(entry.saved.id): requested \(String(describing: placement.frame), privacy: .public), actual \(String(describing: actual), privacy: .public)")
+                }
             }
         }
         // Parked windows remain behind the visible strip, especially at seams.
-        for (entry, placement) in zip(strip.entries, frames) where !placement.parked {
+        for (entry, placement) in zip(strip.entries, frames) where !placement.parked && entries.contains(where: { $0 === entry }) {
             AXUIElementPerformAction(entry.window, kAXRaiseAction as CFString)
         }
         if let entry = strip.entries.first(where: { $0.saved.id == strip.selected }), CanvasWindowAccess.eligible(entry.window) {
             AXUIElementPerformAction(entry.window, kAXRaiseAction as CFString)
-            if focus { CanvasWindowAccess.focus(entry.window, pid: entry.saved.pid) }
+            if focus {
+                if !CanvasWindowAccess.focus(entry.window, pid: entry.saved.pid) {
+                    logger.notice("Canvas focus not confirmed for selected window \(entry.saved.id)")
+                }
+                strip.lastNavigation = ProcessInfo.processInfo.systemUptime
+            }
         }
     }
 
     private func tick() {
         guard !tickPending, !shuttingDown else { return }
         tickPending = true
-        let context = Context.capture()
         queue.async {
             defer { DispatchQueue.main.async { self.tickPending = false } }
+            let context = DispatchQueue.main.sync { Context.capture() }
             guard AXIsProcessTrusted(), self.loadRecovery(context) else { return }
             let focused = CanvasWindowAccess.focusedID(pid: context.frontmostPID)
             for (id, strip) in Array(self.strips) {
@@ -269,7 +287,8 @@ final class HorizontalCanvasService: ObservableObject {
                     guard self.persist() else { continue }
                 }
                 if !additions.isEmpty { strip.entries.append(contentsOf: additions); changed = true }
-                if let focused, focused != strip.selected, strip.entries.contains(where: { $0.saved.id == focused }) {
+                if ProcessInfo.processInfo.systemUptime - strip.lastNavigation > 1,
+                   let focused, focused != strip.selected, strip.entries.contains(where: { $0.saved.id == focused }) {
                     strip.selected = focused
                     self.revealSelected(strip)
                     changed = true

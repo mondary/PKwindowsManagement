@@ -6,6 +6,7 @@ Skills used for this project:
 - `macos-settings-ui` — macOS settings pane labels and update-version comparison layout.
 - `macos-build` — SwiftPM build verification with the explicit macOS 26.5 SDK; private Spaces actions remain runtime-unverified.
 - Spaces bridge QA — read-only runtime probe validates the local Mach-O symbol against SkyLight with `dladdr`, plus missing-symbol/image cases; actual moves remain user-tested on Dev.
+- Focus/Canvas regression QA — `WindowMoveSequenceChecks` covers rapid queued moves and click cancellation; `CanvasLayoutChecks` covers constant titlebar alignment and selected-window visibility across monitor topologies. Dev 52 user test failed; Dev 53 runtime retest pending (app not assigned to the dedicated agent Space).
 - `app-presence-sync` — README FR/EN and local landing download link match the latest verified Stable; defer hub/FTP publication until the Dev UI has been tested.
 - `premium-promo-media` — audited the existing landing/media pipeline; defer feature claims, refreshed captures, hub, and FTP until a Dev build can be tested.
 - `macos-menu-and-settings` — menu-bar action placement and aligned icons.

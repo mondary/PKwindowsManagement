@@ -89,11 +89,11 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - `Ctrl + Shift + →` / `←` : move the active window to the next / previous virtual desktop (Space)
 
 ## ⚙️ Settings
-- Dev `2026.10.52`: **Horizontal Canvas** in `Window Shortcuts` — a strip of real windows on the current desktop (`Ctrl+Shift+Space` toggle, `Ctrl+Shift+H/L` previous/next window, adjustable width). Exiting restores original positions; each display gets its own strip. Experimental, being validated on the Dev channel.
-- Dev `2026.10.51`: in `Window Shortcuts` → `Desktops`, bind **Move Desktop Left/Right** to reorder the desktop with its contents. Mission Control appears briefly; disable automatic Spaces rearrangement in macOS to keep your order. Actual thumbnail dragging is being validated.
+- **Horizontal Canvas** (Dev channel) in `Window Shortcuts`: `Ctrl+Shift+Space` toggles the strip, `Ctrl+Shift+H/L` selects the previous/next window. Adjustable width and position restoration on exit. At monitor seams, off-strip windows stack behind visible windows at the same height. Experimental; see the [CHANGELOG](CHANGELOG.md).
+- In `Window Shortcuts` → `Desktops`, bind **Move Desktop Left/Right** to reorder the desktop with its contents. Mission Control appears briefly; disable automatic Spaces rearrangement in macOS to keep your order. Actual thumbnail dragging is being validated on Dev.
 - Shortcuts can be edited in the preferences window.
 - In `Window Shortcuts` → `Desktops`, configure create, close, and move-between-Space actions. Choose a wallpaper folder, enable random selection for new desktops, and decide whether to switch to the destination desktop after moving a window.
-- Dev `2026.10.50`: with follow enabled, the app restores focus to the moved window before the next hop (for example desktop 1 → 2 → 3). This fix is being validated on Dev.
+- On Dev, with follow enabled, consecutive moves retain the same target window even when macOS disrupts focus. A click, `Cmd+Tab`, or another window/app command starts a new selection. Rapid shortcuts run in order; Mission Control still needs time for each transition. Real-world validation of this fix is pending.
 - Spaces management is experimental: it relies on private SkyLight APIs and the Mission Control/WindowManager accessibility tree. Creating or closing desktops, and following a moved window, may briefly show Mission Control; a major macOS update may break these calls.
 - Available modifiers: Control+Option, Command, Left/Right Command, Option, Left/Right Option, Shift, Left/Right Shift, Fn+Shift.
 - Right-click an application to assign or edit its global shortcut.

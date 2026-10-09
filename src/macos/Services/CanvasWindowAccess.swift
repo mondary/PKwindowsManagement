@@ -40,9 +40,19 @@ enum CanvasWindowAccess {
         var point = frame.origin
         var size = frame.size
         guard let p = AXValueCreate(.cgPoint, &point), let s = AXValueCreate(.cgSize, &size) else { return false }
+        // Some apps constrain resizing using the old screen/position. Apply
+        // position-size-position so the final titlebar alignment wins.
+        AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, p)
         let sizeResult = AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, s)
         let positionResult = AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, p)
         return sizeResult == .success && positionResult == .success
+    }
+
+    static func resize(_ size: CGSize, window: AXUIElement) -> CGSize? {
+        var size = size
+        guard let value = AXValueCreate(.cgSize, &size),
+              AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, value) == .success else { return nil }
+        return frame(window)?.size
     }
 
     static func windows(pid: pid_t) -> [AXUIElement] {
@@ -70,12 +80,35 @@ enum CanvasWindowAccess {
         return element(value(app, kAXFocusedWindowAttribute)).flatMap { id($0) }
     }
 
-    static func focus(_ window: AXUIElement, pid: pid_t) {
-        AXUIElementSetAttributeValue(window, kAXMainAttribute as CFString, kCFBooleanTrue)
-        DispatchQueue.main.sync {
-            _ = NSRunningApplication(processIdentifier: pid)?.activate(options: [.activateIgnoringOtherApps])
+    @discardableResult
+    static func focus(_ window: AXUIElement, pid: pid_t) -> Bool {
+        guard let targetID = id(window) else { return false }
+        let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, 0.15)
+        let deadline = ProcessInfo.processInfo.systemUptime + 1
+        var focusedSince: TimeInterval?
+        var didRaise = false
+        while ProcessInfo.processInfo.systemUptime < deadline {
+            guard id(window) == targetID else { return false }
+            let frontmost = DispatchQueue.main.sync { NSWorkspace.shared.frontmostApplication?.processIdentifier }
+            let focused = element(value(app, kAXFocusedWindowAttribute)).flatMap { id($0) }
+            let now = ProcessInfo.processInfo.systemUptime
+            if didRaise, frontmost == pid, focused == targetID {
+                if focusedSince == nil { focusedSince = now }
+                if now - (focusedSince ?? now) >= 0.15 { return true }
+            } else {
+                focusedSince = nil
+                AXUIElementSetAttributeValue(window, kAXMainAttribute as CFString, kCFBooleanTrue)
+                DispatchQueue.main.sync {
+                    _ = NSRunningApplication(processIdentifier: pid)?.activate(options: [.activateIgnoringOtherApps])
+                }
+                AXUIElementPerformAction(window, kAXRaiseAction as CFString)
+                AXUIElementSetAttributeValue(window, kAXFocusedAttribute as CFString, kCFBooleanTrue)
+                AXUIElementSetAttributeValue(app, kAXFocusedWindowAttribute as CFString, window)
+                didRaise = true
+            }
+            Thread.sleep(forTimeInterval: 0.05)
         }
-        AXUIElementPerformAction(window, kAXRaiseAction as CFString)
-        AXUIElementSetAttributeValue(AXUIElementCreateApplication(pid), kAXFocusedWindowAttribute as CFString, window)
+        return false
     }
 }

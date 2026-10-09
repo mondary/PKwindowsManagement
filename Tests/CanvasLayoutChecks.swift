@@ -30,6 +30,25 @@ enum CanvasLayoutChecks {
         let below = CGRect(x: 0, y: 768, width: 1024, height: 768)
         let surrounded = CanvasLayout.placements(widths: widths, area: area, offset: 0, otherDisplays: [neighbor, below])
         assert(surrounded.allSatisfy { !$0.frame.intersects(neighbor) && !$0.frame.intersects(below) })
+        let left = CGRect(x: -1440, y: 0, width: 1440, height: 900)
+        let above = CGRect(x: 0, y: -900, width: 1024, height: 900)
+        // Regression: Dev 52 parked windows at maxY - peek. Every window must
+        // stay on the exact same baseline, regardless of offset or topology.
+        for neighbors in [[], [neighbor], [left], [neighbor, below], [left, neighbor, above, below]] {
+            for offset in stride(from: CGFloat(0), through: 1500, by: 37) {
+                let placements = CanvasLayout.placements(widths: widths, area: area, offset: offset, otherDisplays: neighbors)
+                assert(placements.allSatisfy { $0.frame.minY == area.minY && $0.frame.height == area.height })
+                assert(placements.allSatisfy { placement in !neighbors.contains { $0.intersects(placement.frame) } })
+            }
+            for index in widths.indices {
+                let offset = CanvasLayout.reveal(index, widths: widths, viewport: area.width, offset: 0)
+                let selected = CanvasLayout.placements(widths: widths, area: area, offset: offset, otherDisplays: neighbors)[index]
+                assert(!selected.parked && area.contains(selected.frame))
+            }
+        }
+        // A minimum width larger than the display keeps its leading edge
+        // accessible rather than shifting the titlebar off to the left.
+        assert(CanvasLayout.reveal(1, widths: [600, 1200], viewport: 1000, offset: 0) == 616)
         print("Canvas geometry: visibility, bounds, empty strips and monitor seams passed")
     }
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.53] - 2026-10-09
+### Fixed
+- Déplacements suivis entre bureaux : conservation de la fenêtre AX comme cible jusqu’au prochain clic ou choix explicite d’application/fenêtre, y compris pour les raccourcis rapides en attente et après un échec de focus. Annulation des anciennes demandes lors d’un nouveau choix utilisateur ; remise au premier plan explicite après Mission Control.
+- Canvas : suppression du stationnement vertical des fenêtres aux jonctions d’écrans, alignement constant des barres de titre et prise en compte des largeurs réellement acceptées avant le calcul du ruban. La navigation suit la sélection du ruban plutôt qu’un focus transitoire.
+- Tests de régression : conservation de cible, annulation après clic, alignement vertical à tous les décalages et visibilité de la fenêtre sélectionnée. Validation réelle à refaire sur le canal Dev.
+
 ## [2026.10.52] - 2026-10-09
 ### Added
 - Canvas horizontal expérimental (inspiré d'Open Canvas) : ruban de vraies fenêtres sur le bureau courant, navigation précédente/suivante au clavier, largeur réglable, adoption des nouvelles fenêtres et restauration exacte des positions à la sortie. Ruban indépendant par écran, libéré automatiquement au changement de bureau. Raccourcis `Ctrl+Shift+Espace/H/L` par défaut, configurables.

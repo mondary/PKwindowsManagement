@@ -22,15 +22,16 @@ struct PKwindowsManagementApp: App {
                     WindowSnapService().perform(action, preset: settings.windowMarginPreset)
                 }
             },
-            spaceHandler: { action in
+            spaceHandler: { action, ticket in
                 HorizontalCanvasService.shared.release {
                     SpaceManagementService.shared.perform(
-                    action,
-                    options: SpaceActionOptions(
-                        wallpaperFolder: settings.spaceWallpaperFolder,
-                        wallpaperOnCreate: settings.spaceWallpaperOnCreate,
-                        followMovedWindow: settings.spaceFollowMovedWindow
-                    )
+                        action,
+                        options: SpaceActionOptions(
+                            wallpaperFolder: settings.spaceWallpaperFolder,
+                            wallpaperOnCreate: settings.spaceWallpaperOnCreate,
+                            followMovedWindow: settings.spaceFollowMovedWindow
+                        ),
+                        selectionTicket: ticket
                     )
                 }
             }

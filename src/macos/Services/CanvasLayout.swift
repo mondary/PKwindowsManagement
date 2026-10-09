@@ -25,6 +25,9 @@ enum CanvasLayout {
     static func reveal(_ index: Int, widths: [CGFloat], viewport: CGFloat, offset: CGFloat) -> CGFloat {
         guard widths.indices.contains(index) else { return clampedOffset(offset, widths: widths, viewport: viewport) }
         let x = origins(widths: widths)[index]
+        if widths[index] >= viewport {
+            return clampedOffset(x, widths: widths, viewport: viewport)
+        }
         var result = offset
         if x < offset { result = x }
         if x + widths[index] > result + viewport { result = x + widths[index] - viewport }
@@ -49,13 +52,12 @@ enum CanvasLayout {
             let boundedX = max(area.minX - width + peek, min(x, area.maxX - peek))
             var frame = CGRect(x: boundedX, y: area.minY, width: width, height: area.height)
             var parked = !visible
-            // Native windows cannot be clipped at a monitor seam. Park behind
-            // the visible strip instead of leaking onto a neighboring monitor.
+            // Keep EVERY titlebar on the same horizontal line. Parking below
+            // the screen makes windows jump vertically as they enter the strip.
+            // At a monitor seam use an in-screen horizontal stack, raised behind
+            // the visible windows by the renderer (native windows cannot clip).
             if otherDisplays.contains(where: { $0.intersects(frame) }) {
-                frame.origin = CGPoint(x: area.minX, y: area.maxY - peek)
-                if otherDisplays.contains(where: { $0.intersects(frame) }) {
-                    frame.origin.y = area.minY
-                }
+                frame.origin.x = min(max(x, area.minX), max(area.minX, area.maxX - width))
                 parked = true
             }
             return Placement(frame: frame, parked: parked)
