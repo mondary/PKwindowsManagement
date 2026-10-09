@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.49] - 2026-10-09
+### Added
+- Passage en Stable de la gestion expérimentale des bureaux macOS : création, fermeture et déplacement de la fenêtre active vers le Space voisin, avec fond aléatoire facultatif.
+### Fixed
+- Résolution du symbole local SkyLight utilisé par le déplacement entre Spaces ; le script de mise à jour Dev utilise le chemin `mv` valide sur macOS et restaure/relance l'app précédente en cas d'échec.
+
 ## [2026.10.48] - 2026-10-09
 ### Fixed
 - Résolution de l'opération de déplacement Spaces dans la table Mach-O de SkyLight : ce symbole privé non exporté était introuvable via `dlsym`, empêchant l'utilisation du chemin moderne de yabai.

@@ -11,3 +11,5 @@ Skills used for this project:
 - `macos-menu-and-settings` — menu-bar action placement and aligned icons.
 - `pk-settings-shell` — Shared settings shell; Credits uses official project icons and full-row links, with one persistent footer across every settings page.
 - `pk-commits` — CalVer bump, changelog, commit and Dev-channel publication workflow.
+- `pk-app-release` — Stable release version/tag, GitHub assets, Homebrew cask and Sparkle checklist.
+- `publish-macos-sparkle` — Validate the signed Stable archive and generated appcast workflow.

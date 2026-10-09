@@ -98,21 +98,21 @@ s'arrête hors écran ou dans un onglet masqué. `prefers-reduced-motion` suppri
 
 ## Distribution
 
-La dernière release Stable vérifiée sur GitHub est **2026.10.32**. La source locale est en
-**2026.10.45** et n'est pas encore publiée : ne pas présenter cette version comme disponible
-avant build et QA. `.github/workflows/release.yml` construit la version du tag `v<version>` : app
-macOS 13+, Apple Silicon (arm64), DMG versionné et archive ZIP Sparkle signée. Le workflow signe
+La dernière release Stable antérieure documentée ici est **2026.10.32**. La source de ce dépôt est
+maintenant en **2026.10.49** ; `.github/workflows/release.yml` construit la version du tag
+`v<version>` : app macOS 13+, Apple Silicon (arm64), DMG versionné et archive ZIP Sparkle
+signée. Le workflow signe
 avec le certificat Apple Development configuré ; aucun certificat Developer ID ou ticket de
 notarisation n'est promis.
 
-- **Dernière GitHub Release Stable vérifiée : `v2026.10.32`** du dépôt public :
+- **Release Stable de référence antérieure : `v2026.10.32`** du dépôt public :
   `PKwindowsManagement_2026.10.32.dmg` et `PKwindowsManagement-app.zip`.
 - **Cask Homebrew** `pk-windows-management` du tap `mondary/tap` :
   `brew install --cask mondary/tap/pk-windows-management`.
 - **Miroir local** : `sources/downloads/PKwindowsManagement-2026.09.08-arm64.zip` avec sa somme
   SHA-256 dans `SHA256SUMS.txt` ; ce miroir n'est pas déployé sur le site.
 
-La source de l'application est versionnée par `CHANGELOG.md` (**2026.10.45**, non publiée) ;
+La source de l'application est versionnée par `CHANGELOG.md` (**2026.10.49**) ;
 `src/script/package_app.sh` lit directement ce fichier et ne dépend pas d'un fichier `VERSION`.
 L'archive locale précédente n'a pas été artificiellement renommée : son nom conserve sa version
 d'origine et ne prétend pas être le bundle Stable courant.
