@@ -702,7 +702,8 @@ extension ShortcutAction {
         case .windowLastThreeFourths: .lastThreeFourths
         case .windowTileAll: .tileAll
         case .desktopCreate, .desktopCloseCurrent, .windowNextDesktop, .windowPreviousDesktop,
-             .desktopMoveLeft, .desktopMoveRight:
+             .desktopMoveLeft, .desktopMoveRight,
+             .canvasToggle, .canvasPrevious, .canvasNext, .canvasRestore:
             nil
         }
     }

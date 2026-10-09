@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WindowShortcutsPreferencesView: View {
     @ObservedObject var settings: AppSettings
+    @ObservedObject private var canvas = HorizontalCanvasService.shared
 
     private var halvesEntries: [WindowCommandSpec] {
         [
@@ -123,6 +124,7 @@ struct WindowShortcutsPreferencesView: View {
     @ViewBuilder
     private var wideLayout: some View {
         generalMarginSection()
+        canvasSection()
 
         HStack(alignment: .top, spacing: 16) {
             sectionCard(title: "Halves", entries: halvesEntries)
@@ -160,6 +162,7 @@ struct WindowShortcutsPreferencesView: View {
     @ViewBuilder
     private var narrowLayout: some View {
         generalMarginSection()
+        canvasSection()
         sectionCard(title: "Move", entries: moveEntries)
         sectionCard(title: "Halves", entries: halvesEntries)
         sectionCard(title: "Quarters", entries: quartersEntries)
@@ -173,6 +176,36 @@ struct WindowShortcutsPreferencesView: View {
         sectionCard(title: "Desktops", entries: desktopsEntries)
         desktopOptionsCard()
         sizeSection()
+    }
+
+    private func canvasSection() -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionCard(title: "Horizontal Canvas", entries: [
+                .bound("Toggle Horizontal Canvas", "rectangle.split.3x1", .canvasToggle),
+                .bound("Previous Canvas Window", "arrow.left", .canvasPrevious),
+                .bound("Next Canvas Window", "arrow.right", .canvasNext),
+                .bound("Restore Canvas", "arrow.uturn.backward", .canvasRestore),
+            ])
+            HStack {
+                Text(localizedString("New Canvas window width"))
+                Slider(value: $settings.canvasWidthRatio, in: 0.35...1, step: 0.05)
+                    .accessibilityLabel(localizedString("New Canvas window width"))
+                    .frame(maxWidth: 220)
+                Text("\(Int(settings.canvasWidthRatio * 100))%")
+                    .monospacedDigit()
+            }
+            HStack {
+                Button(localizedString("Toggle Horizontal Canvas")) { canvas.perform(.toggle) }
+                Button(localizedString("Restore Canvas")) { canvas.perform(.restore) }
+                Text(localizedString(canvas.activeDisplayIDs.isEmpty ? "Canvas inactive" : "Canvas active"))
+                    .foregroundStyle(.secondary)
+            }
+            Text(localizedString("Canvas arranges real windows in a horizontal strip. Exit restores their original positions. Each display has its own strip; changing desktop releases that strip."))
+                .font(.caption).foregroundStyle(.secondary)
+            if !canvas.message.isEmpty {
+                Text(canvas.message).font(.caption).foregroundStyle(.orange)
+            }
+        }
     }
 
     private func sectionCard(title: String, entries: [WindowCommandSpec]) -> some View {

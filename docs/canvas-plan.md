@@ -4,9 +4,13 @@ Approved scope (2026-10-09):
 
 1. Reorder the active native desktop left/right by dragging its Mission Control
    thumbnail. Preserve desktop identity, contents and focus; verify actual order.
+   Status: Dev 2026.10.51, real thumbnail drag pending user validation.
 2. An opt-in strip of real windows on the current desktop: next/previous focus,
    comfortable widths, adoption of new windows and restoration on exit.
+   Status: Dev 2026.10.52, keyboard navigation and exact restoration shipped;
+   modifier + horizontal scrolling is milestone 3.
 3. Modifier + horizontal trackpad/wheel scrolling and independent display strips.
+   Status: per-display strips shipped in Dev 2026.10.52; scrolling pending.
 
 Native Swift/AppKit and Accessibility. Reuse the existing shortcut/settings
 pipeline. Dev-channel delivery and real macOS validation at each milestone.

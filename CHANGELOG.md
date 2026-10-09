@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.52] - 2026-10-09
+### Added
+- Canvas horizontal expérimental (inspiré d'Open Canvas) : ruban de vraies fenêtres sur le bureau courant, navigation précédente/suivante au clavier, largeur réglable, adoption des nouvelles fenêtres et restauration exacte des positions à la sortie. Ruban indépendant par écran, libéré automatiquement au changement de bureau. Raccourcis `Ctrl+Shift+Espace/H/L` par défaut, configurables.
+- Journal de restauration persistant : les positions d'origine sont enregistrées avant le premier déplacement et restaurées même après un incident.
+- Tests de géométrie du ruban : visibilité, bornes, ruban vide et joints entre moniteurs.
+
 ## [2026.10.51] - 2026-10-09
 ### Added
 - Commandes expérimentales de réordonnancement du bureau actif à gauche/droite : glisser de la vignette Mission Control, vérification de l’ordre réel des Spaces et conservation du bureau actif. Raccourcis configurables dans Bureaux, non affectés par défaut.

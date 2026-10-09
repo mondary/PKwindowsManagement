@@ -12,6 +12,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var hotCornerObserver: NSObjectProtocol?
     private var languageObserver: NSObjectProtocol?
     private var updateAvailabilityObserver: NSObjectProtocol?
+    private var canvasObserver: NSObjectProtocol?
     private var automaticTerminationActivity: NSObjectProtocol?
     private var hotCornerTimer: Timer?
     private var lastMouseLocation: CGPoint = .zero
@@ -53,6 +54,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         ) { [weak self] _ in self?.rebuildStatusMenu() }
 
         registerLaunchpadTriggers()
+        canvasObserver = NotificationCenter.default.addObserver(forName: HorizontalCanvasService.stateDidChange, object: nil, queue: .main) { [weak self] _ in
+            self?.rebuildStatusMenu()
+        }
+        HorizontalCanvasService.shared.start()
         registerRoomsHotKey()
         UpdaterManager.shared.start()
     }
@@ -62,6 +67,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        if let canvasObserver { NotificationCenter.default.removeObserver(canvasObserver) }
         if let automaticTerminationActivity {
             ProcessInfo.processInfo.endActivity(automaticTerminationActivity)
             self.automaticTerminationActivity = nil
@@ -116,7 +122,17 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openRooms() {
-        RoomsOverlayController.shared.toggle()
+        HorizontalCanvasService.shared.release { RoomsOverlayController.shared.toggle() }
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        HorizontalCanvasService.shared.shutdown { sender.reply(toApplicationShouldTerminate: true) }
+        return .terminateLater
+    }
+
+    @objc private func canvasCommand(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String, let action = CanvasAction(rawValue: raw) else { return }
+        HorizontalCanvasService.shared.perform(action)
     }
 
     @objc private func checkForUpdates() {
@@ -168,6 +184,19 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         roomsItem.target = self
         roomsItem.keyEquivalentModifierMask = [.control, .option]
         menu.addItem(roomsItem)
+        let canvasMenu = NSMenu()
+        for action in [ShortcutAction.canvasToggle, .canvasPrevious, .canvasNext, .canvasRestore] {
+            let shortcut = AppRuntime.shared.settings?.shortcut(for: action)
+            let item = NSMenuItem(title: action.title, action: #selector(canvasCommand(_:)), keyEquivalent: shortcut?.menuKeyEquivalent ?? "")
+            item.target = self
+            item.representedObject = action.canvasAction?.rawValue
+            item.keyEquivalentModifierMask = shortcut?.modifier.flags ?? []
+            canvasMenu.addItem(item)
+        }
+        let canvasItem = NSMenuItem(title: localizedString("Horizontal Canvas"), action: nil, keyEquivalent: "")
+        canvasItem.submenu = canvasMenu
+        canvasItem.state = HorizontalCanvasService.shared.activeDisplayIDs.isEmpty ? .off : .on
+        menu.addItem(canvasItem)
         menu.addItem(.separator())
 
         let settings = AppRuntime.shared.settings

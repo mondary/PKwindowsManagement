@@ -177,6 +177,16 @@ final class LaunchShortcutMonitor {
                 }
                 consumed = true
             }
+            if !consumed, let settings, let eventKey = keyString(from: event, keyCode: event.getIntegerValueField(.keyboardEventKeycode)) {
+                for action in ShortcutAction.allCases {
+                    guard let canvasAction = action.canvasAction,
+                          let shortcut = settings.shortcut(for: action), shortcut.key.lowercased() == eventKey,
+                          modifierState.matches(shortcut.modifier, flags: event.flags) else { continue }
+                    DispatchQueue.main.async { HorizontalCanvasService.shared.perform(canvasAction) }
+                    consumed = true
+                    break
+                }
+            }
             return consumed ? nil : .passUnretained(event)
         default:
             return .passUnretained(event)

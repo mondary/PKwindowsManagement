@@ -182,6 +182,10 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case windowPreviousDesktop
     case desktopMoveLeft
     case desktopMoveRight
+    case canvasToggle
+    case canvasPrevious
+    case canvasNext
+    case canvasRestore
 
     var id: String { rawValue }
 
@@ -243,6 +247,10 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowPreviousDesktop: localizedString("Move Window to Previous Desktop")
         case .desktopMoveLeft: localizedString("Move Desktop Left")
         case .desktopMoveRight: localizedString("Move Desktop Right")
+        case .canvasToggle: localizedString("Toggle Horizontal Canvas")
+        case .canvasPrevious: localizedString("Previous Canvas Window")
+        case .canvasNext: localizedString("Next Canvas Window")
+        case .canvasRestore: localizedString("Restore Canvas")
         }
     }
 
@@ -279,6 +287,9 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .desktopCloseCurrent: .init(key: "w", modifier: .controlOption)
         case .windowNextDesktop: .init(key: "right", modifier: .controlShift)
         case .windowPreviousDesktop: .init(key: "left", modifier: .controlShift)
+        case .canvasToggle: .init(key: "space", modifier: .controlShift)
+        case .canvasPrevious: .init(key: "h", modifier: .controlShift)
+        case .canvasNext: .init(key: "l", modifier: .controlShift)
         case .windowMakeLarger: .init(key: "=", modifier: .controlOption)
         case .windowMakeSmaller: .init(key: "-", modifier: .controlOption)
         case .windowToggleFullScreen, .windowMaximizeHeight, .windowMaximizeWidth,
@@ -288,7 +299,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
              .windowFirstTwoThirds, .windowCenterTwoThirds, .windowLastTwoThirds,
              .windowFirstFourth, .windowSecondFourth, .windowThirdFourth, .windowLastFourth,
              .windowFirstThreeFourths, .windowCenterThreeFourths, .windowLastThreeFourths,
-             .desktopMoveLeft, .desktopMoveRight:
+             .desktopMoveLeft, .desktopMoveRight, .canvasRestore:
             nil
         }
     }
@@ -303,6 +314,16 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowPreviousDesktop: .moveWindowToPreviousDesktop
         case .desktopMoveLeft: .moveDesktopLeft
         case .desktopMoveRight: .moveDesktopRight
+        default: nil
+        }
+    }
+
+    var canvasAction: CanvasAction? {
+        switch self {
+        case .canvasToggle: .toggle
+        case .canvasPrevious: .previous
+        case .canvasNext: .next
+        case .canvasRestore: .restore
         default: nil
         }
     }

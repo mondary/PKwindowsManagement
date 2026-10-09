@@ -246,6 +246,13 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var canvasWidthRatio: Double {
+        didSet {
+            defaults.set(canvasWidthRatio, forKey: "canvas-width-ratio")
+            scheduleAutoBackup()
+        }
+    }
+
     var bigYearColors: BigYearColors {
         bigYearTheme.colors.applying(overrides: bigYearColorOverrides)
     }
@@ -345,6 +352,7 @@ final class AppSettings: ObservableObject {
         }
         spaceWallpaperOnCreate = defaults.object(forKey: Keys.spaceWallpaperOnCreate) as? Bool ?? true
         spaceFollowMovedWindow = defaults.object(forKey: Keys.spaceFollowMovedWindow) as? Bool ?? true
+        canvasWidthRatio = min(1, max(0.35, defaults.object(forKey: "canvas-width-ratio") as? Double ?? 0.65))
 
         if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()
@@ -680,7 +688,8 @@ final class AppSettings: ObservableObject {
             bigYearColorOverrides: bigYearColorOverrides,
             spaceWallpaperFolderPath: spaceWallpaperFolder?.path,
             spaceWallpaperOnCreate: spaceWallpaperOnCreate,
-            spaceFollowMovedWindow: spaceFollowMovedWindow
+            spaceFollowMovedWindow: spaceFollowMovedWindow,
+            canvasWidthRatio: canvasWidthRatio
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -751,6 +760,7 @@ final class AppSettings: ObservableObject {
         }
         spaceWallpaperOnCreate = backup.spaceWallpaperOnCreate ?? spaceWallpaperOnCreate
         spaceFollowMovedWindow = backup.spaceFollowMovedWindow ?? spaceFollowMovedWindow
+        canvasWidthRatio = min(1, max(0.35, backup.canvasWidthRatio ?? canvasWidthRatio))
 
         saveShortcuts()
         clearedWindowShortcuts = []
@@ -1118,6 +1128,7 @@ private struct SettingsBackup: Codable {
     let spaceWallpaperFolderPath: String?
     let spaceWallpaperOnCreate: Bool?
     let spaceFollowMovedWindow: Bool?
+    let canvasWidthRatio: Double?
 }
 
 enum SettingsBackupError: LocalizedError {

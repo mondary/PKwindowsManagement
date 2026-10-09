@@ -90,6 +90,19 @@ private struct SpaceScreenSnapshot {
 final class SpaceManagementService {
     static let shared = SpaceManagementService()
 
+    /// Read-only topology for Canvas. Fullscreen/tiled Spaces are not canvases.
+    static func userDesktop(onDisplay uuid: String) -> UInt64? {
+        guard let display = SLSBridge.shared?.managedDisplays()?.first(where: {
+            $0.uuid.caseInsensitiveCompare(uuid) == .orderedSame
+        }), let index = display.spaceIDs.firstIndex(of: display.currentSpaceID), display.types[index] == 0
+        else { return nil }
+        return display.currentSpaceID
+    }
+
+    static func desktops(forWindow id: CGWindowID) -> [UInt64]? {
+        SLSBridge.shared?.spaces(forWindow: id)
+    }
+
     private let workQueue = DispatchQueue(label: "pk.windows-management.spaces", qos: .userInitiated)
     private var busy = false
     private var lastWallpaperPath: String?

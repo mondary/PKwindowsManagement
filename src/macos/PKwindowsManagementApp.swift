@@ -17,16 +17,22 @@ struct PKwindowsManagementApp: App {
             settings: settings,
             apps: launcher.loadShortcutTargets(settings: settings),
             launchHandler: { app in _ = launcher.launch(app, settings: settings) },
-            windowHandler: { action in WindowSnapService().perform(action, preset: settings.windowMarginPreset) },
+            windowHandler: { action in
+                HorizontalCanvasService.shared.release {
+                    WindowSnapService().perform(action, preset: settings.windowMarginPreset)
+                }
+            },
             spaceHandler: { action in
-                SpaceManagementService.shared.perform(
+                HorizontalCanvasService.shared.release {
+                    SpaceManagementService.shared.perform(
                     action,
                     options: SpaceActionOptions(
                         wallpaperFolder: settings.spaceWallpaperFolder,
                         wallpaperOnCreate: settings.spaceWallpaperOnCreate,
                         followMovedWindow: settings.spaceFollowMovedWindow
                     )
-                )
+                    )
+                }
             }
         )
     }
