@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.54] - 2026-10-09
+### Fixed
+- Compatibilité du masque d’événements clavier/souris avec le compilateur Swift de GitHub Actions. Reprise de la publication Dev des correctifs de cible persistante et d’alignement Canvas de la version 53, dont la compilation CI avait échoué.
+
 ## [2026.10.53] - 2026-10-09
 ### Fixed
 - Déplacements suivis entre bureaux : conservation de la fenêtre AX comme cible jusqu’au prochain clic ou choix explicite d’application/fenêtre, y compris pour les raccourcis rapides en attente et après un échec de focus. Annulation des anciennes demandes lors d’un nouveau choix utilisateur ; remise au premier plan explicite après Mission Control.

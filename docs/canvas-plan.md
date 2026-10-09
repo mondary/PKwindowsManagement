@@ -8,7 +8,7 @@ Approved scope (2026-10-09):
 2. An opt-in strip of real windows on the current desktop: next/previous focus,
    comfortable widths, adoption of new windows and restoration on exit.
     Status: Dev 2026.10.52 user test reported vertical waves and unstable focus.
-    Dev 2026.10.53 removes vertical parking, measures accepted widths before
+    Dev 2026.10.54 (53 CI build failed) removes vertical parking, measures accepted widths before
     placement, and retains selection during keyboard navigation. Runtime retest
     pending; restoration remains best-effort with a persistent retry journal.
     Modifier + horizontal scrolling is milestone 3.
