@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.48] - 2026-10-09
+### Fixed
+- Résolution de l'opération de déplacement Spaces dans la table Mach-O de SkyLight : ce symbole privé non exporté était introuvable via `dlsym`, empêchant l'utilisation du chemin moderne de yabai.
+- Gestion mémoire de l'opération Objective-C corrigée ; sélection du bureau source depuis la fenêtre plutôt que le Space global pour les configurations multi-écrans.
+- Traces dédiées `Spaces` pour distinguer réception du raccourci, résolution SkyLight et échec du déplacement. Validation réelle du déplacement à effectuer sur Dev.
+
 ## [2026.10.47] - 2026-10-08
 ### Fixed
 - Le script d'installation Dev utilise le chemin macOS valide de `mv`, évitant que l'application quitte sans remplacer ni relancer la nouvelle version.

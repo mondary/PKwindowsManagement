@@ -4,6 +4,9 @@ import CoreGraphics
 import Darwin
 import Foundation
 import ObjectiveC
+import OSLog
+
+private let spacesLogger = Logger(subsystem: "com.mondary.PKwindowsManagement", category: "Spaces")
 
 /// Actions on macOS virtual desktops (Spaces).
 enum SpaceAction: String, CaseIterable, Identifiable {
@@ -94,6 +97,7 @@ final class SpaceManagementService {
     // MARK: - Entry point
 
     func perform(_ action: SpaceAction, options: SpaceActionOptions) {
+        spacesLogger.notice("Action received: \(action.rawValue, privacy: .public)")
         let screens = SpaceScreenSnapshot.capture()
         workQueue.async { [weak self] in
             guard let self else { return }
@@ -248,26 +252,31 @@ final class SpaceManagementService {
             fail("Could not identify the focused window")
             return
         }
-        guard let windowSpaces = sls.spaces(forWindow: windowID),
-              let activeSpace = sls.activeSpaceID()
+        guard let windowSpaces = sls.spaces(forWindow: windowID)
         else {
             fail("Could not read the focused window's desktop")
             return
         }
-        guard windowSpaces.count == 1 else {
-            fail("This window belongs to more than one desktop")
+        guard !windowSpaces.isEmpty else {
+            fail("No desktop found for the focused window")
             return
         }
-        guard windowSpaces.contains(activeSpace) else {
-            fail("The focused window is not on the active desktop")
+        guard windowSpaces.count == 1, let sourceSpace = windowSpaces.first else {
+            fail("This window belongs to more than one desktop")
             return
         }
         guard
               let displays = sls.managedDisplays(),
-              let display = displays.first(where: { $0.spaceIDs.contains(activeSpace) }),
-              let sourceIndex = display.spaceIDs.firstIndex(of: activeSpace)
+              let display = displays.first(where: { $0.spaceIDs.contains(sourceSpace) }),
+              let sourceIndex = display.spaceIDs.firstIndex(of: sourceSpace)
         else {
             fail("Could not identify the active display and desktop")
+            return
+        }
+        // With separate Spaces on each monitor, the global active Space can
+        // belong to another display. Use the focused window's own desktop.
+        guard display.currentSpaceID == sourceSpace, display.types[sourceIndex] == 0 else {
+            fail("The focused window is not on a visible user desktop")
             return
         }
         let sourceDisplayID = screens.displayID(forUUID: display.uuid)
@@ -285,6 +294,7 @@ final class SpaceManagementService {
             return
         }
         let targetSpace = display.spaceIDs[targetIndex]
+        spacesLogger.notice("Move window \(windowID) from \(sourceSpace) to \(targetSpace)")
 
         guard sls.moveWindow(windowID, toSpace: targetSpace) else {
             fail("Could not move the window to the adjacent desktop")
@@ -597,7 +607,7 @@ final class SpaceManagementService {
     }
 
     private func fail(_ message: String) {
-        NSLog("PKwindowsManagement: %@", message)
+        spacesLogger.error("\(message, privacy: .public)")
         beep()
     }
 }
@@ -669,9 +679,15 @@ private final class SLSBridge {
         moveWindowsToManagedSpaceFn = dlsym(handle, "SLSMoveWindowsToManagedSpace").map {
             unsafeBitCast($0, to: (@convention(c) (Int32, CFArray, UInt64) -> Void).self)
         }
-        performBridgedMoveFn = dlsym(handle, "SLSPerformAsynchronousBridgedWindowManagementOperation").map {
+        let bridgedMove = dlsym(handle, "SLSPerformAsynchronousBridgedWindowManagementOperation")
+            ?? LoadedMachOSymbol.find(
+                "__ZL54SLSPerformAsynchronousBridgedWindowManagementOperationP47SLSAsynchronousBridgedWindowManagementOperation",
+                in: "/System/Library/PrivateFrameworks/SkyLight.framework/Versions/A/SkyLight"
+            )
+        performBridgedMoveFn = bridgedMove.map {
             unsafeBitCast($0, to: (@convention(c) (AnyObject) -> Int64).self)
         }
+        spacesLogger.notice("SkyLight bridged move resolved: \(bridgedMove != nil)")
     }
 
     func managedDisplays() -> [DisplaySpaces]? {
@@ -711,9 +727,8 @@ private final class SLSBridge {
         return array.compactMap { ($0 as? NSNumber)?.uint64Value }
     }
 
-    /// Moves a window to another user space. macOS 14.5+ ignores
-    /// SLSMoveWindowsToManagedSpace, so the yabai compat-ID workaround is
-    /// used there (see credits: koekeishiya/yabai).
+    /// Prefer yabai's bridged operation on modern macOS, with the older
+    /// compat-ID path as fallback. Confirm membership after either call.
     @discardableResult
     func moveWindow(_ windowID: UInt32, toSpace sid: UInt64) -> Bool {
         if Self.isMacOS14_5OrNewer {
@@ -742,9 +757,7 @@ private final class SLSBridge {
         return waitForWindow(windowID, onSpace: sid, timeout: 1.2)
     }
 
-    /// SkyLight's window-list APIs expect CFNumberSInt32Type values. Bridging a
-    /// UInt32 directly through NSNumber promotes it to a 64-bit CFNumber on
-    /// current Swift runtimes, which can make Space queries/moves no-op.
+    /// Match yabai's signed 32-bit window identifiers at the CF boundary.
     private func windowNumberArray(_ windowIDs: [UInt32]) -> CFArray {
         windowIDs.map { NSNumber(value: Int32(bitPattern: $0)) } as CFArray
     }
@@ -759,21 +772,24 @@ private final class SLSBridge {
         guard let allocateMethod = class_getClassMethod(operationClass, allocateSelector) else { return false }
         let allocate = unsafeBitCast(method_getImplementation(allocateMethod), to: Allocate.self)
         guard let allocated = allocate(operationClass, allocateSelector) else { return false }
-        let instance = allocated.takeRetainedValue()
-
         typealias Initialize = @convention(c) (AnyObject, Selector, NSArray, UInt64) -> Unmanaged<AnyObject>?
         let initSelector = sel_registerName("initWithWindows:spaceID:")
-        guard let initMethod = class_getInstanceMethod(operationClass, initSelector) else { return false }
+        guard let initMethod = class_getInstanceMethod(operationClass, initSelector) else {
+            allocated.release()
+            return false
+        }
         let initialize = unsafeBitCast(method_getImplementation(initMethod), to: Initialize.self)
         let windows = windowNumberArray([windowID]) as NSArray
         guard let operation = initialize(
-            instance,
+            // init consumes alloc's +1; adopt the initialized object only once.
+            allocated.takeUnretainedValue(),
             initSelector,
             windows,
             sid
         )?.takeRetainedValue() else { return false }
 
-        _ = perform(operation)
+        let result = perform(operation)
+        spacesLogger.notice("SkyLight bridged operation returned \(result)")
         return true
     }
 
