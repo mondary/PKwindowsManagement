@@ -91,6 +91,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 ## ⚙️ Settings
 - Shortcuts can be edited in the preferences window.
 - In `Window Shortcuts` → `Desktops`, configure create, close, and move-between-Space actions. Choose a wallpaper folder, enable random selection for new desktops, and decide whether to switch to the destination desktop after moving a window.
+- Dev `2026.10.50`: with follow enabled, the app restores focus to the moved window before the next hop (for example desktop 1 → 2 → 3). This fix is being validated on Dev.
 - Spaces management is experimental: it relies on private SkyLight APIs and the Mission Control/WindowManager accessibility tree. Creating or closing desktops, and following a moved window, may briefly show Mission Control; a major macOS update may break these calls.
 - Available modifiers: Control+Option, Command, Left/Right Command, Option, Left/Right Option, Shift, Left/Right Shift, Fn+Shift.
 - Right-click an application to assign or edit its global shortcut.

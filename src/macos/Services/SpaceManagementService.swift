@@ -91,6 +91,7 @@ final class SpaceManagementService {
     private let workQueue = DispatchQueue(label: "pk.windows-management.spaces", qos: .userInitiated)
     private var busy = false
     private var lastWallpaperPath: String?
+    private var lastFollowFailureTime: TimeInterval = 0
 
     private let wallpaperExtensions: Set<String> = ["png", "jpg", "jpeg", "heic", "tiff", "tif", "bmp"]
 
@@ -98,12 +99,21 @@ final class SpaceManagementService {
 
     func perform(_ action: SpaceAction, options: SpaceActionOptions) {
         spacesLogger.notice("Action received: \(action.rawValue, privacy: .public)")
-        let screens = SpaceScreenSnapshot.capture()
+        let requestedAt = ProcessInfo.processInfo.systemUptime
         workQueue.async { [weak self] in
             guard let self else { return }
+            if action == .moveWindowToNextDesktop || action == .moveWindowToPreviousDesktop,
+               requestedAt <= self.lastFollowFailureTime {
+                spacesLogger.error("Queued move cancelled after a failed focus restoration")
+                return
+            }
             guard !self.busy else { return }
             self.busy = true
             defer { self.busy = false }
+
+            // A second shortcut can arrive during Mission Control. Read its
+            // context only after the previous move has restored window focus.
+            let screens = SpaceScreenSnapshot.capture()
 
             switch action {
             case .createDesktop:
@@ -294,6 +304,13 @@ final class SpaceManagementService {
             return
         }
         let targetSpace = display.spaceIDs[targetIndex]
+        // Retain the exact AX window before moving it off the current desktop.
+        // Activating only its app could select another window of that same app.
+        let focusTarget = options.followMovedWindow ? windowFocusTarget(windowID) : nil
+        if options.followMovedWindow, focusTarget == nil {
+            fail("Could not retain the focused window for desktop follow-up")
+            return
+        }
         spacesLogger.notice("Move window \(windowID) from \(sourceSpace) to \(targetSpace)")
 
         guard sls.moveWindow(windowID, toSpace: targetSpace) else {
@@ -301,6 +318,12 @@ final class SpaceManagementService {
             return
         }
         guard options.followMovedWindow else { return }
+        var focusRestored = false
+        defer {
+            // Never let already queued shortcuts move an unrelated window if
+            // following or restoring focus failed. A fresh shortcut can retry.
+            if !focusRestored { lastFollowFailureTime = ProcessInfo.processInfo.systemUptime }
+        }
 
         guard let displayID = sourceDisplayID else {
             NSLog("PKwindowsManagement: window moved, but the source display could not be identified for follow-up")
@@ -317,9 +340,101 @@ final class SpaceManagementService {
             }
             return self.performAction(thumbs[targetIndex], action: "AXPress")
         }
-        if !followed {
+        guard followed else {
             fail("Window moved, but could not switch to its destination desktop")
+            return
         }
+        guard let focusTarget,
+              restoreFocus(focusTarget, onSpace: targetSpace, displayUUID: display.uuid, sls: sls)
+        else {
+            fail("Window moved, but its focus could not be restored on the destination desktop")
+            return
+        }
+        spacesLogger.notice("Focus restored to moved window \(windowID) on desktop \(targetSpace)")
+        focusRestored = true
+    }
+
+    private struct WindowFocusTarget {
+        let id: CGWindowID
+        let pid: pid_t
+        let app: AXUIElement
+        let window: AXUIElement
+    }
+
+    private func windowFocusTarget(_ windowID: CGWindowID) -> WindowFocusTarget? {
+        guard let info = (CGWindowListCopyWindowInfo(.optionIncludingWindow, windowID) as? [[String: Any]])?
+            .first(where: { ($0[kCGWindowNumber as String] as? NSNumber)?.uint32Value == windowID }),
+              let pid = (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value
+        else { return nil }
+        let app = AXUIElementCreateApplication(pid)
+        var candidates: [AXUIElement] = []
+        if let focused = value(app, kAXFocusedWindowAttribute as String).flatMap({ axElement($0) }) {
+            candidates.append(focused)
+        }
+        if let windows = value(app, kAXWindowsAttribute as String) as? [AXUIElement] {
+            candidates.append(contentsOf: windows)
+        }
+        guard let window = candidates.first(where: { AXWindowIDBridge.windowID($0) == windowID }) else {
+            return nil
+        }
+        return WindowFocusTarget(id: windowID, pid: pid, app: app, window: window)
+    }
+
+    /// Runs on the serial service queue. Mission Control can restore the old
+    /// desktop's key window after AXPress succeeds, so confirm a settled arrival
+    /// before raising the moved window and verifying its actual AX focus.
+    private func restoreFocus(
+        _ target: WindowFocusTarget, onSpace spaceID: UInt64, displayUUID: String, sls: SLSBridge
+    ) -> Bool {
+        let arrivalDeadline = ProcessInfo.processInfo.systemUptime + 3
+        var settledSince: TimeInterval?
+        func destinationIsActive() -> Bool {
+            sls.managedDisplays()?.first(where: {
+                $0.uuid.caseInsensitiveCompare(displayUUID) == .orderedSame
+            })?.currentSpaceID == spaceID
+        }
+        while ProcessInfo.processInfo.systemUptime < arrivalDeadline {
+            let now = ProcessInfo.processInfo.systemUptime
+            if destinationIsActive(), missionControlGroup() == nil {
+                if settledSince == nil { settledSince = now }
+                if now - (settledSince ?? now) >= 0.25 { break }
+            } else {
+                settledSince = nil
+            }
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        guard let settledSince, ProcessInfo.processInfo.systemUptime - settledSince >= 0.25,
+              destinationIsActive(), missionControlGroup() == nil
+        else { return false }
+
+        let focusDeadline = ProcessInfo.processInfo.systemUptime + 2
+        var focusedSince: TimeInterval?
+        while ProcessInfo.processInfo.systemUptime < focusDeadline {
+            guard destinationIsActive(), missionControlGroup() == nil,
+                  sls.spaces(forWindow: target.id) == [spaceID],
+                  AXWindowIDBridge.windowID(target.window) == target.id
+            else { return false }
+            let frontmostPID = DispatchQueue.main.sync {
+                NSWorkspace.shared.frontmostApplication?.processIdentifier
+            }
+            let focusedID = value(target.app, kAXFocusedWindowAttribute as String)
+                .flatMap { axElement($0) }.flatMap { AXWindowIDBridge.windowID($0) }
+            let now = ProcessInfo.processInfo.systemUptime
+            if frontmostPID == target.pid, focusedID == target.id {
+                if focusedSince == nil { focusedSince = now }
+                if now - (focusedSince ?? now) >= 0.25 { return true }
+            } else {
+                focusedSince = nil
+                AXUIElementSetAttributeValue(target.window, kAXMainAttribute as CFString, kCFBooleanTrue)
+                DispatchQueue.main.sync {
+                    _ = NSRunningApplication(processIdentifier: target.pid)?.activate(options: [.activateIgnoringOtherApps])
+                }
+                AXUIElementPerformAction(target.window, kAXRaiseAction as CFString)
+                AXUIElementSetAttributeValue(target.app, kAXFocusedWindowAttribute as CFString, target.window)
+            }
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+        return false
     }
 
     // MARK: - Wallpaper

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.10.50] - 2026-10-09
+### Fixed
+- Après un déplacement suivi vers le bureau voisin, restauration et vérification du focus sur la fenêtre déplacée après la transition Mission Control, y compris si l'app possède plusieurs fenêtres.
+- Les raccourcis Spaces en attente lisent leur contexte après la fin de l'action précédente pour permettre les sauts successifs avec la même fenêtre. Validation réelle à effectuer sur le canal Dev.
+
 ## [2026.10.49] - 2026-10-09
 ### Added
 - Passage en Stable de la gestion expérimentale des bureaux macOS : création, fermeture et déplacement de la fenêtre active vers le Space voisin, avec fond aléatoire facultatif.
