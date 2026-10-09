@@ -7,15 +7,15 @@
     <description>Most recent stable releases</description>
     <language>en</language>
     <item>
-      <title>Version 2026.10.32</title>
-      <pubDate>Wed, 07 Oct 2026 12:12:00 +0000</pubDate>
-      <sparkle:version>1791375046</sparkle:version>
-      <sparkle:shortVersionString>2026.10.32</sparkle:shortVersionString>
+      <title>Version 2026.10.49</title>
+      <pubDate>Fri, 09 Oct 2026 08:05:15 +0000</pubDate>
+      <sparkle:version>1791533027</sparkle:version>
+      <sparkle:shortVersionString>2026.10.49</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
       <enclosure
-        url="https://github.com/mondary/PKwindowsManagement/releases/download/v2026.10.32/PKwindowsManagement-app.zip"
-        sparkle:edSignature="gvAW3TbkV9rn4mfGftCfD1sm6sq0r3vKtFnEFhytNfnakWQ1J/pjGKN3bjqqJrMv7fvthMuV27imPTt4FnOJDw=="
-        length="7043539"
+        url="https://github.com/mondary/PKwindowsManagement/releases/download/v2026.10.49/PKwindowsManagement-app.zip"
+        sparkle:edSignature="fCKQZKek1RL/yzCPSmz17Yxrx4QBEg4wyGcI7nk8pZLFqdPgjiApJ3rnro4kH1XQ4Jpozq0PuSrx6fNQfMVkBg=="
+        length="7213698"
         type="application/octet-stream" />
     </item>
   </channel>
