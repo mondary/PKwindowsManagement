@@ -29,6 +29,7 @@ final class HorizontalCanvasService: ObservableObject {
         let apps: [pid_t: Date]
         let frontmostPID: pid_t?
         let pointer: CGPoint
+        let canvasRows: Int
 
         static func capture() -> Context {
             precondition(Thread.isMainThread)
@@ -55,7 +56,8 @@ final class HorizontalCanvasService: ObservableObject {
                 displays: displays,
                 apps: apps,
                 frontmostPID: NSWorkspace.shared.frontmostApplication?.processIdentifier,
-                pointer: CGPoint(x: pointer.x, y: top - pointer.y)
+                pointer: CGPoint(x: pointer.x, y: top - pointer.y),
+                canvasRows: max(1, min(2, AppRuntime.shared.settings?.canvasRowsPerColumn ?? 2))
             )
         }
     }
@@ -144,7 +146,7 @@ final class HorizontalCanvasService: ObservableObject {
                 // Journal before moving even the first window.
                 for entry in entries { self.saved[entry.saved.id] = entry.saved }
                 guard self.persist() else { return }
-                let rows = 2
+                let rows = context.canvasRows
                 let geometry = CanvasLayout.Geometry(area: display.area, rows: rows)
                 let strip = Strip(
                     display: display,

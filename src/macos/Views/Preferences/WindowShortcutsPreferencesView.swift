@@ -192,6 +192,19 @@ struct WindowShortcutsPreferencesView: View {
                 Text(localizedString(canvas.activeDisplayIDs.isEmpty ? "Canvas inactive" : "Canvas active"))
                     .foregroundStyle(.secondary)
             }
+            HStack {
+                Text(localizedString("Rows per column"))
+                Picker("", selection: $settings.canvasRowsPerColumn) {
+                    Text("1").tag(1)
+                    Text("2").tag(2)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 110)
+                Text(localizedString("Applies the next time the Canvas starts."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Text(localizedString("Canvas tiles windows in a scrolling grid — three columns × two rows on wide screens, two × two otherwise. Hold Option and swipe or scroll to slide the grid; the previous/next shortcuts move column by column. Exiting restores every window's exact position and size; a snap command leaves the Canvas and applies its placement."))
                 .font(.caption).foregroundStyle(.secondary)
             if !canvas.message.isEmpty {

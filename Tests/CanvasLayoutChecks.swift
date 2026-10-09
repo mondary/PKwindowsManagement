@@ -42,6 +42,25 @@ enum CanvasLayoutChecks {
             }
         }
 
+        // One row per column: full-height Paneru-classic strip.
+        let single = CanvasLayout.Geometry(area: area, rows: 1)
+        assert(single.rowHeight == area.height)
+        assert(CanvasLayout.columnCount(windows: 3, rows: 1) == 3)
+        let singleWidths = Array(repeating: single.defaultColumnWidth(columns: 3), count: 5)
+        for column in singleWidths.indices {
+            let viewport = CanvasLayout.fitViewport(index: column, widths: singleWidths, geometry: single, current: 999)
+            let placement = CanvasLayout.placement(
+                column: column, row: 0, widths: singleWidths,
+                geometry: single, viewport: viewport, otherDisplays: []
+            )
+            if placement.parked == nil {
+                assert(placement.frame.height == area.height)
+                assert(placement.frame.minY == area.minY)
+                assert(placement.frame.minX >= single.contentMinX - 0.01)
+                assert(placement.frame.maxX <= single.contentMaxX + 0.01)
+            }
+        }
+
         // An app-min width larger than the page aligns its leading edge.
         let oversized = [geometry.contentWidth + 300]
         let oversizedViewport = CanvasLayout.fitViewport(index: 0, widths: oversized, geometry: geometry, current: 0)

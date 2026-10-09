@@ -146,6 +146,8 @@
 "Previous Canvas Window" = "Previous Canvas Window";
 "Next Canvas Window" = "Next Canvas Window";
 "Restore Canvas" = "Restore Canvas";
+"Rows per column" = "Rows per column";
+"Applies the next time the Canvas starts." = "Applies the next time the Canvas starts.";
 "New Canvas window width" = "New Canvas window width";
 "Canvas inactive" = "Canvas inactive";
 "Canvas active" = "Canvas active";

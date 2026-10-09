@@ -49,6 +49,7 @@ final class AppSettings: ObservableObject {
         static let spaceWallpaperFolder = "space-wallpaper-folder"
         static let spaceWallpaperOnCreate = "space-wallpaper-on-create"
         static let spaceFollowMovedWindow = "space-follow-moved-window"
+        static let canvasRowsPerColumn = "canvas-rows-per-column"
     }
 
     private let defaults: UserDefaults
@@ -246,6 +247,17 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    /// Canvas grid height: 1 full-height window per column (Paneru classic)
+    /// or 2 stacked rows. Read when a strip starts.
+    @Published var canvasRowsPerColumn: Int {
+        didSet {
+            let clamped = max(1, min(2, canvasRowsPerColumn))
+            if clamped != canvasRowsPerColumn { canvasRowsPerColumn = clamped; return }
+            defaults.set(canvasRowsPerColumn, forKey: Keys.canvasRowsPerColumn)
+            scheduleAutoBackup()
+        }
+    }
+
     var bigYearColors: BigYearColors {
         bigYearTheme.colors.applying(overrides: bigYearColorOverrides)
     }
@@ -345,6 +357,8 @@ final class AppSettings: ObservableObject {
         }
         spaceWallpaperOnCreate = defaults.object(forKey: Keys.spaceWallpaperOnCreate) as? Bool ?? true
         spaceFollowMovedWindow = defaults.object(forKey: Keys.spaceFollowMovedWindow) as? Bool ?? true
+        let storedRows = defaults.integer(forKey: Keys.canvasRowsPerColumn)
+        canvasRowsPerColumn = storedRows == 1 ? 1 : 2
 
         if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()
@@ -680,7 +694,8 @@ final class AppSettings: ObservableObject {
             bigYearColorOverrides: bigYearColorOverrides,
             spaceWallpaperFolderPath: spaceWallpaperFolder?.path,
             spaceWallpaperOnCreate: spaceWallpaperOnCreate,
-            spaceFollowMovedWindow: spaceFollowMovedWindow
+            spaceFollowMovedWindow: spaceFollowMovedWindow,
+            canvasRowsPerColumn: canvasRowsPerColumn
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -751,6 +766,7 @@ final class AppSettings: ObservableObject {
         }
         spaceWallpaperOnCreate = backup.spaceWallpaperOnCreate ?? spaceWallpaperOnCreate
         spaceFollowMovedWindow = backup.spaceFollowMovedWindow ?? spaceFollowMovedWindow
+        if let rows = backup.canvasRowsPerColumn { canvasRowsPerColumn = max(1, min(2, rows)) }
 
         saveShortcuts()
         clearedWindowShortcuts = []
@@ -1118,6 +1134,7 @@ private struct SettingsBackup: Codable {
     let spaceWallpaperFolderPath: String?
     let spaceWallpaperOnCreate: Bool?
     let spaceFollowMovedWindow: Bool?
+    let canvasRowsPerColumn: Int?
 }
 
 enum SettingsBackupError: LocalizedError {

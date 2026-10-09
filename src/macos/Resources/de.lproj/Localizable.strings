@@ -395,6 +395,8 @@
 "Previous Canvas Window" = "Vorheriges Canvas-Fenster";
 "Next Canvas Window" = "Nächstes Canvas-Fenster";
 "Restore Canvas" = "Canvas wiederherstellen";
+"Rows per column" = "Zeilen pro Spalte";
+"Applies the next time the Canvas starts." = "Gilt beim nächsten Start des Canvas.";
 "New Canvas window width" = "Breite neuer Canvas-Fenster";
 "Canvas inactive" = "Canvas inaktiv";
 "Canvas active" = "Canvas aktiv";

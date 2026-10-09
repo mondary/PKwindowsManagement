@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.10.57] - 2026-10-09
+### Added
+- Réglage « lignes par colonne » du Canvas : 1 ligne (colonnes pleine hauteur, façon Paneru classique) ou 2 lignes (grille 3×2). Segmenteur dans `Raccourcis fenêtre` → Canvas, appliqué à la prochaine activation ; sauvegardé avec les préférences.
+- Tests de la variante une ligne : hauteur pleine, découpage en colonnes et visibilité après recentrage.
+
 ## [2026.10.56] - 2026-10-09
 ### Changed
 - Canvas reconçu d’après le modèle de Paneru (MIT, ajouté aux crédits) : grille défilante 3×2 sur grand écran et 2×2 sur MacBook au lieu de grandes colonnes, viewport glissant colonne par colonne, colonnes hors champ parquées en languettes dans les bords, largeurs réelles négociées par colonne et écritures AX sautées quand la fenêtre est déjà en place.
