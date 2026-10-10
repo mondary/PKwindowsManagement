@@ -100,14 +100,16 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Right-click an application to assign or edit its global shortcut.
 - Assigned shortcuts appear as key badges over application icons.
 - Shortcuts can also be captured with a `Record` button.
-- `Scripts` and `URLs` are split into separate preferences sections.
+- Settings open on **Windows**. Margins show **Top, Bottom, Left, Right**; **Horizontal Canvas (Open Canvas)** groups its commands and the one/two rows per column setting.
+- **Scripts** and **Web Links** are separate sections, followed by **Big Year**. **System**, below Local AI, groups language, accessibility and backups.
+- **Launchpad** keeps the global shortcut, hot corner and applications. **Appearance** groups style, compact theme, category organization, grid, sorting and navigation.
 - In `Appearance`, sort Launchpad apps by `Last Used`, `Name`, `Icon Color`, or `Custom Order` (drag tiles in Launchpad).
-- In `Launchpad` → `Organization`, enable category grouping and sort categories by app count, alphabetically, or custom order (drag category chips in Launchpad).
+- In `Appearance` → `Organization`, enable category grouping and sort categories by app count, alphabetically, or custom order (drag category chips in Launchpad).
 - Launchpad grid customization: columns/rows count, icon size, column and row spacing.
 - Per-display Launchpad grid profiles are available in Appearance settings.
 - Launchpad navigation mode: vertical scroll or horizontal pages.
 - Changes are persisted in `UserDefaults`.
-- In `General` or `About`, choose the `Stable` or `Dev` update channel and compare the installed version with the latest release on each channel. Dev builds install automatically; Stable asks before installing.
+- In `About`, choose the `Stable` or `Dev` update channel and compare the installed version with the latest release on each channel. Dev builds install automatically; Stable asks before installing.
 - The sidebar keeps the installed and available versions on one line without moving the language flags; click the offered version to install it. Manual checks use the fresh appcast and the channel's signed archive.
 - Manual settings import/export in JSON format.
 - Auto-backup: choose a folder (e.g. Google Drive) and export a timestamped JSON backup on every settings change.

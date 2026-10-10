@@ -26,7 +26,7 @@ struct CompactShortcutField: View {
                 )
                 .frame(minWidth: 64, alignment: .leading)
 
-            Button(recorder.isRecording ? "Stop" : "Record") {
+            Button(localizedString(recorder.isRecording ? "Stop" : "Record")) {
                 if recorder.isRecording {
                     recorder.stop()
                 } else {

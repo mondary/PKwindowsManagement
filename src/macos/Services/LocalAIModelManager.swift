@@ -23,29 +23,25 @@ final class LocalAIModelManager: ObservableObject {
         .appendingPathComponent(".cache/huggingface/hub/models--convaiinnovations--laya", isDirectory: true)
 
     private init() {
-        installRuntimeFiles()
         refresh()
     }
 
     /// Small service code ships inside the app, then lives in the shared
     /// Application Support directory. Model weights never ship with the app.
-    private func installRuntimeFiles() {
+    private func installRuntimeFiles() -> Bool {
         do {
+            // Never use Bundle.module here: its generated accessor traps in a
+            // relocated .app. Resolve our packaged bundle safely, as localization does.
+            let sources = try LayaRuntimeResources.sources(in: AppLocalization.assetBundle)
             try fileManager.createDirectory(at: supportDirectory, withIntermediateDirectories: true)
-            let files: [(String, String)] = [
-                ("server", "py"), ("run", "sh"), ("install-model", "sh"),
-                ("start-server", "sh"), ("stop-server", "sh")
-            ]
-            for (name, ext) in files {
-                guard let source = Bundle.module.url(forResource: name, withExtension: ext, subdirectory: "LayaServer") else { continue }
-                let destination = supportDirectory.appendingPathComponent("\(name).\(ext)")
-                if fileManager.fileExists(atPath: destination.path) {
-                    try fileManager.removeItem(at: destination)
-                }
-                try fileManager.copyItem(at: source, to: destination)
+            for source in sources {
+                let destination = supportDirectory.appendingPathComponent(source.lastPathComponent)
+                try Data(contentsOf: source).write(to: destination, options: .atomic)
             }
+            return true
         } catch {
             errorMessage = error.localizedDescription
+            return false
         }
     }
 
@@ -141,8 +137,9 @@ final class LocalAIModelManager: ObservableObject {
 
     private func runScript(_ name: String, completion: @escaping (Bool, String) -> Void) {
         guard !isBusy else { return }
-        isBusy = true
         errorMessage = nil
+        guard installRuntimeFiles() else { return }
+        isBusy = true
         let script = supportDirectory.appendingPathComponent(name)
         guard fileManager.fileExists(atPath: script.path) else {
             isBusy = false

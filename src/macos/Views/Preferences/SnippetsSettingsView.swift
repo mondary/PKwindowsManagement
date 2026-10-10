@@ -47,7 +47,7 @@ struct URLSnippetsSettingsView: View {
 
     var body: some View {
         snippetListView(
-            title: localizedString("URLs"),
+            title: localizedString("Web Links"),
             subtitle: localizedString("Reusable URLs with a browser target and keyboard shortcuts."),
             emptyTitle: localizedString("No URLs yet"),
             emptySubtitle: localizedString("Add a URL to open it quickly in the browser of your choice."),

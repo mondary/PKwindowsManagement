@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026.10.59] - 2026-10-10
+### Changed
+- Les réglages s’ouvrent sur Fenêtres. Général devient Système, placé après IA locale ; Scripts et Liens web précèdent Big Year. Les en-têtes de groupes et la recherche suivent les nouveaux libellés.
+- Style, thème compact et organisation par catégorie sont regroupés dans Apparence ; Launchpad conserve son activation et ses applications.
+- Marges libellées Haut/Bas/Gauche/Droite, Canvas horizontal identifié « Open Canvas » avec instructions une/deux lignes et navigation par colonne, en FR/EN/DE/ES.
+### Fixed
+- Crash à l’ouverture d’IA locale confirmé par le rapport macOS : suppression de l’accès fatal à `Bundle.module`, résolution sûre des scripts SwiftPM aplatis ou en sous-dossier, installation uniquement lors d’une action explicite et erreur lisible si une ressource manque.
+- Tests de ressources IA : bundle déplacé, arborescences aplatie/imbriquée, scripts absents et vérification du bundle packagé.
+
 ## [2026.10.58] - 2026-10-10
 ### Changed
 - Dépôt réorganisé en branche unique `main` : le code, les tags de release Stable et les deux appcasts (Stable/Dev) vivent sur la même ligne ; le workflow Dev ne se déclenche plus que sur `main`. Branches `dev` et vestiges supprimés, tags parasites retirés.

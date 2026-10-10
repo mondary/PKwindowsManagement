@@ -11,6 +11,7 @@ Skills used for this project:
 - `premium-promo-media` — audited the existing landing/media pipeline; defer feature claims, refreshed captures, hub, and FTP until a Dev build can be tested.
 - `macos-menu-and-settings` — menu-bar action placement and aligned icons.
 - `pk-settings-shell` — Shared settings shell; Credits uses official project icons and full-row links, with one persistent footer across every settings page.
+- Settings Dev 59 — Windows-first navigation, System/Scripts/Web Links labels, Launchpad appearance controls regrouped, localized margin names and Open Canvas instructions. Local AI crash traced to the fatal generated SwiftPM bundle accessor; resource regression checks cover relocated flat/nested bundles and missing scripts.
 - `pk-commits` — CalVer bump, changelog, commit and Dev-channel publication workflow.
 - `pk-app-release` — Stable release version/tag, GitHub assets, Homebrew cask and Sparkle checklist.
 - `publish-macos-sparkle` — Validate the signed Stable archive and generated appcast workflow.

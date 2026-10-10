@@ -18,9 +18,9 @@ struct LaunchpadView: View {
                 .padding(.top, 20)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Applications")
+                Text(localizedString("Applications"))
                     .font(.title2.weight(.semibold))
-                TextField("Search apps or recent launches", text: $query)
+                TextField(localizedString("Search apps or recent launches"), text: $query)
                     .textFieldStyle(.roundedBorder)
             }
             .padding(.horizontal, 24)
@@ -66,11 +66,11 @@ struct LaunchpadView: View {
 
     private var activationSettings: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Launchpad Activation")
+            Text(localizedString("Launchpad Activation"))
                 .font(.headline)
 
             HStack(spacing: 12) {
-                Text("Global shortcut")
+                Text(localizedString("Global shortcut"))
                     .frame(width: 110, alignment: .leading)
 
                 ShortcutRecorderField(
@@ -87,98 +87,25 @@ struct LaunchpadView: View {
 
             HStack(alignment: .top, spacing: 32) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Hot corner")
+                    Text(localizedString("Hot corner"))
                         .font(.subheadline.weight(.semibold))
 
                     HotCornerSelector(selection: settings.launchpadHotCorner) { corner in
                         settings.launchpadHotCorner = corner
                     }
 
-                    Text("Move pointer into selected corner to open Launchpad.")
+                    Text(localizedString("Move pointer into selected corner to open Launchpad."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(width: 204, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Style")
-                        .font(.subheadline.weight(.semibold))
-
-                    HStack(spacing: 10) {
-                        ForEach(LaunchpadStyle.allCases) { style in
-                            LaunchpadStyleCard(style: style, isSelected: settings.launchpadStyle == style) {
-                                settings.launchpadStyle = style
-                            }
-                        }
-                    }
-
-                    if settings.launchpadStyle == .compact {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Theme")
-                                .font(.subheadline.weight(.semibold))
-
-                            HStack(spacing: 10) {
-                                ForEach(CompactLaunchpadTheme.allCases) { theme in
-                                    ThemeSwatch(theme: theme, isSelected: settings.compactLaunchpadTheme == theme) {
-                                        settings.compactLaunchpadTheme = theme
-                                    }
-                                }
-                            }
-                        }
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Organization")
-                        .font(.subheadline.weight(.semibold))
-
-                    Toggle("Group by category", isOn: $settings.launchpadGroupedByCategory)
-                        .font(.subheadline)
-
-                    if settings.launchpadGroupedByCategory {
-                        Picker("Category order", selection: $settings.launchpadCategorySortMode) {
-                            ForEach(LaunchpadCategorySortMode.allCases) { mode in
-                                Text(mode.title).tag(mode)
-                            }
-                        }
-                        .pickerStyle(.menu)
-
-                        if settings.launchpadCategorySortMode == .custom {
-                            Text("Drag category chips in the Launchpad to arrange them.")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                                .frame(width: 190, alignment: .leading)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-
-                    Text("Sort applications into sections (Development, Internet, Creation…).")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 190, alignment: .leading)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Text("Right-click an app tile to change its category.")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .frame(width: 190, alignment: .leading)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    if settings.launchpadAppSortMode == .custom {
-                        Text("Drag app tiles in the Launchpad to arrange them.")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                            .frame(width: 190, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
+                Spacer()
             }
         }
         .padding(14)
         .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .animation(.easeInOut(duration: 0.18), value: settings.launchpadStyle)
     }
 
     private var isSearching: Bool {
@@ -328,7 +255,7 @@ private struct HotCornerSelector: View {
             }
 
             if selection == .disabled {
-                Text("Disabled")
+                Text(localizedString("Disabled"))
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.85))
                     .padding(.horizontal, 10)
@@ -353,7 +280,7 @@ private struct HotCornerSelector: View {
                 .strokeBorder(Color.black.opacity(0.15), lineWidth: 1)
         )
         .animation(.easeInOut(duration: 0.15), value: selection)
-        .help("Move pointer into selected corner to open Launchpad.")
+        .help(localizedString("Move pointer into selected corner to open Launchpad."))
     }
 
     private func cornerZone(_ corner: LaunchpadHotCorner) -> some View {
@@ -387,7 +314,7 @@ private struct HotCornerSelector: View {
     }
 }
 
-private struct LaunchpadStyleCard: View {
+struct LaunchpadStyleCard: View {
     let style: LaunchpadStyle
     let isSelected: Bool
     let action: () -> Void
@@ -483,7 +410,7 @@ private struct LaunchpadStyleCard: View {
     }
 }
 
-private struct ThemeSwatch: View {
+struct ThemeSwatch: View {
     let theme: CompactLaunchpadTheme
     let isSelected: Bool
     let action: () -> Void

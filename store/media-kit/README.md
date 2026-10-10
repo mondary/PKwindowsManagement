@@ -52,6 +52,19 @@ Sources de production inchangées ; aucun accès au dossier archivé `store/arch
 
 ## Régénérer
 
+### Réglages Dev 2026.10.59 uniquement
+
+`python3 store/media-kit/capture-settings.py` compile les vues de production sans
+AppDelegate, avec une suite UserDefaults jetable et une fenêtre invisible. Produit
+`sources/screenshots/{windows,appearance}-{fr,en}.png` depuis le bundle local Dev.
+Les captures Fenêtres exposent les marges traduites et Open Canvas ; Apparence montre
+le mode compact et le regroupement activés avec des préférences de démonstration.
+La QA interactive de Dev 59 a aussi vérifié l’ouverture sur Fenêtres, le déplacement
+des contrôles, leurs états conditionnels et l’ouverture répétée d’IA locale sans crash.
+Les préférences de style/regroupement utilisées pour le test ont été restaurées.
+La publication hub/FTP attend le montage FTP et la résolution des modifications
+préexistantes dans `Web_HubApps`.
+
 Prérequis : Python 3 + Pillow, Swift et SDK macOS 26.5, ffmpeg, Ego Lite déjà connecté.
 Le SDK 27 par défaut provoque des erreurs de macros SwiftUI avec la toolchain locale : le harness
 fixe explicitement le SDK 26.5. Des avertissements préexistants de sources Swift peuvent apparaître.

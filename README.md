@@ -106,14 +106,16 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 - Un clic droit sur une application permet d'attribuer ou modifier son raccourci global.
 - Les raccourcis attribués apparaissent sur les icônes sous forme de touches.
 - Enregistrement des raccourcis via un bouton `Record`.
-- Gestion des snippets `Scripts` et `URLs` dans des onglets séparés des réglages.
+- Les réglages s’ouvrent sur **Fenêtres**. Les marges affichent **Haut, Bas, Gauche, Droite** ; le **Canvas horizontal (Open Canvas)** regroupe ses commandes et le choix d’une ou deux lignes par colonne.
+- **Scripts** et **Liens web** sont deux rubriques distinctes, suivies de **Big Year**. **Système**, sous IA locale, regroupe langue, accessibilité et sauvegardes.
+- **Launchpad** conserve le raccourci global, le coin actif et les applications. **Apparence** regroupe style, thème compact, organisation par catégorie, grille, tri et navigation.
 - Ordre des applications du Launchpad configurable dans `Appearance` : `Last Used`, `Name`, `Icon Color` ou `Custom Order` (glisser-déposer dans le Launchpad).
-- Dans `Launchpad` → `Organization`, active le regroupement par catégorie et choisis leur ordre : catégories les plus fournies, alphabétique ou personnalisé (glisser-déposer les pastilles dans le Launchpad).
+- Dans `Apparence` → `Organisation`, active le regroupement par catégorie et choisis leur ordre : catégories les plus fournies, alphabétique ou personnalisé (glisser-déposer les pastilles dans le Launchpad).
 - Paramétrage de la grille du Launchpad : nombre de colonnes/lignes, taille des icônes, espacement des colonnes et des lignes.
 - Possibilité de définir une grille spécifique par écran dans les réglages d'apparence.
 - Choix du mode de navigation du Launchpad : scroll vertical ou pages horizontales.
 - Les changements sont sauvegardés dans `UserDefaults`.
-- Dans `Général` ou `À propos`, choisis le canal de mise à jour `Stable` ou `Dev` et compare la version installée aux dernières versions publiées sur chaque canal. Le canal Dev installe les builds automatiquement ; Stable conserve la confirmation avant installation.
+- Dans `À propos`, choisis le canal de mise à jour `Stable` ou `Dev` et compare la version installée aux dernières versions publiées sur chaque canal. Le canal Dev installe les builds automatiquement ; Stable conserve la confirmation avant installation.
 - La barre latérale garde la version installée et la version disponible sur une même ligne, sans déplacer les drapeaux ; clique sur la version proposée pour lancer l'installation. Les vérifications manuelles s'appuient sur l'appcast frais et l'archive signée du canal.
 - Import/export manuel des réglages au format JSON.
 - Auto-backup : choisis un dossier (ex : Google Drive) et exporte un backup JSON horodaté à chaque modification des réglages.

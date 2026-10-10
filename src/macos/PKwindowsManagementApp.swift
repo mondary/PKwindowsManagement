@@ -70,7 +70,7 @@ struct PKwindowsManagementApp: App {
 private struct RootDashboardView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject private var updater = UpdaterManager.shared
-    @State private var selection: SettingsSection? = .general
+    @State private var selection: SettingsSection? = .windows
 
     static var appIcon: NSImage? {
         if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns") {
@@ -89,7 +89,7 @@ private struct RootDashboardView: View {
 
             VStack(spacing: 0) {
                 Group {
-                    switch selection ?? .general {
+                    switch selection ?? .windows {
                     case .general:
                         GeneralSettingsView(settings: settings)
                     case .windows:
@@ -193,7 +193,7 @@ private struct RootDashboardView: View {
 
             VStack(spacing: 3) {
                 ForEach(groupedSections, id: \.0) { group, sections in
-                    Text(group.uppercased())
+                    Text((sections.first?.categoryLabel ?? group).uppercased())
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.tertiary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -307,14 +307,14 @@ private struct RootDashboardView: View {
 }
 
 private enum SettingsSection: String, CaseIterable, Identifiable {
-    case general
     case windows
     case launchpad
     case appearance
-    case bigYear
     case snippets
     case urls
+    case bigYear
     case ai
+    case general
     case credits
     case library
     case support
@@ -324,7 +324,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
     /// Sidebar grouping; Apparence sits right after Launchpad because it is
     /// the Launchpad's appearance.
-    static let categoryOrder = ["APP", "FEATURES", "AI", "PK PROJECTS"]
+    static let categoryOrder = ["FEATURES", "AI", "APP", "PK PROJECTS"]
 
     var category: String {
         switch self {
@@ -345,18 +345,28 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     }
 
     var keywords: String {
-        "\(title) \(rawValue) \(categoryLabel)".lowercased()
+        let details: String
+        switch self {
+        case .general: details = "general général système system language langue accessibilité accessibility sauvegarde backup"
+        case .windows: details = "canvas open canvas horizontal margins marges fenêtres windows"
+        case .launchpad: details = "activation hot corner coin actif raccourci shortcut applications"
+        case .appearance: details = "style theme thème organisation organization groupes categories catégories grille grid navigation"
+        case .snippets: details = "snippets scripts raccourcis commands commandes"
+        case .urls: details = "urls liens web links navigateur browser raccourcis"
+        default: details = ""
+        }
+        return "\(title) \(rawValue) \(categoryLabel) \(details)".lowercased()
     }
 
     var title: String {
         switch self {
-        case .general: localizedString("General")
+        case .general: localizedString("System")
         case .windows: localizedString("Windows")
         case .launchpad: "Launchpad"
         case .bigYear: "Big Year"
         case .appearance: localizedString("Appearance")
-        case .snippets: localizedString("Snippets")
-        case .urls: "URLs"
+        case .snippets: localizedString("Scripts")
+        case .urls: localizedString("Web Links")
         case .ai: localizedString("Local AI")
         case .library: localizedString("Project Library")
         case .support: localizedString("Support")

@@ -106,7 +106,7 @@ struct WindowShortcutsPreferencesView: View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Window Management")
+                    Text(localizedString("Window management"))
                         .font(.title3.weight(.semibold))
 
                     if geometry.size.width >= 760 {
@@ -194,7 +194,7 @@ struct WindowShortcutsPreferencesView: View {
             }
             HStack {
                 Text(localizedString("Rows per column"))
-                Picker("", selection: $settings.canvasRowsPerColumn) {
+                Picker(localizedString("Rows per column"), selection: $settings.canvasRowsPerColumn) {
                     Text("1").tag(1)
                     Text("2").tag(2)
                 }
@@ -205,7 +205,7 @@ struct WindowShortcutsPreferencesView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text(localizedString("Canvas tiles windows in a scrolling grid — three columns × two rows on wide screens, two × two otherwise. Hold Option and swipe or scroll to slide the grid; the previous/next shortcuts move column by column. Exiting restores every window's exact position and size; a snap command leaves the Canvas and applies its placement."))
+            Text(localizedString("Open Canvas arranges windows in scrolling columns with one or two rows. Three columns fit on wide screens, two on smaller screens. Hold Option and scroll with the trackpad or mouse, or use the previous/next column shortcuts. Exiting restores the original window positions and sizes; a placement command exits Canvas before moving the selected window."))
                 .font(.caption).foregroundStyle(.secondary)
             if !canvas.message.isEmpty {
                 Text(canvas.message).font(.caption).foregroundStyle(.orange)
@@ -535,37 +535,40 @@ struct WindowShortcutsPreferencesView: View {
 
     private func marginEditor(_ margins: Binding<WindowMargins>) -> some View {
         HStack(spacing: 16) {
-            marginField("T", margins.top)
-            marginField("B", margins.bottom)
-            marginField("L", margins.left)
-            marginField("R", margins.right)
+            marginField("Top", margins.top)
+            marginField("Bottom", margins.bottom)
+            marginField("Left", margins.left)
+            marginField("Right", margins.right)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
     }
 
     private func marginField(_ label: String, _ value: Binding<CGFloat>) -> some View {
-        HStack(spacing: 5) {
-            Text(label)
+        VStack(alignment: .leading, spacing: 5) {
+            Text(localizedString(label))
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)
-                .frame(width: 10)
-            TextField("", value: Binding(
-                get: { value.wrappedValue },
-                set: { newValue in
-                    guard let raw = newValue else { return }
-                    value.wrappedValue = min(max(raw, 0), 25)
+            HStack(spacing: 5) {
+                TextField(localizedString(label), value: Binding(
+                    get: { value.wrappedValue },
+                    set: { newValue in
+                        guard let raw = newValue else { return }
+                        value.wrappedValue = min(max(raw, 0), 25)
+                    }
+                ), format: .number)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityLabel(localizedString(label))
+                .accessibilityValue("\(value.wrappedValue.formatted()) %")
+                .frame(width: 46)
+                .onMoveCommand { direction in
+                    let step: CGFloat = direction == .up ? 1 : -1
+                    value.wrappedValue = min(max(value.wrappedValue + step, 0), 25)
                 }
-            ), format: .number)
-            .textFieldStyle(.roundedBorder)
-            .frame(width: 46)
-            .onMoveCommand { direction in
-                let step: CGFloat = direction == .up ? 1 : -1
-                value.wrappedValue = min(max(value.wrappedValue + step, 0), 25)
+                Text("%")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
             }
-            Text("%")
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
         }
     }
 

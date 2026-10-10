@@ -7,6 +7,8 @@ struct AppearanceSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                styleSection
+                organizationSection
                 gridAndSizingSection
                 perDisplayLayoutsSection
                 sortingSection
@@ -16,9 +18,61 @@ struct AppearanceSettingsView: View {
         }
     }
 
+    private var styleSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(localizedString("Style"))
+                .font(.headline)
+            HStack(spacing: 10) {
+                ForEach(LaunchpadStyle.allCases) { style in
+                    LaunchpadStyleCard(style: style, isSelected: settings.launchpadStyle == style) {
+                        settings.launchpadStyle = style
+                    }
+                }
+            }
+            if settings.launchpadStyle == .compact {
+                Text(localizedString("Theme"))
+                    .font(.subheadline.weight(.semibold))
+                HStack(spacing: 10) {
+                    ForEach(CompactLaunchpadTheme.allCases) { theme in
+                        ThemeSwatch(theme: theme, isSelected: settings.compactLaunchpadTheme == theme) {
+                            settings.compactLaunchpadTheme = theme
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var organizationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(localizedString("Organization"))
+                .font(.headline)
+            Toggle(localizedString("Group by category"), isOn: $settings.launchpadGroupedByCategory)
+            if settings.launchpadGroupedByCategory {
+                Picker(localizedString("Category order"), selection: $settings.launchpadCategorySortMode) {
+                    ForEach(LaunchpadCategorySortMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+                if settings.launchpadCategorySortMode == .custom {
+                    Text(localizedString("Drag category chips in the Launchpad to arrange them."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Text(localizedString("Sort applications into sections (Development, Internet, Creation…)."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(localizedString("Right-click an app tile to change its category."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private var gridAndSizingSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Grid & Sizing")
+            Text(localizedString("Grid & Sizing"))
                 .font(.headline)
 
             HStack(alignment: .top, spacing: 20) {
@@ -66,7 +120,7 @@ struct AppearanceSettingsView: View {
 
     private func stepperLabel(_ title: String, value: Int) -> some View {
         HStack(spacing: 6) {
-            Text(title)
+            Text(localizedString(title))
             Text("\(value)")
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
@@ -75,10 +129,10 @@ struct AppearanceSettingsView: View {
 
     private var perDisplayLayoutsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Per-Display Layouts")
+            Text(localizedString("Per-Display Layouts"))
                 .font(.headline)
 
-            Text("Assign a different grid to each connected monitor. Screens without a custom profile use the global grid above.")
+            Text(localizedString("Assign a different grid to each connected monitor. Screens without a custom profile use the global grid above."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -92,7 +146,7 @@ struct AppearanceSettingsView: View {
 
     private var sortingSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("App Ordering")
+            Text(localizedString("App Ordering"))
                 .font(.headline)
 
             HStack(spacing: 10) {
@@ -194,7 +248,7 @@ struct AppearanceSettingsView: View {
 
     private var navigationSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Navigation")
+            Text(localizedString("Navigation"))
                 .font(.headline)
 
             HStack(spacing: 10) {
@@ -273,7 +327,7 @@ struct AppearanceSettingsView: View {
 
                 Spacer()
 
-                Toggle("Custom layout", isOn: customLayoutBinding(for: entry))
+                Toggle(localizedString("Custom layout"), isOn: customLayoutBinding(for: entry))
                     .toggleStyle(.switch)
                     .labelsHidden()
             }
@@ -282,7 +336,7 @@ struct AppearanceSettingsView: View {
                 HStack(spacing: 28) {
                     Stepper(value: displayColumnsBinding(for: entry), in: 4...20) {
                         HStack(spacing: 6) {
-                            Text("Columns")
+                            Text(localizedString("Columns"))
                             Text("\(profile.columns)")
                                 .monospacedDigit()
                                 .foregroundStyle(.secondary)
@@ -291,7 +345,7 @@ struct AppearanceSettingsView: View {
 
                     Stepper(value: displayRowsBinding(for: entry), in: 3...20) {
                         HStack(spacing: 6) {
-                            Text("Rows")
+                            Text(localizedString("Rows"))
                             Text("\(profile.rows)")
                                 .monospacedDigit()
                                 .foregroundStyle(.secondary)

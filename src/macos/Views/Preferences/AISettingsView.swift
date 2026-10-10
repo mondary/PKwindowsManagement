@@ -15,9 +15,9 @@ struct AISettingsView: View {
                             .font(.system(size: 20))
                             .foregroundStyle(Color.accentColor)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Laya — shared local model")
+                            Text(localizedString("Laya — shared local model"))
                                 .font(.headline)
-                            Text("convaiinnovations/laya · three checkpoints")
+                            Text(localizedString("convaiinnovations/laya · three checkpoints"))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
