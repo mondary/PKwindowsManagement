@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.10.60] - 2026-10-10
+### Added
+- **Carte clavier** en tête des réglages Fenêtres : chaque touche affiche l’icône de sa position de fenêtre et son rappel de raccourci — `Y` quart haut-gauche, `U/I/O` sixièmes hauts, `P` quart haut-droite, `H/J/K/L/M` en bas, `1/2/3` colonnes de tiers. La carte suit les raccourcis actuels, montre les touches à double rôle (ex. `H` : quart bas-gauche `⌃⌥` + colonne Canvas `⌃⇧`), teinte par famille avec légende, et le clic sur une touche détaille sa commande. Libellés FR/EN/DE/ES.
+- Catalogue de commandes et icônes de placement partagés entre les listes de réglages et la carte clavier (source unique).
+
 ## [2026.10.59] - 2026-10-10
 ### Changed
 - Les réglages s’ouvrent sur Fenêtres. Général devient Système, placé après IA locale ; Scripts et Liens web précèdent Big Year. Les en-têtes de groupes et la recherche suivent les nouveaux libellés.

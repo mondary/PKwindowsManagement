@@ -392,6 +392,10 @@
 "Move Desktop Right" = "Déplacer le bureau à droite";
 "Desktop reordering keeps its windows together. Disable automatic Spaces rearrangement in macOS to keep your chosen order." = "Le bureau conserve toutes ses fenêtres. Désactivez le réagencement automatique des Spaces dans macOS pour conserver l’ordre choisi.";
 "Horizontal Canvas" = "Canvas horizontal (Open Canvas)";
+"Keyboard map" = "Carte clavier";
+"Placement" = "Placement";
+"Every key shows its window placement and shortcut. The map follows your current shortcuts." = "Chaque touche montre sa position de fenêtre et son raccourci. La carte suit tes raccourcis actuels.";
+"Select a key to see its command." = "Sélectionne une touche pour voir sa commande.";
 "Toggle Horizontal Canvas" = "Activer/désactiver le Canvas horizontal";
 "Previous Canvas Window" = "Colonne précédente";
 "Next Canvas Window" = "Colonne suivante";

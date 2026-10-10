@@ -142,6 +142,10 @@
 "Move Desktop Right" = "Move Desktop Right";
 "Desktop reordering keeps its windows together. Disable automatic Spaces rearrangement in macOS to keep your chosen order." = "Desktop reordering keeps its windows together. Disable automatic Spaces rearrangement in macOS to keep your chosen order.";
 "Horizontal Canvas" = "Horizontal Canvas (Open Canvas)";
+"Keyboard map" = "Keyboard map";
+"Placement" = "Placement";
+"Every key shows its window placement and shortcut. The map follows your current shortcuts." = "Every key shows its window placement and shortcut. The map follows your current shortcuts.";
+"Select a key to see its command." = "Select a key to see its command.";
 "Toggle Horizontal Canvas" = "Toggle Horizontal Canvas";
 "Previous Canvas Window" = "Previous column";
 "Next Canvas Window" = "Next column";
