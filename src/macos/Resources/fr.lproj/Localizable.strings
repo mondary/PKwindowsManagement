@@ -396,6 +396,11 @@
 "Placement" = "Placement";
 "Every key shows its window placement and shortcut. The map follows your current shortcuts." = "Chaque touche montre sa position de fenêtre et son raccourci. La carte suit tes raccourcis actuels.";
 "Select a key to see its command." = "Sélectionne une touche pour voir sa commande.";
+"All apps" = "Toutes les apps";
+"By category" = "Par catégorie";
+"Grid, category grouping, app ordering and navigation apply to the Fullscreen style." = "Grille, groupement par catégorie, ordre des apps et navigation s’appliquent au style Plein écran.";
+"Search apps or recent launches" = "Rechercher une app ou un lancement récent";
+"Opens or closes the Launchpad from anywhere." = "Ouvre ou ferme le Launchpad depuis n’importe où.";
 "Toggle Horizontal Canvas" = "Activer/désactiver le Canvas horizontal";
 "Previous Canvas Window" = "Colonne précédente";
 "Next Canvas Window" = "Colonne suivante";

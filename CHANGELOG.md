@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.10.61] - 2026-10-10
+### Changed
+- **Apparence redessinée en colonnes** : cartes Style + Organisation, puis Grille et tailles + Disposition par écran, puis Ordre des applications + Navigation — la largeur est enfin utilisée comme dans Fenêtres.
+- **Blocs conditionnels au style** : en Compact, grille, disposition par écran, organisation, ordre et navigation disparaissent (le panneau compact n’a pas de grille) — seul le thème compact apparaît sous Style. En Plein écran, tous les blocs reviennent.
+- **Organisation représentée graphiquement** : aperçus « Toutes les apps » / « Par catégorie » avec vignettes, comme les autres cartes de choix.
+- **Launchpad** : raccourci global et coin actif côte à côte dans une même carte, recherche sur la même ligne que « Applications ». Libellés FR/EN/DE/ES complétés.
+
 ## [2026.10.60] - 2026-10-10
 ### Added
 - **Carte clavier** en tête des réglages Fenêtres : chaque touche affiche l’icône de sa position de fenêtre et son rappel de raccourci — `Y` quart haut-gauche, `U/I/O` sixièmes hauts, `P` quart haut-droite, `H/J/K/L/M` en bas, `1/2/3` colonnes de tiers. La carte suit les raccourcis actuels, montre les touches à double rôle (ex. `H` : quart bas-gauche `⌃⌥` + colonne Canvas `⌃⇧`), teinte par famille avec légende, et le clic sur une touche détaille sa commande. Libellés FR/EN/DE/ES.

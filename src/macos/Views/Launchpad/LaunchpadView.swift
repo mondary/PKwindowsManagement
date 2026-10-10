@@ -17,11 +17,13 @@ struct LaunchpadView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 20)
 
-            VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
                 Text(localizedString("Applications"))
                     .font(.title2.weight(.semibold))
                 TextField(localizedString("Search apps or recent launches"), text: $query)
                     .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 420)
+                Spacer()
             }
             .padding(.horizontal, 24)
 
@@ -65,27 +67,39 @@ struct LaunchpadView: View {
     }
 
     private var activationSettings: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(localizedString("Launchpad Activation"))
                 .font(.headline)
 
-            HStack(spacing: 12) {
-                Text(localizedString("Global shortcut"))
-                    .frame(width: 110, alignment: .leading)
+            HStack(alignment: .top, spacing: 24) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(localizedString("Global shortcut"))
+                        .font(.subheadline.weight(.semibold))
 
-                ShortcutRecorderField(
-                    shortcut: $settings.launchpadShortcut,
-                    modifierWidth: 190,
-                    keyWidth: 100,
-                    recordWidth: 76
-                )
+                    HStack(spacing: 12) {
+                        ShortcutRecorderField(
+                            shortcut: $settings.launchpadShortcut,
+                            modifierWidth: 190,
+                            keyWidth: 100,
+                            recordWidth: 76
+                        )
 
-                ShortcutKeyBadge(shortcut: settings.launchpadShortcut, compact: true)
+                        ShortcutKeyBadge(shortcut: settings.launchpadShortcut, compact: true)
 
-                Spacer()
-            }
+                        Spacer()
+                    }
 
-            HStack(alignment: .top, spacing: 32) {
+                    Text(localizedString("Opens or closes the Launchpad from anywhere."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                // Règle à hauteur fixe : un Divider nu serait gourmand en hauteur
+                // et étirerait toute la carte dans la pile parente.
+                Divider()
+                    .frame(height: 110)
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text(localizedString("Hot corner"))
                         .font(.subheadline.weight(.semibold))

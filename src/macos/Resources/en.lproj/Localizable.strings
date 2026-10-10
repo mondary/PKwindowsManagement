@@ -146,6 +146,11 @@
 "Placement" = "Placement";
 "Every key shows its window placement and shortcut. The map follows your current shortcuts." = "Every key shows its window placement and shortcut. The map follows your current shortcuts.";
 "Select a key to see its command." = "Select a key to see its command.";
+"All apps" = "All apps";
+"By category" = "By category";
+"Grid, category grouping, app ordering and navigation apply to the Fullscreen style." = "Grid, category grouping, app ordering and navigation apply to the Fullscreen style.";
+"Search apps or recent launches" = "Search apps or recent launches";
+"Opens or closes the Launchpad from anywhere." = "Opens or closes the Launchpad from anywhere.";
 "Toggle Horizontal Canvas" = "Toggle Horizontal Canvas";
 "Previous Canvas Window" = "Previous column";
 "Next Canvas Window" = "Next column";

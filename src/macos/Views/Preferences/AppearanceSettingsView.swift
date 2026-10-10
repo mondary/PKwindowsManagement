@@ -6,33 +6,63 @@ struct AppearanceSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                styleSection
-                organizationSection
-                gridAndSizingSection
-                perDisplayLayoutsSection
-                sortingSection
-                navigationSection
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .top, spacing: 16) {
+                    styleSection
+                    if settings.launchpadStyle == .fullscreen {
+                        organizationSection
+                    }
+                }
+
+                // Grille, écrans, ordre et navigation n'existent qu'en plein écran :
+                // le panneau compact est une liste de recherche sans grille.
+                if settings.launchpadStyle == .fullscreen {
+                    HStack(alignment: .top, spacing: 16) {
+                        gridAndSizingSection
+                        perDisplayLayoutsSection
+                    }
+
+                    HStack(alignment: .top, spacing: 16) {
+                        sortingSection
+                        navigationSection
+                    }
+                } else {
+                    Text(localizedString("Grid, category grouping, app ordering and navigation apply to the Fullscreen style."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(24)
         }
     }
 
-    private var styleSection: some View {
+    private func card<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(localizedString("Style"))
+            Text(localizedString(title))
                 .font(.headline)
-            HStack(spacing: 10) {
+            content()
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    // MARK: - Style (always visible; compact theme only in compact mode)
+
+    private var styleSection: some View {
+        card("Style") {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: 10)], spacing: 10) {
                 ForEach(LaunchpadStyle.allCases) { style in
                     LaunchpadStyleCard(style: style, isSelected: settings.launchpadStyle == style) {
                         settings.launchpadStyle = style
                     }
                 }
             }
+
             if settings.launchpadStyle == .compact {
                 Text(localizedString("Theme"))
                     .font(.subheadline.weight(.semibold))
-                HStack(spacing: 10) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 66), spacing: 10)], spacing: 10) {
                     ForEach(CompactLaunchpadTheme.allCases) { theme in
                         ThemeSwatch(theme: theme, isSelected: settings.compactLaunchpadTheme == theme) {
                             settings.compactLaunchpadTheme = theme
@@ -43,11 +73,23 @@ struct AppearanceSettingsView: View {
         }
     }
 
+    // MARK: - Organisation (représentée graphiquement)
+
     private var organizationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(localizedString("Organization"))
-                .font(.headline)
-            Toggle(localizedString("Group by category"), isOn: $settings.launchpadGroupedByCategory)
+        card("Organization") {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: 10)], spacing: 10) {
+                PreviewCard(title: "All apps", isSelected: !settings.launchpadGroupedByCategory) {
+                    settings.launchpadGroupedByCategory = false
+                } thumbnail: {
+                    flatAppsThumbnail
+                }
+                PreviewCard(title: "By category", isSelected: settings.launchpadGroupedByCategory) {
+                    settings.launchpadGroupedByCategory = true
+                } thumbnail: {
+                    groupedAppsThumbnail
+                }
+            }
+
             if settings.launchpadGroupedByCategory {
                 Picker(localizedString("Category order"), selection: $settings.launchpadCategorySortMode) {
                     ForEach(LaunchpadCategorySortMode.allCases) { mode in
@@ -55,12 +97,14 @@ struct AppearanceSettingsView: View {
                     }
                 }
                 .pickerStyle(.menu)
+
                 if settings.launchpadCategorySortMode == .custom {
                     Text(localizedString("Drag category chips in the Launchpad to arrange them."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
+
             Text(localizedString("Sort applications into sections (Development, Internet, Creation…)."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -70,51 +114,80 @@ struct AppearanceSettingsView: View {
         }
     }
 
-    private var gridAndSizingSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(localizedString("Grid & Sizing"))
-                .font(.headline)
+    private var flatAppsThumbnail: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 12), spacing: 4)], spacing: 4) {
+            ForEach(0..<12, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(launchpadPalette[index % launchpadPalette.count].opacity(0.85))
+                    .frame(width: 12, height: 12)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(8)
+    }
 
-            HStack(alignment: .top, spacing: 20) {
-                GridPreviewView(
-                    columns: settings.launchpadGridColumns,
-                    rows: settings.launchpadGridRows,
-                    iconSize: settings.launchpadIconSize,
-                    columnGap: settings.launchpadColumnSpacing,
-                    rowGap: settings.launchpadRowSpacing
-                )
-                .frame(width: 230, height: 150)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Color.black.opacity(0.15), lineWidth: 1)
-                )
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Stepper(value: $settings.launchpadGridColumns, in: 4...20) {
-                        stepperLabel("Columns", value: settings.launchpadGridColumns)
-                    }
-                    Stepper(value: $settings.launchpadGridRows, in: 3...20) {
-                        stepperLabel("Rows", value: settings.launchpadGridRows)
-                    }
-                    Divider()
-                    Stepper(value: $settings.launchpadIconSize, in: 28...96, step: 4) {
-                        stepperLabel("Icon size", value: settings.launchpadIconSize)
-                    }
-                    Stepper(value: $settings.launchpadColumnSpacing, in: 4...48, step: 2) {
-                        stepperLabel("Column gap", value: settings.launchpadColumnSpacing)
-                    }
-                    Stepper(value: $settings.launchpadRowSpacing, in: 4...48, step: 2) {
-                        stepperLabel("Row gap", value: settings.launchpadRowSpacing)
+    private var groupedAppsThumbnail: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(0..<2, id: \.self) { row in
+                VStack(alignment: .leading, spacing: 3) {
+                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                        .fill(Color.accentColor.opacity(0.7))
+                        .frame(width: 34, height: 4)
+                    HStack(spacing: 4) {
+                        ForEach(0..<5, id: \.self) { column in
+                            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                .fill(launchpadPalette[(row * 5 + column) % launchpadPalette.count].opacity(0.85))
+                                .frame(width: 12, height: 12)
+                        }
                     }
                 }
-
-                Spacer()
-
-                Text(localizedFormat("%d apps visible", settings.launchpadGridColumns * settings.launchpadGridRows))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
+    }
+
+    // MARK: - Grille (plein écran)
+
+    private var gridAndSizingSection: some View {
+        card("Grid & Sizing") {
+            GridPreviewView(
+                columns: settings.launchpadGridColumns,
+                rows: settings.launchpadGridRows,
+                iconSize: settings.launchpadIconSize,
+                columnGap: settings.launchpadColumnSpacing,
+                rowGap: settings.launchpadRowSpacing
+            )
+            .frame(maxWidth: .infinity)
+            .frame(height: 150)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Color.black.opacity(0.15), lineWidth: 1)
+            )
+
+            VStack(spacing: 8) {
+                Stepper(value: $settings.launchpadGridColumns, in: 4...20) {
+                    stepperLabel("Columns", value: settings.launchpadGridColumns)
+                }
+                Stepper(value: $settings.launchpadGridRows, in: 3...20) {
+                    stepperLabel("Rows", value: settings.launchpadGridRows)
+                }
+                Divider()
+                Stepper(value: $settings.launchpadIconSize, in: 28...96, step: 4) {
+                    stepperLabel("Icon size", value: settings.launchpadIconSize)
+                }
+                Stepper(value: $settings.launchpadColumnSpacing, in: 4...48, step: 2) {
+                    stepperLabel("Column gap", value: settings.launchpadColumnSpacing)
+                }
+                Stepper(value: $settings.launchpadRowSpacing, in: 4...48, step: 2) {
+                    stepperLabel("Row gap", value: settings.launchpadRowSpacing)
+                }
+            }
+
+            Text(localizedFormat("%d apps visible", settings.launchpadGridColumns * settings.launchpadGridRows))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -128,10 +201,7 @@ struct AppearanceSettingsView: View {
     }
 
     private var perDisplayLayoutsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(localizedString("Per-Display Layouts"))
-                .font(.headline)
-
+        card("Per-Display Layouts") {
             Text(localizedString("Assign a different grid to each connected monitor. Screens without a custom profile use the global grid above."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -144,12 +214,11 @@ struct AppearanceSettingsView: View {
         }
     }
 
-    private var sortingSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(localizedString("App Ordering"))
-                .font(.headline)
+    // MARK: - Ordre et navigation (plein écran)
 
-            HStack(spacing: 10) {
+    private var sortingSection: some View {
+        card("App Ordering") {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 115), spacing: 10)], spacing: 10) {
                 ForEach(LaunchpadAppSortMode.allCases) { mode in
                     PreviewCard(title: mode.title, isSelected: settings.launchpadAppSortMode == mode) {
                         settings.launchpadAppSortMode = mode
@@ -157,8 +226,6 @@ struct AppearanceSettingsView: View {
                         sortThumbnail(mode)
                     }
                 }
-
-                Spacer()
             }
 
             Text(localizedString(sortDescription))
@@ -214,13 +281,12 @@ struct AppearanceSettingsView: View {
             }
             .padding(.horizontal, 14)
         case .color:
-            let palette: [Color] = [.red, .orange, .yellow, .green, .teal, .blue, .indigo, .purple]
             VStack(spacing: 6) {
                 ForEach(0..<2, id: \.self) { row in
                     HStack(spacing: 6) {
                         ForEach(0..<4, id: \.self) { column in
                             Circle()
-                                .fill(palette[row * 4 + column])
+                                .fill(launchpadPalette[row * 4 + column])
                                 .frame(width: 11, height: 11)
                         }
                     }
@@ -247,11 +313,8 @@ struct AppearanceSettingsView: View {
     }
 
     private var navigationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(localizedString("Navigation"))
-                .font(.headline)
-
-            HStack(spacing: 10) {
+        card("Navigation") {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 115), spacing: 10)], spacing: 10) {
                 ForEach(LaunchpadGridNavigation.allCases) { navigation in
                     PreviewCard(title: navigation.title, isSelected: settings.launchpadGridNavigation == navigation) {
                         settings.launchpadGridNavigation = navigation
@@ -259,8 +322,6 @@ struct AppearanceSettingsView: View {
                         navigationThumbnail(navigation)
                     }
                 }
-
-                Spacer()
             }
 
             Text(localizedString(settings.launchpadGridNavigation == .horizontalPages
@@ -311,6 +372,8 @@ struct AppearanceSettingsView: View {
             }
         }
     }
+
+    // MARK: - Profils par écran
 
     @ViewBuilder
     private func displayRow(for entry: DisplayEntry) -> some View {
@@ -366,6 +429,10 @@ struct AppearanceSettingsView: View {
         }
         .padding(12)
         .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color(NSColor.separatorColor).opacity(0.5), lineWidth: 0.5)
+        )
     }
 
     private var displayEntries: [DisplayEntry] {
@@ -420,6 +487,8 @@ struct AppearanceSettingsView: View {
     }
 }
 
+private let launchpadPalette: [Color] = [.red, .orange, .yellow, .green, .teal, .blue, .indigo, .purple, .pink, .mint]
+
 private struct DisplayEntry: Identifiable {
     let id: CGDirectDisplayID
     let screen: NSScreen
@@ -447,12 +516,13 @@ private struct PreviewCard<Thumbnail: View>: View {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 11))
                         .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                    Text(title)
+                    Text(localizedString(title))
                         .font(.caption.weight(.medium))
                         .foregroundStyle(isSelected ? .primary : .secondary)
                 }
             }
             .padding(6)
+            .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
@@ -469,8 +539,6 @@ private struct GridPreviewView: View {
     let columnGap: Int
     let rowGap: Int
 
-    private let palette: [Color] = [.red, .orange, .yellow, .green, .teal, .blue, .indigo, .purple, .pink, .mint]
-
     var body: some View {
         GeometryReader { geo in
             let unitWidth = CGFloat(columns) * CGFloat(iconSize) + CGFloat(columns + 1) * CGFloat(columnGap)
@@ -485,7 +553,7 @@ private struct GridPreviewView: View {
                     HStack(spacing: gapX) {
                         ForEach(0..<columns, id: \.self) { column in
                             RoundedRectangle(cornerRadius: cell * 0.22, style: .continuous)
-                                .fill(palette[(row * columns + column) % palette.count].opacity(0.85))
+                                .fill(launchpadPalette[(row * columns + column) % launchpadPalette.count].opacity(0.85))
                                 .frame(width: cell, height: cell)
                         }
                     }

@@ -13,6 +13,7 @@ Skills used for this project:
 - `pk-settings-shell` — Shared settings shell; Credits uses official project icons and full-row links, with one persistent footer across every settings page.
 - Settings Dev 59 — Windows-first navigation, System/Scripts/Web Links labels, Launchpad appearance controls regrouped, localized margin names and Open Canvas instructions. Local AI crash traced to the fatal generated SwiftPM bundle accessor; resource regression checks cover relocated flat/nested bundles and missing scripts.
 - Keyboard map Dev 60 — live key map on the Windows page: placement icon + shortcut reminder per key, double-role keys shown side by side, tinted family legend. Shared `WindowCommandCatalog`/`WindowCommandIcon` keep list rows and the map in sync.
+- Settings layout Dev 61 — Apparence rebuilt as card columns with style-conditional blocks (grid/per-display/ordering/navigation = Fullscreen only, compact theme = Compact only), graphical organization choice, Launchpad activation side by side. Lesson: a bare `Divider()` inside an `HStack` is height-greedy and stretched the whole card — use a fixed-height rule instead.
 - `pk-commits` — CalVer bump, changelog, commit and Dev-channel publication workflow.
 - `pk-app-release` — Stable release version/tag, GitHub assets, Homebrew cask and Sparkle checklist.
 - `publish-macos-sparkle` — Validate the signed Stable archive and generated appcast workflow.

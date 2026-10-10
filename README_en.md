@@ -102,7 +102,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Shortcuts can also be captured with a `Record` button.
 - Settings open on **Windows**. A **keyboard map** shows each key’s window placement and shortcut (`Y` top-left quarter, `U/I/O/J/K/L` sixths, `1/2/3` thirds, `P`/`H`/`M` quarters); it follows your current shortcuts. Margins show **Top, Bottom, Left, Right**; **Horizontal Canvas (Open Canvas)** groups its commands and the one/two rows per column setting.
 - **Scripts** and **Web Links** are separate sections, followed by **Big Year**. **System**, below Local AI, groups language, accessibility and backups.
-- **Launchpad** keeps the global shortcut, hot corner and applications. **Appearance** groups style, compact theme, category organization, grid, sorting and navigation.
+- **Launchpad** keeps the global shortcut and hot corner side by side. **Appearance** uses column layout: style, category organization (graphical previews), grid, per-display layouts, ordering and navigation. In **Compact**, only the compact theme appears; grid, category, ordering and navigation blocks belong to the **Fullscreen** style.
 - In `Appearance`, sort Launchpad apps by `Last Used`, `Name`, `Icon Color`, or `Custom Order` (drag tiles in Launchpad).
 - In `Appearance` → `Organization`, enable category grouping and sort categories by app count, alphabetically, or custom order (drag category chips in Launchpad).
 - Launchpad grid customization: columns/rows count, icon size, column and row spacing.
