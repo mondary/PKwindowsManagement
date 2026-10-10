@@ -1,12 +1,14 @@
 name: Dev build + appcast
 
-# Every push on any working branch publishes THE dev build: the zip replaces
-# the asset of the permanent "dev" release and appcast-dev.xml is regenerated
-# (single item) and committed to main. The app's dev channel updates from it.
+# Every push on main publishes THE dev build: the zip replaces the asset of
+# the permanent "dev" release and appcast-dev.xml is regenerated (single item)
+# and committed to main. The app's dev channel updates from it.
 # Stable is published separately, only when a v* tag validates a version.
+# Single-branch layout since 2026.10.58: main carries code + bot appcast
+# commits; the channels live in the two appcasts, not in branches.
 on:
   push:
-    branches: ['**']
+    branches: ['main']
     paths:
       - 'src/macos/**'
       - 'src/script/package_app.sh'

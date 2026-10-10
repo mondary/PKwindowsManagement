@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.58] - 2026-10-10
+### Changed
+- Dépôt réorganisé en branche unique `main` : le code, les tags de release Stable et les deux appcasts (Stable/Dev) vivent sur la même ligne ; le workflow Dev ne se déclenche plus que sur `main`. Branches `dev` et vestiges supprimés, tags parasites retirés.
+
 ## [2026.10.57] - 2026-10-09
 ### Added
 - Réglage « lignes par colonne » du Canvas : 1 ligne (colonnes pleine hauteur, façon Paneru classique) ou 2 lignes (grille 3×2). Segmenteur dans `Raccourcis fenêtre` → Canvas, appliqué à la prochaine activation ; sauvegardé avec les préférences.
