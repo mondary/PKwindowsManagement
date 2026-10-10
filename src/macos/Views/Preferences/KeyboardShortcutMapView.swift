@@ -69,10 +69,10 @@ struct KeyboardShortcutMapView: View {
     }
 
     private func keycap(_ key: String) -> some View {
-        let entries = entries(for: key)
+        let keyEntries = entries(for: key)
         return MapKeycap(
             key: key,
-            entries: entries,
+            entries: keyEntries,
             isSelected: selectedKey == key,
             onSelect: { selectedKey = selectedKey == key ? nil : key }
         )
@@ -81,14 +81,14 @@ struct KeyboardShortcutMapView: View {
 
     @ViewBuilder
     private var selectionCaption: some View {
-        let entries = selectedKey.map { entries(for: $0) } ?? []
-        if entries.isEmpty {
+        let keyEntries = selectedKey.map { entries(for: $0) } ?? []
+        if keyEntries.isEmpty {
             Text(localizedString("Select a key to see its command."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(entries) { entry in
+                ForEach(keyEntries) { entry in
                     HStack(spacing: 8) {
                         WindowCommandIcon(spec: entry.spec, tint: entry.spec.family.tint)
                         Text(localizedString(entry.spec.title))

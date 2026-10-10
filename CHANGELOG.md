@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.62] - 2026-10-10
+### Fixed
+- Compatibilité compilateur CI de la carte clavier : variables locales renommées pour éviter le shadowing de `entries(for:)` rejeté par le toolchain Swift de la CI (comme sur la Dev 54).
+
 ## [2026.10.61] - 2026-10-10
 ### Changed
 - **Apparence redessinée en colonnes** : cartes Style + Organisation, puis Grille et tailles + Disposition par écran, puis Ordre des applications + Navigation — la largeur est enfin utilisée comme dans Fenêtres.
