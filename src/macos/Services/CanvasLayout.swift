@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 
 /// Grid strip geometry, ported from Paneru's model (MIT, see Credits): windows
-/// fill a `columns × rows` grid page; the viewport slides column by column over
+/// fill a sequence of one/two-row columns; the viewport slides over
 /// an endless strip of those columns; columns fully outside the content region
 /// park as thin slivers inside reserved edge lanes, because macOS reassigns
 /// windows that leave the screen entirely.
@@ -64,6 +64,39 @@ enum CanvasLayout {
         max(1, (max(0, windows) + rows - 1) / rows)
     }
 
+    struct Column: Equatable {
+        var windows: [Int]
+        let rows: Int
+    }
+
+    /// Auto-tile from each WINDOW's choice, preserving strip order. A lone
+    /// half-height window reserves a second cell; the next half can fill it.
+    /// Full-height windows are never resized just to fill a neighboring gap.
+    static func columns(halfHeight: [Bool]) -> [Column] {
+        var result: [Column] = []
+        for (index, half) in halfHeight.enumerated() {
+            if half, let last = result.last, last.rows == 2, last.windows.count == 1 {
+                result[result.count - 1].windows.append(index)
+            } else {
+                result.append(Column(windows: [index], rows: half ? 2 : 1))
+            }
+        }
+        return result
+    }
+
+    static func slot(index: Int, columns: [Column]) -> (column: Int, row: Int)? {
+        for (column, cell) in columns.enumerated() {
+            if let row = cell.windows.firstIndex(of: index) { return (column, row) }
+        }
+        return nil
+    }
+
+    static func index(column: Int, row: Int, columns: [Column]) -> Int? {
+        guard columns.indices.contains(column), !columns[column].windows.isEmpty else { return nil }
+        let windows = columns[column].windows
+        return windows[min(max(0, row), windows.count - 1)]
+    }
+
     /// 3×2 pages on wide displays (the external screen), 2×2 on smaller ones.
     static func preferredColumns(forAreaWidth width: CGFloat) -> Int {
         width >= 1800 ? 3 : 2
@@ -104,7 +137,8 @@ enum CanvasLayout {
         widths: [CGFloat],
         geometry: Geometry,
         viewport: CGFloat,
-        otherDisplays: [CGRect]
+        otherDisplays: [CGRect],
+        rows: Int? = nil
     ) -> Placement {
         let origins = canvasOrigins(widths: widths)
         guard widths.indices.contains(column) else {
@@ -112,20 +146,21 @@ enum CanvasLayout {
         }
         let x = geometry.contentMinX + origins[column] - viewport
         let width = widths[column]
-        let frame = CGRect(x: x, y: geometry.cellY(row: row), width: width, height: geometry.rowHeight)
+        let columnGeometry = rows.map { Geometry(area: geometry.area, rows: $0) } ?? geometry
+        let frame = CGRect(x: x, y: columnGeometry.cellY(row: row), width: width, height: columnGeometry.rowHeight)
         guard x < geometry.contentMaxX, x + width > geometry.contentMinX else {
             let side: ParkSide = x <= geometry.contentMinX ? .left : .right
-            var parked = sliverFrame(side: side, width: width, geometry: geometry, row: row)
+            var parked = sliverFrame(side: side, width: width, geometry: columnGeometry, row: row)
             if otherDisplays.contains(where: { $0.intersects(parked) }) {
-                let flipped = sliverFrame(side: side == .left ? .right : .left, width: width, geometry: geometry, row: row)
+                let flipped = sliverFrame(side: side == .left ? .right : .left, width: width, geometry: columnGeometry, row: row)
                 if !otherDisplays.contains(where: { $0.intersects(flipped) }) {
                     parked = flipped
                 } else {
                     parked = CGRect(
                         x: side == .left ? geometry.area.minX : geometry.area.maxX - peek,
-                        y: geometry.cellY(row: row),
+                        y: columnGeometry.cellY(row: row),
                         width: peek,
-                        height: geometry.rowHeight
+                        height: columnGeometry.rowHeight
                     )
                 }
             }

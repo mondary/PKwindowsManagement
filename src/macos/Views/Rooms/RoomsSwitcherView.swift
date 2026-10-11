@@ -11,8 +11,14 @@ final class RoomsSwitcherModel: ObservableObject {
     @Published var picked: [RoomEngine.WindowOffer] = []
     @Published var offers: [RoomEngine.WindowOffer] = []
 
+    /// A connectable display, for the room's target-screen picker.
+    typealias ScreenOption = RoomEngine.ScreenOption
+
     let store: RoomStore
     private let engine: RoomEngine
+    /// Target screen for the room being created: nil = follow the pointer.
+    @Published var newDisplayUUID: String?
+    @Published var screens: [ScreenOption] = []
 
     init(store: RoomStore = .shared, engine: RoomEngine = RoomEngine()) {
         self.store = store
@@ -37,15 +43,22 @@ final class RoomsSwitcherModel: ObservableObject {
         newName = ""
         picked = []
         offers = []
+        newDisplayUUID = nil
     }
 
     /// Refresh the window list for the picker (AX reads: async so opening the
     /// panel never waits on them).
     func refreshOffers() {
         let engine = engine
+        screens = RoomEngine.connectedScreens()
         Task { @MainActor in
             self.offers = engine.windowOffers()
         }
+    }
+
+    func screenName(for room: Room) -> String? {
+        guard let uuid = room.displayUUID else { return nil }
+        return screens.first { $0.uuid == uuid }?.name ?? localizedString("Disconnected screen")
     }
 
     func moveSelection(_ delta: Int) {
@@ -72,6 +85,24 @@ final class RoomsSwitcherModel: ObservableObject {
         let engine = engine
         let claimed = store.claimedWindowIDs(excluding: room.id)
         Task { _ = await engine.activate(room, claimed: claimed) }
+    }
+
+    /// Minimize the selected room's windows, keeping the panel open so another
+    /// room can be opened right after.
+    func closeSelected() {
+        guard let room = selectedRoom else { return }
+        let engine = engine
+        let claimed = store.claimedWindowIDs(excluding: room.id)
+        Task { await engine.close(room, claimed: claimed) }
+    }
+
+    /// ⌘1-9: activate the nth visible room without walking the selection.
+    @discardableResult
+    func activateRoom(at index: Int) -> Bool {
+        let filtered = rooms
+        guard filtered.indices.contains(index) else { return false }
+        activate(room: filtered[index])
+        return true
     }
 
     func deleteSelected() {
@@ -104,11 +135,12 @@ final class RoomsSwitcherModel: ObservableObject {
         let windows = picked.map { offer in
             RoomWindow(bundleID: offer.bundleID, appName: offer.appName, title: offer.title, windowID: offer.windowID)
         }
-        let room = Room(name: newName.trimmingCharacters(in: .whitespaces), windows: windows)
+        let room = Room(name: newName.trimmingCharacters(in: .whitespaces), windows: windows, displayUUID: newDisplayUUID)
         store.upsert(room)
         isCreating = false
         newName = ""
         picked = []
+        newDisplayUUID = nil
         query = ""
         selection = 0
     }
@@ -175,7 +207,11 @@ private struct ListView: View {
                 ScrollView {
                     LazyVStack(spacing: 8) {
                         ForEach(Array(model.rooms.enumerated()), id: \.element.id) { index, room in
-                            RoomRowView(room: room, isSelected: index == model.selection)
+                            RoomRowView(
+                                room: room,
+                                isSelected: index == model.selection,
+                                screenName: model.screenName(for: room)
+                            )
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     model.selection = index
@@ -228,7 +264,7 @@ private struct ListView: View {
 
     private var footer: some View {
         HStack {
-            Text(localizedString("↵ open · ⇥ change layout · ⌘⌫ delete"))
+            Text(localizedString("↵ open · ⇥ layout · ⌘1-9 open nth · ⌘⌫ delete · ⌘↓ close"))
                 .font(.system(size: 10.5))
                 .foregroundColor(.white.opacity(0.45))
             Spacer()
@@ -244,6 +280,7 @@ private struct ListView: View {
 private struct RoomRowView: View {
     let room: Room
     let isSelected: Bool
+    var screenName: String? = nil
 
     private var subtitle: String {
         let names = room.windows.map { $0.title.isEmpty ? $0.appName : $0.title }
@@ -283,6 +320,14 @@ private struct RoomRowView: View {
                     .padding(.horizontal, 7)
                     .padding(.vertical, 2.5)
                     .background(Capsule().fill(Color.white.opacity(isSelected ? 0.22 : 0.10)))
+                if let screenName {
+                    Text(screenName)
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundColor(isSelected ? .white.opacity(0.9) : .white.opacity(0.6))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2.5)
+                        .background(Capsule().fill(Color.white.opacity(isSelected ? 0.22 : 0.10)))
+                }
             }
             Spacer(minLength: 10)
             RoomLayoutDiagram(windows: room.windows, kind: room.layout)
@@ -294,6 +339,42 @@ private struct RoomRowView: View {
                 .fill(isSelected ? Color.accentColor.opacity(0.55) : Color.white.opacity(0.05))
         )
     }
+}
+
+// MARK: - Screen picker
+
+/// Chips choosing the screen the room tiles on: the pointer's screen (default)
+/// or one saved display. A saved display that is unplugged falls back to the
+/// pointer's screen at activation.
+private func screenPicker(model: RoomsSwitcherModel) -> some View {
+    HStack(spacing: 6) {
+        Text(localizedString("Screen"))
+            .font(.system(size: 11))
+            .foregroundColor(.white.opacity(0.55))
+        chip(title: localizedString("Pointer's screen"), isSelected: model.newDisplayUUID == nil) {
+            model.newDisplayUUID = nil
+        }
+        ForEach(model.screens) { screen in
+            chip(title: screen.name, isSelected: model.newDisplayUUID == screen.uuid) {
+                model.newDisplayUUID = screen.uuid
+            }
+        }
+        Spacer(minLength: 0)
+    }
+}
+
+private func chip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+        Text(title)
+            .font(.system(size: 10.5, weight: isSelected ? .semibold : .regular))
+            .foregroundColor(.white.opacity(isSelected ? 1 : 0.6))
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(
+                Capsule().fill(isSelected ? Color.accentColor.opacity(0.75) : Color.white.opacity(0.08))
+            )
+    }
+    .buttonStyle(.plain)
 }
 
 // MARK: - Empty state
@@ -370,6 +451,8 @@ private struct CreationView: View {
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.45))
             }
+
+            screenPicker(model: model)
 
             if model.offers.isEmpty {
                 Spacer()

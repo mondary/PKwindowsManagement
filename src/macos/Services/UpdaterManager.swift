@@ -46,6 +46,7 @@ final class UpdaterManager: ObservableObject {
     @Published private(set) var availableUpdateVersion: String?
     @Published private(set) var switchOffer: ChannelSwitchOffer?
     @Published private(set) var installingSwitch = false
+    @Published private(set) var checkingForUpdates = false
     @Published private(set) var switchErrorMessage: String?
     private var stableInfo: AppcastInfo?
     private var devInfo: AppcastInfo?
@@ -111,22 +112,29 @@ final class UpdaterManager: ObservableObject {
     /// This avoids Sparkle presenting a stale CDN copy of an appcast. A channel
     /// switch to an older build is also offered when the short version differs.
     func checkForUpdatesOrSwitch() {
-        guard !installingSwitch else { return }
+        precondition(Thread.isMainThread)
+        LaunchpadOverlayController.shared.openSettings()
+        guard !installingSwitch, !checkingForUpdates else { return }
+        start()
+        checkingForUpdates = true
         switchErrorMessage = nil
         switchOffer = nil
+        let requestedChannel = channel
         Task {
             let versions = await (
                 Self.latestInfo(at: Self.stableFeedURL),
                 Self.latestInfo(at: Self.devFeedURL)
             )
             await MainActor.run {
+                defer { self.checkingForUpdates = false }
                 self.latestStableVersion = versions.0?.short
                 self.latestDevVersion = versions.1?.short
                 self.stableInfo = versions.0
                 self.devInfo = versions.1
                 self.refreshUpdateAvailability()
 
-                let target = channel == .dev ? versions.1 : versions.0
+                guard channel == requestedChannel else { return }
+                let target = requestedChannel == .dev ? versions.1 : versions.0
                 guard let target,
                       let enclosure = target.enclosure,
                       let signature = target.signature,

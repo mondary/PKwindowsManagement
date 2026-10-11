@@ -1,5 +1,34 @@
 # Changelog
 
+## [2026.10.67] - 2026-10-10
+### Added
+- Rooms : écran cible mémorisé par room (sélecteur à la création, badge dans la liste ; repli sur l'écran du pointeur si débranché), fermeture d'une room (⌘↓ minimise ses fenêtres, la réactivation les ramène) et activation directe ⌘1-9 dans le switcher.
+### Changed
+- Switcher Rooms : pied de page mis à jour avec l'ensemble des raccourcis clavier.
+- Captures natives de la carte clavier (640 et 1440 points, FR/EN) reliées depuis les README et régénérées via le kit média.
+## [2026.10.66] - 2026-10-10
+### Changed
+- Canvas : choix pleine hauteur (`Ctrl+Shift+F`) ou demi-hauteur (`Ctrl+Shift+S`) pour la fenêtre active. Auto-tiling immédiat des fenêtres voisines en demi-hauteur, sans séquence de colonnes prédéfinie. Choix conservés pendant la session Canvas ; les nouvelles fenêtres commencent en pleine hauteur.
+- Navigation haut/bas dans une colonne (`Ctrl+Shift+K/J`), commandes intégrées au menu, aux réglages et à la carte clavier.
+### Fixed
+- Une application refusant la demi-hauteur retrouve une colonne pleine hauteur. Les largeurs négociées sont appliquées lors d’une nouvelle passe cohérente, plutôt que modifiées au milieu du placement.
+
+## [2026.10.65] - 2026-10-10
+### Changed
+- Carte clavier étendue à la largeur disponible : touches adaptatives, lettres et pictogrammes agrandis, raccourcis de 11–13 pt au lieu de 7,5 pt. Les commandes multiples restent séparées et la légende revient à la ligne sur les petites fenêtres.
+
+## [2026.10.64] - 2026-10-10
+### Fixed
+- Réglages : fenêtre détenue par un contrôleur AppKit, réutilisable après fermeture ou minimisation, sans dépendre de la réouverture du bundle par LaunchServices. Le Dock et le menu utilisent le même chemin.
+- Mise à jour depuis le menu : ouvre les réglages et affiche progression, erreur et proposition d’installation dans tous les onglets, au lieu de dépendre de la présence de la vue À propos. Les recherches simultanées sont regroupées.
+- Packaging local : SDK et moteur SwiftPM sélectionnables explicitement pour compiler avec le SDK macOS 26.5 installé lorsque les macros SwiftUI du SDK par défaut sont indisponibles.
+
+## [2026.10.63] - 2026-10-10
+### Fixed
+- Canvas : navigation au scroll sans lecture concurrente de l’état du ruban ; prise en compte de la taille des cellules lors des repositionnements, notamment lorsqu’une colonne passe de pleine hauteur à deux lignes.
+### Added
+- Séquence configurable de colonnes simples et doubles (`1,2,1,2,2,2,1`) ; le dernier choix se prolonge pour les fenêtres supplémentaires. Glissement horizontal direct au trackpad et défilement vertical avec ⌥ ; le défilement vertical ordinaire reste aux applications.
+
 ## [2026.10.62] - 2026-10-10
 ### Fixed
 - Compatibilité compilateur CI de la carte clavier : variables locales renommées pour éviter le shadowing de `entries(for:)` rejeté par le toolchain Swift de la CI (comme sur la Dev 54).

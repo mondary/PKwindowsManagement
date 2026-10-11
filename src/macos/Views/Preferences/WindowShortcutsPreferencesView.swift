@@ -33,7 +33,7 @@ struct WindowShortcutsPreferencesView: View {
                     Text(localizedString("Window management"))
                         .font(.title3.weight(.semibold))
 
-                    KeyboardShortcutMapView(settings: settings)
+                    KeyboardShortcutMapView(settings: settings, availableWidth: max(0, geometry.size.width - 48))
 
                     if geometry.size.width >= 760 {
                         wideLayout
@@ -113,20 +113,9 @@ struct WindowShortcutsPreferencesView: View {
                 Text(localizedString(canvas.activeDisplayIDs.isEmpty ? "Canvas inactive" : "Canvas active"))
                     .foregroundStyle(.secondary)
             }
-            HStack {
-                Text(localizedString("Rows per column"))
-                Picker(localizedString("Rows per column"), selection: $settings.canvasRowsPerColumn) {
-                    Text("1").tag(1)
-                    Text("2").tag(2)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 110)
-                Text(localizedString("Applies the next time the Canvas starts."))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Text(localizedString("Open Canvas arranges windows in scrolling columns with one or two rows. Three columns fit on wide screens, two on smaller screens. Hold Option and scroll with the trackpad or mouse, or use the previous/next column shortcuts. Exiting restores the original window positions and sizes; a placement command exits Canvas before moving the selected window."))
+            Text(localizedString("Choose full or half height for the focused window using the shortcuts above. Adjacent half-height windows automatically share a column; full-height windows keep their own column. Choices last until Canvas exits. Windows that cannot fit half height stay full height."))
+                .font(.caption).foregroundStyle(.secondary)
+            Text(localizedString("Canvas scrolls horizontally with the trackpad, or vertically while holding Option. Ordinary vertical scrolling stays in apps. Previous/next shortcuts move between columns. Exiting restores original positions and sizes."))
                 .font(.caption).foregroundStyle(.secondary)
             if !canvas.message.isEmpty {
                 Text(canvas.message).font(.caption).foregroundStyle(.orange)

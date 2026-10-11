@@ -76,7 +76,7 @@ final class RoomEngine {
 
         // 3. Compute one frame per slot and place every matched window in it.
         var placedNames: [String] = []
-        if let screen = targetScreen() {
+        if let screen = targetScreen(uuid: room.displayUUID) {
             let visible = screen.visibleFrame
             let axTop = primaryScreenHeight - visible.maxY
             let visibleAX = CGRect(x: visible.minX, y: axTop, width: visible.width, height: visible.height)
@@ -160,6 +160,22 @@ final class RoomEngine {
                 appName: candidate.app.localizedName ?? candidate.info.bundleID,
                 title: candidate.info.title
             )
+        }
+    }
+
+    /// A connectable display, for the room's target-screen picker.
+    struct ScreenOption: Identifiable, Hashable {
+        let uuid: String
+        let name: String
+        var id: String { uuid }
+    }
+
+    /// Connected displays with stable UUIDs, main screen first, for the picker.
+    static func connectedScreens() -> [ScreenOption] {
+        let screens = NSScreen.screens.sorted { ($0 == NSScreen.main) && ($1 != NSScreen.main) }
+        return screens.enumerated().compactMap { index, screen in
+            guard let uuid = uuid(for: screen) else { return nil }
+            return ScreenOption(uuid: uuid, name: String(format: localizedString("Screen %d"), index + 1))
         }
     }
 
@@ -284,6 +300,37 @@ final class RoomEngine {
     private func targetScreen() -> NSScreen? {
         let pointer = NSEvent.mouseLocation
         return NSScreen.screens.first { $0.frame.contains(pointer) } ?? NSScreen.main ?? NSScreen.screens.first
+    }
+
+    /// The room's saved display when it is still connected, otherwise the
+    /// screen under the pointer (upstream Rooms behavior).
+    private func targetScreen(uuid: String?) -> NSScreen? {
+        guard let uuid else { return targetScreen() }
+        let screens = NSScreen.screens
+        if let index = screens.firstIndex(where: { Self.uuid(for: $0) == uuid }) {
+            return screens[index]
+        }
+        return targetScreen()
+    }
+
+    private static func uuid(for screen: NSScreen) -> String? {
+        guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
+              let uuid = CGDisplayCreateUUIDFromDisplayID(id)?.takeRetainedValue() else { return nil }
+        return CFUUIDCreateString(nil, uuid) as String
+    }
+
+    // MARK: Close
+
+    /// Puts a room away: every matched window is minimized. Nothing is closed
+    /// or hidden app-wide; activating the room brings the windows back.
+    func close(_ room: Room, claimed: Set<UInt32> = []) async {
+        guard ensureAccessibilityPermission() else { return }
+        let candidates = inventory()
+        let assignment = RoomSlotMatcher.assign(slots: room.windows, windows: candidates.map(\.info), claimed: claimed)
+        for (_, windowIndex) in assignment {
+            guard let candidate = candidates[safe: windowIndex] else { continue }
+            setBool(kAXMinimizedAttribute as CFString, true, on: candidate.element)
+        }
     }
 }
 

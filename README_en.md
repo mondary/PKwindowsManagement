@@ -1,5 +1,7 @@
 # PKwindowsManagement
 
+![Dev keyboard map — adaptive keys and per-window Canvas shortcuts](store/sources/screenshots/keyboard-1440-en.png)
+
 [🇬🇧 EN](README_en.md) · [🇫🇷 FR](README.md)
 
 <img src="icon.png" alt="PKwindowsManagement icon" width="220">
@@ -90,7 +92,9 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 
 ## ⚙️ Settings
 - In-app updates wait for Canvas restoration and actual application exit before replacing and relaunching the app. If an older Dev build stalls at this step, restarting the app may be necessary; see the [CHANGELOG](CHANGELOG.md).
-- **Horizontal Canvas** (Dev channel) in `Window Shortcuts`: a scrolling grid of real windows — 3×2 on wide screens, 2×2 on MacBooks, or **one row per column** (full-height columns) as a setting. `Ctrl+Shift+Space` toggles, `Ctrl+Shift+H/L` moves column by column, `⌥` + trackpad/wheel slides the grid. Exiting restores every window's exact position and size; a snap command (e.g. top-right quarter) leaves the Canvas and applies its placement. Engine modeled after Paneru (MIT, credited); see the [CHANGELOG](CHANGELOG.md).
+- **Open Preferences** reuses the settings window even after closing it. **Check for Updates** opens that window and shows progress and the installation offer from any tab.
+- **Horizontal Canvas** (Dev channel): auto-tiling real windows without a predefined sequence. `Ctrl+Shift+F` gives the focused window full height, `Ctrl+Shift+S` half height; adjacent half-height windows automatically share a column. Windows that reject that size retain full height. Choices last until Canvas exits; new windows start at full height. `Ctrl+Shift+Space` toggles; `Ctrl+Shift+H/L` changes columns and `Ctrl+Shift+K/J` changes rows. A horizontal trackpad gesture, or `⌥` + vertical scroll, scrolls the strip. Exiting restores original positions and sizes; a snap command leaves Canvas before placing the window. All these shortcuts are configurable. See the [CHANGELOG](CHANGELOG.md).
+- **Rooms** (Dev channel, `Ctrl+Option+R`): named window sets with a layout (Auto/Focus/Columns/Grid/Stack). When creating, pick windows in order (1 = main spot) and the **target screen**; activating tiles on that screen (falls back to the pointer's screen when unplugged), launching missing apps and waiting for their windows. `⇥` cycles layouts, `⌘1-9` opens the nth room, `⌘↓` closes the room (windows minimized; reactivating brings them back), `⌘⌫` deletes it. See the [CHANGELOG](CHANGELOG.md).
 - In `Window Shortcuts` → `Desktops`, bind **Move Desktop Left/Right** to reorder the desktop with its contents. Mission Control appears briefly; disable automatic Spaces rearrangement in macOS to keep your order. Actual thumbnail dragging is being validated on Dev.
 - Shortcuts can be edited in the preferences window.
 - In `Window Shortcuts` → `Desktops`, configure create, close, and move-between-Space actions. Choose a wallpaper folder, enable random selection for new desktops, and decide whether to switch to the destination desktop after moving a window.
@@ -100,7 +104,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Right-click an application to assign or edit its global shortcut.
 - Assigned shortcuts appear as key badges over application icons.
 - Shortcuts can also be captured with a `Record` button.
-- Settings open on **Windows**. A **keyboard map** shows each key’s window placement and shortcut (`Y` top-left quarter, `U/I/O/J/K/L` sixths, `1/2/3` thirds, `P`/`H`/`M` quarters); it follows your current shortcuts. Margins show **Top, Bottom, Left, Right**; **Horizontal Canvas (Open Canvas)** groups its commands and the one/two rows per column setting.
+- Settings open on **Windows**. The **keyboard map** fills the available width with larger keys and labels and separate entries for multiple commands. It follows your current shortcuts (`Y` top-left quarter, `U/I/O/J/K/L` sixths, `1/2/3` thirds, `P`/`H`/`M` quarters). Margins show **Top, Bottom, Left, Right**; **Horizontal Canvas (Open Canvas)** groups navigation and per-window height commands.
 - **Scripts** and **Web Links** are separate sections, followed by **Big Year**. **System**, below Local AI, groups language, accessibility and backups.
 - **Launchpad** keeps the global shortcut and hot corner side by side. **Appearance** uses column layout: style, category organization (graphical previews), grid, per-display layouts, ordering and navigation. In **Compact**, only the compact theme appears; grid, category, ordering and navigation blocks belong to the **Fullscreen** style.
 - In `Appearance`, sort Launchpad apps by `Last Used`, `Name`, `Icon Color`, or `Custom Order` (drag tiles in Launchpad).

@@ -3,11 +3,11 @@ import Combine
 import OSLog
 
 enum CanvasAction: String {
-    case toggle, previous, next, restore
+    case toggle, previous, next, above, below, fullHeight, halfHeight, restore
 }
 
 /// Paneru-style scrolling grid of real AX windows (see docs/canvas-plan.md):
-/// a `columns × 2` page per display, a viewport that slides column by column,
+/// mixed one/two-row columns per display, a horizontally scrolling viewport,
 /// off-screen columns parked as edge slivers, and an exact-restore journal.
 /// All layout/AX work is serial and off the main thread; AppKit state is
 /// captured on the main thread only.
@@ -29,7 +29,6 @@ final class HorizontalCanvasService: ObservableObject {
         let apps: [pid_t: Date]
         let frontmostPID: pid_t?
         let pointer: CGPoint
-        let canvasRows: Int
 
         static func capture() -> Context {
             precondition(Thread.isMainThread)
@@ -56,8 +55,7 @@ final class HorizontalCanvasService: ObservableObject {
                 displays: displays,
                 apps: apps,
                 frontmostPID: NSWorkspace.shared.frontmostApplication?.processIdentifier,
-                pointer: CGPoint(x: pointer.x, y: top - pointer.y),
-                canvasRows: max(1, min(2, AppRuntime.shared.settings?.canvasRowsPerColumn ?? 2))
+                pointer: CGPoint(x: pointer.x, y: top - pointer.y)
             )
         }
     }
@@ -73,7 +71,9 @@ final class HorizontalCanvasService: ObservableObject {
     private final class Entry {
         let saved: SavedWindow
         let window: AXUIElement
-        var lastOrigin: CGPoint?
+        var lastFrame: CGRect?
+        var halfHeight = false
+        var minimumWidth: CGFloat = 0
         init(saved: SavedWindow, window: AXUIElement) {
             self.saved = saved
             self.window = window
@@ -83,19 +83,17 @@ final class HorizontalCanvasService: ObservableObject {
     private final class Strip {
         let display: Display
         let space: UInt64
-        let rows: Int
         let defaultWidth: CGFloat
-        /// Column-major: index = column * rows + row. Only the last column may
-        /// be partially filled.
+        /// Column-major; each column has its own row count.
         var entries: [Entry] = []
+        var columns: [CanvasLayout.Column] = []
         var widths: [CGFloat] = []
         var selected: CGWindowID?
         var viewport: CGFloat = 0
         var lastNavigation: TimeInterval = 0
-        init(display: Display, space: UInt64, rows: Int, defaultWidth: CGFloat) {
+        init(display: Display, space: UInt64, defaultWidth: CGFloat) {
             self.display = display
             self.space = space
-            self.rows = rows
             self.defaultWidth = defaultWidth
         }
     }
@@ -108,8 +106,6 @@ final class HorizontalCanvasService: ObservableObject {
     private var timer: Timer?
     private var tickPending = false // main thread only
     private var shuttingDown = false // main thread only
-    private var scrollAccumulator: CGFloat = 0 // main thread only
-    private let scrollThreshold: CGFloat = 180
     private let restoreURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("PKwindowsManagement/CanvasRestore.json")
 
@@ -146,21 +142,16 @@ final class HorizontalCanvasService: ObservableObject {
                 // Journal before moving even the first window.
                 for entry in entries { self.saved[entry.saved.id] = entry.saved }
                 guard self.persist() else { return }
-                let rows = context.canvasRows
-                let geometry = CanvasLayout.Geometry(area: display.area, rows: rows)
+                let geometry = CanvasLayout.Geometry(area: display.area, rows: 2)
                 let strip = Strip(
                     display: display,
                     space: space,
-                    rows: rows,
                     defaultWidth: geometry.defaultColumnWidth(
                         columns: CanvasLayout.preferredColumns(forAreaWidth: display.area.width)
                     )
                 )
                 strip.entries = entries
-                strip.widths = Array(
-                    repeating: strip.defaultWidth,
-                    count: CanvasLayout.columnCount(windows: entries.count, rows: rows)
-                )
+                self.retile(strip)
                 strip.selected = entries.first(where: { $0.saved.id == focused })?.saved.id ?? entries.first?.saved.id
                 self.strips[display.id] = strip
                 self.fitViewport(strip)
@@ -169,11 +160,28 @@ final class HorizontalCanvasService: ObservableObject {
                 self.publish()
             } else if let strip = self.strips[display.id], self.isCurrent(strip) {
                 guard !strip.entries.isEmpty, !strip.widths.isEmpty else { return }
+                if action == .fullHeight || action == .halfHeight {
+                    // Read actual focus now, rather than waiting for the periodic
+                    // observer: a click followed by a shortcut must affect that window.
+                    guard let focused,
+                          let entry = strip.entries.first(where: { $0.saved.id == focused }) else { return }
+                    strip.selected = focused
+                    entry.halfHeight = action == .halfHeight
+                    self.retile(strip)
+                    self.fitViewport(strip)
+                    self.teleport(strip, context: context)
+                    self.focusSelected(strip)
+                    return
+                }
                 let index = strip.entries.firstIndex(where: { $0.saved.id == strip.selected }) ?? 0
-                let column = index / strip.rows
-                let row = index % strip.rows
-                let targetColumn = min(max(0, column + (action == .next ? 1 : -1)), strip.widths.count - 1)
-                let targetIndex = min(targetColumn * strip.rows + row, strip.entries.count - 1)
+                guard let slot = CanvasLayout.slot(index: index, columns: strip.columns) else { return }
+                let column = slot.column
+                let row = slot.row
+                let vertical = action == .above || action == .below
+                let targetColumn = vertical ? column : min(max(0, column + (action == .next ? 1 : -1)), strip.widths.count - 1)
+                let targetRow = vertical ? row + (action == .below ? 1 : -1) : row
+                guard let targetIndex = CanvasLayout.index(column: targetColumn, row: targetRow,
+                                                           columns: strip.columns) else { return }
                 strip.selected = strip.entries[targetIndex].saved.id
                 strip.lastNavigation = ProcessInfo.processInfo.systemUptime
                 self.fitViewport(strip)
@@ -183,27 +191,15 @@ final class HorizontalCanvasService: ObservableObject {
         }
     }
 
-    /// Option-gated scroll navigation, called from the event tap (main thread).
-    /// Returns true (consume) while a strip owns the display under the pointer,
-    /// so unmodified scrolling keeps reaching the focused application.
+    /// Continuous horizontal/Option scroll. Never read the worker-owned strips on
+    /// the event-tap thread; the published display IDs are the main-thread snapshot.
     func scroll(rawDelta: CGFloat, location: CGPoint) -> Bool {
         precondition(Thread.isMainThread)
-        guard !shuttingDown, !strips.isEmpty else { return false }
+        guard !shuttingDown else { return false }
         let context = Context.capture()
-        guard context.displays.first(where: { $0.bounds.contains(location) }).flatMap({ strips[$0.id] }) != nil else {
-            return false
-        }
-        scrollAccumulator += rawDelta
-        while scrollAccumulator <= -scrollThreshold {
-            scrollAccumulator += scrollThreshold
-            let target = context
-            queue.async { self.shiftViewport(on: (target.displays.first { $0.bounds.contains(location) })?.id, byColumns: 1, context: target) }
-        }
-        while scrollAccumulator >= scrollThreshold {
-            scrollAccumulator -= scrollThreshold
-            let target = context
-            queue.async { self.shiftViewport(on: (target.displays.first { $0.bounds.contains(location) })?.id, byColumns: -1, context: target) }
-        }
+        guard let id = context.displays.first(where: { $0.bounds.contains(location) })?.id,
+              activeDisplayIDs.contains(id) else { return false }
+        queue.async { self.shiftViewport(on: id, by: -rawDelta, context: context) }
         return true
     }
 
@@ -224,49 +220,57 @@ final class HorizontalCanvasService: ObservableObject {
         release(completion: completion)
     }
 
-    private func shiftViewport(on displayID: CGDirectDisplayID?, byColumns delta: Int, context: Context) {
-        guard let displayID, let strip = strips[displayID], isCurrent(strip), !strip.widths.isEmpty else { return }
-        let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: strip.rows)
-        let origins = CanvasLayout.canvasOrigins(widths: strip.widths)
-        var first = 0
-        for (index, origin) in origins.enumerated() where origin + strip.widths[index] > strip.viewport + 0.5 {
-            first = index
-            break
-        }
-        let target = min(max(0, first + delta), strip.widths.count - 1)
-        strip.viewport = CanvasLayout.clampViewport(origins[target], widths: strip.widths, viewport: geometry.contentWidth)
+    private func shiftViewport(on displayID: CGDirectDisplayID, by delta: CGFloat, context: Context) {
+        guard let strip = strips[displayID], isCurrent(strip), !strip.widths.isEmpty else { return }
+        let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
+        strip.viewport = CanvasLayout.clampViewport(strip.viewport + delta, widths: strip.widths, viewport: geometry.contentWidth)
         teleport(strip, context: context)
     }
 
     private func fitViewport(_ strip: Strip) {
         guard let index = strip.entries.firstIndex(where: { $0.saved.id == strip.selected }) else { return }
-        let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: strip.rows)
+        let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
+        guard let slot = CanvasLayout.slot(index: index, columns: strip.columns) else { return }
         strip.viewport = CanvasLayout.fitViewport(
-            index: index / strip.rows,
+            index: slot.column,
             widths: strip.widths,
             geometry: geometry,
             current: strip.viewport
         )
     }
 
+    private func retile(_ strip: Strip) {
+        strip.columns = CanvasLayout.columns(halfHeight: strip.entries.map(\.halfHeight))
+        strip.widths = strip.columns.map { column in
+            column.windows.reduce(strip.defaultWidth) { max($0, strip.entries[$1].minimumWidth) }
+        }
+        if !strip.entries.contains(where: { $0.saved.id == strip.selected }) {
+            strip.selected = strip.entries.first?.saved.id
+        }
+    }
+
     /// Recommit every window to its cell, focused first (the one the user is
     /// watching), then on-screen left-to-right, then parked slivers. Unchanged
     /// origins skip their AX round-trip entirely (ScrollWM measurement: an AX
     /// move costs ~0.4ms cross-process, so skips dominate on large strips).
-    private func teleport(_ strip: Strip, context: Context) {
+    private func teleport(_ strip: Strip, context: Context, negotiationPass: Int = 0) {
         guard isCurrent(strip), !strip.widths.isEmpty else { return }
-        let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: strip.rows)
+        let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
         strip.viewport = CanvasLayout.clampViewport(strip.viewport, widths: strip.widths, viewport: geometry.contentWidth)
         let others = context.displays.filter { $0.id != strip.display.id }.map(\.bounds)
 
         func placement(at index: Int) -> CanvasLayout.Placement {
-            CanvasLayout.placement(
-                column: index / strip.rows,
-                row: index % strip.rows,
+            guard let slot = CanvasLayout.slot(index: index, columns: strip.columns) else {
+                return CanvasLayout.Placement(frame: .null, parked: nil)
+            }
+            return CanvasLayout.placement(
+                column: slot.column,
+                row: slot.row,
                 widths: strip.widths,
                 geometry: geometry,
                 viewport: strip.viewport,
-                otherDisplays: others
+                otherDisplays: others,
+                rows: strip.columns[slot.column].rows
             )
         }
 
@@ -284,27 +288,45 @@ final class HorizontalCanvasService: ObservableObject {
         }
         if let selectedIndex { order.insert(selectedIndex, at: 0) }
 
+        var needsRetile = false
         for index in order {
             let entry = strip.entries[index]
             guard CanvasWindowAccess.id(entry.window) == entry.saved.id,
                   CanvasWindowAccess.eligible(entry.window),
                   SpaceManagementService.desktops(forWindow: entry.saved.id) == [strip.space]
             else { continue }
-            let column = index / strip.rows
+            guard let column = CanvasLayout.slot(index: index, columns: strip.columns)?.column else { continue }
             let target = placement(at: index)
-            if let last = entry.lastOrigin,
-               abs(last.x - target.frame.minX) < 0.5, abs(last.y - target.frame.minY) < 0.5 {
+            if let last = entry.lastFrame,
+               abs(last.minX - target.frame.minX) < 0.5, abs(last.minY - target.frame.minY) < 0.5,
+               abs(last.width - target.frame.width) < 0.5, abs(last.height - target.frame.height) < 0.5 {
                 continue
             }
-            if CanvasWindowAccess.setFrame(target.frame, window: entry.window) {
-                entry.lastOrigin = target.frame.origin
-                // Applications that refuse the requested cell keep their real
-                // width: the column widens instead of the model lying.
-                if let actual = CanvasWindowAccess.frame(entry.window) {
-                    strip.widths[column] = max(strip.widths[column], actual.width)
+            let accepted = CanvasWindowAccess.setFrame(target.frame, window: entry.window)
+            if let actual = CanvasWindowAccess.frame(entry.window) {
+                entry.lastFrame = target.frame
+                // Negotiate all sizes BEFORE recomputing origins: mutating column
+                // widths in the placement loop left earlier windows misaligned.
+                if actual.width > strip.widths[column] + 1 {
+                    entry.minimumWidth = actual.width
+                    needsRetile = true
                 }
-            } else {
+                if entry.halfHeight && actual.height > target.frame.height + 3 {
+                    entry.halfHeight = false
+                    needsRetile = true
+                    report("This window needs full height; Canvas kept it in its own column.")
+                }
+                if !accepted { entry.lastFrame = nil }
+            }
+            if !accepted {
                 logger.notice("Canvas window \(entry.saved.id) rejected its cell frame")
+            }
+        }
+        if needsRetile {
+            retile(strip)
+            fitViewport(strip)
+            if negotiationPass < 2 {
+                teleport(strip, context: context, negotiationPass: negotiationPass + 1)
             }
         }
     }
@@ -395,16 +417,6 @@ final class HorizontalCanvasService: ObservableObject {
                     }
                     return false
                 }
-                if strip.entries.isEmpty {
-                    strip.widths = []
-                } else {
-                    while strip.widths.count < CanvasLayout.columnCount(windows: strip.entries.count, rows: strip.rows) {
-                        strip.widths.append(strip.defaultWidth)
-                    }
-                    while strip.widths.count > CanvasLayout.columnCount(windows: strip.entries.count, rows: strip.rows) {
-                        strip.widths.removeLast()
-                    }
-                }
                 let additions = self.discover(context, on: display, space: strip.space)
                 for entry in additions { self.saved[entry.saved.id] = entry.saved }
                 if changed || !additions.isEmpty {
@@ -412,10 +424,11 @@ final class HorizontalCanvasService: ObservableObject {
                 }
                 if !additions.isEmpty {
                     strip.entries.append(contentsOf: additions)
-                    while strip.widths.count < CanvasLayout.columnCount(windows: strip.entries.count, rows: strip.rows) {
-                        strip.widths.append(strip.defaultWidth)
-                    }
                     changed = true
+                }
+                if changed {
+                    self.retile(strip)
+                    self.fitViewport(strip)
                 }
                 if ProcessInfo.processInfo.systemUptime - strip.lastNavigation > 1,
                    let focused, focused != strip.selected, strip.entries.contains(where: { $0.saved.id == focused }) {

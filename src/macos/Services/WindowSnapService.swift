@@ -703,7 +703,8 @@ extension ShortcutAction {
         case .windowTileAll: .tileAll
         case .desktopCreate, .desktopCloseCurrent, .windowNextDesktop, .windowPreviousDesktop,
              .desktopMoveLeft, .desktopMoveRight,
-             .canvasToggle, .canvasPrevious, .canvasNext, .canvasRestore:
+             .canvasToggle, .canvasPrevious, .canvasNext, .canvasRestore,
+             .canvasFullHeight, .canvasHalfHeight, .canvasAbove, .canvasBelow:
             nil
         }
     }

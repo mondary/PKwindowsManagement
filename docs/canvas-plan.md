@@ -42,3 +42,14 @@ their own display. ⌥ + swipe/wheel slides the grid without stealing plain
 scrolling from apps. Exiting restores every window's exact frame — including a
 quarter-snapped window — and a snap command during the Canvas leaves the mode
 and applies its placement.
+
+Dev 2026.10.66 supersedes the uniform grid and the Dev 63 column pattern:
+height is selected PER WINDOW using Ctrl+Shift+F (full) or Ctrl+Shift+S (half).
+Adjacent half-height windows are paired without changing strip order. A lone
+half retains an empty cell; full-height neighbors are never squeezed into it.
+Ctrl+Shift+K/J navigates the two cells. Apps rejecting half height are promoted
+to a full-height column. Choices are session-local; new windows start full-height.
+Horizontal trackpad scrolling works directly; Option + vertical scroll remains
+available for wheels. Automated checks exhaustively cover height combinations
+through ten windows, changing height and unpaired halves. Still test live focus,
+app minimum sizes, closing/adding windows, restoration and multiple displays.

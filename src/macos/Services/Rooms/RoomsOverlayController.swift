@@ -123,18 +123,33 @@ final class RoomsOverlayController {
                 return nil
             }
             return event
-        case 125:  // ↓
+        case 125:  // ↓ (⌘↓ closes the room's windows)
+            if modifiers.contains(.command) {
+                model.closeSelected()
+                return nil
+            }
             model.moveSelection(1)
             return nil
         case 126:  // ↑
             model.moveSelection(-1)
             return nil
         default:
+            // ⌘1-9: open the nth visible room directly. ANSI key codes are not
+            // sequential across the digit row (5=0x17, 6=0x16, 7=0x1A, 8=0x1C, 9=0x19).
+            if modifiers.contains(.command), let rank = Self.digitRanks[event.keyCode] {
+                if model.activateRoom(at: rank) { hide() }
+                return nil
+            }
             return event
         }
     }
 
     // MARK: Placement
+
+    /// Digit-row ANSI key codes mapped to their rank (0 = ⌘1).
+    private static let digitRanks: [UInt16: Int] = [
+        18: 0, 19: 1, 20: 2, 21: 3, 23: 4, 22: 5, 26: 6, 28: 7, 25: 8,
+    ]
 
     private func centeredOrigin(size: NSSize) -> NSPoint {
         let pointer = NSEvent.mouseLocation

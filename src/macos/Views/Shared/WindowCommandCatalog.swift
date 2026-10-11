@@ -47,7 +47,8 @@ enum WindowCommandFamily: String, CaseIterable, Identifiable {
         case .desktopCreate, .desktopCloseCurrent, .windowNextDesktop, .windowPreviousDesktop,
              .desktopMoveLeft, .desktopMoveRight:
             self = .desktop
-        case .canvasToggle, .canvasPrevious, .canvasNext, .canvasRestore:
+        case .canvasToggle, .canvasPrevious, .canvasNext, .canvasRestore,
+             .canvasFullHeight, .canvasHalfHeight, .canvasAbove, .canvasBelow:
             self = .canvas
         }
     }
@@ -156,6 +157,10 @@ enum WindowCommandCatalog {
         .bound("Previous Canvas Window", "arrow.left", .canvasPrevious),
         .bound("Next Canvas Window", "arrow.right", .canvasNext),
         .bound("Restore Canvas", "arrow.uturn.backward", .canvasRestore),
+        .bound("Canvas Full Height", "rectangle", .canvasFullHeight),
+        .bound("Canvas Half Height", "rectangle.tophalf.inset.filled", .canvasHalfHeight),
+        .bound("Canvas Window Above", "arrow.up", .canvasAbove),
+        .bound("Canvas Window Below", "arrow.down", .canvasBelow),
     ]
 
     enum size {

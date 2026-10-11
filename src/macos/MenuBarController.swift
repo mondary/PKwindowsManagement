@@ -61,6 +61,12 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         HorizontalCanvasService.shared.start()
         registerRoomsHotKey()
         UpdaterManager.shared.start()
+        SettingsWindowController.shared.showSettings()
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        LaunchpadOverlayController.shared.openSettings()
+        return false
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -189,7 +195,8 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         roomsItem.keyEquivalentModifierMask = [.control, .option]
         menu.addItem(roomsItem)
         let canvasMenu = NSMenu()
-        for action in [ShortcutAction.canvasToggle, .canvasPrevious, .canvasNext, .canvasRestore] {
+        for action in [ShortcutAction.canvasToggle, .canvasPrevious, .canvasNext, .canvasAbove, .canvasBelow,
+                       .canvasFullHeight, .canvasHalfHeight, .canvasRestore] {
             let shortcut = AppRuntime.shared.settings?.shortcut(for: action)
             let item = NSMenuItem(title: action.title, action: #selector(canvasCommand(_:)), keyEquivalent: shortcut?.menuKeyEquivalent ?? "")
             item.target = self

@@ -247,8 +247,8 @@ final class AppSettings: ObservableObject {
         }
     }
 
-    /// Canvas grid height: 1 full-height window per column (Paneru classic)
-    /// or 2 stacked rows. Read when a strip starts.
+    /// Legacy uniform-grid preference, retained only for backup compatibility.
+    /// Canvas now uses per-window height choices for the active session.
     @Published var canvasRowsPerColumn: Int {
         didSet {
             let clamped = max(1, min(2, canvasRowsPerColumn))

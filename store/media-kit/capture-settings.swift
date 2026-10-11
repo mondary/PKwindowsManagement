@@ -21,13 +21,20 @@ struct SettingsCapture {
         for language in [AppLanguage.french, .english] {
             UserDefaults.standard.setVolatileDomain(["app-language": language.rawValue], forName: UserDefaults.argumentDomain)
             settings.appLanguage = language
+            if CommandLine.arguments.contains("--keyboard") {
+                for width in [640.0, 1440.0] {
+                    try render(KeyboardShortcutMapView(settings: settings, availableWidth: width - 48).padding(24),
+                               language: language, name: "keyboard-\(Int(width))", output: output, width: width)
+                }
+                continue
+            }
             try render(WindowShortcutsPreferencesView(settings: settings), language: language, name: "windows", output: output)
             try render(AppearanceSettingsView(settings: settings), language: language, name: "appearance", output: output)
         }
     }
 
-    @MainActor static func render<V: View>(_ view: V, language: AppLanguage, name: String, output: URL) throws {
-        let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 1050, height: 800), styleMask: [.borderless], backing: .buffered, defer: false)
+    @MainActor static func render<V: View>(_ view: V, language: AppLanguage, name: String, output: URL, width: CGFloat = 1050) throws {
+        let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: width, height: 800), styleMask: [.borderless], backing: .buffered, defer: false)
         window.contentView = NSHostingView(rootView: view.background(Color(nsColor: .windowBackgroundColor)).environment(\.locale, language.locale).environment(\.colorScheme, .light))
         window.orderBack(nil)
         RunLoop.current.run(until: Date().addingTimeInterval(0.8))

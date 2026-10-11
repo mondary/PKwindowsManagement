@@ -29,8 +29,10 @@
 ## Rooms (inspiré de saragordic/rooms — voir docs/rooms-gap-analysis.md)
 - [x] Moteur de layouts `RoomTiler` porté (Auto / Focus / Colonnes / Grille / Pile).
 - [x] Vue Rooms façon Spotlight avec miniature du tiling par app, création depuis les apps actives, activation (lancement des apps manquantes + attente + tuilage) — hotkey ⌃⌥R (v1 : rooms par apps, pas par fenêtres individuelles).
-- [ ] Raccourcis directs ⌃⌥1-9 par room.
-- [ ] Matching fenêtres individuelles (windowID / titre / app).
+- [x] Matching fenêtre à fenêtre (windowID → titre exact → titre similaire → autre fenêtre de l'app, fenêtres claimées évitées).
+- [x] Écran cible par room : sélecteur à la création, badge dans la liste, repli sur l'écran du pointeur si débranché — Dev 2026.10.67.
+- [x] Fermeture de room ⌘↓ (fenêtres minimisées, réactivation = retour) et activation directe ⌘1-9 dans le switcher — Dev 2026.10.67.
+- [ ] Raccourcis directs ⌃⌥1-9 par room (globaux, hors switcher).
 - [ ] Park & registre crash-safe (« Tout montrer »).
 - [ ] Prototype room ↔ Space macOS dédié + wallpaper dédié.
 

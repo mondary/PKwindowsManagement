@@ -14,6 +14,47 @@ enum CanvasLayoutChecks {
         assert(CanvasLayout.columnCount(windows: 1, rows: 2) == 1)
         assert(CanvasLayout.columnCount(windows: 6, rows: 2) == 3)
         assert(CanvasLayout.columnCount(windows: 7, rows: 2) == 4)
+        let heights = [false, true, true, false, true, false, true, true, true, true]
+        let mixed = CanvasLayout.columns(halfHeight: heights)
+        assert(mixed.map(\.rows) == [1, 2, 1, 2, 1, 2, 2])
+        assert(mixed.map(\.windows) == [[0], [1, 2], [3], [4], [5], [6, 7], [8, 9]])
+        assert(CanvasLayout.columns(halfHeight: []).isEmpty)
+        for index in heights.indices {
+            let slot = CanvasLayout.slot(index: index, columns: mixed)!
+            assert(CanvasLayout.index(column: slot.column, row: slot.row, columns: mixed) == index)
+            let cell = CanvasLayout.placement(column: slot.column, row: slot.row,
+                widths: Array(repeating: 300, count: mixed.count), geometry: geometry,
+                viewport: 0, otherDisplays: [], rows: mixed[slot.column].rows)
+            let expectedHeight = heights[index] ? geometry.rowHeight : area.height
+            assert(cell.frame.height == expectedHeight)
+        }
+        // A full-height window after an unpaired half must not occupy its empty cell.
+        assert(CanvasLayout.slot(index: 5, columns: mixed)?.column == 4)
+        assert(CanvasLayout.index(column: 3, row: 1, columns: mixed) == 4)
+        assert(CanvasLayout.index(column: 1, row: -1, columns: mixed) == 1)
+        var changed = [true, true, false]
+        assert(CanvasLayout.columns(halfHeight: changed).map(\.windows) == [[0, 1], [2]])
+        changed[0] = false
+        assert(CanvasLayout.columns(halfHeight: changed).map(\.windows) == [[0], [1], [2]])
+        changed[2] = true
+        assert(CanvasLayout.columns(halfHeight: changed).map(\.windows) == [[0], [1, 2]])
+        // All full/half combinations through ten windows: no window disappears,
+        // changes order, shares a full-height cell, or occupies an empty half.
+        for count in 0...10 {
+            for mask in 0..<(1 << count) {
+                let choices = (0..<count).map { mask & (1 << $0) != 0 }
+                let columns = CanvasLayout.columns(halfHeight: choices)
+                assert(columns.flatMap(\.windows) == Array(0..<count))
+                for column in columns {
+                    assert(column.windows.count <= column.rows)
+                    for index in column.windows {
+                        assert(column.rows == (choices[index] ? 2 : 1))
+                        let slot = CanvasLayout.slot(index: index, columns: columns)!
+                        assert(CanvasLayout.index(column: slot.column, row: slot.row, columns: columns) == index)
+                    }
+                }
+            }
+        }
 
         let width = geometry.defaultColumnWidth(columns: 3)
         let widths = Array(repeating: width, count: 4)

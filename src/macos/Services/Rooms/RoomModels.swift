@@ -69,13 +69,17 @@ struct Room: Codable, Identifiable, Hashable {
     var windows: [RoomWindow]
     var layout: RoomLayoutKind
     var createdAt: Date
+    /// Target display (CGDisplay UUID string). Nil = the screen under the
+    /// pointer when the room is activated, like the upstream Rooms app.
+    var displayUUID: String?
 
-    init(id: String? = nil, name: String, windows: [RoomWindow], layout: RoomLayoutKind = .auto) {
+    init(id: String? = nil, name: String, windows: [RoomWindow], layout: RoomLayoutKind = .auto, displayUUID: String? = nil) {
         self.id = id ?? Room.slug(name)
         self.name = name
         self.windows = windows
         self.layout = layout
         self.createdAt = Date()
+        self.displayUUID = displayUUID
     }
 
     /// Tolerant decoding, with migration of v1 rooms that stored apps.
@@ -93,6 +97,7 @@ struct Room: Codable, Identifiable, Hashable {
         windows = decoded
         layout = try c.decodeIfPresent(RoomLayoutKind.self, forKey: .layout) ?? .auto
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        displayUUID = try c.decodeIfPresent(String.self, forKey: .displayUUID)
     }
 
     /// Distinct bundle identifiers in slot order (apps the room may need to launch).
@@ -108,6 +113,7 @@ struct Room: Codable, Identifiable, Hashable {
         case apps
         case layout
         case createdAt
+        case displayUUID
     }
 
     /// `apps` is a read-only migration key: never written back.
@@ -118,6 +124,7 @@ struct Room: Codable, Identifiable, Hashable {
         try c.encode(windows, forKey: .windows)
         try c.encode(layout, forKey: .layout)
         try c.encode(createdAt, forKey: .createdAt)
+        try c.encodeIfPresent(displayUUID, forKey: .displayUUID)
     }
 
     static func slug(_ s: String) -> String {

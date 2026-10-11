@@ -143,18 +143,7 @@ final class LaunchpadOverlayController {
     func openSettings() {
         hide()
         DispatchQueue.main.async {
-            NSApp.activate(ignoringOtherApps: true)
-            if let settingsWindow = NSApp.windows.first(where: { $0.title == "PKwindowsManagement" && $0.isVisible }) {
-                if settingsWindow.isMiniaturized {
-                    settingsWindow.deminiaturize(nil)
-                }
-                settingsWindow.makeKeyAndOrderFront(nil)
-                return
-            }
-            // Fenêtre fermée ou non restaurée au lancement : réouvrir le bundle
-            // de l'app en cours envoie l'Apple Event `reopen` et SwiftUI recrée
-            // la fenêtre du WindowGroup, sans dépendre d'une closure SwiftUI.
-            NSWorkspace.shared.open(Bundle.main.bundleURL)
+            SettingsWindowController.shared.showSettings()
         }
     }
 

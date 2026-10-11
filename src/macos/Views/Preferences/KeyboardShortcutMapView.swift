@@ -4,22 +4,29 @@ import SwiftUI
 /// position et son rappel de raccourci. La carte suit les liaisons courantes.
 struct KeyboardShortcutMapView: View {
     @ObservedObject var settings: AppSettings
+    let availableWidth: CGFloat
     @State private var selectedKey: String?
+
+    private let keySpacing: CGFloat = 6
+    private var keyWidth: CGFloat {
+        let columns = CGFloat(WindowCommandCatalog.rows.map(\.count).max() ?? 12)
+        return max(40, (availableWidth - 28 - (columns - 1) * keySpacing) / columns)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(localizedString("Keyboard map"))
                 .font(.headline)
             Text(localizedString("Every key shows its window placement and shortcut. The map follows your current shortcuts."))
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(spacing: 5) {
+            VStack(spacing: keySpacing) {
                 ForEach(WindowCommandCatalog.rows, id: \.self) { row in
-                    HStack(spacing: 5) {
+                    HStack(spacing: keySpacing) {
                         ForEach(row, id: \.self) { key in
-                            keycap(key)
+                            keycap(key, height: rowHeight(row))
                         }
                     }
                 }
@@ -30,18 +37,17 @@ struct KeyboardShortcutMapView: View {
 
             selectionCaption
 
-            HStack(spacing: 14) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), alignment: .leading)], alignment: .leading, spacing: 10) {
                 ForEach(WindowCommandFamily.allCases) { family in
                     HStack(spacing: 5) {
                         RoundedRectangle(cornerRadius: 2)
                             .fill(family.tint)
-                            .frame(width: 10, height: 10)
+                            .frame(width: 11, height: 11)
                         Text(family.title)
-                            .font(.caption)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                 }
-                Spacer()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -68,15 +74,21 @@ struct KeyboardShortcutMapView: View {
         }
     }
 
-    private func keycap(_ key: String) -> some View {
+    private func rowHeight(_ row: [String]) -> CGFloat {
+        let commandCount = row.map { entries(for: $0).count }.max() ?? 0
+        return max(88, 36 + CGFloat(commandCount) * (keyWidth >= 72 ? 26 : 40))
+    }
+
+    private func keycap(_ key: String, height: CGFloat) -> some View {
         let keyEntries = entries(for: key)
         return MapKeycap(
             key: key,
+            width: key == "space" ? keyWidth * 2 + keySpacing : keyWidth,
             entries: keyEntries,
             isSelected: selectedKey == key,
             onSelect: { selectedKey = selectedKey == key ? nil : key }
         )
-        .frame(width: key == "space" ? 110 : 46)
+        .frame(width: key == "space" ? keyWidth * 2 + keySpacing : keyWidth, height: height)
     }
 
     @ViewBuilder
@@ -84,7 +96,7 @@ struct KeyboardShortcutMapView: View {
         let keyEntries = selectedKey.map { entries(for: $0) } ?? []
         if keyEntries.isEmpty {
             Text(localizedString("Select a key to see its command."))
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
         } else {
             VStack(alignment: .leading, spacing: 4) {
@@ -92,10 +104,10 @@ struct KeyboardShortcutMapView: View {
                     HStack(spacing: 8) {
                         WindowCommandIcon(spec: entry.spec, tint: entry.spec.family.tint)
                         Text(localizedString(entry.spec.title))
-                            .font(.subheadline)
+                            .font(.body)
                         Spacer()
                         Text(entry.badge)
-                            .font(.system(.caption, design: .monospaced))
+                            .font(.system(.body, design: .monospaced))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -108,6 +120,7 @@ struct KeyboardShortcutMapView: View {
 
 private struct MapKeycap: View {
     let key: String
+    let width: CGFloat
     let entries: [KeyboardShortcutMapView.KeyEntry]
     let isSelected: Bool
     let onSelect: () -> Void
@@ -122,32 +135,27 @@ private struct MapKeycap: View {
 
     var body: some View {
         Button(action: onSelect) {
-            VStack(spacing: 3) {
+            VStack(spacing: 6) {
+                Text(legend)
+                    .font(.system(size: width >= 72 ? 18 : 15, weight: .bold, design: .monospaced))
+                    .foregroundStyle(entries.isEmpty ? .secondary : .primary)
                 if entries.isEmpty {
-                    Spacer()
-                    Text(legend)
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                    Spacer()
+                    EmptyView()
                 } else {
-                    HStack(spacing: 5) {
-                        ForEach(entries) { entry in
+                    ForEach(entries) { entry in
+                        let layout = width >= 72
+                            ? AnyLayout(HStackLayout(spacing: 5))
+                            : AnyLayout(VStackLayout(spacing: 3))
+                        layout {
                             WindowCommandIcon(spec: entry.spec, tint: entry.spec.family.tint)
-                                .frame(width: 17, height: 13)
-                        }
-                    }
-                    .frame(height: 13)
-                    HStack(spacing: 3) {
-                        ForEach(entries) { entry in
+                                .scaleEffect(1.3)
+                                .frame(width: 23, height: 18)
                             Text(entry.badge)
-                                .font(.system(size: 7.5, weight: .semibold, design: .monospaced))
+                                .font(.system(size: width >= 100 ? 13 : 11, weight: .semibold, design: .monospaced))
                                 .foregroundStyle(entry.spec.family.tint)
+                                .lineLimit(1)
                         }
                     }
-                    .frame(height: 10)
-                    Text(legend)
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.primary)
                 }
             }
             .padding(.horizontal, 3)
@@ -165,7 +173,6 @@ private struct MapKeycap: View {
             )
         }
         .buttonStyle(.plain)
-        .frame(height: 50)
         .help(helpText)
         .accessibilityLabel(entries.isEmpty ? legend : helpText.replacingOccurrences(of: "\n", with: ", "))
     }

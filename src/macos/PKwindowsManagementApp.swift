@@ -9,6 +9,9 @@ struct PKwindowsManagementApp: App {
         let settings = AppSettings()
         _settings = StateObject(wrappedValue: settings)
         AppRuntime.shared.settings = settings
+        SettingsWindowController.shared.makeContent = {
+            NSHostingController(rootView: SettingsContentView(settings: settings))
+        }
 
         let launcher = AppLauncherService()
         launcher.prewarmApps(settings: settings)
@@ -39,8 +42,23 @@ struct PKwindowsManagementApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("PKwindowsManagement", id: "settings") {
-            RootDashboardView(settings: settings)
+        Settings { EmptyView() }
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button(localizedString("Settings...")) {
+                    LaunchpadOverlayController.shared.openSettings()
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
+        }
+    }
+}
+
+private struct SettingsContentView: View {
+    @ObservedObject var settings: AppSettings
+
+    var body: some View {
+        RootDashboardView(settings: settings)
                 .frame(minWidth: 900, minHeight: 620)
                 .environment(\.locale, settings.appLanguage.locale)
                 .id(settings.appLanguage)
@@ -55,15 +73,6 @@ struct PKwindowsManagementApp: App {
                     let apps = launcher.loadShortcutTargets(settings: settings)
                     LaunchShortcutMonitor.shared.refreshApps(apps)
                 }
-        }
-        .commands {
-            CommandGroup(replacing: .appSettings) {
-                Button(localizedString("Settings...")) {
-                    LaunchpadOverlayController.shared.openSettings()
-                }
-                .keyboardShortcut(",", modifiers: .command)
-            }
-        }
     }
 }
 
@@ -88,6 +97,17 @@ private struct RootDashboardView: View {
             Divider()
 
             VStack(spacing: 0) {
+                if updater.checkingForUpdates || updater.installingSwitch {
+                    HStack {
+                        ProgressView().controlSize(.small)
+                        Text(localizedString(updater.installingSwitch ? "Installing update…" : "Checking for updates…"))
+                        Spacer()
+                    }
+                    .padding(12)
+                }
+                if let message = updater.switchErrorMessage {
+                    Text(message).foregroundStyle(.red).padding(12)
+                }
                 Group {
                     switch selection ?? .windows {
                     case .general:
@@ -127,6 +147,23 @@ private struct RootDashboardView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+        .alert(localizedString(updater.switchOffer?.isUpdate == true ? "Install update?" : "Switch channel?"), isPresented: Binding(
+            get: { updater.switchOffer != nil },
+            set: { if !$0 { updater.cancelSwitchOffer() } }
+        )) {
+            Button(localizedString("Install and relaunch")) { updater.performSwitchInstall() }
+            Button(localizedString("Cancel"), role: .cancel) { updater.cancelSwitchOffer() }
+        } message: {
+            if let offer = updater.switchOffer {
+                if offer.isUpdate {
+                    Text(String(format: localizedString("Install version %@ from the %@ channel?"), offer.version, offer.channel.title))
+                } else {
+                    Text(String(format: localizedString("You are using %1$@. Install %2$@ from the %3$@ channel?"),
+                                Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—",
+                                offer.version, offer.channel.title))
+                }
+            }
+        }
     }
 
     // MARK: - Sidebar (PKMonitor pattern: header, search, grouped rows)

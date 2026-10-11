@@ -186,6 +186,10 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case canvasPrevious
     case canvasNext
     case canvasRestore
+    case canvasFullHeight
+    case canvasHalfHeight
+    case canvasAbove
+    case canvasBelow
 
     var id: String { rawValue }
 
@@ -251,6 +255,10 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasPrevious: localizedString("Previous Canvas Window")
         case .canvasNext: localizedString("Next Canvas Window")
         case .canvasRestore: localizedString("Restore Canvas")
+        case .canvasFullHeight: localizedString("Canvas Full Height")
+        case .canvasHalfHeight: localizedString("Canvas Half Height")
+        case .canvasAbove: localizedString("Canvas Window Above")
+        case .canvasBelow: localizedString("Canvas Window Below")
         }
     }
 
@@ -290,6 +298,10 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasToggle: .init(key: "space", modifier: .controlShift)
         case .canvasPrevious: .init(key: "h", modifier: .controlShift)
         case .canvasNext: .init(key: "l", modifier: .controlShift)
+        case .canvasFullHeight: .init(key: "f", modifier: .controlShift)
+        case .canvasHalfHeight: .init(key: "s", modifier: .controlShift)
+        case .canvasAbove: .init(key: "k", modifier: .controlShift)
+        case .canvasBelow: .init(key: "j", modifier: .controlShift)
         case .windowMakeLarger: .init(key: "=", modifier: .controlOption)
         case .windowMakeSmaller: .init(key: "-", modifier: .controlOption)
         case .windowToggleFullScreen, .windowMaximizeHeight, .windowMaximizeWidth,
@@ -324,6 +336,10 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasPrevious: .previous
         case .canvasNext: .next
         case .canvasRestore: .restore
+        case .canvasFullHeight: .fullHeight
+        case .canvasHalfHeight: .halfHeight
+        case .canvasAbove: .above
+        case .canvasBelow: .below
         default: nil
         }
     }

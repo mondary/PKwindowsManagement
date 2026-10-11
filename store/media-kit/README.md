@@ -52,6 +52,15 @@ Sources de production inchangées ; aucun accès au dossier archivé `store/arch
 
 ## Régénérer
 
+### Carte clavier Dev 2026.10.66
+
+`python3 store/media-kit/capture-settings.py --keyboard` capture les vues SwiftUI
+de production à 640 et 1440 points en FR/EN, avec les raccourcis par défaut et
+des préférences jetables. Les bordures transparentes sont recadrées. Fichiers :
+`store/sources/screenshots/keyboard-{640,1440}-{fr,en}.png`.
+Ces captures valident la lisibilité de la carte ; elles ne valident pas le
+déplacement de fenêtres externes par le Canvas.
+
 ### Réglages Dev 2026.10.59 uniquement
 
 `python3 store/media-kit/capture-settings.py` compile les vues de production sans

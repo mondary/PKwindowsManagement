@@ -2,6 +2,7 @@
 from pathlib import Path
 import subprocess
 import tempfile
+import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 APP = ROOT / "build/PKwindowsManagement.app/Contents"
@@ -21,4 +22,11 @@ with tempfile.TemporaryDirectory(prefix="pk-settings-capture-") as directory:
         "-framework", "Sparkle", "-Xlinker", "-rpath", "-Xlinker", str(FRAMEWORKS),
         *sources, str(Path(__file__).with_suffix(".swift")), "-o", str(executable),
     ], check=True)
-    subprocess.run([str(executable), str(ROOT / "store/sources/screenshots")], check=True)
+    subprocess.run([str(executable), str(ROOT / "store/sources/screenshots"), *sys.argv[1:]], check=True)
+    if "--keyboard" in sys.argv:
+        from PIL import Image
+        for path in (ROOT / "store/sources/screenshots").glob("keyboard-*.png"):
+            with Image.open(path) as image:
+                bounds = image.getbbox()
+                if bounds:
+                    image.crop(bounds).save(path)

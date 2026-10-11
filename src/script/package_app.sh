@@ -45,7 +45,14 @@ cd "$ROOT_DIR"
 # Package.swift declares macOS 13 as the minimum supported system. Without an
 # explicit deployment target, Swift uses the host macOS version instead.
 # SwiftPM's standard scratch (.build/) is shared between debug and release.
-MACOSX_DEPLOYMENT_TARGET=13.0 swift build -c "$BUILD_CONFIGURATION"
+BUILD_OPTIONS=(-c "$BUILD_CONFIGURATION")
+if [[ -n "${PK_MACOS_SDK:-}" ]]; then
+  BUILD_OPTIONS+=(--sdk "$PK_MACOS_SDK")
+fi
+if [[ -n "${PK_SWIFT_BUILD_SYSTEM:-}" ]]; then
+  BUILD_OPTIONS+=(--build-system "$PK_SWIFT_BUILD_SYSTEM")
+fi
+MACOSX_DEPLOYMENT_TARGET=13.0 swift build "${BUILD_OPTIONS[@]}"
 
 rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$RESOURCES_DIR"
