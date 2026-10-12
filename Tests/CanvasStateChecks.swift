@@ -67,6 +67,16 @@ enum CanvasStateChecks {
             assert(CanvasWorkspacePolicy.state(ownedSpace: 101, currentSpace: 101, displayConnected: true) == .active)
         }
         assert(CanvasWorkspacePolicy.state(ownedSpace: 101, currentSpace: nil, displayConnected: false) == .disconnected)
-        print("Canvas state checks passed: 90 pairing orders, 14/24/64 windows, membership, splits and desktop lifecycle")
+        // Deactivation must not lose half-height cuts: the arrangement is kept
+        // aside and reapplied to the rediscovered windows.
+        var kept = CanvasArrangement()
+        kept.synchronize(ids)
+        kept.setHalfHeight(3)
+        kept.setHalfHeight(9)
+        var revived = CanvasArrangement()
+        revived = kept
+        revived.synchronize(ids)
+        precondition(revived.columns.contains { $0.windows == [3, 9] && $0.halfHeight })
+        print("Canvas state checks passed: 90 pairing orders, 14/24/64 windows, cuts kept across toggle, membership, splits and desktop lifecycle")
     }
 }

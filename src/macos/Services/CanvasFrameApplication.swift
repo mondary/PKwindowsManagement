@@ -21,6 +21,17 @@ enum CanvasFrameApplication {
             && actual.width >= target.width - 32 && actual.height >= target.height - 32
     }
 
+    /// A restore is accepted when position and size are exact, or when only the
+    /// size moved within the rounding a character-grid app (VS Code, terminals)
+    /// cannot avoid. Refusing that tolerance left journal ghosts that excluded
+    /// windows from every later strip.
+    static func restored(_ actual: CGRect, _ target: CGRect) -> Bool {
+        guard abs(actual.minX - target.minX) < 3, abs(actual.minY - target.minY) < 3 else { return false }
+        if abs(actual.width - target.width) < 3, abs(actual.height - target.height) < 3 { return true }
+        return actual.width >= target.width - 3 && actual.width <= target.width + 16
+            && actual.height >= target.height - 3 && actual.height <= target.height + 24
+    }
+
     static func apply(_ target: CGRect, initial: CGRect?,
                       read: () -> CGRect?, size: (CGSize) -> Bool,
                       position: (CGPoint) -> Bool, pause: (Double) -> Void,

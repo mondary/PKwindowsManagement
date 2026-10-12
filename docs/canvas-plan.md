@@ -122,7 +122,6 @@ local installation pass. The current macOS preferences no longer contain the
 previous app-to-agent-Space binding, so live strip activation was not attempted.
 
 ### Dev 71 — partial VS Code inventories and Dev publication
-
 The user confirms column splitting works and identifies the omitted windows as
 VS Code windows. Neither the Canvas arrangement nor app tiling has a count cap.
 The two paths previously used different inventories; tiling read AXWindows only,
@@ -144,3 +143,27 @@ The manual updater incorrectly treated any differing version as a channel switch
 Dev 71 requires a real Stable/Dev difference to offer a downgrade and compares
 the product version before the build timestamp. CI now runs the regression checks,
 also triggers on changelog/test changes and serializes Dev publication jobs.
+
+### Dev 72 — 10-of-12 VS Code strip, lost cuts and lag
+
+User reports a stable 10-of-12 window strip, half-height cuts lost on
+deactivation, and new lag. Three separate causes:
+
+- Lag: Dev 71 toggled Electron AXManualAccessibility on every 0.8 s observer
+  pass whenever the inventory stayed partial. Each switch redraws focus rings.
+  `CanvasWindowAccess.windows` now takes `reconcile` (default false); only
+  explicit commands (activation, diagnostic, frontmost-app tiling) enable it.
+- Discovery cost: SkyLight membership was asked for every window on the system
+  per tick. Discovery is now staged — geometry attribution first, SkyLight only
+  for non-visible windows already attributed to the display, AX only for apps
+  owning candidates. The tick also reuses the existing inventory.
+- Missing windows: a restore journal mismatch (character-grid rounding in
+  VS Code/terminals) left ghosts that excluded windows as "awaiting Canvas
+  restoration". `CanvasFrameApplication.restored()` adopts windows already at
+  their journaled frame within rounding tolerance.
+- Cuts: `arrangements[workspace]` is kept on toggle-off and reapplied on
+  reactivation; closed windows are forgotten by `synchronize`.
+
+Checks: `restored()` adoption/rejection cases, arrangement kept across a
+simulated toggle, inventory/state/thread/geometry suites. Injected checks, not
+live 12-window VS Code acceptance — that remains the user's test.

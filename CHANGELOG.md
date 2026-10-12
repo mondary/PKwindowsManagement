@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026.10.72] - 2026-10-12
+### Fixed
+- Canvas : les choix demi-hauteur survivent à la désactivation du strip. L'arrangement est conservé à la sortie et réappliqué aux fenêtres redécouvertes à la réactivation (les fenêtres fermées entre-temps sont oubliées proprement).
+- Performances : la réinitialisation temporaire Accessibility d'Electron ne s'exécute plus à chaque passage de l'observateur (toutes les 0,8 s). Elle est réservée aux commandes explicites (activation, diagnostic, carrelage de l'app active) ; le tick périodique réutilise l'inventaire existant.
+- Découverte : attribution d'écran par géométrie d'abord, appartenance SkyLight demandée uniquement pour les fenêtres non visibles déjà attribuées à l'écran, et Accessibility interrogée uniquement pour les apps possédant des fenêtres candidates. Moins d'appels système par tick, strip plus fluide.
+- Restauration : une fenêtre déjà à sa position journalisée (tolérance d'arrondi des grilles de caractères VS Code/terminaux) est adoptée au lieu d'être exclue comme « en attente de restauration ». C'est la cause probable des 2 fenêtres VS Code manquantes.
+### Changed
+- Diagnostic Canvas : nouveau motif « surtout sur un autre écran » pour les fenêtres attribuées ailleurs, traduit en FR/DE/ES.
+
 ## [2026.10.71] - 2026-10-12
 ### Fixed
 - Mise à jour : une ancienne version du même canal n'est plus proposée comme changement de canal, même si son timestamp de build est plus récent. Le retour à une version antérieure reste possible lors d'un vrai passage Dev ↔ Stable.

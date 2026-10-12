@@ -312,7 +312,7 @@ final class WindowSnapService {
         guard let app = NSWorkspace.shared.frontmostApplication else { return }
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
         let windows = CanvasWindowAccess.windows(pid: app.processIdentifier,
-            expectedWindowIDs: CanvasWindowAccess.expectedWindowIDs(pid: app.processIdentifier))
+            expectedWindowIDs: CanvasWindowAccess.expectedWindowIDs(pid: app.processIdentifier), reconcile: true)
 
         // Fenêtres visibles (non réduites, taille utile)
         let tiles: [(AXUIElement, CGRect)] = windows.compactMap { window in

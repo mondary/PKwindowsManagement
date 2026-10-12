@@ -105,6 +105,9 @@ final class HorizontalCanvasService: ObservableObject {
     private let queue = DispatchQueue(label: "pk.windows-management.canvas", qos: .userInitiated)
     private let logger = Logger(subsystem: "com.mondary.PKwindowsManagement", category: "Canvas")
     private var strips: [CanvasWorkspace: Strip] = [:]
+    /// Half-height choices survive deactivation: the arrangement is kept when
+    /// the strip is released and restored when the same desktop reactivates.
+    private var arrangements: [CanvasWorkspace: CanvasArrangement] = [:]
     private var knownWorkspaces: Set<CanvasWorkspace> = [] // main thread snapshot
     private var saved: [CGWindowID: SavedWindow] = [:]
     private var recoveryLoaded = false
@@ -135,7 +138,7 @@ final class HorizontalCanvasService: ObservableObject {
             if action == .inspect {
                 guard let display = self.targetDisplay(context, focused: CanvasWindowAccess.focusedID(pid: context.frontmostPID)),
                       let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else { return }
-                _ = self.discover(context, on: display, space: space, diagnose: true)
+                _ = self.discover(context, on: display, space: space, diagnose: true, reconcile: true)
                 return
             }
             guard self.loadRecovery(context) else { return }
@@ -149,11 +152,12 @@ final class HorizontalCanvasService: ObservableObject {
             let workspace = CanvasWorkspace(displayID: display.id, spaceID: space)
             if action == .toggle {
                 if let strip = self.strips.removeValue(forKey: workspace) {
+                    self.arrangements[workspace] = strip.arrangement
                     self.restore(strip.entries.map(\.saved), context: context)
                     self.publish()
                     return
                 }
-                let entries = self.discover(context, on: display, space: space, diagnose: true)
+                let entries = self.discover(context, on: display, space: space, diagnose: true, reconcile: true)
                 guard !entries.isEmpty else { self.report("No compatible windows on this desktop."); return }
                 // Journal before moving even the first window.
                 for entry in entries { self.saved[entry.saved.id] = entry.saved }
@@ -167,6 +171,10 @@ final class HorizontalCanvasService: ObservableObject {
                     )
                 )
                 strip.entries = entries
+                if let previous = self.arrangements[workspace] {
+                    // Keep the user's half-height cuts across deactivation.
+                    strip.arrangement = previous
+                }
                 self.retile(strip)
                 strip.selected = entries.first(where: { $0.saved.id == focused })?.saved.id ?? entries.first?.saved.id
                 self.strips[workspace] = strip
@@ -394,49 +402,70 @@ final class HorizontalCanvasService: ObservableObject {
 
     private static func area(_ rect: CGRect) -> CGFloat { rect.isNull ? 0 : rect.width * rect.height }
 
-    private func discover(_ context: Context, on display: Display, space: UInt64, diagnose: Bool = false) -> [Entry] {
+    private func discover(_ context: Context, on display: Display, space: UInt64,
+                          diagnose: Bool = false, reconcile: Bool = false) -> [Entry] {
         guard let allInfos = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else { return [] }
-        // On-screen alone is not authoritative during occlusion/Space changes.
-        // Include windows on this desktop, then apply AX/minimized/hidden filters.
-        let infos = allInfos.filter { info in
+        // Stage 1 — WindowServer data only: display attribution first (pure
+        // geometry), then visibility. SkyLight membership is asked only for
+        // non-visible windows already attributed to this display; asking for
+        // every window of the system on every 0.8 s observer pass flooded the
+        // Canvas queue and lagged the strip.
+        struct Candidate {
+            let id: CGWindowID
+            let pid: pid_t
+            let frame: CGRect
+            let layer: Int
+            let owner: String
+        }
+        var candidates: [Candidate] = []
+        var issues: [(String, String)] = []
+        for info in allInfos {
             guard let id = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
                   let pid = (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
-                  context.apps[pid] != nil, !context.hiddenPIDs.contains(pid) else { return false }
-            return (info[kCGWindowIsOnscreen as String] as? Bool) == true
-                || SpaceManagementService.desktops(forWindow: id)?.contains(space) == true
+                  let raw = info[kCGWindowBounds as String] as? [String: Any],
+                  let frame = CGRect(dictionaryRepresentation: raw as CFDictionary),
+                  frame.width > 0, frame.height > 0,
+                  context.apps[pid] != nil, !context.hiddenPIDs.contains(pid) else { continue }
+            let documentSized = frame.width > 80 && frame.height > 80 && (info[kCGWindowLayer as String] as? Int) == 0
+            guard context.displays.max(by: { Self.area($0.bounds.intersection(frame)) < Self.area($1.bounds.intersection(frame)) })?.id == display.id else {
+                if diagnose, documentSized {
+                    issues.append(("\((info[kCGWindowOwnerName as String] as? String ?? String(pid))) #\(id)", "Mostly on another display"))
+                }
+                continue
+            }
+            if (info[kCGWindowIsOnscreen as String] as? Bool) == true
+                || SpaceManagementService.desktops(forWindow: id)?.contains(space) == true {
+                candidates.append(Candidate(id: id, pid: pid, frame: frame, layer: info[kCGWindowLayer as String] as? Int ?? 0,
+                    owner: info[kCGWindowOwnerName as String] as? String ?? String(pid)))
+            } else if diagnose, documentSized {
+                issues.append(("\((info[kCGWindowOwnerName as String] as? String ?? String(pid))) #\(id)", "Desktop membership unavailable"))
+            }
+        }
+        // Stage 2 — Accessibility for the applications that own candidates,
+        // never for every running app. Reconciliation (Electron inventory
+        // initialization) runs only on explicit commands.
+        var expectedByPID: [pid_t: Set<CGWindowID>] = [:]
+        for candidate in candidates where candidate.layer == 0 && candidate.frame.width > 80 && candidate.frame.height > 80 {
+            expectedByPID[candidate.pid, default: []].insert(candidate.id)
         }
         var windows: [CGWindowID: AXUIElement] = [:]
-        let pids = Set(infos.compactMap { ($0[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value })
-        for pid in pids where context.apps[pid] != nil {
-            let expected = Set(infos.compactMap { info -> CGWindowID? in
-                guard (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value == pid,
-                      (info[kCGWindowLayer as String] as? Int) == 0,
-                      let raw = info[kCGWindowBounds as String] as? [String: Any],
-                      let frame = CGRect(dictionaryRepresentation: raw as CFDictionary),
-                      frame.width > 80, frame.height > 80 else { return nil }
-                return (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value
-            })
-            for window in CanvasWindowAccess.windows(pid: pid, expectedWindowIDs: expected) {
+        for pid in Set(candidates.map(\.pid)) {
+            for window in CanvasWindowAccess.windows(pid: pid, expectedWindowIDs: expectedByPID[pid] ?? [], reconcile: reconcile) {
                 if let id = CanvasWindowAccess.id(window) { windows[id] = window }
             }
         }
-        var issues: [(String, String)] = []
+        // Stage 3 — eligibility, journal ghosts and capture.
         var supported = 0
         let managed = Set(strips.values.flatMap { $0.entries.map { $0.saved.id } })
-        let entries: [Entry] = infos.compactMap { info in
-            guard let id = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
-                   let pid = (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
-                   let raw = info[kCGWindowBounds as String] as? [String: Any],
-                   let frame = CGRect(dictionaryRepresentation: raw as CFDictionary),
-                   frame.width > 0, frame.height > 0,
-                   context.displays.max(by: { Self.area($0.bounds.intersection(frame)) < Self.area($1.bounds.intersection(frame)) })?.id == display.id
-            else { return nil }
+        let entries: [Entry] = candidates.compactMap { candidate in
+            let id = candidate.id
+            let pid = candidate.pid
             let window = windows[id]
             // Standard AX windows may have a nonzero WindowServer layer (e.g.
             // always-on-top apps). The old layer-zero rule silently lost them.
-            guard (info[kCGWindowLayer as String] as? Int) == 0 || window.map(CanvasWindowAccess.eligible) == true else { return nil }
+            guard candidate.layer == 0 || window.map(CanvasWindowAccess.eligible) == true else { return nil }
             if managed.contains(id) { supported += 1; return nil }
-            let label = "\(info[kCGWindowOwnerName as String] as? String ?? String(pid)) #\(id)"
+            let label = "\(candidate.owner) #\(id)"
             func exclude(_ reason: String) {
                 if diagnose { issues.append((label, reason)) }
             }
@@ -449,7 +478,15 @@ final class HorizontalCanvasService: ObservableObject {
                 exclude(spaces?.count ?? 0 > 1 ? "Window assigned to several desktops" : "Desktop membership unavailable")
                 return nil
             }
-            guard saved[id] == nil else { exclude("Window awaiting Canvas restoration"); return nil }
+            if let record = saved[id] {
+                // A window already sitting at its journaled frame has nothing
+                // awaiting restoration; adopt it instead of excluding it.
+                if let current = CanvasWindowAccess.frame(window), CanvasFrameApplication.restored(current, record.frame) {
+                    saved.removeValue(forKey: id)
+                } else {
+                    exclude("Window awaiting Canvas restoration"); return nil
+                }
+            }
             guard let original = CanvasWindowAccess.frame(window) else { exclude("Window frame unavailable"); return nil }
             supported += 1
             return Entry(saved: SavedWindow(id: id, pid: pid, launchedAt: launchedAt, frame: original, space: space), window: window)

@@ -40,6 +40,17 @@ enum CanvasFrameApplicationChecks {
         var count = 0
         let interrupted = CanvasFrameApplication.apply(half, initial: full, read: { half }, size: { _ in count += 1; return true }, position: { _ in true }, pause: { _ in valid = false }, valid: { valid })
         assert(count == 2 && !interrupted.accepted && !interrupted.confirmedHeightConstraint)
-        print("Canvas AX checks passed: bottom-row ordering, delayed resize, stale/rejected reads, minimum, scroll and Space interruption")
+        precondition(CanvasFrameApplication.restored(full, full))
+        var grid = full
+        grid.size.width -= 2 // character-grid rounding must not orphan the journal
+        grid.size.height += 16
+        precondition(CanvasFrameApplication.restored(grid, full))
+        var moved = full
+        moved.origin.x += 40
+        precondition(!CanvasFrameApplication.restored(moved, full))
+        var shrunk = full
+        shrunk.size.height = full.height / 2
+        precondition(!CanvasFrameApplication.restored(shrunk, full))
+        print("Canvas AX checks passed: bottom-row ordering, delayed resize, stale/rejected reads, minimum, scroll, Space interruption and journal adoption")
     }
 }

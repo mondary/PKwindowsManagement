@@ -95,7 +95,11 @@ enum CanvasWindowAccess {
             }, pause: { Thread.sleep(forTimeInterval: $0) }, valid: valid)
     }
 
-    static func windows(pid: pid_t, expectedWindowIDs: Set<CGWindowID> = []) -> [AXUIElement] {
+    /// `reconcile` enables the temporary AXManualAccessibility initialization;
+    /// it is reserved for explicit commands (activation, diagnostic). The
+    /// periodic observer must never toggle it: Electron redraws focus rings on
+    /// every switch, which the user perceives as Canvas lag.
+    static func windows(pid: pid_t, expectedWindowIDs: Set<CGWindowID> = [], reconcile: Bool = false) -> [AXUIElement] {
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 0.15)
         func readWindows() -> [AXUIElement] {
@@ -112,7 +116,7 @@ enum CanvasWindowAccess {
         }
         let windows = WindowInventoryReconciliation.collect(expected: expectedWindowIDs, read: readWindows,
             id: { id($0) }, same: { CFEqual($0, $1) }, initialize: {
-            guard value(app, kAXHiddenAttribute) as? Bool != true else { return [] }
+            guard reconcile, value(app, kAXHiddenAttribute) as? Bool != true else { return [] }
             // Also initialize PARTIAL inventories, not just an empty AXWindows.
             // Restore the previous flag and retain the initial results even if
             // the refreshed list is smaller or unavailable.
