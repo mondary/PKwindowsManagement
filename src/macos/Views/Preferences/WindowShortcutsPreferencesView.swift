@@ -33,6 +33,20 @@ struct WindowShortcutsPreferencesView: View {
                     Text(localizedString("Window management"))
                         .font(.title3.weight(.semibold))
 
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Label("Rooms", systemImage: "rectangle.3.group")
+                                .font(.headline)
+                            Spacer()
+                            Button(localizedString("Open Rooms")) { RoomsOverlayController.shared.show() }
+                            Text("⌃⌥R").font(.body.monospaced()).foregroundStyle(.secondary)
+                        }
+                        Text(localizedString("Create a room from selected windows, choose its screen and layout, then reopen or minimize it from the Rooms panel."))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(12)
+                    .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+
                     KeyboardShortcutMapView(settings: settings, availableWidth: max(0, geometry.size.width - 48))
 
                     if geometry.size.width >= 760 {
@@ -113,12 +127,16 @@ struct WindowShortcutsPreferencesView: View {
                 Text(localizedString(canvas.activeDisplayIDs.isEmpty ? "Canvas inactive" : "Canvas active"))
                     .foregroundStyle(.secondary)
             }
-            Text(localizedString("Choose full or half height for the focused window using the shortcuts above. Adjacent half-height windows automatically share a column; full-height windows keep their own column. Choices last until Canvas exits. Windows that cannot fit half height stay full height."))
+            Text(localizedString("Every window starts at full height. Choose half height for one window, then another: the second joins below the first, even from a distant column. Full height separates that window again. Choices survive desktop switching until Canvas exits."))
                 .font(.caption).foregroundStyle(.secondary)
             Text(localizedString("Canvas scrolls horizontally with the trackpad, or vertically while holding Option. Ordinary vertical scrolling stays in apps. Previous/next shortcuts move between columns. Exiting restores original positions and sizes."))
                 .font(.caption).foregroundStyle(.secondary)
             if !canvas.message.isEmpty {
                 Text(canvas.message).font(.caption).foregroundStyle(.orange)
+            }
+            Button(localizedString("Check Canvas windows")) { canvas.perform(.inspect) }
+            if !canvas.inventoryMessage.isEmpty {
+                Text(canvas.inventoryMessage).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
             }
         }
     }

@@ -4,6 +4,12 @@
 > https://github.com/saragordic/rooms, commit `c659cc2`, licence MIT).
 > Rédigé le 2026-10-06.
 
+> **État actualisé au 2026-10-12 :** ce comparatif initial reste historique.
+> PK possède désormais rooms par fenêtre, matching, cinq layouts, écran cible,
+> lancement d'apps, minimisation et activation directe dans le panneau.
+> L'édition d'une room, « Ma disposition » et l'isolement crash-safe restent les
+> priorités : voir [l'audit actualisé](window-management-inspirations.md).
+
 ## Ce qu'est Rooms — et ce qu'il n'est pas
 
 Rooms est un petit gestionnaire de fenêtres (~4 500 lignes de Swift) construit autour

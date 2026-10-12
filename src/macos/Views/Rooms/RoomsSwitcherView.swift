@@ -44,6 +44,7 @@ final class RoomsSwitcherModel: ObservableObject {
         picked = []
         offers = []
         newDisplayUUID = nil
+        screens = RoomEngine.connectedScreens()
     }
 
     /// Refresh the window list for the picker (AX reads: async so opening the
@@ -84,7 +85,9 @@ final class RoomsSwitcherModel: ObservableObject {
     private func activate(room: Room) {
         let engine = engine
         let claimed = store.claimedWindowIDs(excluding: room.id)
-        Task { _ = await engine.activate(room, claimed: claimed) }
+        HorizontalCanvasService.shared.release {
+            Task { _ = await engine.activate(room, claimed: claimed) }
+        }
     }
 
     /// Minimize the selected room's windows, keeping the panel open so another
@@ -93,7 +96,9 @@ final class RoomsSwitcherModel: ObservableObject {
         guard let room = selectedRoom else { return }
         let engine = engine
         let claimed = store.claimedWindowIDs(excluding: room.id)
-        Task { await engine.close(room, claimed: claimed) }
+        HorizontalCanvasService.shared.release {
+            Task { await engine.close(room, claimed: claimed) }
+        }
     }
 
     /// ⌘1-9: activate the nth visible room without walking the selection.
@@ -226,6 +231,14 @@ private struct ListView: View {
                 }
             }
             footer
+            HStack(spacing: 12) {
+                Button(localizedString("Open Room")) {
+                    if model.activateSelected() { onActivateRoom() }
+                }
+                Button(localizedString("Change layout")) { model.cycleLayout(forward: true) }
+                Button(localizedString("Minimize Room")) { model.closeSelected() }
+            }
+            .disabled(model.selectedRoom == nil)
         }
         .padding(16)
         .onAppear { searchFocused = true }
@@ -253,6 +266,7 @@ private struct ListView: View {
             }
             .buttonStyle(.plain)
             .help(localizedString("New Room"))
+            .accessibilityLabel(localizedString("New Room"))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

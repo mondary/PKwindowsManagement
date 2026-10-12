@@ -1,5 +1,32 @@
 # Changelog
 
+## [2026.10.71] - 2026-10-12
+### Fixed
+- Mise à jour : une ancienne version du même canal n'est plus proposée comme changement de canal, même si son timestamp de build est plus récent. Le retour à une version antérieure reste possible lors d'un vrai passage Dev ↔ Stable.
+- Inventaire VS Code/Electron : fusion AXWindows, fenêtres enfants directes et fenêtre principale/active ; réinitialisation temporaire Accessibility aussi en cas d'inventaire partiel, sans perdre les fenêtres déjà trouvées. Carrelage de l'app active et Canvas partagent cette récupération.
+- Canvas : découverte des fenêtres appartenant au bureau même lorsque WindowServer ne les marque pas à l'écran ; maintien des exclusions pour fenêtres minimisées, apps masquées et autres bureaux. Dernier appel de focus interne aligné sur la protection main-thread de la Dev 70.
+### Changed
+- Vérifications de non-régression : inventaires partiels et dispositions à 14, 24 et 64 fenêtres ; anti-retour arrière du canal Dev. Publication Dev via le workflow existant après push sur main.
+
+## [2026.10.70] - 2026-10-12
+### Fixed
+- Canvas : crash à l'activation lorsque les réglages de PKwindowsManagement rejoignent le strip. Les appels Accessibility visant notre propre processus passent désormais sur le thread principal (lecture, placement, focus et restauration) ; les fenêtres externes et les délais de négociation restent sur le worker.
+
+## [2026.10.69] - 2026-10-12
+### Fixed
+- Canvas : réduction avant placement dans la cellule du bas, séquence taille/position répétée et attente bornée de la réponse AX hors du thread principal. Une mesure ancienne, indisponible ou une écriture refusée ne supprime plus le choix demi-hauteur ; retour automatique en pleine hauteur seulement après constat répété d'une contrainte de taille différente de l'originale.
+- Défilement conservé sans délai lorsque la taille est déjà correcte ; arrêt des vérifications si le bureau change pendant la négociation.
+### Added
+- Références vendors demandées : audit des sources, licences et pistes d'intégration Rooms, ClickFit, Reef, Switch, Moom, Snapback et CCCCorners.
+
+## [2026.10.68] - 2026-10-11
+### Fixed
+- Canvas : strip conservé par écran et bureau, suspension pendant un changement de Space puis reprise du défilement, de la disposition et de la bascule au retour. Les restaurations en attente sur un autre bureau ne bloquent plus les commandes.
+- Inventaire Canvas élargi aux apps accessoires et aux fenêtres AX redimensionnables sans sous-rôle standard ou toujours au-dessus ; réinitialisation temporaire de l'inventaire Accessibility vide d'Electron (méthode Rooms). Diagnostic des exclusions dans les réglages Fenêtres.
+- Rooms : accès visible dans les réglages Fenêtres, boutons ouvrir/disposition/minimiser, écrans rafraîchis dès l'ouverture ; libération du Canvas lors d'une action de room plutôt qu'à la simple ouverture du panneau.
+### Changed
+- Demi-hauteur fenêtre par fenêtre : la deuxième fenêtre choisie rejoint la première en dessous, même depuis une colonne distante. Les paires restent stables à la découverte/fermeture d'autres fenêtres ; pleine hauteur détache uniquement la fenêtre ciblée.
+
 ## [2026.10.67] - 2026-10-10
 ### Added
 - Rooms : écran cible mémorisé par room (sélecteur à la création, badge dans la liste ; repli sur l'écran du pointeur si débranché), fermeture d'une room (⌘↓ minimise ses fenêtres, la réactivation les ramène) et activation directe ⌘1-9 dans le switcher.

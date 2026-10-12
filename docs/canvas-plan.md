@@ -53,3 +53,94 @@ Horizontal trackpad scrolling works directly; Option + vertical scroll remains
 available for wheels. Automated checks exhaustively cover height combinations
 through ten windows, changing height and unpaired halves. Still test live focus,
 app minimum sizes, closing/adding windows, restoration and multiple displays.
+
+Dev 2026.10.68 supersedes adjacent-only pairing: `CanvasArrangement` stores
+explicit window-ID columns. Selecting any second half-height window places it
+below the first, regardless of its original position. Full height splits only
+that window; discovery and closure preserve unrelated pairs.
+
+Canvas workspaces are keyed by `(displayID, spaceID)`. Leaving a Space suspends
+its strip instead of removing/restoring it. Returning invalidates cached frames
+and reapplies the layout with its saved viewport. Unknown Space topology during
+Mission Control is also suspension, not removal. Orphaned restore records wait
+for their own desktop and do not block commands on other desktops.
+
+Inventory accepts accessory apps, standard AX windows with a nonzero layer and
+movable/resizable AXWindow objects with an omitted/unknown subrole. A document
+dialog with a minimize button is accepted unless modal. Empty Electron window
+inventories use Rooms' temporary AXManualAccessibility initialization, restoring
+the original flag immediately afterward. Minimized,
+fullscreen, modal/sheet and multi-Space windows remain excluded. The read-only
+diagnostic in Windows settings names each visible excluded window by app/ID and
+reason, without storing document titles.
+
+Checks: `Tests/CanvasStateChecks.swift` covers all 90 ordered pair choices among
+ten windows, splits, discovery and closure, plus active/suspended/disconnected
+Space policy; `Tests/CanvasLayoutChecks.swift` retains geometry/monitor checks.
+Live Dev 68: settings version verified, Open Rooms → creation → cancel/close
+verified via Accessibility; both display choices appear. Canvas diagnostic
+returns supported/excluded counts. Real ten-window tiling and scroll after a
+Space round trip still require live validation with disposable windows.
+
+User validation on 2026-10-12: scrolling survives a Space round trip in Dev 68.
+Remaining reported failure: every second half-height window blinks and is
+immediately promoted back to full height. The old placement moved a full-height
+window to the bottom before resizing it and classified the immediate AX read as
+a size constraint. Dev 69 resizes before moving, repeats after moving, and waits
+50/100/200/300 ms on the worker only when size changes. A stable result differing
+from the original size is required before learning a minimum; unchanged/rejected
+reads retain the requested pairing. Character-grid rounding is retried with a
+slightly smaller size to avoid treating a single character row as a minimum.
+
+`CanvasFrameApplicationChecks` covers delayed success, bottom-row write order,
+stale original size, unavailable/rejected AX responses, true clamped minimum,
+character-grid rounding, position-only scrolling and interruption on Space change.
+Those are injected AX responses, not proof of successful placement in every real
+app. The two-app bottom-row scenario remains the live acceptance test for Dev 69.
+
+### Dev 70 — activation crash with the app's own settings window
+
+The three user crash reports of 2026-10-12 at 09:29:03, 09:29:11 and 09:29:35
+all trap in `NSWMWindowCoordinator.performTransactionUsingBlock` with
+`Must only be used from the main thread`. The stack enters AppKit synchronously
+from `CanvasWindowAccess.applyCanvasFrame`'s AX size setter on the Canvas queue.
+Self-process AX is direct AppKit dispatch, unlike external-process AX messaging.
+
+`CanvasWindowAccess.onAccessibilityThread` now routes individual local AX calls
+to main, including reads, setters, window IDs, eligibility and focus actions.
+Placement, scroll and journal restoration use the same boundary. External AX,
+the negotiation loop and all sleeps stay on the worker; main never waits for
+the Canvas queue. The app's own settings window remains eligible.
+
+`Tests/CanvasAccessibilityThreadChecks.swift` checks main-thread reentrancy,
+external-call routing, real hidden NSWindow resizing/restoration from the worker,
+and a main-loop heartbeat during negotiation waits. The hidden fixture is not
+exposed in AXWindows on this machine, so the actual AX branch is explicitly
+reported as unavailable; this is not a full-strip GUI acceptance test.
+Frame-negotiation checks pass. Dev 70 build, strict signature verification and
+local installation pass. The current macOS preferences no longer contain the
+previous app-to-agent-Space binding, so live strip activation was not attempted.
+
+### Dev 71 — partial VS Code inventories and Dev publication
+
+The user confirms column splitting works and identifies the omitted windows as
+VS Code windows. Neither the Canvas arrangement nor app tiling has a count cap.
+The two paths previously used different inventories; tiling read AXWindows only,
+while the Canvas initialized Electron AX only when the complete list was empty.
+Both now merge AXWindows, direct AXWindow children and main/focused windows,
+deduplicate by window ID, and initialize partial inventories when WindowServer
+contains missing document-window IDs. A failed second read retains the first.
+Canvas also checks actual desktop membership instead of relying solely on the
+on-screen flag; hidden apps, minimized windows and foreign Spaces remain excluded.
+
+Tests cover partial 14/24/64-window inventories and pairing/splitting without
+losing IDs. These are injected inventory checks, not live VS Code acceptance.
+The read-only WindowServer probe found 12 document-sized VS Code windows on Space
+632 at that moment; the CLI was not AX-trusted, so the two reported missing
+windows could not be conclusively identified. No VS Code preference was changed.
+
+Dev 68–70 had only been installed locally, leaving the public feed at Dev 67.
+The manual updater incorrectly treated any differing version as a channel switch.
+Dev 71 requires a real Stable/Dev difference to offer a downgrade and compares
+the product version before the build timestamp. CI now runs the regression checks,
+also triggers on changelog/test changes and serializes Dev publication jobs.

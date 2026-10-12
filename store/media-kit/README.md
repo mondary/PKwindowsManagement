@@ -61,18 +61,24 @@ des préférences jetables. Les bordures transparentes sont recadrées. Fichiers
 Ces captures valident la lisibilité de la carte ; elles ne valident pas le
 déplacement de fenêtres externes par le Canvas.
 
-### Réglages Dev 2026.10.59 uniquement
+### Réglages Dev 2026.10.68
 
 `python3 store/media-kit/capture-settings.py` compile les vues de production sans
 AppDelegate, avec une suite UserDefaults jetable et une fenêtre invisible. Produit
 `sources/screenshots/{windows,appearance}-{fr,en}.png` depuis le bundle local Dev.
-Les captures Fenêtres exposent les marges traduites et Open Canvas ; Apparence montre
+Les captures Fenêtres exposent l'accès Rooms et la carte clavier ; les contrôles
+Canvas restent plus bas dans la vue défilante. Le script synchronise aussi les
+PNG et dérivés WebP Fenêtres vers `website/screenshots/`. Apparence montre
 le mode compact et le regroupement activés avec des préférences de démonstration.
+En Dev 68, l'ouverture Rooms et son formulaire (deux écrans proposés), l'annulation
+et le diagnostic Canvas ont été vérifiés via Accessibility dans l'app installée.
+Le test dix fenêtres / changement de Space / retour / scroll reste à effectuer
+avec des fenêtres de démonstration. Aucun contenu utilisateur n'entre dans les captures.
 La QA interactive de Dev 59 a aussi vérifié l’ouverture sur Fenêtres, le déplacement
 des contrôles, leurs états conditionnels et l’ouverture répétée d’IA locale sans crash.
 Les préférences de style/regroupement utilisées pour le test ont été restaurées.
-La publication hub/FTP attend le montage FTP et la résolution des modifications
-préexistantes dans `Web_HubApps`.
+La note Dev de la landing locale est synchronisée. L'entrée du hub reste une
+présentation de la Stable ; montage FTP indisponible, aucune publication effectuée.
 
 Prérequis : Python 3 + Pillow, Swift et SDK macOS 26.5, ffmpeg, Ego Lite déjà connecté.
 Le SDK 27 par défaut provoque des erreurs de macros SwiftUI avec la toolchain locale : le harness

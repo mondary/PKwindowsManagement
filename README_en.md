@@ -1,7 +1,5 @@
 # PKwindowsManagement
 
-![Dev keyboard map — adaptive keys and per-window Canvas shortcuts](store/sources/screenshots/keyboard-1440-en.png)
-
 [🇬🇧 EN](README_en.md) · [🇫🇷 FR](README.md)
 
 <img src="icon.png" alt="PKwindowsManagement icon" width="220">
@@ -14,6 +12,7 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 
 ![Compact Launchpad — native capture with sample data](store/website/screenshots/launchpad-en.webp)
 ![Big Year — native annual calendar, Blue Poster theme](store/website/screenshots/year-poster.webp)
+![Dev keyboard map — adaptive keys and per-window Canvas shortcuts](store/sources/screenshots/keyboard-1440-en.png)
 
 - [Video demo](store/website/videos/window-flow.mp4) · [Animated GIF](store/website/gifs/window-flow-wide.gif)
 - [Download the latest published Stable — v2026.10.49](https://github.com/mondary/PKwindowsManagement/releases/latest/download/PKwindowsManagement_2026.10.49.dmg): open the DMG, move the app to Applications and enable Accessibility. Apple Silicon build for macOS 13+.
@@ -93,8 +92,10 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 ## ⚙️ Settings
 - In-app updates wait for Canvas restoration and actual application exit before replacing and relaunching the app. If an older Dev build stalls at this step, restarting the app may be necessary; see the [CHANGELOG](CHANGELOG.md).
 - **Open Preferences** reuses the settings window even after closing it. **Check for Updates** opens that window and shows progress and the installation offer from any tab.
-- **Horizontal Canvas** (Dev channel): auto-tiling real windows without a predefined sequence. `Ctrl+Shift+F` gives the focused window full height, `Ctrl+Shift+S` half height; adjacent half-height windows automatically share a column. Windows that reject that size retain full height. Choices last until Canvas exits; new windows start at full height. `Ctrl+Shift+Space` toggles; `Ctrl+Shift+H/L` changes columns and `Ctrl+Shift+K/J` changes rows. A horizontal trackpad gesture, or `⌥` + vertical scroll, scrolls the strip. Exiting restores original positions and sizes; a snap command leaves Canvas before placing the window. All these shortcuts are configurable. See the [CHANGELOG](CHANGELOG.md).
-- **Rooms** (Dev channel, `Ctrl+Option+R`): named window sets with a layout (Auto/Focus/Columns/Grid/Stack). When creating, pick windows in order (1 = main spot) and the **target screen**; activating tiles on that screen (falls back to the pointer's screen when unplugged), launching missing apps and waiting for their windows. `⇥` cycles layouts, `⌘1-9` opens the nth room, `⌘↓` closes the room (windows minimized; reactivating brings them back), `⌘⌫` deletes it. See the [CHANGELOG](CHANGELOG.md).
+- The **Dev** channel is published by GitHub Actions after each code push to `main` (there is no separate `dev` branch). A locally installed build is not yet a published update. Older versions on the same channel are no longer offered; going back requires an actual channel change.
+- **VS Code / Electron**: Canvas and `Ctrl+Option+T` reconcile partial Accessibility inventories. There is no 10- or 12-window cap; Accessibility, minimization and desktop constraints still apply. `Ctrl+Option+T` keeps its existing scope: the frontmost app.
+- **Horizontal Canvas** (Dev channel): each window starts full height. `Ctrl+Shift+S` gives the focused window half height; the next chosen window joins below the first, even from a distant column. `Ctrl+Shift+F` separates only that window into a full-height column. Pairings and scrolling are retained per display and desktop during the session: leaving a desktop suspends its strip, returning resumes it. Windows rejecting half height keep their own column. `Ctrl+Shift+Space` toggles; `Ctrl+Shift+H/L` changes columns and `Ctrl+Shift+K/J` changes rows. Scroll horizontally on a trackpad, or hold `⌥` with vertical scrolling. Exiting restores original frames; a snap leaves Canvas on the current desktop before placing the window. **Check Canvas windows**, in Windows settings, lists exclusions (Accessibility, dialogs, multiple desktops…). See the [CHANGELOG](CHANGELOG.md).
+- **Rooms** (Dev channel, `Ctrl+Option+R` or **Windows → Open Rooms**): named window sets with a layout (Auto/Focus/Columns/Grid/Stack). Pick windows in order (1 = main spot) and the **target screen**; activation tiles on that display (pointer-screen fallback when disconnected), launching missing apps and waiting for their windows. **Open / Change layout / Minimize** buttons are available in the panel. `⇥` cycles layouts, `⌘1-9` opens the nth room, `⌘↓` minimizes its windows (reactivation brings them back), `⌘⌫` deletes it. Opening the panel keeps Canvas active; performing a room action releases Canvas on visible desktops. See the [CHANGELOG](CHANGELOG.md).
 - In `Window Shortcuts` → `Desktops`, bind **Move Desktop Left/Right** to reorder the desktop with its contents. Mission Control appears briefly; disable automatic Spaces rearrangement in macOS to keep your order. Actual thumbnail dragging is being validated on Dev.
 - Shortcuts can be edited in the preferences window.
 - In `Window Shortcuts` → `Desktops`, configure create, close, and move-between-Space actions. Choose a wallpaper folder, enable random selection for new desktops, and decide whether to switch to the destination desktop after moving a window.
@@ -165,6 +166,10 @@ PKwindowsManagement builds on and draws inspiration from open-source projects �
 - [Laya](https://huggingface.co/convaiinnovations/laya) (Convai Innovations, Apache-2.0) — local decision model behind the integrated AI.
 - [Hammerspoon](https://github.com/Hammerspoon/hammerspoon) (MIT) — Mission Control accessibility and Space-management techniques.
 - [yabai](https://github.com/asmvik/yabai) (MIT) — SkyLight compatibility techniques for moving windows between Spaces.
+
+References under review: [vendor inventory](vendors/README.md) and
+[integration plan for Rooms, Reef, ClickFit, Switch, Moom, Snapback and CCCCorners](docs/window-management-inspirations.md).
+Rooms takes priority; the audit distinguishes reusable source code from feature references.
 
 ## 🧾 Changelog
 - See [CHANGELOG.md](CHANGELOG.md) for full history.

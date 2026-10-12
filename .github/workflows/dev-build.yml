@@ -13,11 +13,17 @@ on:
       - 'src/macos/**'
       - 'src/script/package_app.sh'
       - 'Package.swift'
+      - 'CHANGELOG.md'
+      - 'Tests/**'
       - '.github/workflows/dev-build.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: dev-build-main
+  cancel-in-progress: false
 
 jobs:
   dev-build:
@@ -26,6 +32,17 @@ jobs:
     if: ${{ github.actor != 'github-actions[bot]' }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Check Canvas and update regressions
+        run: |
+          swiftc src/macos/Services/UpdateVersionPolicy.swift Tests/UpdateVersionPolicyChecks.swift -o "$RUNNER_TEMP/update-checks"
+          "$RUNNER_TEMP/update-checks"
+          swiftc src/macos/Services/WindowInventoryReconciliation.swift Tests/WindowInventoryChecks.swift -o "$RUNNER_TEMP/inventory-checks"
+          "$RUNNER_TEMP/inventory-checks"
+          swiftc src/macos/Services/CanvasArrangement.swift src/macos/Services/CanvasWorkspace.swift Tests/CanvasStateChecks.swift -o "$RUNNER_TEMP/canvas-state-checks"
+          "$RUNNER_TEMP/canvas-state-checks"
+          swiftc src/macos/Services/CanvasFrameApplication.swift Tests/CanvasFrameApplicationChecks.swift -o "$RUNNER_TEMP/canvas-frame-checks"
+          "$RUNNER_TEMP/canvas-frame-checks"
 
       - name: Import signing certificate
         env:

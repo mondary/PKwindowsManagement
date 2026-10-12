@@ -3,19 +3,20 @@ import Combine
 import OSLog
 
 enum CanvasAction: String {
-    case toggle, previous, next, above, below, fullHeight, halfHeight, restore
+    case toggle, previous, next, above, below, fullHeight, halfHeight, restore, inspect
 }
 
 /// Paneru-style scrolling grid of real AX windows (see docs/canvas-plan.md):
 /// mixed one/two-row columns per display, a horizontally scrolling viewport,
 /// off-screen columns parked as edge slivers, and an exact-restore journal.
-/// All layout/AX work is serial and off the main thread; AppKit state is
-/// captured on the main thread only.
+/// Layout and external AX work are serial and off the main thread. AX calls
+/// targeting our own windows run on main because they enter AppKit directly.
 final class HorizontalCanvasService: ObservableObject {
     static let shared = HorizontalCanvasService()
     static let stateDidChange = Notification.Name("PKCanvasStateDidChange")
     @Published private(set) var activeDisplayIDs: Set<CGDirectDisplayID> = []
     @Published private(set) var message = ""
+    @Published private(set) var inventoryMessage = ""
 
     private struct Display {
         let id: CGDirectDisplayID
@@ -27,6 +28,7 @@ final class HorizontalCanvasService: ObservableObject {
     private struct Context {
         let displays: [Display]
         let apps: [pid_t: Date]
+        let hiddenPIDs: Set<pid_t>
         let frontmostPID: pid_t?
         let pointer: CGPoint
 
@@ -46,7 +48,7 @@ final class HorizontalCanvasService: ObservableObject {
                 )
             }
             let apps = NSWorkspace.shared.runningApplications.filter {
-                $0.activationPolicy == .regular && $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
+                $0.activationPolicy != .prohibited
             }.reduce(into: [pid_t: Date]()) { result, app in
                 if let date = app.launchDate { result[app.processIdentifier] = date }
             }
@@ -54,6 +56,7 @@ final class HorizontalCanvasService: ObservableObject {
             return Context(
                 displays: displays,
                 apps: apps,
+                hiddenPIDs: Set(NSWorkspace.shared.runningApplications.filter(\.isHidden).map(\.processIdentifier)),
                 frontmostPID: NSWorkspace.shared.frontmostApplication?.processIdentifier,
                 pointer: CGPoint(x: pointer.x, y: top - pointer.y)
             )
@@ -72,7 +75,6 @@ final class HorizontalCanvasService: ObservableObject {
         let saved: SavedWindow
         let window: AXUIElement
         var lastFrame: CGRect?
-        var halfHeight = false
         var minimumWidth: CGFloat = 0
         init(saved: SavedWindow, window: AXUIElement) {
             self.saved = saved
@@ -81,16 +83,18 @@ final class HorizontalCanvasService: ObservableObject {
     }
 
     private final class Strip {
-        let display: Display
+        var display: Display
         let space: UInt64
         let defaultWidth: CGFloat
-        /// Column-major; each column has its own row count.
+        /// Discovery order; arrangement stores the explicit column membership.
         var entries: [Entry] = []
+        var arrangement = CanvasArrangement()
         var columns: [CanvasLayout.Column] = []
         var widths: [CGFloat] = []
         var selected: CGWindowID?
         var viewport: CGFloat = 0
         var lastNavigation: TimeInterval = 0
+        var suspended = false
         init(display: Display, space: UInt64, defaultWidth: CGFloat) {
             self.display = display
             self.space = space
@@ -100,12 +104,14 @@ final class HorizontalCanvasService: ObservableObject {
 
     private let queue = DispatchQueue(label: "pk.windows-management.canvas", qos: .userInitiated)
     private let logger = Logger(subsystem: "com.mondary.PKwindowsManagement", category: "Canvas")
-    private var strips: [CGDirectDisplayID: Strip] = [:]
+    private var strips: [CanvasWorkspace: Strip] = [:]
+    private var knownWorkspaces: Set<CanvasWorkspace> = [] // main thread snapshot
     private var saved: [CGWindowID: SavedWindow] = [:]
     private var recoveryLoaded = false
     private var timer: Timer?
     private var tickPending = false // main thread only
     private var shuttingDown = false // main thread only
+    private var spaceObserver: NSObjectProtocol?
     private let restoreURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("PKwindowsManagement/CanvasRestore.json")
 
@@ -113,6 +119,9 @@ final class HorizontalCanvasService: ObservableObject {
         precondition(Thread.isMainThread)
         guard timer == nil else { return }
         timer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { [weak self] _ in self?.tick() }
+        spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.tick() }
         tick()
     }
 
@@ -123,21 +132,28 @@ final class HorizontalCanvasService: ObservableObject {
         let context = Context.capture()
         queue.async {
             guard AXIsProcessTrusted() else { self.report("Canvas needs Accessibility permission."); return }
+            if action == .inspect {
+                guard let display = self.targetDisplay(context, focused: CanvasWindowAccess.focusedID(pid: context.frontmostPID)),
+                      let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else { return }
+                _ = self.discover(context, on: display, space: space, diagnose: true)
+                return
+            }
             guard self.loadRecovery(context) else { return }
             if action == .restore { self.releaseAll(context); return }
             let focused = CanvasWindowAccess.focusedID(pid: context.frontmostPID)
             let display = self.targetDisplay(context, focused: focused)
             guard let display else { self.report("No display available for Canvas."); return }
+            guard let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else {
+                self.report("Canvas requires a normal desktop."); return
+            }
+            let workspace = CanvasWorkspace(displayID: display.id, spaceID: space)
             if action == .toggle {
-                if let strip = self.strips.removeValue(forKey: display.id) {
+                if let strip = self.strips.removeValue(forKey: workspace) {
                     self.restore(strip.entries.map(\.saved), context: context)
                     self.publish()
                     return
                 }
-                guard let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else {
-                    self.report("Canvas requires a normal desktop."); return
-                }
-                let entries = self.discover(context, on: display, space: space)
+                let entries = self.discover(context, on: display, space: space, diagnose: true)
                 guard !entries.isEmpty else { self.report("No compatible windows on this desktop."); return }
                 // Journal before moving even the first window.
                 for entry in entries { self.saved[entry.saved.id] = entry.saved }
@@ -153,12 +169,12 @@ final class HorizontalCanvasService: ObservableObject {
                 strip.entries = entries
                 self.retile(strip)
                 strip.selected = entries.first(where: { $0.saved.id == focused })?.saved.id ?? entries.first?.saved.id
-                self.strips[display.id] = strip
+                self.strips[workspace] = strip
                 self.fitViewport(strip)
                 self.teleport(strip, context: context)
                 self.focusSelected(strip)
                 self.publish()
-            } else if let strip = self.strips[display.id], self.isCurrent(strip) {
+            } else if let strip = self.strips[workspace], self.isCurrent(strip) {
                 guard !strip.entries.isEmpty, !strip.widths.isEmpty else { return }
                 if action == .fullHeight || action == .halfHeight {
                     // Read actual focus now, rather than waiting for the periodic
@@ -166,7 +182,8 @@ final class HorizontalCanvasService: ObservableObject {
                     guard let focused,
                           let entry = strip.entries.first(where: { $0.saved.id == focused }) else { return }
                     strip.selected = focused
-                    entry.halfHeight = action == .halfHeight
+                    if action == .halfHeight { strip.arrangement.setHalfHeight(entry.saved.id) }
+                    else { strip.arrangement.setFullHeight(entry.saved.id) }
                     self.retile(strip)
                     self.fitViewport(strip)
                     self.teleport(strip, context: context)
@@ -192,23 +209,29 @@ final class HorizontalCanvasService: ObservableObject {
     }
 
     /// Continuous horizontal/Option scroll. Never read the worker-owned strips on
-    /// the event-tap thread; the published display IDs are the main-thread snapshot.
+    /// the event-tap thread; knownWorkspaces is the main-thread snapshot.
     func scroll(rawDelta: CGFloat, location: CGPoint) -> Bool {
         precondition(Thread.isMainThread)
         guard !shuttingDown else { return false }
         let context = Context.capture()
-        guard let id = context.displays.first(where: { $0.bounds.contains(location) })?.id,
-              activeDisplayIDs.contains(id) else { return false }
-        queue.async { self.shiftViewport(on: id, by: -rawDelta, context: context) }
+        guard let display = context.displays.first(where: { $0.bounds.contains(location) }),
+              let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else { return false }
+        let workspace = CanvasWorkspace(displayID: display.id, spaceID: space)
+        guard knownWorkspaces.contains(workspace) else { return false }
+        queue.async { self.shiftViewport(on: workspace, by: -rawDelta, context: context) }
         return true
     }
 
-    /// Called before other window managers/Space actions, and on normal quit.
+    /// Release only visible desktops before another window manager takes over.
     func release(completion: @escaping () -> Void) {
         precondition(Thread.isMainThread)
         let context = Context.capture()
         queue.async {
-            self.releaseAll(context)
+            for (key, strip) in Array(self.strips) where self.isCurrent(strip) {
+                self.strips.removeValue(forKey: key)
+                self.restore(strip.entries.map(\.saved), context: context)
+            }
+            self.publish()
             DispatchQueue.main.async(execute: completion)
         }
     }
@@ -217,11 +240,17 @@ final class HorizontalCanvasService: ObservableObject {
         shuttingDown = true
         timer?.invalidate()
         timer = nil
-        release(completion: completion)
+        if let spaceObserver { NSWorkspace.shared.notificationCenter.removeObserver(spaceObserver) }
+        spaceObserver = nil
+        let context = Context.capture()
+        queue.async {
+            self.releaseAll(context)
+            DispatchQueue.main.async(execute: completion)
+        }
     }
 
-    private func shiftViewport(on displayID: CGDirectDisplayID, by delta: CGFloat, context: Context) {
-        guard let strip = strips[displayID], isCurrent(strip), !strip.widths.isEmpty else { return }
+    private func shiftViewport(on workspace: CanvasWorkspace, by delta: CGFloat, context: Context) {
+        guard let strip = strips[workspace], isCurrent(strip), !strip.widths.isEmpty else { return }
         let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
         strip.viewport = CanvasLayout.clampViewport(strip.viewport + delta, widths: strip.widths, viewport: geometry.contentWidth)
         teleport(strip, context: context)
@@ -240,7 +269,11 @@ final class HorizontalCanvasService: ObservableObject {
     }
 
     private func retile(_ strip: Strip) {
-        strip.columns = CanvasLayout.columns(halfHeight: strip.entries.map(\.halfHeight))
+        strip.arrangement.synchronize(strip.entries.map { $0.saved.id })
+        let indices = Dictionary(uniqueKeysWithValues: strip.entries.enumerated().map { ($0.element.saved.id, $0.offset) })
+        strip.columns = strip.arrangement.columns.map { column in
+            CanvasLayout.Column(windows: column.windows.compactMap { indices[$0] }, rows: column.halfHeight ? 2 : 1)
+        }
         strip.widths = strip.columns.map { column in
             column.windows.reduce(strip.defaultWidth) { max($0, strip.entries[$1].minimumWidth) }
         }
@@ -290,6 +323,7 @@ final class HorizontalCanvasService: ObservableObject {
 
         var needsRetile = false
         for index in order {
+            guard isCurrent(strip) else { strip.suspended = true; return }
             let entry = strip.entries[index]
             guard CanvasWindowAccess.id(entry.window) == entry.saved.id,
                   CanvasWindowAccess.eligible(entry.window),
@@ -302,19 +336,23 @@ final class HorizontalCanvasService: ObservableObject {
                abs(last.width - target.frame.width) < 0.5, abs(last.height - target.frame.height) < 0.5 {
                 continue
             }
-            let accepted = CanvasWindowAccess.setFrame(target.frame, window: entry.window)
-            if let actual = CanvasWindowAccess.frame(entry.window) {
-                entry.lastFrame = target.frame
+            let result = CanvasWindowAccess.applyCanvasFrame(target.frame, window: entry.window) { self.isCurrent(strip) }
+            let accepted = result.accepted
+            if let actual = result.actual {
+                entry.lastFrame = accepted && CanvasFrameApplication.fitsSize(actual.size, target.frame.size)
+                    && abs(actual.minX - target.frame.minX) < 3 && abs(actual.minY - target.frame.minY) < 3 ? target.frame : nil
                 // Negotiate all sizes BEFORE recomputing origins: mutating column
                 // widths in the placement loop left earlier windows misaligned.
-                if actual.width > strip.widths[column] + 1 {
+                if result.confirmedWidthConstraint {
                     entry.minimumWidth = actual.width
                     needsRetile = true
                 }
-                if entry.halfHeight && actual.height > target.frame.height + 3 {
-                    entry.halfHeight = false
+                if strip.arrangement.isHalfHeight(entry.saved.id) && result.confirmedHeightConstraint {
+                    strip.arrangement.setFullHeight(entry.saved.id)
                     needsRetile = true
                     report("This window needs full height; Canvas kept it in its own column.")
+                } else if strip.arrangement.isHalfHeight(entry.saved.id) && actual.height > target.frame.height + 3 {
+                    report("Canvas could not confirm half height. The choice is kept; try the shortcut again when the app responds.")
                 }
                 if !accepted { entry.lastFrame = nil }
             }
@@ -335,15 +373,15 @@ final class HorizontalCanvasService: ObservableObject {
         guard isCurrent(strip),
               let entry = strip.entries.first(where: { $0.saved.id == strip.selected }),
               CanvasWindowAccess.eligible(entry.window) else { return }
-        AXUIElementPerformAction(entry.window, kAXRaiseAction as CFString)
-        if !CanvasWindowAccess.focus(entry.window, pid: entry.saved.pid) {
+        CanvasWindowAccess.raise(entry.window)
+        if !CanvasWindowAccess.focus(entry.window, pid: entry.saved.pid, stillCurrent: { self.isCurrent(strip) }) {
             logger.notice("Canvas focus not confirmed for selected window \(entry.saved.id)")
         }
         strip.lastNavigation = ProcessInfo.processInfo.systemUptime
     }
 
     private func targetDisplay(_ context: Context, focused: CGWindowID?) -> Display? {
-        if let focused, let strip = strips.values.first(where: { $0.entries.contains(where: { $0.saved.id == focused }) }) {
+        if let focused, let strip = strips.values.first(where: { self.isCurrent($0) && $0.entries.contains(where: { $0.saved.id == focused }) }) {
             return context.displays.first(where: { $0.id == strip.display.id })
         }
         if let focused, let info = (CGWindowListCopyWindowInfo(.optionIncludingWindow, focused) as? [[String: Any]])?.first,
@@ -356,28 +394,75 @@ final class HorizontalCanvasService: ObservableObject {
 
     private static func area(_ rect: CGRect) -> CGFloat { rect.isNull ? 0 : rect.width * rect.height }
 
-    private func discover(_ context: Context, on display: Display, space: UInt64) -> [Entry] {
-        guard let infos = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else { return [] }
+    private func discover(_ context: Context, on display: Display, space: UInt64, diagnose: Bool = false) -> [Entry] {
+        guard let allInfos = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else { return [] }
+        // On-screen alone is not authoritative during occlusion/Space changes.
+        // Include windows on this desktop, then apply AX/minimized/hidden filters.
+        let infos = allInfos.filter { info in
+            guard let id = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
+                  let pid = (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
+                  context.apps[pid] != nil, !context.hiddenPIDs.contains(pid) else { return false }
+            return (info[kCGWindowIsOnscreen as String] as? Bool) == true
+                || SpaceManagementService.desktops(forWindow: id)?.contains(space) == true
+        }
         var windows: [CGWindowID: AXUIElement] = [:]
         let pids = Set(infos.compactMap { ($0[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value })
         for pid in pids where context.apps[pid] != nil {
-            for window in CanvasWindowAccess.windows(pid: pid) {
+            let expected = Set(infos.compactMap { info -> CGWindowID? in
+                guard (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value == pid,
+                      (info[kCGWindowLayer as String] as? Int) == 0,
+                      let raw = info[kCGWindowBounds as String] as? [String: Any],
+                      let frame = CGRect(dictionaryRepresentation: raw as CFDictionary),
+                      frame.width > 80, frame.height > 80 else { return nil }
+                return (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value
+            })
+            for window in CanvasWindowAccess.windows(pid: pid, expectedWindowIDs: expected) {
                 if let id = CanvasWindowAccess.id(window) { windows[id] = window }
             }
         }
-        return infos.compactMap { info in
-            guard (info[kCGWindowLayer as String] as? Int) == 0,
-                  let id = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
-                  self.saved[id] == nil,
-                  let pid = (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
-                  let launchedAt = context.apps[pid], let window = windows[id],
-                  CanvasWindowAccess.eligible(window), let frame = CanvasWindowAccess.frame(window),
-                  frame.width > 0, frame.height > 0,
-                  context.displays.max(by: { Self.area($0.bounds.intersection(frame)) < Self.area($1.bounds.intersection(frame)) })?.id == display.id,
-                  SpaceManagementService.desktops(forWindow: id) == [space]
+        var issues: [(String, String)] = []
+        var supported = 0
+        let managed = Set(strips.values.flatMap { $0.entries.map { $0.saved.id } })
+        let entries: [Entry] = infos.compactMap { info in
+            guard let id = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
+                   let pid = (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
+                   let raw = info[kCGWindowBounds as String] as? [String: Any],
+                   let frame = CGRect(dictionaryRepresentation: raw as CFDictionary),
+                   frame.width > 0, frame.height > 0,
+                   context.displays.max(by: { Self.area($0.bounds.intersection(frame)) < Self.area($1.bounds.intersection(frame)) })?.id == display.id
             else { return nil }
-            return Entry(saved: SavedWindow(id: id, pid: pid, launchedAt: launchedAt, frame: frame, space: space), window: window)
-        }.sorted {
+            let window = windows[id]
+            // Standard AX windows may have a nonzero WindowServer layer (e.g.
+            // always-on-top apps). The old layer-zero rule silently lost them.
+            guard (info[kCGWindowLayer as String] as? Int) == 0 || window.map(CanvasWindowAccess.eligible) == true else { return nil }
+            if managed.contains(id) { supported += 1; return nil }
+            let label = "\(info[kCGWindowOwnerName as String] as? String ?? String(pid)) #\(id)"
+            func exclude(_ reason: String) {
+                if diagnose { issues.append((label, reason)) }
+            }
+            guard let launchedAt = context.apps[pid], let window else {
+                exclude("Window unavailable through Accessibility"); return nil
+            }
+            if let reason = CanvasWindowAccess.exclusionReason(window) { exclude(reason); return nil }
+            let spaces = SpaceManagementService.desktops(forWindow: id)
+            guard spaces == [space] else {
+                exclude(spaces?.count ?? 0 > 1 ? "Window assigned to several desktops" : "Desktop membership unavailable")
+                return nil
+            }
+            guard saved[id] == nil else { exclude("Window awaiting Canvas restoration"); return nil }
+            guard let original = CanvasWindowAccess.frame(window) else { exclude("Window frame unavailable"); return nil }
+            supported += 1
+            return Entry(saved: SavedWindow(id: id, pid: pid, launchedAt: launchedAt, frame: original, space: space), window: window)
+        }
+        if diagnose {
+            let count = supported
+            let exclusions = issues
+            DispatchQueue.main.async {
+                self.inventoryMessage = ([String(format: localizedString("Canvas: %d supported window(s), %d excluded."), count, exclusions.count)]
+                    + exclusions.map { "\($0.0): \(localizedString($0.1))" }).joined(separator: "\n")
+            }
+        }
+        return entries.sorted {
             if abs($0.saved.frame.minX - $1.saved.frame.minX) > 8 {
                 return $0.saved.frame.minX < $1.saved.frame.minX
             }
@@ -397,19 +482,37 @@ final class HorizontalCanvasService: ObservableObject {
             defer { DispatchQueue.main.async { self.tickPending = false } }
             guard AXIsProcessTrusted(), self.loadRecovery(context) else { return }
             let focused = CanvasWindowAccess.focusedID(pid: context.frontmostPID)
-            for (id, strip) in Array(self.strips) {
-                guard let display = context.displays.first(where: { $0.id == id }),
-                      display.area == strip.display.area, self.isCurrent(strip) else {
-                    self.strips.removeValue(forKey: id)
+            for (workspace, strip) in Array(self.strips) {
+                let currentDisplay = context.displays.first(where: { $0.id == workspace.displayID })
+                let state = CanvasWorkspacePolicy.state(ownedSpace: strip.space,
+                    currentSpace: SpaceManagementService.userDesktop(onDisplay: strip.display.uuid),
+                    displayConnected: currentDisplay != nil)
+                switch state {
+                case .disconnected:
+                    self.strips.removeValue(forKey: workspace)
                     self.restore(strip.entries.map(\.saved), context: context)
-                    self.publish()
                     continue
+                case .suspended:
+                    strip.suspended = true
+                    continue
+                case .active: break
                 }
-                var changed = false
+                guard let display = currentDisplay else { continue }
+                let resumed = strip.suspended
+                var changed = resumed || display.area != strip.display.area
+                strip.display = display
+                strip.suspended = false
+                if changed {
+                    strip.entries.forEach { $0.lastFrame = nil }
+                    strip.lastNavigation = ProcessInfo.processInfo.systemUptime
+                }
                 strip.entries.removeAll { entry in
                     let dead = context.apps[entry.saved.pid] != entry.saved.launchedAt
-                        || CanvasWindowAccess.id(entry.window) != entry.saved.id
-                    let moved = SpaceManagementService.desktops(forWindow: entry.saved.id).map { $0 != [strip.space] } ?? false
+                        || (CGWindowListCopyWindowInfo(.optionIncludingWindow, entry.saved.id) as? [[String: Any]])?.isEmpty == true
+                    // An empty list during a Space animation is not a window move.
+                    let moved = SpaceManagementService.desktops(forWindow: entry.saved.id).map {
+                        !$0.isEmpty && !$0.contains(strip.space)
+                    } ?? false
                     if dead || moved {
                         self.saved.removeValue(forKey: entry.saved.id)
                         changed = true
@@ -428,7 +531,7 @@ final class HorizontalCanvasService: ObservableObject {
                 }
                 if changed {
                     self.retile(strip)
-                    self.fitViewport(strip)
+                    if !resumed { self.fitViewport(strip) }
                 }
                 if ProcessInfo.processInfo.systemUptime - strip.lastNavigation > 1,
                    let focused, focused != strip.selected, strip.entries.contains(where: { $0.saved.id == focused }) {
@@ -436,9 +539,18 @@ final class HorizontalCanvasService: ObservableObject {
                     self.fitViewport(strip)
                     changed = true
                 }
-                if strip.entries.isEmpty { self.strips.removeValue(forKey: id); self.publish() }
+                if strip.entries.isEmpty { self.strips.removeValue(forKey: workspace) }
                 else if changed { self.teleport(strip, context: context) }
             }
+            // Retry orphaned records on visible desktops, never records still
+            // owned by an active or suspended strip.
+            let owned = Set(self.strips.values.flatMap { $0.entries.map { $0.saved.id } })
+            let visible = Set(context.displays.compactMap { SpaceManagementService.userDesktop(onDisplay: $0.uuid) })
+            let pending = self.saved.values.filter {
+                !owned.contains($0.id) && (visible.contains($0.space) || context.apps[$0.pid] != $0.launchedAt)
+            }
+            if !pending.isEmpty { self.restore(Array(pending), context: context) }
+            self.publish()
         }
     }
 
@@ -449,7 +561,8 @@ final class HorizontalCanvasService: ObservableObject {
                 let records = try JSONDecoder().decode([SavedWindow].self, from: Data(contentsOf: restoreURL))
                 for record in records { saved[record.id] = record }
                 restore(records, context: context)
-                guard saved.isEmpty else { report("Some Canvas windows still need restoration. Use Restore Canvas."); return false }
+                // Keep inactive-desktop records for retry on return without
+                // blocking Canvas commands on the other desktops.
             }
             recoveryLoaded = true
             return true
@@ -470,8 +583,10 @@ final class HorizontalCanvasService: ObservableObject {
     /// result instead of trusting the AX reply.
     private func restore(_ records: [SavedWindow], context: Context) {
         var windowCache: [pid_t: [AXUIElement]] = [:]
+        let visibleSpaces = Set(context.displays.compactMap { SpaceManagementService.userDesktop(onDisplay: $0.uuid) })
         for record in records {
             guard context.apps[record.pid] == record.launchedAt else { saved.removeValue(forKey: record.id); continue }
+            guard visibleSpaces.contains(record.space) else { continue }
             if windowCache[record.pid] == nil { windowCache[record.pid] = CanvasWindowAccess.windows(pid: record.pid) }
             guard let window = windowCache[record.pid]?.first(where: { CanvasWindowAccess.id($0) == record.id }) else {
                 // Keep inaccessible windows for another attempt; only discard
@@ -480,7 +595,7 @@ final class HorizontalCanvasService: ObservableObject {
                 if infos?.isEmpty == true { saved.removeValue(forKey: record.id) }
                 continue
             }
-            if let spaces = SpaceManagementService.desktops(forWindow: record.id), spaces != [record.space] {
+            if let spaces = SpaceManagementService.desktops(forWindow: record.id), !spaces.isEmpty, !spaces.contains(record.space) {
                 saved.removeValue(forKey: record.id)
                 continue
             }
@@ -492,6 +607,9 @@ final class HorizontalCanvasService: ObservableObject {
                 frame.size.height = min(frame.height, display.area.height)
                 frame.origin = display.area.origin
             }
+            guard context.displays.contains(where: {
+                SpaceManagementService.userDesktop(onDisplay: $0.uuid) == record.space
+            }) else { continue }
             if CanvasWindowAccess.setFrame(frame, window: window),
                let actual = CanvasWindowAccess.frame(window),
                abs(actual.minX - frame.minX) < 3, abs(actual.minY - frame.minY) < 3,
@@ -500,7 +618,9 @@ final class HorizontalCanvasService: ObservableObject {
             }
         }
         _ = persist()
-        if !saved.isEmpty { report("Some Canvas windows still need restoration. Use Restore Canvas.") }
+        if records.contains(where: { saved[$0.id] != nil }) {
+            report("Canvas restoration is pending. Return to the affected desktop to finish restoring its windows.")
+        }
     }
 
     @discardableResult
@@ -516,8 +636,11 @@ final class HorizontalCanvasService: ObservableObject {
     }
 
     private func publish() {
-        let ids = Set(strips.keys)
+        let workspaces = Set(strips.keys)
+        let ids = Set(strips.values.filter { isCurrent($0) }.map { $0.display.id })
         DispatchQueue.main.async {
+            self.knownWorkspaces = workspaces
+            guard self.activeDisplayIDs != ids else { return }
             self.activeDisplayIDs = ids
             NotificationCenter.default.post(name: Self.stateDidChange, object: nil)
         }

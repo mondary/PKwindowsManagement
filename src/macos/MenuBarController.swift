@@ -129,7 +129,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openRooms() {
-        HorizontalCanvasService.shared.release { RoomsOverlayController.shared.toggle() }
+        RoomsOverlayController.shared.toggle()
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {

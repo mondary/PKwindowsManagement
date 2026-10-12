@@ -110,7 +110,7 @@ final class UpdaterManager: ObservableObject {
 
     /// Refresh both feeds, then install from the verified enclosure directly.
     /// This avoids Sparkle presenting a stale CDN copy of an appcast. A channel
-    /// switch to an older build is also offered when the short version differs.
+    /// switch to an older build is offered only across Stable/Dev channels.
     func checkForUpdatesOrSwitch() {
         precondition(Thread.isMainThread)
         LaunchpadOverlayController.shared.openSettings()
@@ -147,7 +147,9 @@ final class UpdaterManager: ObservableObject {
                     return
                 }
 
-                if feedTechnical > installedTechnical {
+                let decision = UpdateVersionPolicy.decision(installed: installedShort, build: installedTechnical,
+                                                            offered: target.short, offeredBuild: feedTechnical)
+                if decision == .update {
                     // The fresh feed check is authoritative. Do not hand this
                     // result back to Sparkle, whose CDN response may be stale.
                     switchOffer = ChannelSwitchOffer(
@@ -158,7 +160,7 @@ final class UpdaterManager: ObservableObject {
                         signature: signature,
                         isUpdate: true
                     )
-                } else if target.short != installedShort {
+                } else if decision == .channelSwitch {
                     switchOffer = ChannelSwitchOffer(
                         channel: channel,
                         version: target.short,
@@ -167,7 +169,7 @@ final class UpdaterManager: ObservableObject {
                         signature: signature,
                         isUpdate: false
                     )
-                } else {
+                } else if decision == .current {
                     controller?.checkForUpdates(nil)
                 }
             }
@@ -206,7 +208,10 @@ final class UpdaterManager: ObservableObject {
         let installedTechnical = Int64(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "")
         let feedTechnical = info.flatMap { Int64($0.technical) }
         if let info, info.enclosure != nil, info.signature != nil,
-           let installedTechnical, let feedTechnical, feedTechnical > installedTechnical {
+           let installedTechnical, let feedTechnical,
+           let installed = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+           UpdateVersionPolicy.decision(installed: installed, build: installedTechnical,
+                                        offered: info.short, offeredBuild: feedTechnical) == .update {
             availableUpdateVersion = info.short
         } else {
             availableUpdateVersion = nil
@@ -227,9 +232,13 @@ final class UpdaterManager: ObservableObject {
               let feedTechnical = Int64(info.technical)
         else { return .unavailable }
 
-        if feedTechnical > installedTechnical { return .updateAvailable }
-        if feedTechnical == installedTechnical { return .upToDate }
-        return .installedAhead
+        switch UpdateVersionPolicy.decision(installed: installedVersion, build: installedTechnical,
+                                            offered: info.short, offeredBuild: feedTechnical) {
+        case .update: return .updateAvailable
+        case .current: return .upToDate
+        case .installedAhead: return .installedAhead
+        case .channelSwitch: return .otherChannel
+        }
     }
 
     /// Dev builds install silently; stable builds ask first.
