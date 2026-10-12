@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026.10.73] - 2026-10-12
+### Added
+- Canvas : commandes pour déplacer la colonne active à gauche ou à droite, disponibles dans les raccourcis et le menu.
+- Carrelage global : disposition bento équilibrée jusqu'à 16 fenêtres, sans case vide (par exemple 13 fenêtres réparties en colonnes de 3 ou 4).
+### Fixed
+- Canvas : une fenêtre que macOS a réassignée à un autre Space lorsqu'elle était garée est replacée sur son bureau d'origine avant restauration.
+- Performances du strip : les événements de défilement reçus pendant un déplacement Accessibility sont regroupés au lieu de créer une file d'opérations en retard.
+
 ## [2026.10.72] - 2026-10-12
 ### Fixed
 - Canvas : les choix demi-hauteur survivent à la désactivation du strip. L'arrangement est conservé à la sortie et réappliqué aux fenêtres redécouvertes à la réactivation (les fenêtres fermées entre-temps sont oubliées proprement).

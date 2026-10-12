@@ -64,6 +64,34 @@ enum CanvasLayout {
         max(1, (max(0, windows) + rows - 1) / rows)
     }
 
+    /// Fill a whole display with balanced bento columns. Each column spans the
+    /// full height and divides it evenly among its windows, so arbitrary counts
+    /// never leave the empty cells of a conventional rectangular grid.
+    static func bentoFrames(in area: CGRect, windows count: Int) -> [CGRect] {
+        guard count > 0 else { return [] }
+        let minimumColumns = max(1, (count + 3) / 4)
+        let maximumColumns = min(4, count)
+        let ideal = sqrt(Double(count) * Double(max(1, area.width)) / Double(max(1, area.height)))
+        let columns = min(maximumColumns, max(minimumColumns, Int(ideal.rounded())))
+        let baseCount = count / columns
+        let widerColumns = count % columns
+        let columnWidth = area.width / CGFloat(columns)
+        var frames: [CGRect] = []
+        frames.reserveCapacity(count)
+        for column in 0..<columns {
+            let rows = baseCount + (column < widerColumns ? 1 : 0)
+            let x = area.minX + CGFloat(column) * columnWidth
+            let width = column == columns - 1 ? area.maxX - x : columnWidth
+            let rowHeight = area.height / CGFloat(rows)
+            for row in 0..<rows {
+                let y = area.minY + CGFloat(row) * rowHeight
+                let height = row == rows - 1 ? area.maxY - y : rowHeight
+                frames.append(CGRect(x: x, y: y, width: width, height: height))
+            }
+        }
+        return frames
+    }
+
     struct Column: Equatable {
         var windows: [Int]
         let rows: Int

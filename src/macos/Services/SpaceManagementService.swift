@@ -103,6 +103,16 @@ final class SpaceManagementService {
         SLSBridge.shared?.spaces(forWindow: id)
     }
 
+    /// Restore Canvas-owned windows if macOS reassigned a parked window to a
+    /// different desktop while it was outside the visible strip viewport.
+    @discardableResult
+    static func restoreWindow(_ id: CGWindowID, toDesktop space: UInt64) -> Bool {
+        guard let bridge = SLSBridge.shared,
+              bridge.managedDisplays()?.contains(where: { $0.spaceIDs.contains(space) }) == true else { return false }
+        if bridge.spaces(forWindow: id)?.contains(space) == true { return true }
+        return bridge.moveWindow(id, toSpace: space)
+    }
+
     private let workQueue = DispatchQueue(label: "pk.windows-management.spaces", qos: .userInitiated)
     private var busy = false
     private var lastWallpaperPath: String?

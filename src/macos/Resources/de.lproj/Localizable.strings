@@ -408,6 +408,8 @@
 "Toggle Horizontal Canvas" = "Horizontales Canvas umschalten";
 "Previous Canvas Window" = "Vorherige Spalte";
 "Next Canvas Window" = "Nächste Spalte";
+"Move Canvas Column Left" = "Spalte nach links verschieben";
+"Move Canvas Column Right" = "Spalte nach rechts verschieben";
 "Restore Canvas" = "Canvas wiederherstellen";
 "Rows per column" = "Zeilen pro Spalte";
 "Column sequence" = "Spaltenfolge";

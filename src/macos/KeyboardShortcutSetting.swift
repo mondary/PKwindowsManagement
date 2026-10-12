@@ -190,6 +190,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case canvasHalfHeight
     case canvasAbove
     case canvasBelow
+    case canvasMoveColumnLeft
+    case canvasMoveColumnRight
 
     var id: String { rawValue }
 
@@ -259,6 +261,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasHalfHeight: localizedString("Canvas Half Height")
         case .canvasAbove: localizedString("Canvas Window Above")
         case .canvasBelow: localizedString("Canvas Window Below")
+        case .canvasMoveColumnLeft: localizedString("Move Canvas Column Left")
+        case .canvasMoveColumnRight: localizedString("Move Canvas Column Right")
         }
     }
 
@@ -311,7 +315,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
              .windowFirstTwoThirds, .windowCenterTwoThirds, .windowLastTwoThirds,
              .windowFirstFourth, .windowSecondFourth, .windowThirdFourth, .windowLastFourth,
              .windowFirstThreeFourths, .windowCenterThreeFourths, .windowLastThreeFourths,
-             .desktopMoveLeft, .desktopMoveRight, .canvasRestore:
+             .desktopMoveLeft, .desktopMoveRight, .canvasRestore,
+             .canvasMoveColumnLeft, .canvasMoveColumnRight:
             nil
         }
     }
@@ -340,6 +345,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasHalfHeight: .halfHeight
         case .canvasAbove: .above
         case .canvasBelow: .below
+        case .canvasMoveColumnLeft: .moveColumnLeft
+        case .canvasMoveColumnRight: .moveColumnRight
         default: nil
         }
     }

@@ -3,7 +3,7 @@ import Combine
 import OSLog
 
 enum CanvasAction: String {
-    case toggle, previous, next, above, below, fullHeight, halfHeight, restore, inspect
+    case toggle, previous, next, above, below, moveColumnLeft, moveColumnRight, fullHeight, halfHeight, restore, inspect
 }
 
 /// Paneru-style scrolling grid of real AX windows (see docs/canvas-plan.md):
@@ -109,6 +109,8 @@ final class HorizontalCanvasService: ObservableObject {
     /// the strip is released and restored when the same desktop reactivates.
     private var arrangements: [CanvasWorkspace: CanvasArrangement] = [:]
     private var knownWorkspaces: Set<CanvasWorkspace> = [] // main thread snapshot
+    private var pendingScrolls: [CanvasWorkspace: CGFloat] = [:] // main thread only
+    private var scrollFlushScheduled = false // main thread only
     private var saved: [CGWindowID: SavedWindow] = [:]
     private var recoveryLoaded = false
     private var timer: Timer?
@@ -121,7 +123,9 @@ final class HorizontalCanvasService: ObservableObject {
     func start() {
         precondition(Thread.isMainThread)
         guard timer == nil else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { [weak self] _ in self?.tick() }
+        // AX inventory reads are cross-process calls. A slower observer keeps
+        // discovery responsive without repeatedly stalling active applications.
+        timer = Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { [weak self] _ in self?.tick() }
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in self?.tick() }
@@ -199,6 +203,15 @@ final class HorizontalCanvasService: ObservableObject {
                     return
                 }
                 let index = strip.entries.firstIndex(where: { $0.saved.id == strip.selected }) ?? 0
+                if action == .moveColumnLeft || action == .moveColumnRight {
+                    strip.arrangement.moveColumn(containing: strip.entries[index].saved.id,
+                        by: action == .moveColumnLeft ? -1 : 1)
+                    self.retile(strip)
+                    self.fitViewport(strip)
+                    self.teleport(strip, context: context)
+                    self.focusSelected(strip)
+                    return
+                }
                 guard let slot = CanvasLayout.slot(index: index, columns: strip.columns) else { return }
                 let column = slot.column
                 let row = slot.row
@@ -221,13 +234,35 @@ final class HorizontalCanvasService: ObservableObject {
     func scroll(rawDelta: CGFloat, location: CGPoint) -> Bool {
         precondition(Thread.isMainThread)
         guard !shuttingDown else { return false }
-        let context = Context.capture()
-        guard let display = context.displays.first(where: { $0.bounds.contains(location) }),
-              let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else { return false }
-        let workspace = CanvasWorkspace(displayID: display.id, spaceID: space)
-        guard knownWorkspaces.contains(workspace) else { return false }
-        queue.async { self.shiftViewport(on: workspace, by: -rawDelta, context: context) }
+        guard let displayID = NSScreen.screens.compactMap({ screen -> CGDirectDisplayID? in
+            screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
+        }).first(where: { CGDisplayBounds($0).contains(location) }),
+              let workspace = knownWorkspaces.first(where: { $0.displayID == displayID }) else { return false }
+        pendingScrolls[workspace, default: 0] -= rawDelta
+        scheduleScrollFlush()
         return true
+    }
+
+    /// Keep at most one viewport operation in flight. Scroll events arriving
+    /// while AX moves are running accumulate for the next frame instead of
+    /// building an unbounded FIFO backlog behind a slow application.
+    private func scheduleScrollFlush() {
+        guard !scrollFlushScheduled, !pendingScrolls.isEmpty, !shuttingDown else { return }
+        scrollFlushScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.025) {
+            let deltas = self.pendingScrolls
+            self.pendingScrolls.removeAll(keepingCapacity: true)
+            let context = Context.capture()
+            self.queue.async {
+                for (workspace, delta) in deltas {
+                    self.shiftViewport(on: workspace, by: delta, context: context)
+                }
+                DispatchQueue.main.async {
+                    self.scrollFlushScheduled = false
+                    if !self.pendingScrolls.isEmpty { self.scheduleScrollFlush() }
+                }
+            }
+        }
     }
 
     /// Release only visible desktops before another window manager takes over.
@@ -333,10 +368,7 @@ final class HorizontalCanvasService: ObservableObject {
         for index in order {
             guard isCurrent(strip) else { strip.suspended = true; return }
             let entry = strip.entries[index]
-            guard CanvasWindowAccess.id(entry.window) == entry.saved.id,
-                  CanvasWindowAccess.eligible(entry.window),
-                  SpaceManagementService.desktops(forWindow: entry.saved.id) == [strip.space]
-            else { continue }
+            guard CanvasWindowAccess.id(entry.window) == entry.saved.id else { continue }
             guard let column = CanvasLayout.slot(index: index, columns: strip.columns)?.column else { continue }
             let target = placement(at: index)
             if let last = entry.lastFrame,
@@ -344,6 +376,9 @@ final class HorizontalCanvasService: ObservableObject {
                abs(last.width - target.frame.width) < 0.5, abs(last.height - target.frame.height) < 0.5 {
                 continue
             }
+            guard CanvasWindowAccess.eligible(entry.window),
+                  SpaceManagementService.desktops(forWindow: entry.saved.id) == [strip.space]
+            else { continue }
             let result = CanvasWindowAccess.applyCanvasFrame(target.frame, window: entry.window) { self.isCurrent(strip) }
             let accepted = result.accepted
             if let actual = result.actual {
@@ -632,9 +667,12 @@ final class HorizontalCanvasService: ObservableObject {
                 if infos?.isEmpty == true { saved.removeValue(forKey: record.id) }
                 continue
             }
-            if let spaces = SpaceManagementService.desktops(forWindow: record.id), !spaces.isEmpty, !spaces.contains(record.space) {
-                saved.removeValue(forKey: record.id)
-                continue
+            if let spaces = SpaceManagementService.desktops(forWindow: record.id),
+               !spaces.isEmpty, !spaces.contains(record.space) {
+                // macOS can reassign windows parked beyond the visible screen.
+                // The original Space is visible here, so move it back before
+                // restoring its exact saved frame.
+                guard SpaceManagementService.restoreWindow(record.id, toDesktop: record.space) else { continue }
             }
             var frame = record.frame
             if !context.displays.contains(where: {
@@ -647,10 +685,17 @@ final class HorizontalCanvasService: ObservableObject {
             guard context.displays.contains(where: {
                 SpaceManagementService.userDesktop(onDisplay: $0.uuid) == record.space
             }) else { continue }
-            if CanvasWindowAccess.setFrame(frame, window: window),
-               let actual = CanvasWindowAccess.frame(window),
-               abs(actual.minX - frame.minX) < 3, abs(actual.minY - frame.minY) < 3,
-               abs(actual.width - frame.width) < 3, abs(actual.height - frame.height) < 3 {
+            AXUIElementSetMessagingTimeout(window, 0.5)
+            var restored = false
+            for attempt in 0..<3 {
+                _ = CanvasWindowAccess.setFrame(frame, window: window)
+                if let actual = CanvasWindowAccess.frame(window), CanvasFrameApplication.restored(actual, frame) {
+                    restored = true
+                    break
+                }
+                if attempt < 2 { Thread.sleep(forTimeInterval: 0.12) }
+            }
+            if restored {
                 saved.removeValue(forKey: record.id)
             }
         }

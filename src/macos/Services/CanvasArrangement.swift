@@ -25,6 +25,15 @@ struct CanvasArrangement {
         columns.first(where: { $0.windows.contains(id) })?.halfHeight == true
     }
 
+    mutating func moveColumn(containing id: UInt32, by offset: Int) {
+        guard offset != 0,
+              let source = columns.firstIndex(where: { $0.windows.contains(id) }) else { return }
+        let destination = source + offset
+        guard columns.indices.contains(destination) else { return }
+        let column = columns.remove(at: source)
+        columns.insert(column, at: destination)
+    }
+
     mutating func setHalfHeight(_ id: UInt32) {
         guard let source = columns.firstIndex(where: { $0.windows.contains(id) }),
               !columns[source].halfHeight else { return }

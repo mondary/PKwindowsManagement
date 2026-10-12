@@ -334,21 +334,7 @@ final class WindowSnapService {
         let axTop = mainHeight - visible.maxY
         let baseAX = CGRect(x: visible.minX, y: axTop, width: visible.width, height: visible.height)
 
-        let n = tiles.count
-        let cols = Int(ceil(sqrt(Double(n))))
-        let rows = Int(ceil(Double(n) / Double(cols)))
-        let cellW = floor(baseAX.width / CGFloat(cols))
-        let cellH = floor(baseAX.height / CGFloat(rows))
-
-        for (index, tile) in tiles.enumerated() {
-            let col = index % cols
-            let row = index / cols
-            let x = baseAX.minX + CGFloat(col) * cellW
-            let y = baseAX.minY + CGFloat(row) * cellH
-            // Dernière colonne/ligne s'étend au bord pour absorber l'arrondi
-            let w = col == cols - 1 ? baseAX.maxX - x : cellW
-            let h = row == rows - 1 ? baseAX.maxY - y : cellH
-            let cell = CGRect(x: x, y: y, width: w, height: h)
+        for (tile, cell) in zip(tiles, CanvasLayout.bentoFrames(in: baseAX, windows: tiles.count)) {
             let frame = insetByGaps(cell, area: baseAX, by: preset.general)
             Self.restoreStore[Self.windowKey(for: tile.0)] = tile.1
             setFrame(frame, for: tile.0, on: appElement)
@@ -702,7 +688,8 @@ extension ShortcutAction {
         case .desktopCreate, .desktopCloseCurrent, .windowNextDesktop, .windowPreviousDesktop,
              .desktopMoveLeft, .desktopMoveRight,
              .canvasToggle, .canvasPrevious, .canvasNext, .canvasRestore,
-             .canvasFullHeight, .canvasHalfHeight, .canvasAbove, .canvasBelow:
+             .canvasFullHeight, .canvasHalfHeight, .canvasAbove, .canvasBelow,
+             .canvasMoveColumnLeft, .canvasMoveColumnRight:
             nil
         }
     }

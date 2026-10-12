@@ -159,6 +159,8 @@
 "Toggle Horizontal Canvas" = "Toggle Horizontal Canvas";
 "Previous Canvas Window" = "Previous column";
 "Next Canvas Window" = "Next column";
+"Move Canvas Column Left" = "Move column left";
+"Move Canvas Column Right" = "Move column right";
 "Restore Canvas" = "Restore Canvas";
 "Rows per column" = "Rows per column";
 "Column sequence" = "Column sequence";

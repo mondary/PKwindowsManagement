@@ -196,6 +196,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         menu.addItem(roomsItem)
         let canvasMenu = NSMenu()
         for action in [ShortcutAction.canvasToggle, .canvasPrevious, .canvasNext, .canvasAbove, .canvasBelow,
+                       .canvasMoveColumnLeft, .canvasMoveColumnRight,
                        .canvasFullHeight, .canvasHalfHeight, .canvasRestore] {
             let shortcut = AppRuntime.shared.settings?.shortcut(for: action)
             let item = NSMenuItem(title: action.title, action: #selector(canvasCommand(_:)), keyEquivalent: shortcut?.menuKeyEquivalent ?? "")

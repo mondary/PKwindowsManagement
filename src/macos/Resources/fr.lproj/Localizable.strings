@@ -409,6 +409,8 @@
 "Toggle Horizontal Canvas" = "Activer/désactiver le Canvas horizontal";
 "Previous Canvas Window" = "Colonne précédente";
 "Next Canvas Window" = "Colonne suivante";
+"Move Canvas Column Left" = "Déplacer la colonne à gauche";
+"Move Canvas Column Right" = "Déplacer la colonne à droite";
 "Restore Canvas" = "Restaurer le Canvas";
 "Rows per column" = "Lignes par colonne";
 "Column sequence" = "Suite de colonnes";
