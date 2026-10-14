@@ -33,6 +33,8 @@ struct WindowShortcutsPreferencesView: View {
                     Text(localizedString("Window management"))
                         .font(.title3.weight(.semibold))
 
+                    windowSwitcherSection
+
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Label("Rooms", systemImage: "rectangle.3.group")
@@ -60,6 +62,22 @@ struct WindowShortcutsPreferencesView: View {
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         }
+    }
+
+    private var windowSwitcherSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label(localizedString("Window previews"), systemImage: "rectangle.on.rectangle")
+                    .font(.headline)
+                Spacer()
+                Button(localizedString("Open Window Previews")) { WindowSwitcherController.shared.show() }
+            }
+            Text(localizedString("Find a window by its thumbnail, app or title. Tab browses, Return opens and Escape cancels. Thumbnails require Screen Recording permission."))
+                .font(.caption).foregroundStyle(.secondary)
+            windowRow(WindowCommandCatalog.switcher)
+        }
+        .padding(12)
+        .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
     }
 
     @ViewBuilder

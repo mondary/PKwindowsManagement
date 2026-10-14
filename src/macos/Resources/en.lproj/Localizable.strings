@@ -216,29 +216,79 @@
 "Mostly on another display" = "Mostly on another display";
 
 "Manage Rooms…" = "Manage Rooms…";
+
 "Your projects, their windows and their layouts." = "Your projects, their windows and their layouts.";
+
 "%d room(s)" = "%d room(s)";
+
 "Choose windows in order, select a layout and a screen, then open your project in one click. Minimize puts its windows away without closing them." = "Choose windows in order, select a layout and a screen, then open your project in one click. Minimize puts its windows away without closing them.";
+
 "Room removed: %@" = "Room removed: %@";
+
 "Undo" = "Undo";
+
 "Search rooms…" = "Search rooms…";
+
 "No matching rooms." = "No matching rooms.";
+
 "Open the apps for your project, click New Room, and select the windows to keep together." = "Open the apps for your project, click New Room, and select the windows to keep together.";
+
 "Rooms use ordinary app windows. A saved room is a project layout, not a macOS desktop." = "Rooms use ordinary app windows. A saved room is a project layout, not a macOS desktop.";
+
 "Edit Room" = "Edit Room";
+
 "Delete Room" = "Delete Room";
+
 "Screen under pointer" = "Screen under pointer";
+
 "Layout" = "Layout";
+
 "Available windows" = "Available windows";
+
 "Refresh" = "Refresh";
+
 "Allow Accessibility access to select and arrange your windows." = "Allow Accessibility access to select and arrange your windows.";
+
 "Grant Accessibility Access" = "Grant Accessibility Access";
+
 "No compatible windows found. Open your project apps, then refresh." = "No compatible windows found. Open your project apps, then refresh.";
+
 "Selected" = "Selected";
+
 "Add" = "Add";
+
 "Save Room" = "Save Room";
+
 "Move up" = "Move up";
+
 "Move down" = "Move down";
+
 "Remove window" = "Remove window";
+
+/* Window previews */
+"Open Window Previews" = "Open Window Previews";
+"Window previews" = "Window previews";
+"Search by app or window title" = "Search by app or window title";
+"Loading windows…" = "Loading windows…";
+"No windows available" = "No windows available";
+"No matching windows" = "No matching windows";
+"Browse" = "Browse";
+"Quick select" = "Quick select";
+"Enable previews…" = "Enable previews…";
+"Enable Screen Recording to show thumbnails. Reopen the picker after granting access; macOS may ask you to restart the app." = "Enable Screen Recording to show thumbnails. Reopen the picker after granting access; macOS may ask you to restart the app.";
+"Allow Accessibility to list and activate your windows." = "Allow Accessibility to list and activate your windows.";
+"Open Accessibility Settings" = "Open Accessibility Settings";
+"Preview unavailable" = "Preview unavailable";
+"Activate this window" = "Activate this window";
+"Minimized" = "Minimized";
+"Hidden app" = "Hidden app";
+"Off screen" = "Off screen";
+"This window is no longer available or could not be activated. Try refreshing the list." = "This window is no longer available or could not be activated. Try refreshing the list.";
+"Find a window by its thumbnail, app or title. Tab browses, Return opens and Escape cancels. Thumbnails require Screen Recording permission." = "Find a window by its thumbnail, app or title. Tab browses, Return opens and Escape cancels. Thumbnails require Screen Recording permission.";
+"Window preview and keyboard navigation inspiration. Independent PK implementation." = "Window preview and keyboard navigation inspiration. Independent PK implementation.";
+
 "Duplicate Room" = "Duplicate Room";
+
 "%@ — copy" = "%@ — copy";
+"Open" = "Open";
+"Close" = "Close";

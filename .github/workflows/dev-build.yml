@@ -44,6 +44,13 @@ jobs:
           swiftc src/macos/Services/CanvasFrameApplication.swift Tests/CanvasFrameApplicationChecks.swift -o "$RUNNER_TEMP/canvas-frame-checks"
           "$RUNNER_TEMP/canvas-frame-checks"
 
+      - name: Check window picker and capture lifecycle
+        run: |
+          swiftc src/macos/Services/WindowSwitcher/WindowSwitcherState.swift Tests/WindowSwitcherChecks.swift -o "$RUNNER_TEMP/window-picker-checks"
+          "$RUNNER_TEMP/window-picker-checks"
+          swiftc src/macos/Services/WindowSwitcher/WindowCaptureRequest.swift Tests/WindowCaptureRequestChecks.swift -o "$RUNNER_TEMP/window-capture-checks"
+          "$RUNNER_TEMP/window-capture-checks"
+
       - name: Import signing certificate
         env:
           CERT_P12: ${{ secrets.APPLE_DEVELOPMENT_CERT_P12 }}

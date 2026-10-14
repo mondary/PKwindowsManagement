@@ -689,7 +689,7 @@ extension ShortcutAction {
              .desktopMoveLeft, .desktopMoveRight,
              .canvasToggle, .canvasPrevious, .canvasNext, .canvasRestore,
              .canvasFullHeight, .canvasHalfHeight, .canvasAbove, .canvasBelow,
-             .canvasMoveColumnLeft, .canvasMoveColumnRight:
+             .canvasMoveColumnLeft, .canvasMoveColumnRight, .windowSwitcherToggle:
             nil
         }
     }

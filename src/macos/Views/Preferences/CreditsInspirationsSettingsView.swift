@@ -42,6 +42,17 @@ struct CreditsInspirationsSettingsView: View {
 
     private let inspirations = [
         CreditEntry(
+            id: "Switch",
+            author: "Sanyam Garg",
+            roleKey: "Window preview and keyboard navigation inspiration. Independent PK implementation.",
+            license: "FSL-1.1-MIT",
+            iconAsset: "",
+            usesTemplateIcon: true,
+            symbol: "rectangle.on.rectangle",
+            tint: .indigo,
+            url: URL(string: "https://switch-dev.sanyamgarg.com/")!
+        ),
+        CreditEntry(
             id: "Rooms",
             author: "Sara Gordić",
             roleKey: "Rooms concept and layout engine, ported as RoomTiler.",

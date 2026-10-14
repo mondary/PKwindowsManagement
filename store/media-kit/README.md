@@ -52,6 +52,19 @@ Sources de production inchangées ; aucun accès au dossier archivé `store/arch
 
 ## Régénérer
 
+### Aperçus de fenêtres — Dev locale 2026.10.75
+
+`python3 store/media-kit/capture-window-previews.py` compile les vues du sélecteur
+et produit `build/window-preview-qa/` : FR/EN, clair/sombre, largeur réduite et
+absence d’autorisation de capture. Le setter des propriétés du modèle est rendu
+accessible dans une copie temporaire pour injecter six fenêtres fictives ; les
+vues et la logique restent celles de production. Aucun inventaire AX, raccourci
+global ou appel de capture d’écran n’est lancé. Les miniatures sont des documents
+de démonstration dessinés localement, pas des captures de fenêtres utilisateur.
+Les images retenues dans `sources/screenshots/window-previews-{fr,en}.png`
+documentent le rendu ; elles ne valident pas l’activation d’apps externes, les
+changements de Space ou l’autorisation TCC sur la build installée.
+
 ### Carte clavier Dev 2026.10.66
 
 `python3 store/media-kit/capture-settings.py --keyboard` capture les vues SwiftUI

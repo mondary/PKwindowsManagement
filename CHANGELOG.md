@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.10.75] - 2026-10-14
+### Added
+- Sélecteur global de fenêtres avec miniatures, recherche par app/titre, navigation Tab/flèches, activation par Entrée/clic et accès direct ⌘1–9. Ouverture par `Ctrl+Option+Tab` (modifiable), menu et page Fenêtres ; Échap annule sans activer une autre fenêtre.
+- Aperçus à la demande via ScreenCaptureKit sur macOS 14+, repli Core Graphics sur macOS 13. Autorisation d’enregistrement de l’écran demandée uniquement depuis le bouton dédié ; icônes et titres restent disponibles sans capture. Cache mémoire limité, captures annulées à la fermeture et délais bornés.
+- Implémentation indépendante inspirée de Switch, créditée dans l’app. Activation des fenêtres minimisées/masquées et de celles exposées par Accessibility sur les autres bureaux, sans les déplacer entre Spaces.
+- Tests de recherche/navigation jusqu’à 64 fenêtres et du cycle de capture ; captures de contrôle natives FR/EN avec données fictives. Validation de l’activation de fenêtres externes et des permissions TCC à effectuer sur la build installée.
+
 ## [2026.10.74] - 2026-10-14
 ### Added
 - Rooms : rubrique dédiée dans la barre latérale et recherche des réglages, liste permanente des projets avec aperçu de disposition, accès direct « Gérer Rooms… » depuis le menu et la page Fenêtres.

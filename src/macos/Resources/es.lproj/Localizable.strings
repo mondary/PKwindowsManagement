@@ -465,29 +465,79 @@
 "Mostly on another display" = "Principalmente en otra pantalla";
 
 "Manage Rooms…" = "Gestionar Rooms…";
+
 "Your projects, their windows and their layouts." = "Tus proyectos, sus ventanas y sus disposiciones.";
+
 "%d room(s)" = "%d room(s)";
+
 "Choose windows in order, select a layout and a screen, then open your project in one click. Minimize puts its windows away without closing them." = "Elige las ventanas en orden, una disposición y una pantalla. Abre el proyecto con un clic. Minimizar aparta sus ventanas sin cerrarlas.";
+
 "Room removed: %@" = "Room eliminada: %@";
+
 "Undo" = "Deshacer";
+
 "Search rooms…" = "Buscar rooms…";
+
 "No matching rooms." = "No hay rooms coincidentes.";
+
 "Open the apps for your project, click New Room, and select the windows to keep together." = "Abre las apps del proyecto, pulsa Nueva room y selecciona las ventanas que quieres agrupar.";
+
 "Rooms use ordinary app windows. A saved room is a project layout, not a macOS desktop." = "Las rooms agrupan ventanas de apps. Guardan la disposición de un proyecto, independientemente de los escritorios de macOS.";
+
 "Edit Room" = "Editar room";
+
 "Delete Room" = "Eliminar room";
+
 "Screen under pointer" = "Pantalla bajo el puntero";
+
 "Layout" = "Disposición";
+
 "Available windows" = "Ventanas disponibles";
+
 "Refresh" = "Actualizar";
+
 "Allow Accessibility access to select and arrange your windows." = "Permite el acceso de Accesibilidad para seleccionar y organizar las ventanas.";
+
 "Grant Accessibility Access" = "Permitir Accesibilidad";
+
 "No compatible windows found. Open your project apps, then refresh." = "No se encontraron ventanas compatibles. Abre las apps del proyecto y actualiza.";
+
 "Selected" = "Seleccionada";
+
 "Add" = "Añadir";
+
 "Save Room" = "Guardar room";
+
 "Move up" = "Subir";
+
 "Move down" = "Bajar";
+
 "Remove window" = "Quitar ventana";
+
+/* Window previews */
+"Open Window Previews" = "Abrir vistas previas de ventanas";
+"Window previews" = "Vistas previas de ventanas";
+"Search by app or window title" = "Buscar por app o título de ventana";
+"Loading windows…" = "Cargando ventanas…";
+"No windows available" = "No hay ventanas disponibles";
+"No matching windows" = "No hay ventanas coincidentes";
+"Browse" = "Explorar";
+"Quick select" = "Selección rápida";
+"Enable previews…" = "Activar vistas previas…";
+"Enable Screen Recording to show thumbnails. Reopen the picker after granting access; macOS may ask you to restart the app." = "Permite la grabación de pantalla para mostrar miniaturas y vuelve a abrir el selector. macOS puede pedirte que reinicies la app.";
+"Allow Accessibility to list and activate your windows." = "Permite el acceso de accesibilidad para listar y activar tus ventanas.";
+"Open Accessibility Settings" = "Abrir ajustes de accesibilidad";
+"Preview unavailable" = "Vista previa no disponible";
+"Activate this window" = "Activar esta ventana";
+"Minimized" = "Minimizada";
+"Hidden app" = "App oculta";
+"Off screen" = "Fuera de pantalla";
+"This window is no longer available or could not be activated. Try refreshing the list." = "Esta ventana ya no está disponible o no se ha podido activar. Actualiza la lista.";
+"Find a window by its thumbnail, app or title. Tab browses, Return opens and Escape cancels. Thumbnails require Screen Recording permission." = "Encuentra una ventana por su vista previa, app o título. Tab recorre, Intro abre y Esc cancela. Las miniaturas requieren permiso de grabación de pantalla.";
+"Window preview and keyboard navigation inspiration. Independent PK implementation." = "Inspiración para las vistas previas de ventanas y la navegación por teclado. Implementación independiente de PK.";
+
 "Duplicate Room" = "Duplicar room";
+
 "%@ — copy" = "%@ — copia";
+"Open" = "Abrir";
+"Close" = "Cerrar";

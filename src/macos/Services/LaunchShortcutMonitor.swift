@@ -157,6 +157,17 @@ final class LaunchShortcutMonitor {
             return handleScroll(event: event)
         case .keyDown:
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            if let shortcut = settings?.shortcut(for: .windowSwitcherToggle),
+               shortcut.key.lowercased() == keyString(from: event, keyCode: keyCode),
+               modifierState.matches(shortcut.modifier, flags: event.flags) {
+                if event.getIntegerValueField(.keyboardEventAutorepeat) == 0 {
+                    DispatchQueue.main.async { WindowSwitcherController.shared.toggle() }
+                }
+                return nil
+            }
+            // The nonactivating picker owns typing and navigation while open.
+            // Do not let launch/snap/Canvas bindings intercept its search field.
+            if WindowSwitcherController.shared.isVisible { return .passUnretained(event) }
             if event.flags.contains(.maskCommand), keyCode == 48 || keyCode == 50 {
                 SpaceManagementService.shared.userChangedWindowSelection()
             }
@@ -217,6 +228,7 @@ final class LaunchShortcutMonitor {
     /// Horizontal swipes navigate the strip directly. Option also maps a
     /// vertical wheel/swipe to the strip; plain vertical scrolling stays in apps.
     private func handleScroll(event: CGEvent) -> Unmanaged<CGEvent>? {
+        if WindowSwitcherController.shared.isVisible { return .passUnretained(event) }
         let flags = event.flags
         guard !flags.contains(.maskCommand),
               !flags.contains(.maskControl) else {

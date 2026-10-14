@@ -22,6 +22,7 @@ enum WindowCommandFamily: String, CaseIterable, Identifiable {
     case display
     case desktop
     case canvas
+    case switcher
 
     var id: String { rawValue }
 
@@ -51,6 +52,8 @@ enum WindowCommandFamily: String, CaseIterable, Identifiable {
              .canvasFullHeight, .canvasHalfHeight, .canvasAbove, .canvasBelow,
              .canvasMoveColumnLeft, .canvasMoveColumnRight:
             self = .canvas
+        case .windowSwitcherToggle:
+            self = .switcher
         }
     }
 
@@ -61,6 +64,7 @@ enum WindowCommandFamily: String, CaseIterable, Identifiable {
         case .display: localizedString("Displays")
         case .desktop: localizedString("Desktops")
         case .canvas: localizedString("Horizontal Canvas")
+        case .switcher: localizedString("Window previews")
         }
     }
 
@@ -71,12 +75,14 @@ enum WindowCommandFamily: String, CaseIterable, Identifiable {
         case .display: .purple
         case .desktop: .green
         case .canvas: .teal
+        case .switcher: .indigo
         }
     }
 }
 
 /// Source unique des commandes affichées dans les réglages et la carte clavier.
 enum WindowCommandCatalog {
+    static let switcher = WindowCommandSpec.bound("Open Window Previews", "rectangle.on.rectangle", .windowSwitcherToggle)
     static let halves: [WindowCommandSpec] = [
         .bound("Left Half", "rectangle.lefthalf.inset.filled", .windowLeftHalf),
         .bound("Right Half", "rectangle.righthalf.inset.filled", .windowRightHalf),
@@ -190,7 +196,7 @@ enum WindowCommandCatalog {
     /// Toutes les commandes dont la carte clavier suit la liaison.
     static let all: [WindowCommandSpec] =
         halves + move + quarters + fourths + thirds + twoThirds + threeFourths + horizontal
-        + sixths + displays + desktops + size.all + canvas
+        + sixths + displays + desktops + size.all + canvas + [switcher]
 
     // Touches enregistrables, en rangées de clavier ANSI compactes.
     static let numberRow = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="]

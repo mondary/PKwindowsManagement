@@ -74,6 +74,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        WindowSwitcherController.shared.hide()
         if let canvasObserver { NotificationCenter.default.removeObserver(canvasObserver) }
         if let automaticTerminationActivity {
             ProcessInfo.processInfo.endActivity(automaticTerminationActivity)
@@ -104,6 +105,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
     @objc private func statusItemClicked(_ sender: Any?) {
         if NSApp.currentEvent?.type == .rightMouseUp {
+            rebuildStatusMenu()
             guard let statusMenu else { return }
             statusItem?.menu = statusMenu
             statusItem?.button?.performClick(nil)
@@ -134,6 +136,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
     @objc private func openRooms() {
         RoomsOverlayController.shared.toggle()
+    }
+
+    @objc private func openWindowPreviews() {
+        WindowSwitcherController.shared.toggle()
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -194,6 +200,13 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         let bigYearItem = NSMenuItem(title: localizedString("Open Big Year"), action: #selector(openBigYear), keyEquivalent: "y")
         bigYearItem.target = self
         menu.addItem(bigYearItem)
+        let previewShortcut = AppRuntime.shared.settings?.shortcut(for: .windowSwitcherToggle)
+        let previewItem = NSMenuItem(title: localizedString("Open Window Previews"),
+                                     action: #selector(openWindowPreviews),
+                                     keyEquivalent: previewShortcut?.menuKeyEquivalent ?? "")
+        previewItem.target = self
+        previewItem.keyEquivalentModifierMask = previewShortcut?.modifier.flags ?? []
+        menu.addItem(previewItem)
         let roomsItem = NSMenuItem(title: localizedString("Open Rooms"), action: #selector(openRooms), keyEquivalent: "r")
         roomsItem.target = self
         roomsItem.keyEquivalentModifierMask = [.control, .option]
