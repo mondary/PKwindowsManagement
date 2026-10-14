@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.76] - 2026-10-14
+### Fixed
+- À propos : séparer « Rechercher les mises à jour » de l’installation. La vérification manuelle reste disponible après détection d’une nouvelle version et actualise les deux canaux depuis les appcasts sans déclencher directement l’installation.
+
 ## [2026.10.75] - 2026-10-14
 ### Added
 - Sélecteur global de fenêtres avec miniatures, recherche par app/titre, navigation Tab/flèches, activation par Entrée/clic et accès direct ⌘1–9. Ouverture par `Ctrl+Option+Tab` (modifiable), menu et page Fenêtres ; Échap annule sans activer une autre fenêtre.

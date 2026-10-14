@@ -81,14 +81,30 @@ struct AboutSettingsView: View {
                 .frame(width: 190)
                 Spacer(minLength: 0)
                 Button {
-                    updater.checkForUpdatesOrSwitch()
+                    updater.checkForUpdates()
                 } label: {
-                    Label(updateButtonTitle, systemImage: updater.availableUpdateVersion == nil
-                        ? "arrow.triangle.2.circlepath"
-                        : "arrow.down.circle.fill")
+                    Label(
+                        updater.checkingForUpdates
+                            ? localizedString("Checking for updates…")
+                            : localizedString("Check for Updates…"),
+                        systemImage: "arrow.triangle.2.circlepath"
+                    )
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
                 .disabled(updater.installingSwitch || updater.checkingForUpdates)
+
+                if let version = updater.availableUpdateVersion {
+                    Button {
+                        updater.checkForUpdatesOrSwitch()
+                    } label: {
+                        Label(
+                            String(format: localizedString("Install %@"), version),
+                            systemImage: "arrow.down.circle.fill"
+                        )
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(updater.installingSwitch || updater.checkingForUpdates)
+                }
             }
 
             Text(selectedChannel.detail)
@@ -129,13 +145,6 @@ struct AboutSettingsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    private var updateButtonTitle: String {
-        guard let version = updater.availableUpdateVersion else {
-            return localizedString("Check for Updates…")
-        }
-        return String(format: localizedString("Install %@"), version)
     }
 
     private var appIconLarge: some View {

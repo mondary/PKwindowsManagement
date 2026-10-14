@@ -89,7 +89,24 @@ final class UpdaterManager: ObservableObject {
     }
 
     func checkForUpdates() {
-        checkForUpdatesOrSwitch()
+        precondition(Thread.isMainThread)
+        guard !installingSwitch, !checkingForUpdates else { return }
+        start()
+        checkingForUpdates = true
+        Task {
+            let versions = await (
+                Self.latestInfo(at: Self.stableFeedURL),
+                Self.latestInfo(at: Self.devFeedURL)
+            )
+            await MainActor.run {
+                defer { self.checkingForUpdates = false }
+                self.latestStableVersion = versions.0?.short
+                self.latestDevVersion = versions.1?.short
+                self.stableInfo = versions.0
+                self.devInfo = versions.1
+                self.refreshUpdateAvailability()
+            }
+        }
     }
 
     func refreshAvailableVersions() {
