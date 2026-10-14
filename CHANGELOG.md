@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.78] - 2026-10-14
+### Fixed
+- Vérification manuelle des mises à jour : lire les appcasts via l’API GitHub en XML brut, pour obtenir le flux courant même lorsque le CDN Raw sert encore une version précédente.
+
 ## [2026.10.77] - 2026-10-14
 ### Fixed
 - Flux Sparkle : utiliser le chemin GitHub `refs/heads/main` pour les appcasts, afin d’éviter que le cache de l’ancienne URL de branche continue à servir un feed Dev obsolète malgré une vérification forcée.

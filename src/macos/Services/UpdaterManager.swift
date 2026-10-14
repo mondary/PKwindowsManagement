@@ -194,8 +194,9 @@ final class UpdaterManager: ObservableObject {
     }
 
     private static func latestInfo(at address: String) async -> AppcastInfo? {
-        guard let url = freshFeedURL(address) else { return nil }
+        guard let url = contentsAPIURL(for: address) else { return nil }
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
+        request.setValue("application/vnd.github.raw", forHTTPHeaderField: "Accept")
         request.setValue("no-cache, no-store", forHTTPHeaderField: "Cache-Control")
         request.setValue("no-cache", forHTTPHeaderField: "Pragma")
         guard let (data, response) = try? await URLSession.shared.data(for: request),
@@ -208,9 +209,25 @@ final class UpdaterManager: ObservableObject {
         return parser.info
     }
 
-    /// GitHub's raw-content CDN may keep serving an older appcast at a stable
-    /// URL for several minutes. A unique query value bypasses that intermediary
-    /// cache for both our version display and Sparkle's feed request.
+    /// Use GitHub's Contents API for manual version discovery. Its raw media
+    /// type returns the current XML directly and avoids stale raw-content CDN
+    /// copies of the moving `main` branch.
+    private static func contentsAPIURL(for address: String) -> URL? {
+        guard let filename = URLComponents(string: address)?.path.split(separator: "/").last,
+              filename == "appcast.xml" || filename == "appcast-dev.xml",
+              var components = URLComponents(
+                string: "https://api.github.com/repos/mondary/PKwindowsManagement/contents/\(filename)"
+              )
+        else { return nil }
+        components.queryItems = [
+            URLQueryItem(name: "ref", value: "main"),
+            URLQueryItem(name: "_pk_refresh", value: UUID().uuidString)
+        ]
+        return components.url
+    }
+
+    /// Keep Sparkle's feed URL unique so its regular checks avoid intermediary
+    /// cache entries associated with earlier builds.
     fileprivate static func freshFeedURL(_ address: String) -> URL? {
         guard var components = URLComponents(string: address) else { return nil }
         var items = components.queryItems ?? []
