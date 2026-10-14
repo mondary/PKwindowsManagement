@@ -35,8 +35,8 @@ final class UpdaterManager: ObservableObject {
     static let shared = UpdaterManager()
 
     static let channelKey = "updateChannel"
-    static let stableFeedURL = "https://raw.githubusercontent.com/mondary/PKwindowsManagement/main/appcast.xml"
-    static let devFeedURL = "https://raw.githubusercontent.com/mondary/PKwindowsManagement/main/appcast-dev.xml"
+    static let stableFeedURL = "https://raw.githubusercontent.com/mondary/PKwindowsManagement/refs/heads/main/appcast.xml"
+    static let devFeedURL = "https://raw.githubusercontent.com/mondary/PKwindowsManagement/refs/heads/main/appcast-dev.xml"
 
     private let feedProvider = ChannelFeedProvider()
     private var controller: SPUStandardUpdaterController?

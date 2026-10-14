@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.77] - 2026-10-14
+### Fixed
+- Flux Sparkle : utiliser le chemin GitHub `refs/heads/main` pour les appcasts, afin d’éviter que le cache de l’ancienne URL de branche continue à servir un feed Dev obsolète malgré une vérification forcée.
+
 ## [2026.10.76] - 2026-10-14
 ### Fixed
 - À propos : séparer « Rechercher les mises à jour » de l’installation. La vérification manuelle reste disponible après détection d’une nouvelle version et actualise les deux canaux depuis les appcasts sans déclencher directement l’installation.
