@@ -10,6 +10,7 @@ final class RoomsSwitcherModel: ObservableObject {
     /// Windows picked for the new room, in click order: index 0 is the main spot.
     @Published var picked: [RoomEngine.WindowOffer] = []
     @Published var offers: [RoomEngine.WindowOffer] = []
+    @Published var loadingOffers = false
 
     /// A connectable display, for the room's target-screen picker.
     typealias ScreenOption = RoomEngine.ScreenOption
@@ -50,10 +51,11 @@ final class RoomsSwitcherModel: ObservableObject {
     /// Refresh the window list for the picker (AX reads: async so opening the
     /// panel never waits on them).
     func refreshOffers() {
-        let engine = engine
         screens = RoomEngine.connectedScreens()
-        Task { @MainActor in
-            self.offers = engine.windowOffers()
+        loadingOffers = true
+        RoomEngine.loadWindowOffers { offers in
+            self.offers = offers
+            self.loadingOffers = false
         }
     }
 
@@ -82,7 +84,7 @@ final class RoomsSwitcherModel: ObservableObject {
         return true
     }
 
-    private func activate(room: Room) {
+    func activate(room: Room) {
         let engine = engine
         let claimed = store.claimedWindowIDs(excluding: room.id)
         HorizontalCanvasService.shared.release {
@@ -94,6 +96,10 @@ final class RoomsSwitcherModel: ObservableObject {
     /// room can be opened right after.
     func closeSelected() {
         guard let room = selectedRoom else { return }
+        minimize(room: room)
+    }
+
+    func minimize(room: Room) {
         let engine = engine
         let claimed = store.claimedWindowIDs(excluding: room.id)
         HorizontalCanvasService.shared.release {
@@ -198,6 +204,7 @@ private struct ListView: View {
     @ObservedObject var model: RoomsSwitcherModel
     let onActivateRoom: () -> Void
     @FocusState private var searchFocused: Bool
+    @State private var editingRoom: Room?
 
     var body: some View {
         VStack(spacing: 12) {
@@ -222,6 +229,10 @@ private struct ListView: View {
                                     model.selection = index
                                     if model.activateSelected() { onActivateRoom() }
                                 }
+                                .contextMenu {
+                                    Button(localizedString("Edit Room")) { editingRoom = room }
+                                    Button(localizedString("Minimize Room")) { model.minimize(room: room) }
+                                }
                                 .onHover { hovering in
                                     if hovering { model.selection = index }
                                 }
@@ -231,17 +242,25 @@ private struct ListView: View {
                 }
             }
             footer
-            HStack(spacing: 12) {
-                Button(localizedString("Open Room")) {
-                    if model.activateSelected() { onActivateRoom() }
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    Button(localizedString("Open Room")) {
+                        if model.activateSelected() { onActivateRoom() }
+                    }
+                    Button(localizedString("Edit Room")) { editingRoom = model.selectedRoom }
                 }
-                Button(localizedString("Change layout")) { model.cycleLayout(forward: true) }
-                Button(localizedString("Minimize Room")) { model.closeSelected() }
+                HStack(spacing: 12) {
+                    Button(localizedString("Change layout")) { model.cycleLayout(forward: true) }
+                    Button(localizedString("Minimize Room")) { model.closeSelected() }
+                }
             }
             .disabled(model.selectedRoom == nil)
         }
         .padding(16)
         .onAppear { searchFocused = true }
+        .sheet(item: $editingRoom) { room in
+            RoomEditorView(room: room, store: model.store)
+        }
     }
 
     private var searchField: some View {
@@ -468,10 +487,15 @@ private struct CreationView: View {
 
             screenPicker(model: model)
 
-            if model.offers.isEmpty {
+            if model.loadingOffers {
                 Spacer()
                 ProgressView()
-                    .scaleEffect(0.8)
+                Spacer()
+            } else if model.offers.isEmpty {
+                Spacer()
+                Text(localizedString("No compatible windows found. Open your project apps, then refresh."))
+                    .foregroundColor(.white.opacity(0.7))
+                Button(localizedString("Refresh")) { model.refreshOffers() }
                 Spacer()
             } else {
                 ScrollView {
@@ -489,7 +513,7 @@ private struct CreationView: View {
                 }
             }
 
-            if let first = model.picked.first {
+            if !model.picked.isEmpty {
                 RoomLayoutDiagram(
                     windows: model.picked.map { RoomWindow(bundleID: $0.bundleID, appName: $0.appName, title: $0.title, windowID: $0.windowID) },
                     kind: .auto

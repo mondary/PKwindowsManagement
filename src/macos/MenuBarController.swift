@@ -128,6 +128,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         BigYearOverlayController.shared.toggle()
     }
 
+    @objc private func manageRooms() {
+        SettingsWindowController.shared.showRooms()
+    }
+
     @objc private func openRooms() {
         RoomsOverlayController.shared.toggle()
     }
@@ -194,6 +198,9 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         roomsItem.target = self
         roomsItem.keyEquivalentModifierMask = [.control, .option]
         menu.addItem(roomsItem)
+        let manageRoomsItem = NSMenuItem(title: localizedString("Manage Rooms…"), action: #selector(manageRooms), keyEquivalent: "")
+        manageRoomsItem.target = self
+        menu.addItem(manageRoomsItem)
         let canvasMenu = NSMenu()
         for action in [ShortcutAction.canvasToggle, .canvasPrevious, .canvasNext, .canvasAbove, .canvasBelow,
                        .canvasMoveColumnLeft, .canvasMoveColumnRight,

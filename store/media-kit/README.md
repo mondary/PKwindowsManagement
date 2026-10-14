@@ -80,6 +80,16 @@ Les préférences de style/regroupement utilisées pour le test ont été restau
 La note Dev de la landing locale est synchronisée. L'entrée du hub reste une
 présentation de la Stable ; montage FTP indisponible, aucune publication effectuée.
 
+### Rooms Dev 2026.10.74
+
+`python3 store/media-kit/capture-settings.py --rooms` produit la page Rooms et
+l'éditeur (`rooms-{fr,en}.png`, `room-editor-{fr,en}.png`). Les projets Studio et
+Research utilisent des titres fictifs et un fichier JSON jetable. L'éditeur de
+capture ne charge aucun inventaire utilisateur. Le harness reste sans AppDelegate,
+avec des fenêtres invisibles : ces images montrent l'interface native, pas une
+validation du placement de fenêtres réelles. La landing publique et le hub ne
+sont pas publiés par cette commande.
+
 Prérequis : Python 3 + Pillow, Swift et SDK macOS 26.5, ffmpeg, Ego Lite déjà connecté.
 Le SDK 27 par défaut provoque des erreurs de macros SwiftUI avec la toolchain locale : le harness
 fixe explicitement le SDK 26.5. Des avertissements préexistants de sources Swift peuvent apparaître.

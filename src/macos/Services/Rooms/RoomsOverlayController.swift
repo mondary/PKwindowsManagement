@@ -76,7 +76,8 @@ final class RoomsOverlayController {
     private func installKeyMonitor() {
         removeKeyMonitor()
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self, self.panel?.isKeyWindow == true else { return event }
+            guard let self, self.panel?.isKeyWindow == true,
+                  self.panel?.attachedSheet == nil else { return event }
             return self.handleKey(event)
         }
     }

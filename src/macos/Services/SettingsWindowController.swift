@@ -4,6 +4,14 @@ import AppKit
 /// Closing hides the retained window; every entry point can show it again.
 final class SettingsWindowController: NSWindowController {
     static let shared = SettingsWindowController()
+    static let roomsRequested = Notification.Name("PKShowRoomsSettings")
+
+    func showRooms() {
+        showSettings()
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: Self.roomsRequested, object: nil)
+        }
+    }
     var makeContent: (() -> NSViewController)?
 
     private init() { super.init(window: nil) }

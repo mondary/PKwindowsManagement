@@ -14,3 +14,7 @@
 
 Priorité : distinguer dans Rooms **ensemble de fenêtres** et **gabarit de placement**.
 Implémentation PK indépendante ; pas de code Moom récupéré.
+
+Actualisation le 2026-10-14 : consultation de l'interface des réglages et du guide
+officiel. Aperçus visuels et duplication intégrés à l'éditeur Rooms en Dev 74 ;
+les autres propositions restent dans [le plan des réglages](../../docs/moom-settings-inspiration.md).

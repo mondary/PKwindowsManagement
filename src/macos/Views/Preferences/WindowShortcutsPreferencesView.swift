@@ -38,6 +38,7 @@ struct WindowShortcutsPreferencesView: View {
                             Label("Rooms", systemImage: "rectangle.3.group")
                                 .font(.headline)
                             Spacer()
+                            Button(localizedString("Manage Rooms…")) { SettingsWindowController.shared.showRooms() }
                             Button(localizedString("Open Rooms")) { RoomsOverlayController.shared.show() }
                             Text("⌃⌥R").font(.body.monospaced()).foregroundStyle(.secondary)
                         }

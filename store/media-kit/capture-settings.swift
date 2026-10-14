@@ -21,6 +21,23 @@ struct SettingsCapture {
         for language in [AppLanguage.french, .english] {
             UserDefaults.standard.setVolatileDomain(["app-language": language.rawValue], forName: UserDefaults.argumentDomain)
             settings.appLanguage = language
+            if CommandLine.arguments.contains("--rooms") {
+                let roomURL = output.appendingPathComponent(".rooms-fixture-\(UUID().uuidString).json")
+                defer { try? FileManager.default.removeItem(at: roomURL) }
+                let roomStore = RoomStore(url: roomURL)
+                let windows = [
+                    RoomWindow(bundleID: "com.apple.Safari", appName: "Safari", title: "Documentation"),
+                    RoomWindow(bundleID: "com.apple.TextEdit", appName: "TextEdit", title: "Project notes"),
+                    RoomWindow(bundleID: "com.apple.Terminal", appName: "Terminal", title: "Development")
+                ]
+                let studio = Room(name: "Studio", windows: windows, layout: .focus)
+                roomStore.upsert(studio)
+                roomStore.upsert(Room(name: "Research", windows: Array(windows.prefix(2)), layout: .columns))
+                try render(RoomsPreferencesView(store: roomStore), language: language, name: "rooms", output: output, width: 680)
+                try render(RoomEditorView(room: studio, store: roomStore, loadsWindowOffers: false),
+                           language: language, name: "room-editor", output: output, width: 620, height: 580)
+                continue
+            }
             if CommandLine.arguments.contains("--keyboard") {
                 for width in [640.0, 1440.0] {
                     try render(KeyboardShortcutMapView(settings: settings, availableWidth: width - 48).padding(24),
@@ -33,8 +50,8 @@ struct SettingsCapture {
         }
     }
 
-    @MainActor static func render<V: View>(_ view: V, language: AppLanguage, name: String, output: URL, width: CGFloat = 1050) throws {
-        let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: width, height: 800), styleMask: [.borderless], backing: .buffered, defer: false)
+    @MainActor static func render<V: View>(_ view: V, language: AppLanguage, name: String, output: URL, width: CGFloat = 1050, height: CGFloat = 800) throws {
+        let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: width, height: height), styleMask: [.borderless], backing: .buffered, defer: false)
         window.contentView = NSHostingView(rootView: view.background(Color(nsColor: .windowBackgroundColor)).environment(\.locale, language.locale).environment(\.colorScheme, .light))
         window.orderBack(nil)
         RunLoop.current.run(until: Date().addingTimeInterval(0.8))

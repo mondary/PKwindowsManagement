@@ -27,11 +27,11 @@ Les principaux écarts restants, avec points d'entrée réels dans le snapshot :
 
 | Priorité | Intégration | Sources Rooms à adapter | Raccord PK / réception |
 |---|---|---|---|
-| P1 | **Modifier une room existante** : nom, fenêtres, ordre, écran | `Sources/Rooms/Picker/`, `Palette/`, `RoomsCore/RoomStore.swift` | Ajouter un mode édition à `RoomsSwitcherModel` qui garde l'ID ; annuler sans écriture, fenêtres fermées conservées comme slots. |
+| Livré Dev 74 | **Modifier une room existante** : nom, fenêtres, ordre, écran | `Sources/Rooms/Picker/`, `Palette/`, `RoomsCore/RoomStore.swift` | Éditeur partagé entre la page Rooms et le panneau, ID conservé ; annuler sans écriture, fenêtres indisponibles conservées comme slots. |
 | P1 | **Ma disposition / enregistrer l'arrangement courant** | `RoomsCore/Arrangement.swift` (`read`), `GridLayout.swift`, `Room.swift` ; `WindowEngine.learn` | Étendre `RoomLayoutKind` et le Codable de `Room` avec géométries normalisées et écrans ; migration des rooms actuelles. Tester écran absent, fenêtres fermées et chevauchement volontaire. |
 | P1 | **Basculer en room en rangeant les autres fenêtres**, puis « Tout montrer » | `WindowEngine.arrange`, `park`, `restoreEverything`, `recoverFromLastSession`, registre dans `Windows/` | Registre écrit avant déplacement ; propriétaire unique entre Canvas et Rooms. Ne jamais confondre minimisation, fermeture réelle et suppression de la définition. Tester crash, PID réutilisé, app arrêtée et bureau absent. |
 | P2 | Layout adapté à l'écran et contraintes de taille vérifiées | `WindowEngine.plan`, `layoutChoices`, `relayout`, `measureMinimums`, `learnMinimums` | Unifier progressivement l'écriture AX et l'inventaire ; ne pas importer les sondes 1×1 qui feraient clignoter les fenêtres sans contexte contrôlé. |
-| P2 | Annuler suppression et raccourcis globaux par room | `RoomStore.swift`, `Palette/`, `Hotkey.swift` | Undo et actions intégrées à notre catalogue configurable ; ne pas écraser les raccourcis de tiers/sixièmes de l'utilisateur. |
+| P2 | Raccourcis globaux par room | `RoomStore.swift`, `Palette/`, `Hotkey.swift` | L'annulation de suppression est disponible dans la page Rooms en Dev 74. Les raccourcis par room restent à intégrer au catalogue configurable. |
 
 **Lien immédiat avec le bug Canvas :** `WindowEngine.swift` documente les tailles
 AX transitoires pendant les animations et ignore une sonde qui n'a pas réduit la
@@ -98,11 +98,12 @@ ou obtenir une licence adaptée avant un portage. Ne pas importer `WindowFocuser
 ## Ordre proposé
 
 1. Valider la correction de demi-hauteur dans la Dev 69.
-2. Rooms : édition et **Ma disposition** (P1), migration et tests de rappel.
+2. Rooms : édition livrée en Dev 74 ; **Ma disposition** reste prioritaire.
 3. Rooms : isolement réversible + **Tout montrer**, journal commun avec Canvas.
 4. Reef : sélecteur de fenêtres par app, puis profils de raccourcis si utiles.
 5. Redimensionnement lié et gabarits Moom/ClickFit ; résilience multi-écrans Snapback.
 6. Déclencheurs CCCCorners et sélecteur global de type Switch.
 
-Cet audit ne prétend pas que ces six étapes sont livrées. Seul le correctif Canvas
-est implémenté dans cette itération ; les références sont archivées pour la suite.
+Cet audit ne prétend pas que ces six étapes sont livrées. L'édition Rooms,
+l'annulation de suppression et la duplication sont implémentées en Dev 74 ;
+les autres intégrations restent à développer.

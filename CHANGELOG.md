@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026.10.74] - 2026-10-14
+### Added
+- Rooms : rubrique dédiée dans la barre latérale et recherche des réglages, liste permanente des projets avec aperçu de disposition, accès direct « Gérer Rooms… » depuis le menu et la page Fenêtres.
+- Éditeur de room : nom, disposition, écran cible, ajout/retrait et ordre des fenêtres. Les fenêtres enregistrées restent conservées lorsqu’elles sont temporairement indisponibles. Annulation de la suppression depuis la liste.
+- Réglages inspirés de Moom : choix visuel des cinq dispositions avec aperçu et duplication d’une room dans un brouillon indépendant avant enregistrement.
+### Fixed
+- Deux nouvelles rooms de même nom possèdent des identifiants distincts et ne s’écrasent plus ; les rooms existantes conservent leurs identifiants et leurs données.
+- Le sélecteur charge les fenêtres hors du thread principal et affiche un état vide explicite au lieu d’une attente infinie.
+
 ## [2026.10.73] - 2026-10-12
 ### Added
 - Canvas : commandes pour déplacer la colonne active à gauche ou à droite, disponibles dans les raccourcis et le menu.

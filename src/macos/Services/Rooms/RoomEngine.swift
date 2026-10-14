@@ -116,9 +116,9 @@ final class RoomEngine {
 
     /// Every standard window of every regular app, including minimized ones —
     /// what the picker offers and what slots match against.
-    private func inventory() -> [Candidate] {
+    private func inventory(apps: [NSRunningApplication] = NSWorkspace.shared.runningApplications) -> [Candidate] {
         var result: [Candidate] = []
-        for app in NSWorkspace.shared.runningApplications
+        for app in apps
         where app.activationPolicy == .regular && app != NSRunningApplication.current {
             guard let bundleID = app.bundleIdentifier else { continue }
             let appElement = applicationElement(app.processIdentifier)
@@ -160,6 +160,21 @@ final class RoomEngine {
                 appName: candidate.app.localizedName ?? candidate.info.bundleID,
                 title: candidate.info.title
             )
+        }
+    }
+
+    /// Snapshot application state on main; the AX inventory can wait for other
+    /// processes without freezing the settings window or its sheet.
+    static func loadWindowOffers(completion: @escaping ([WindowOffer]) -> Void) {
+        precondition(Thread.isMainThread)
+        let apps = NSWorkspace.shared.runningApplications
+        DispatchQueue.global(qos: .userInitiated).async {
+            let offers = RoomEngine().inventory(apps: apps).map { candidate in
+                WindowOffer(windowID: candidate.info.windowID, bundleID: candidate.info.bundleID,
+                            appName: candidate.app.localizedName ?? candidate.info.bundleID,
+                            title: candidate.info.title)
+            }
+            DispatchQueue.main.async { completion(offers) }
         }
     }
 

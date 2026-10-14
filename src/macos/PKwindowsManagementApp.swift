@@ -114,6 +114,8 @@ private struct RootDashboardView: View {
                         GeneralSettingsView(settings: settings)
                     case .windows:
                         WindowShortcutsPreferencesView(settings: settings)
+                    case .rooms:
+                        RoomsPreferencesView()
                     case .launchpad:
                         LaunchpadView(settings: settings)
                     case .appearance:
@@ -147,6 +149,10 @@ private struct RootDashboardView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+        .onReceive(NotificationCenter.default.publisher(for: SettingsWindowController.roomsRequested)) { _ in
+            searchText = ""
+            selection = .rooms
+        }
         .alert(localizedString(updater.switchOffer?.isUpdate == true ? "Install update?" : "Switch channel?"), isPresented: Binding(
             get: { updater.switchOffer != nil },
             set: { if !$0 { updater.cancelSwitchOffer() } }
@@ -345,6 +351,7 @@ private struct RootDashboardView: View {
 
 private enum SettingsSection: String, CaseIterable, Identifiable {
     case windows
+    case rooms
     case launchpad
     case appearance
     case snippets
@@ -366,7 +373,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     var category: String {
         switch self {
         case .general: "APP"
-        case .windows, .launchpad, .appearance, .bigYear, .snippets, .urls: "FEATURES"
+        case .windows, .rooms, .launchpad, .appearance, .bigYear, .snippets, .urls: "FEATURES"
         case .ai: "AI"
         case .library, .support, .about, .credits: "PK PROJECTS"
         }
@@ -386,6 +393,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         switch self {
         case .general: details = "general général système system language langue accessibilité accessibility sauvegarde backup"
         case .windows: details = "canvas open canvas horizontal margins marges fenêtres windows"
+        case .rooms: details = "rooms room projets projects espaces fenêtres windows disposition layout écran screen salles räume habitaciones"
         case .launchpad: details = "activation hot corner coin actif raccourci shortcut applications"
         case .appearance: details = "style theme thème organisation organization groupes categories catégories grille grid navigation"
         case .snippets: details = "snippets scripts raccourcis commands commandes"
@@ -399,6 +407,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         switch self {
         case .general: localizedString("System")
         case .windows: localizedString("Windows")
+        case .rooms: "Rooms"
         case .launchpad: "Launchpad"
         case .bigYear: "Big Year"
         case .appearance: localizedString("Appearance")
@@ -416,6 +425,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         switch self {
         case .general: "gearshape"
         case .windows: "rectangle.split.2x1"
+        case .rooms: "rectangle.3.group"
         case .launchpad: "rectangle.3.group"
         case .bigYear: "calendar"
         case .appearance: "paintbrush"

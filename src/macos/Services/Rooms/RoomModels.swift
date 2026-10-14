@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 /// How a room arranges its windows on screen.
 enum RoomLayoutKind: String, Codable, CaseIterable, Identifiable {
@@ -74,7 +75,7 @@ struct Room: Codable, Identifiable, Hashable {
     var displayUUID: String?
 
     init(id: String? = nil, name: String, windows: [RoomWindow], layout: RoomLayoutKind = .auto, displayUUID: String? = nil) {
-        self.id = id ?? Room.slug(name)
+        self.id = id ?? UUID().uuidString
         self.name = name
         self.windows = windows
         self.layout = layout
@@ -226,19 +227,21 @@ final class RoomStore: ObservableObject {
             .appendingPathComponent("rooms.json")
     }
 
-    init() {
+    private let url: URL
+
+    init(url: URL = RoomStore.defaultURL) {
+        self.url = url
         load()
     }
 
     func load() {
-        guard let data = try? Data(contentsOf: Self.defaultURL) else { return }
+        guard let data = try? Data(contentsOf: url) else { return }
         if let file = try? JSONDecoder().decode(File.self, from: data) {
             rooms = file.rooms
         }
     }
 
     func save() {
-        let url = Self.defaultURL
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         if let data = try? JSONEncoder().encode(File(rooms: rooms)) {
             try? data.write(to: url, options: .atomic)
