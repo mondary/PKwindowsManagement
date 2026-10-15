@@ -74,6 +74,8 @@ struct WindowShortcutsPreferencesView: View {
             }
             Text(localizedString("Find a window by its thumbnail, app or title. Tab browses, Return opens and Escape cancels. Thumbnails require Screen Recording permission."))
                 .font(.caption).foregroundStyle(.secondary)
+            Text(localizedString("Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control."))
+                .font(.caption).foregroundStyle(.secondary)
             windowRow(WindowCommandCatalog.switcher)
         }
         .padding(12)

@@ -542,3 +542,17 @@
 "%@ — copy" = "%@ — copie";
 "Open" = "Ouvrir";
 "Close" = "Fermer";
+
+"Close window" = "Fermer la fenêtre";
+
+"Dismiss picker" = "Masquer le sélecteur";
+
+"Closing window…" = "Fermeture de la fenêtre…";
+
+"The window has not closed yet. Open it to check for a save dialog, or refresh the list." = "La fenêtre n’est pas encore fermée. Ouvrez-la pour vérifier si elle demande un enregistrement, ou actualisez la liste.";
+
+"This window cannot be closed right now. Open it or refresh the list." = "Impossible de fermer cette fenêtre pour le moment. Ouvrez-la ou actualisez la liste.";
+
+"Use ⌘W to close only the selected window. ⌘Q is disabled in this picker." = "Utilisez ⌘W pour fermer uniquement la fenêtre sélectionnée. ⌘Q est désactivé dans ce sélecteur.";
+
+"Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Fermez les fenêtres une par une avec ⌘W ou le bouton ×. Le sélecteur reste ouvert ; vous gardez la main sur les demandes d’enregistrement.";

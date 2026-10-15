@@ -35,6 +35,15 @@ enum WindowSwitcherState {
         return items.first?.id
     }
 
+    static func selectionAfterClosing(_ removed: WindowSwitcherID, in items: [WindowSwitcherItem],
+                                      selected: WindowSwitcherID?) -> WindowSwitcherID? {
+        let remaining = items.filter { $0.id != removed }
+        guard !remaining.isEmpty else { return nil }
+        if selected != removed { return selection(in: remaining, keeping: selected) }
+        let index = items.firstIndex { $0.id == removed } ?? 0
+        return remaining[min(index, remaining.count - 1)].id
+    }
+
     static func moved(in items: [WindowSwitcherItem], from id: WindowSwitcherID?, by offset: Int,
                       wrapping: Bool) -> WindowSwitcherID? {
         guard !items.isEmpty else { return nil }

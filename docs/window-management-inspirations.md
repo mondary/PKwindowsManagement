@@ -92,7 +92,14 @@ inter-apps et inter-Spaces à vérifier dans l’app installée.
 
 Aucun `WindowFocuser`, `PrivateSPI`, cache AX ou autre code Switch n’est importé
 sous la licence MIT du projet PK. Le remplacement de ⌘Tab, le déplacement vers le
-Space courant et les commandes de fermeture d’app/fenêtre restent hors de cette version.
+Space courant et la commande pour quitter une app restent hors de cette version.
+
+**Fermeture sélective (Dev locale 2026.10.79)** : ⌘W ou × sur une miniature
+actionne uniquement le bouton AXCloseButton de cette fenêtre. Le sélecteur reste
+ouvert et choisit la fenêtre suivante après confirmation de la fermeture.
+La recherche est conservée ; les dialogues d’enregistrement ne sont jamais validés
+automatiquement. ⌘Q est intercepté dans le panneau. Tests injectés de fermeture et
+de sélection ; validation sur les fenêtres d’applications externes encore à effectuer.
 
 ## 5. Références sans code
 

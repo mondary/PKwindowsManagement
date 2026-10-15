@@ -292,3 +292,17 @@
 "%@ — copy" = "%@ — copy";
 "Open" = "Open";
 "Close" = "Close";
+
+"Close window" = "Close window";
+
+"Dismiss picker" = "Dismiss picker";
+
+"Closing window…" = "Closing window…";
+
+"The window has not closed yet. Open it to check for a save dialog, or refresh the list." = "The window has not closed yet. Open it to check for a save dialog, or refresh the list.";
+
+"This window cannot be closed right now. Open it or refresh the list." = "This window cannot be closed right now. Open it or refresh the list.";
+
+"Use ⌘W to close only the selected window. ⌘Q is disabled in this picker." = "Use ⌘W to close only the selected window. ⌘Q is disabled in this picker.";
+
+"Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control.";

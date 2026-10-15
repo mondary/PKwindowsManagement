@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.79] - 2026-10-14
+### Added
+- Aperçus de fenêtres : fermeture individuelle avec ⌘W ou le bouton × de chaque miniature, en gardant le sélecteur et la recherche ouverts. Après fermeture confirmée, la sélection passe à la fenêtre suivante (ou précédente en fin de liste).
+- Fermeture via le bouton Accessibility de la fenêtre ciblée, sans commande pour quitter l’app. ⌘Q est intercepté dans le sélecteur ; Échap le masque. Une demande d’enregistrement reste à traiter dans l’application concernée.
+- Tests des fermetures confirmées, délais, annulations et sélection après suppression ; traductions FR/EN/DE/ES.
+
 ## [2026.10.78] - 2026-10-14
 ### Fixed
 - Vérification manuelle des mises à jour : lire les appcasts via l’API GitHub en XML brut, pour obtenir le flux courant même lorsque le CDN Raw sert encore une version précédente.

@@ -16,12 +16,15 @@ final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var completedPreviews = Set<WindowSwitcherID>()
     @Published private(set) var generation = UUID()
     @Published var message = ""
+    @Published private(set) var closingID: WindowSwitcherID?
     var columns = 3
     private(set) var icons: [pid_t: NSImage] = [:]
     private var candidates: [WindowSwitcherID: WindowSwitcherInventory.Candidate] = [:]
     private var inventoryTask: Task<WindowSwitcherInventory.Snapshot, Never>?
     private var loadingTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
+    private var closeTask: Task<WindowCloseRequest.Result, Never>?
+    private var closeResultTask: Task<Void, Never>?
     private var capture = WindowThumbnailCapture()
     private var pendingPreviews: [WindowSwitcherID] = []
     private var attemptedPreviews = Set<WindowSwitcherID>()
@@ -76,6 +79,11 @@ final class WindowSwitcherModel: ObservableObject {
         inventoryTask?.cancel()
         loadingTask?.cancel()
         previewTask?.cancel()
+        closeTask?.cancel()
+        closeResultTask?.cancel()
+        closeTask = nil
+        closeResultTask = nil
+        closingID = nil
         inventoryTask = nil
         loadingTask = nil
         previewTask = nil
@@ -98,6 +106,40 @@ final class WindowSwitcherModel: ObservableObject {
 
     func candidate(for id: WindowSwitcherID) -> WindowSwitcherInventory.Candidate? { candidates[id] }
 
+    func closeWindow(_ id: WindowSwitcherID) {
+        precondition(Thread.isMainThread)
+        guard isOpen, closingID == nil, let candidate = candidates[id] else { return }
+        closingID = id
+        message = ""
+        let token = generation
+        let work = Task.detached(priority: .userInitiated) { WindowSwitcherInventory.close(candidate) }
+        closeTask = work
+        closeResultTask = Task { @MainActor [weak self] in
+            let result = await work.value
+            guard let self, !Task.isCancelled, self.isOpen, self.generation == token else { return }
+            self.closingID = nil
+            self.closeTask = nil
+            self.closeResultTask = nil
+            switch result {
+            case .closed:
+                let next = WindowSwitcherState.selectionAfterClosing(id, in: self.filteredItems, selected: self.selectedID)
+                self.items.removeAll { $0.id == id }
+                self.candidates.removeValue(forKey: id)
+                self.images.removeValue(forKey: id)
+                self.completedPreviews.remove(id)
+                self.attemptedPreviews.remove(id)
+                self.pendingPreviews.removeAll { $0 == id }
+                self.imageOrder.removeAll { $0 == id }
+                self.selectedID = next
+            case .pending:
+                self.message = localizedString("The window has not closed yet. Open it to check for a save dialog, or refresh the list.")
+            case .unavailable, .failed:
+                self.message = localizedString("This window cannot be closed right now. Open it or refresh the list.")
+            case .cancelled: break
+            }
+        }
+    }
+
     /// Lazy grid cells enqueue requests; one screenshot at a time, bounded RAM.
     func requestPreview(_ id: WindowSwitcherID) {
         guard isOpen, previewsGranted, !attemptedPreviews.contains(id), !pendingPreviews.contains(id) else { return }
@@ -113,6 +155,7 @@ final class WindowSwitcherModel: ObservableObject {
                 self.attemptedPreviews.insert(id)
                 let image = await capture.image(for: id)
                 guard !Task.isCancelled, self.isOpen, self.generation == token else { return }
+                guard self.candidates[id] != nil else { continue }
                 self.completedPreviews.insert(id)
                 if let image {
                     self.images[id] = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))

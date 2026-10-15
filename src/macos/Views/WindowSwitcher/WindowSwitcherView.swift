@@ -36,9 +36,10 @@ struct WindowSwitcherView: View {
             HStack(spacing: 16) {
                 Text("⇥  " + localizedString("Browse"))
                 Text("↵  " + localizedString("Open"))
-                Text("⌘1–9  " + localizedString("Quick select"))
+                Text("⌘W  " + localizedString("Close window"))
+                if model.columns >= 3 { Text("⌘1–9  " + localizedString("Quick select")) }
                 Spacer(minLength: 0)
-                Text("esc  " + localizedString("Close"))
+                Text("esc  " + localizedString("Dismiss picker"))
             }
             .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 20).padding(.vertical, 12)
         }
@@ -61,8 +62,8 @@ struct WindowSwitcherView: View {
                     .help(localizedString("Refresh") + " (⌘R)")
                     .accessibilityLabel(localizedString("Refresh"))
                 Button(action: onClose) { Image(systemName: "xmark") }
-                    .help(localizedString("Close"))
-                    .accessibilityLabel(localizedString("Close"))
+                    .help(localizedString("Dismiss picker"))
+                    .accessibilityLabel(localizedString("Dismiss picker"))
             }
             .buttonStyle(.plain)
             HStack(spacing: 10) {
@@ -87,7 +88,8 @@ struct WindowSwitcherView: View {
                         WindowSwitcherCard(item: item, icon: model.icons[item.id.pid], image: model.images[item.id],
                             isSelected: model.selectedID == item.id, rank: rank,
                             isLoadingPreview: model.previewsGranted && !model.completedPreviews.contains(item.id),
-                            onActivate: { onActivate(item.id) })
+                            isClosing: model.closingID == item.id, closeInProgress: model.closingID != nil,
+                            onActivate: { onActivate(item.id) }, onCloseWindow: { model.closeWindow(item.id) })
                             .id(item.id)
                             .onAppear { model.requestPreview(item.id) }
                     }
@@ -131,7 +133,10 @@ struct WindowSwitcherCard: View {
     let isSelected: Bool
     let rank: Int
     var isLoadingPreview = false
+    var isClosing = false
+    var closeInProgress = false
     let onActivate: () -> Void
+    let onCloseWindow: () -> Void
 
     var body: some View {
         Button(action: onActivate) {
@@ -153,6 +158,34 @@ struct WindowSwitcherCard: View {
         .accessibilityLabel(item.appName + ", " + item.displayTitle)
         .accessibilityValue(isSelected ? localizedString("Selected") : "")
         .accessibilityHint(localizedString("Activate this window"))
+        .disabled(closeInProgress)
+        .overlay(alignment: .topTrailing) { closeButton.padding(16) }
+    }
+
+    private var closeButton: some View {
+        Button(action: onCloseWindow) { closeGlyph }
+            .buttonStyle(.plain)
+            .disabled(closeInProgress)
+            .help(localizedString("Close window") + " — " + item.displayTitle + " (⌘W)")
+            .accessibilityLabel(closeAccessibilityLabel)
+    }
+
+    private var closeAccessibilityLabel: String {
+        localizedString(isClosing ? "Closing window…" : "Close window") + ", " + item.appName + ", " + item.displayTitle
+    }
+
+    private var closeGlyph: some View {
+        ZStack {
+            Circle().fill(Color(nsColor: .controlBackgroundColor))
+            if isClosing {
+                ProgressView().controlSize(.small)
+            } else {
+                Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
+            }
+        }
+        .frame(width: 28, height: 28)
+        .overlay(Circle().strokeBorder(Color.primary.opacity(0.15), lineWidth: 1))
+        .contentShape(Circle())
     }
 
     private var backgroundColor: Color {

@@ -82,6 +82,47 @@ enum WindowSwitcherInventory {
         return Snapshot(candidates: candidates, focused: focused)
     }
 
+    /// Close the represented window, never the app or its currently focused window.
+    /// Worker only: AX can wait for an unresponsive app or a save dialog.
+    static func close(_ candidate: Candidate) -> WindowCloseRequest.Result {
+        let id = candidate.item.id
+        var button: AXUIElement?
+        return WindowCloseRequest.run(isCancelled: { Task.isCancelled }, validate: {
+            guard let app = NSRunningApplication(processIdentifier: id.pid), !app.isTerminated,
+                  app.launchDate == candidate.launchedAt,
+                  CanvasWindowAccess.id(candidate.element) == id.windowID,
+                  CanvasWindowAccess.value(candidate.element, kAXRoleAttribute) as? String == kAXWindowRole
+            else { return false }
+            var owner: pid_t = 0
+            guard AXUIElementGetPid(candidate.element, &owner) == .success, owner == id.pid,
+                  let closeButton = CanvasWindowAccess.element(
+                    CanvasWindowAccess.value(candidate.element, kAXCloseButtonAttribute))
+            else { return false }
+            AXUIElementSetMessagingTimeout(closeButton, 0.15)
+            guard CanvasWindowAccess.value(closeButton, kAXEnabledAttribute) as? Bool == true else { return false }
+            button = closeButton
+            return true
+        }, press: {
+            guard let button else { return false }
+            let result = CanvasWindowAccess.onAccessibilityThread(button) {
+                AXUIElementPerformAction(button, kAXPressAction as CFString)
+            }
+            // cannotComplete can mean the app is waiting for a modal response.
+            // Never retry the press, nor send Return to a possible save dialog.
+            return result == .success || result == .cannotComplete
+        }, isClosed: {
+            if let app = NSRunningApplication(processIdentifier: id.pid) {
+                if app.isTerminated || app.launchDate != candidate.launchedAt { return true }
+            } else { return true }
+            var role: CFTypeRef?
+            let result = CanvasWindowAccess.onAccessibilityThread(candidate.element) {
+                AXUIElementCopyAttributeValue(candidate.element, kAXRoleAttribute as CFString, &role)
+            }
+            // A failed/partial inventory is not evidence that the window closed.
+            return result == .invalidUIElement
+        }, pause: { Thread.sleep(forTimeInterval: 0.05) })
+    }
+
     /// Runs on a worker, after the picker has relinquished keyboard focus.
     static func activate(_ candidate: Candidate, selectionTicket: UInt64) -> Bool {
         func stillCurrent() -> Bool {

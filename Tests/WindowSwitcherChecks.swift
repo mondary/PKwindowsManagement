@@ -27,6 +27,17 @@ enum WindowSwitcherChecks {
         precondition(WindowSwitcherState.initialSelection(in: [], focused: nil) == nil)
         precondition(WindowSwitcherState.initialSelection(in: items, focused: nil) == items[0].id)
         let filtered = WindowSwitcherState.filtered(items, query: "safari")
+        for index in filtered.indices {
+            let selected = filtered[index].id
+            let next = WindowSwitcherState.selectionAfterClosing(selected, in: filtered, selected: selected)
+            let expected = filtered[index == filtered.count - 1 ? index - 1 : index + 1].id
+            precondition(next == expected)
+        }
+        // Closing a different card must preserve keyboard selection and filtered order.
+        precondition(WindowSwitcherState.selectionAfterClosing(items[40].id, in: filtered, selected: items[50].id) == items[50].id)
+        precondition(WindowSwitcherState.selectionAfterClosing(items[0].id, in: filtered, selected: items[50].id) == items[50].id)
+        precondition(WindowSwitcherState.selectionAfterClosing(items[0].id, in: [items[0]], selected: items[0].id) == nil)
+        precondition(WindowSwitcherState.selectionAfterClosing(items[0].id, in: [], selected: nil) == nil)
         precondition(WindowSwitcherState.selection(in: filtered, keeping: items[40].id) == items[40].id)
         precondition(WindowSwitcherState.selection(in: filtered, keeping: items[2].id) == items[32].id)
         precondition(WindowSwitcherState.selection(in: [], keeping: items[2].id) == nil)

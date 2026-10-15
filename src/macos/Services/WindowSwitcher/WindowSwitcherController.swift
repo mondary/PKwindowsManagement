@@ -75,7 +75,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     func windowDidResignKey(_ notification: Notification) { hide() }
 
     private func activate(_ id: WindowSwitcherID) {
-        guard activationTask == nil, let candidate = model.candidate(for: id) else { return }
+        guard activationTask == nil, model.closingID == nil, let candidate = model.candidate(for: id) else { return }
         SpaceManagementService.shared.userChangedWindowSelection()
         let ticket = SpaceManagementService.shared.windowSelectionTicket()
         hide()
@@ -123,10 +123,17 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     }
 
     private func handleKey(_ event: NSEvent) -> NSEvent? {
-        // Let input methods finish composition before using arrows/Return/Esc.
-        if let editor = panel?.firstResponder as? NSTextView, editor.hasMarkedText() { return event }
         let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
         if modifiers == .command {
+            switch event.charactersIgnoringModifiers?.lowercased() {
+            case "w":
+                if !event.isARepeat, let id = model.selectedID { model.closeWindow(id) }
+                return nil
+            case "q":
+                model.message = localizedString("Use ⌘W to close only the selected window. ⌘Q is disabled in this picker.")
+                return nil
+            default: break
+            }
             if event.charactersIgnoringModifiers?.lowercased() == "r" {
                 model.prepare(resetSearch: false)
                 return nil
@@ -135,9 +142,10 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
                 activate(model.filteredItems[rank].id)
                 return nil
             }
-            if event.keyCode == 13 { hide(); return nil } // Cmd-W closes only the picker.
             return event
         }
+        // Let input methods finish composition before using arrows/Return/Esc.
+        if let editor = panel?.firstResponder as? NSTextView, editor.hasMarkedText() { return event }
         guard modifiers.isEmpty || modifiers == .shift else { return event }
         switch event.keyCode {
         case 53: hide()
