@@ -345,9 +345,15 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
     private func registerLaunchpadHotKey() {
         unregisterLaunchpadHotKey()
-        guard let shortcut = AppRuntime.shared.settings?.launchpadShortcut,
-              let keyCode = carbonKeyCode(for: shortcut.key)
-        else { return }
+        guard let shortcut = AppRuntime.shared.settings?.launchpadShortcut else { return }
+
+        let title = localizedString("Open Launchpad")
+        guard let keyCode = carbonKeyCode(for: shortcut.key) else {
+            // Touche hors du mappage Carbon : macOS ne peut pas l'enregistrer,
+            // l'échec resterait sinon invisible.
+            ShortcutRegistrationFeedback.shared.report(id: "launchpad", title: title, shortcut: shortcut, accepted: false)
+            return
+        }
 
         ensureLaunchpadHotKeyHandler()
         let hotKeyID = EventHotKeyID(signature: launchpadHotKeySignature, id: 1)
@@ -363,6 +369,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             launchpadHotKey = nil
             NSLog("PKwindowsManagement: failed to register launchpad hotkey (%d)", status)
         }
+        ShortcutRegistrationFeedback.shared.report(id: "launchpad", title: title, shortcut: shortcut, accepted: status == noErr)
     }
 
     private func unregisterLaunchpadHotKey() {
@@ -390,6 +397,12 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             roomsHotKey = nil
             NSLog("PKwindowsManagement: failed to register rooms hotkey (%d)", status)
         }
+        ShortcutRegistrationFeedback.shared.report(
+            id: "rooms",
+            title: localizedString("Open Rooms"),
+            shortcut: KeyboardShortcutSetting(key: "r", modifier: .controlOption),
+            accepted: status == noErr
+        )
     }
 
     private func unregisterRoomsHotKey() {

@@ -556,3 +556,16 @@
 "Use ⌘W to close only the selected window. ⌘Q is disabled in this picker." = "Utilisez ⌘W pour fermer uniquement la fenêtre sélectionnée. ⌘Q est désactivé dans ce sélecteur.";
 
 "Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Fermez les fenêtres une par une avec ⌘W ou le bouton ×. Le sélecteur reste ouvert ; vous gardez la main sur les demandes d’enregistrement.";
+
+/* Shortcut conflicts */
+"Shortcut conflicts" = "Conflits de raccourcis";
+
+"Runs" = "S’exécute";
+
+"macOS refused this shortcut — another app already owns it. Pick another one." = "macOS a refusé ce raccourci : une autre app le possède déjà. Choisissez-en un autre.";
+
+"On key press, the first binding in each list runs; the others stay inert until you change one." = "À l’appui, la première liaison de chaque liste s’exécute ; les suivantes restent inactives tant qu’aucune n’est modifiée.";
+
+"Also used by %@ — this line runs." = "Déjà utilisé par %@ — c’est cette ligne qui s’exécute.";
+
+"Also used by %@ — on key press, %@ runs instead." = "Déjà utilisé par %@ — à l’appui, c’est « %@ » qui s’exécute.";

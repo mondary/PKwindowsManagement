@@ -308,37 +308,80 @@ final class WindowSnapService {
         }
     }
 
+    /// Carrelage global : toutes les fenêtres visibles de tous les apps,
+    /// écran par écran, chacune dans la grille bento de son propre écran — les
+    /// fenêtres ne traversent jamais un écran.
     private func tileAllWindows(preset: WindowMarginPreset) {
-        guard let app = NSWorkspace.shared.frontmostApplication else { return }
-        let appElement = AXUIElementCreateApplication(app.processIdentifier)
-        let windows = CanvasWindowAccess.windows(pid: app.processIdentifier,
-            expectedWindowIDs: CanvasWindowAccess.expectedWindowIDs(pid: app.processIdentifier), reconcile: true)
-
-        // Fenêtres visibles (non réduites, taille utile)
-        let tiles: [(AXUIElement, CGRect)] = windows.compactMap { window in
-            guard !isMinimized(window),
-                  let frame = frame(of: window),
-                  frame.width > 80, frame.height > 80
-            else { return nil }
-            return (window, frame)
-        }
+        let tiles = allTileableWindows()
         guard !tiles.isEmpty else { return }
 
-        // Écran de la première fenêtre (toutes seront sur cet écran)
-        guard let firstFrame = tiles.first?.1,
-              let targetScreen = screen(for: firstFrame) ?? NSScreen.main
-        else { return }
-
         let mainHeight = primaryScreenHeight
-        let visible = targetScreen.visibleFrame
-        let axTop = mainHeight - visible.maxY
-        let baseAX = CGRect(x: visible.minX, y: axTop, width: visible.width, height: visible.height)
-
-        for (tile, cell) in zip(tiles, CanvasLayout.bentoFrames(in: baseAX, windows: tiles.count)) {
-            let frame = insetByGaps(cell, area: baseAX, by: preset.general)
-            Self.restoreStore[Self.windowKey(for: tile.0)] = tile.1
-            setFrame(frame, for: tile.0, on: appElement)
+        let appElements = Dictionary(
+            uniqueKeysWithValues: Set(tiles.map(\.pid)).map { ($0, AXUIElementCreateApplication($0)) }
+        )
+        var screens: [CGDirectDisplayID: [(window: AXUIElement, frame: CGRect, pid: pid_t)]] = [:]
+        for tile in tiles {
+            guard let screen = screen(for: tile.frame),
+                  let displayID = screen.launchpadDisplayID
+            else { continue }
+            screens[displayID, default: []].append(tile)
         }
+
+        for (displayID, windowTiles) in screens {
+            guard let screen = NSScreen.screen(forDisplayID: displayID) else { continue }
+            let visible = screen.visibleFrame
+            let axTop = mainHeight - visible.maxY
+            let baseAX = CGRect(x: visible.minX, y: axTop, width: visible.width, height: visible.height)
+            // Ordre de lecture (haut vers bas, gauche vers droite) : la fenêtre
+            // la plus en haut à gauche finit dans la première case.
+            let ordered = windowTiles.sorted {
+                ($0.frame.minY, $0.frame.minX) < ($1.frame.minY, $1.frame.minX)
+            }
+            for (tile, cell) in zip(ordered, CanvasLayout.bentoFrames(in: baseAX, windows: ordered.count)) {
+                let frame = insetByGaps(cell, area: baseAX, by: preset.general)
+                Self.restoreStore[Self.windowKey(for: tile.window)] = tile.frame
+                let appElement = appElements[tile.pid] ?? AXUIElementCreateApplication(tile.pid)
+                setFrame(frame, for: tile.window, on: appElement)
+            }
+        }
+    }
+
+    /// Fenêtres carrelables : apps classiques non masquées, fenêtres non
+    /// réduites et suffisamment grandes. Une seule passe WindowServer alimente
+    /// la réconciliation AX de chaque app (Electron/VSCode inclues). Les
+    /// fenêtres de PKwindowsManagement sont exclues : l'action est souvent
+    /// déclenchée depuis les réglages, qui ne doit pas se carreler lui-même.
+    private func allTileableWindows() -> [(window: AXUIElement, frame: CGRect, pid: pid_t)] {
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        let apps = NSWorkspace.shared.runningApplications.filter {
+            $0.activationPolicy == .regular && !$0.isTerminated && !$0.isHidden
+                && $0.processIdentifier != ownPID
+        }
+        guard !apps.isEmpty else { return [] }
+
+        let infos = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+        let expectedByPID = CanvasWindowAccess.expectedWindowIDs(in: infos)
+
+        var result: [(AXUIElement, CGRect, pid_t)] = []
+        for app in apps {
+            let pid = app.processIdentifier
+            let windows = CanvasWindowAccess.windows(
+                pid: pid,
+                expectedWindowIDs: expectedByPID[pid] ?? [],
+                reconcile: true
+            )
+            for window in windows {
+                // `eligible` écarte dialogues, fenêtres réduites ou plein
+                // écran et fenêtres non déplaçables : la grille ne réserve pas
+                // de case pour une fenêtre qui ne bougera pas.
+                guard CanvasWindowAccess.eligible(window),
+                      let windowFrame = frame(of: window),
+                      windowFrame.width > 80, windowFrame.height > 80
+                else { continue }
+                result.append((window, windowFrame, pid))
+            }
+        }
+        return result
     }
 
     private func isMinimized(_ window: AXUIElement) -> Bool {

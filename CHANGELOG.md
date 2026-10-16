@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026.10.80] - 2026-10-16
+### Added
+- Détection des conflits de raccourcis dans Réglages → Fenêtres : carte « Conflits de raccourcis » listant chaque combinaison partagée, la liaison qui s'exécute réellement à l'appui (ordre de déclenchement réel) et les autres, avec bouton Effacer sur place ; icône d'alerte et infobulle nommant le détenteur sur la ligne concernée (commande, Launchpad, Rooms ou lancement d'app).
+- Les refus d'enregistrement macOS des raccourcis système (Launchpad ⌥Espace, Rooms ⌃⌥R) remontent désormais dans cette carte au lieu d'être silencieux, y compris une touche hors du mappage Carbon.
+- Tests de non-régression du chevauchement des modificateurs (⌘ vs ⌘L, ⌘L vs ⌘R, ⌥ vs ⌃⌥, Fn⇧ vs ⇧) et de l'ordre de déclenchement réel (sélecteur, lancements, placement, bureaux, Canvas).
+### Changed
+- « Carreler toutes les fenêtres » (⌃⌥T) carrèle les fenêtres visibles de tous les apps, écran par écran, chacune dans la grille bento de son propre écran au lieu de la seule app au premier plan ; l'ordre de lecture détermine la première case, aucune fenêtre ne traverse un écran et les fenêtres de PKwindowsManagement (réglages) sont exclues pour ne pas se carreler elles-mêmes.
+### Fixed
+- Séparateur manquant entre « Tout maximiser (app active) » et « Carreler toutes les fenêtres » dans la page Fenêtres.
+
 ## [2026.10.79] - 2026-10-14
 ### Added
 - Aperçus de fenêtres : fermeture individuelle avec ⌘W ou le bouton × de chaque miniature, en gardant le sélecteur et la recherche ouverts. Après fermeture confirmée, la sélection passe à la fenêtre suivante (ou précédente en fin de liste).

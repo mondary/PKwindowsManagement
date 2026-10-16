@@ -8,4 +8,8 @@ extension NSScreen {
         }
         return CGDirectDisplayID(number.uint32Value)
     }
+
+    static func screen(forDisplayID id: CGDirectDisplayID) -> NSScreen? {
+        screens.first { $0.launchpadDisplayID == id }
+    }
 }

@@ -3,6 +3,7 @@ import SwiftUI
 struct WindowShortcutsPreferencesView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject private var canvas = HorizontalCanvasService.shared
+    @ObservedObject private var registrationFeedback = ShortcutRegistrationFeedback.shared
 
     private var halvesEntries: [WindowCommandSpec] { WindowCommandCatalog.halves }
 
@@ -33,6 +34,8 @@ struct WindowShortcutsPreferencesView: View {
                     Text(localizedString("Window management"))
                         .font(.title3.weight(.semibold))
 
+                    conflictsCard
+
                     windowSwitcherSection
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -62,6 +65,136 @@ struct WindowShortcutsPreferencesView: View {
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         }
+    }
+
+    // MARK: - Conflits de raccourcis
+
+    /// Carte d'alerte : combinaisons partagées par plusieurs liaisons et refus
+    /// d'enregistrement macOS. Elle nomme la liaison qui s'exécute réellement.
+    @ViewBuilder
+    private var conflictsCard: some View {
+        let groups = conflictGroups
+        let refusals = registrationFeedback.refusals
+        if !groups.isEmpty || !refusals.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Label(localizedString("Shortcut conflicts"), systemImage: "exclamationmark.triangle.fill")
+                    .font(.headline)
+                    .foregroundStyle(.orange)
+
+                ForEach(refusals) { refusal in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            shortcutBadge(refusal.shortcut)
+                            Text(refusal.title)
+                        }
+                        Text(localizedString("macOS refused this shortcut — another app already owns it. Pick another one."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                ForEach(groups) { group in
+                    VStack(alignment: .leading, spacing: 6) {
+                        shortcutBadge(group.shortcut)
+                        ForEach(Array(group.bindings.enumerated()), id: \.element.id) { index, binding in
+                            HStack(spacing: 8) {
+                                Image(systemName: index == 0 ? "circle.inset.filled" : "circle")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(index == 0 ? Color.orange : Color.secondary)
+                                Text(binding.title)
+                                    .font(.body)
+                                Spacer()
+                                if index == 0 {
+                                    Text(localizedString("Runs"))
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.orange)
+                                } else if binding.kind.isClearable {
+                                    Button(localizedString("Clear")) { clearBinding(binding) }
+                                        .controlSize(.small)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Text(localizedString("On key press, the first binding in each list runs; the others stay inert until you change one."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+    }
+
+    /// Toutes les liaisons globales que cette page peut confronter : commandes
+    /// de fenêtres, Launchpad, Rooms et lancements d'app/script.
+    private var shortcutBindings: [ShortcutBindingRef] {
+        var bindings: [ShortcutBindingRef] = ShortcutAction.allCases.compactMap { action in
+            guard let shortcut = settings.shortcut(for: action) else { return nil }
+            return ShortcutBindingRef(kind: .windowAction(action), title: action.title, shortcut: shortcut)
+        }
+        bindings.append(.init(kind: .launchpad, title: localizedString("Open Launchpad"), shortcut: settings.launchpadShortcut))
+        bindings.append(.init(kind: .rooms, title: localizedString("Open Rooms"), shortcut: .init(key: "r", modifier: .controlOption)))
+        for (id, shortcut) in settings.launchShortcuts {
+            bindings.append(.init(kind: .launch(id: id), title: launchTitle(for: id), shortcut: shortcut))
+        }
+        return bindings
+    }
+
+    private var conflictGroups: [ShortcutConflictGroup] {
+        ShortcutConflictEngine.conflictGroups(shortcutBindings)
+    }
+
+    /// Texte d'aide de la ligne : nil quand le raccourci est unique.
+    private func conflictNote(for action: ShortcutAction) -> String? {
+        guard let group = conflictGroups.first(where: { $0.bindings.contains { $0.kind == .windowAction(action) } }) else {
+            return nil
+        }
+        let others = group.bindings.filter { $0.kind != .windowAction(action) }
+        let names = others.map { "\($0.title) (\(shortcutBadgeText($0.shortcut)))" }.joined(separator: ", ")
+        if group.winner.kind == .windowAction(action) {
+            return String(format: localizedString("Also used by %@ — this line runs."), names)
+        }
+        return String(format: localizedString("Also used by %@ — on key press, %@ runs instead."), names, group.winner.title)
+    }
+
+    private func clearBinding(_ binding: ShortcutBindingRef) {
+        switch binding.kind {
+        case .windowAction(let action): settings.clearShortcut(for: action)
+        case .launch(let id): settings.setLaunchShortcut(nil, for: id)
+        case .launchpad, .rooms: break
+        }
+    }
+
+    private static var launchNames: [String: String] = [:]
+
+    private func launchTitle(for id: String) -> String {
+        if let snippet = settings.snippets.first(where: { $0.id == id }) { return snippet.title }
+        if let cached = Self.launchNames[id] { return cached }
+        let name: String
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) {
+            name = FileManager.default.displayName(atPath: url.path)
+        } else {
+            name = id
+        }
+        Self.launchNames[id] = name
+        return name
+    }
+
+    private func shortcutBadgeText(_ shortcut: KeyboardShortcutSetting) -> String {
+        "\(shortcut.modifier.symbolPrefix)\(shortcut.keyDisplayName)"
+    }
+
+    private func shortcutBadge(_ shortcut: KeyboardShortcutSetting) -> some View {
+        Text(shortcutBadgeText(shortcut))
+            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(Color.orange.opacity(0.15))
+            )
     }
 
     private var windowSwitcherSection: some View {
@@ -191,6 +324,7 @@ struct WindowShortcutsPreferencesView: View {
                 windowRow(WindowCommandCatalog.size.maximizeAll)
                 Divider()
                 windowRow(WindowCommandCatalog.size.maximizeAllInApp)
+                Divider()
                 windowRow(WindowCommandCatalog.size.tileAll)
                 Divider()
                 marginEditor($settings.almostFullMargins)
@@ -339,6 +473,14 @@ struct WindowShortcutsPreferencesView: View {
             Text(localizedString(item.title))
                 .font(.body)
             Spacer()
+
+            if let conflict = conflictNote(for: item.action) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.orange)
+                    .help(conflict)
+                    .accessibilityLabel(conflict)
+            }
 
             CompactShortcutField(shortcut: shortcutBinding(for: item.action))
 

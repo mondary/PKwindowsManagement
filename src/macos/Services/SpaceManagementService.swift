@@ -8,18 +8,6 @@ import OSLog
 
 private let spacesLogger = Logger(subsystem: "com.mondary.PKwindowsManagement", category: "Spaces")
 
-/// Actions on macOS virtual desktops (Spaces).
-enum SpaceAction: String, CaseIterable, Identifiable {
-    case createDesktop
-    case closeCurrentDesktop
-    case moveWindowToNextDesktop
-    case moveWindowToPreviousDesktop
-    case moveDesktopLeft
-    case moveDesktopRight
-
-    var id: String { rawValue }
-}
-
 /// Options captured on the main thread before dispatching a space action.
 struct SpaceActionOptions {
     var wallpaperFolder: URL?

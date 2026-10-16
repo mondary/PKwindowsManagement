@@ -134,14 +134,25 @@ enum CanvasWindowAccess {
     /// an expectation for AX reconciliation, never permission to move a window.
     static func expectedWindowIDs(pid: pid_t) -> Set<CGWindowID> {
         let infos = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
-        return Set(infos.compactMap { info in
-            guard (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value == pid,
+        return expectedWindowIDs(in: infos)[pid] ?? []
+    }
+
+    /// Variante groupée : une seule passe WindowServer pour plusieurs apps,
+    /// utilisée par le carrelage global (30+ apps en un appel).
+    static func expectedWindowIDs(in infos: [[String: Any]]) -> [pid_t: Set<CGWindowID>] {
+        var result: [pid_t: Set<CGWindowID>] = [:]
+        for info in infos {
+            guard let pid = (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
+                  pid != 0,
                   (info[kCGWindowLayer as String] as? Int) == 0,
                   let raw = info[kCGWindowBounds as String] as? [String: Any],
                   let frame = CGRect(dictionaryRepresentation: raw as CFDictionary),
-                  frame.width > 80, frame.height > 80 else { return nil }
-            return (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value
-        })
+                  frame.width > 80, frame.height > 80,
+                  let id = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value
+            else { continue }
+            result[pid, default: []].insert(id)
+        }
+        return result
     }
 
     @discardableResult

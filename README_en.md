@@ -24,11 +24,12 @@ PKwindowsManagement is a macOS menu bar app for keyboard-driven window managemen
 - Snap active windows to halves, thirds, quarters, and corners.
 - `Maximize All Windows`: snaps every visible window on every display to almost-maximize, default shortcut `Ctrl + Option + G`.
 - `Maximize All Windows (Current App)`: same, limited to the windows of the frontmost application, default shortcut `Ctrl + Shift + D`.
-- `Tile All Windows`: lays out the visible windows of the frontmost app in a screen-filling grid (4 → 2×2, 6 → 3×2…), default shortcut `Ctrl + Option + T`.
+- `Tile All Windows`: lays out the visible windows of every app in a screen-filling grid per display (4 → 2×2, 6 → 3×2…), never crossing displays, default shortcut `Ctrl + Option + T`.
 - Move a window to the next or previous display.
 - Experimental macOS desktop (Space) controls: create/close desktops, move the active window to an adjacent desktop, and optionally assign a random wallpaper from a chosen folder.
 - These commands use private macOS APIs; Mission Control may briefly appear, and a system update may require adjustments.
 - Customize keyboard shortcuts from a SwiftUI preferences screen.
+- Shortcut conflict detection: a combination already used elsewhere is flagged with the command that actually runs, and macOS registration refusals surface instead of staying silent.
 - Control the focused window through macOS Accessibility APIs.
 - Full-screen Launchpad with search, recent applications, and custom shortcuts.
 - Sort Launchpad apps by last launch, name, dominant icon color, or a custom drag-and-drop order.

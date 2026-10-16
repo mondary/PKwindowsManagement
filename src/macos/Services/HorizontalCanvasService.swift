@@ -2,10 +2,6 @@ import AppKit
 import Combine
 import OSLog
 
-enum CanvasAction: String {
-    case toggle, previous, next, above, below, moveColumnLeft, moveColumnRight, fullHeight, halfHeight, restore, inspect
-}
-
 /// Paneru-style scrolling grid of real AX windows (see docs/canvas-plan.md):
 /// mixed one/two-row columns per display, a horizontally scrolling viewport,
 /// off-screen columns parked as edge slivers, and an exact-restore journal.

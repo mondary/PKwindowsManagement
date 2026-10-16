@@ -125,6 +125,23 @@ struct KeyboardShortcutSetting: Codable, Equatable, Hashable {
     }
 }
 
+/// Actions de bureaux (Spaces) portées par SpaceManagementService.
+enum SpaceAction: String, CaseIterable, Identifiable {
+    case createDesktop
+    case closeCurrentDesktop
+    case moveWindowToNextDesktop
+    case moveWindowToPreviousDesktop
+    case moveDesktopLeft
+    case moveDesktopRight
+
+    var id: String { rawValue }
+}
+
+/// Actions du Canvas horizontal portées par HorizontalCanvasService.
+enum CanvasAction: String {
+    case toggle, previous, next, above, below, moveColumnLeft, moveColumnRight, fullHeight, halfHeight, restore, inspect
+}
+
 enum ShortcutAction: String, CaseIterable, Identifiable {
     case windowLeftHalf
     case windowRightHalf

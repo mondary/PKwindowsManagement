@@ -306,3 +306,16 @@
 "Use ⌘W to close only the selected window. ⌘Q is disabled in this picker." = "Use ⌘W to close only the selected window. ⌘Q is disabled in this picker.";
 
 "Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control.";
+
+/* Shortcut conflicts */
+"Shortcut conflicts" = "Shortcut conflicts";
+
+"Runs" = "Runs";
+
+"macOS refused this shortcut — another app already owns it. Pick another one." = "macOS refused this shortcut — another app already owns it. Pick another one.";
+
+"On key press, the first binding in each list runs; the others stay inert until you change one." = "On key press, the first binding in each list runs; the others stay inert until you change one.";
+
+"Also used by %@ — this line runs." = "Also used by %@ — this line runs.";
+
+"Also used by %@ — on key press, %@ runs instead." = "Also used by %@ — on key press, %@ runs instead.";
