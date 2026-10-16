@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.81] - 2026-10-16
+### Changed
+- Présence : landing FR/EN et hub des apps synchronisés avec le carrelage de toutes les fenêtres et la détection des conflits de raccourcis ; captures fenêtres rafraîchies. Publié sur mondary.design/apps (hub) et mondary.design/apps/Macos_PKwinsowsmanagement (landing), contenus et tailles vérifiés en ligne.
+
 ## [2026.10.80] - 2026-10-16
 ### Added
 - Détection des conflits de raccourcis dans Réglages → Fenêtres : carte « Conflits de raccourcis » listant chaque combinaison partagée, la liaison qui s'exécute réellement à l'appui (ordre de déclenchement réel) et les autres, avec bouton Effacer sur place ; icône d'alerte et infobulle nommant le détenteur sur la ligne concernée (commande, Launchpad, Rooms ou lancement d'app).
