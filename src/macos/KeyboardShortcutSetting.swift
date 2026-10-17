@@ -192,7 +192,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case windowFirstThreeFourths
     case windowCenterThreeFourths
     case windowLastThreeFourths
-    case windowTileAll
+    case windowTileAll // Keep the persisted key and existing shortcut for the current desktop.
+    case windowTileAllDesktops
     case desktopCreate
     case desktopCloseCurrent
     case windowNextDesktop
@@ -264,7 +265,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowFirstThreeFourths: localizedString("First Three Fourths")
         case .windowCenterThreeFourths: localizedString("Center Three Fourths")
         case .windowLastThreeFourths: localizedString("Last Three Fourths")
-        case .windowTileAll: localizedString("Tile All Windows")
+        case .windowTileAll: localizedString("Tile Current Desktop")
+        case .windowTileAllDesktops: localizedString("Tile All Desktops")
         case .desktopCreate: localizedString("New Desktop")
         case .desktopCloseCurrent: localizedString("Close Current Desktop")
         case .windowNextDesktop: localizedString("Move Window to Next Desktop")
@@ -335,7 +337,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
              .windowFirstTwoThirds, .windowCenterTwoThirds, .windowLastTwoThirds,
              .windowFirstFourth, .windowSecondFourth, .windowThirdFourth, .windowLastFourth,
              .windowFirstThreeFourths, .windowCenterThreeFourths, .windowLastThreeFourths,
-             .desktopMoveLeft, .desktopMoveRight, .canvasRestore,
+             .desktopMoveLeft, .desktopMoveRight, .canvasRestore, .windowTileAllDesktops,
              .canvasMoveColumnLeft, .canvasMoveColumnRight:
             nil
         }

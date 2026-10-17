@@ -91,6 +91,25 @@ final class SpaceManagementService {
         SLSBridge.shared?.spaces(forWindow: id)
     }
 
+    struct DesktopSnapshot {
+        let current: UInt64?
+        let userDesktops: Set<UInt64>
+        let visibleDesktops: Set<UInt64>
+    }
+
+    /// Read-only membership for bento. A visible Space on another display is
+    /// not necessarily the active desktop requested by the user.
+    static func desktopSnapshot() -> DesktopSnapshot? {
+        guard let bridge = SLSBridge.shared, let displays = bridge.managedDisplays() else { return nil }
+        let desktops = Set(displays.flatMap { display in
+            zip(display.spaceIDs, display.types).compactMap { id, type in type == 0 ? id : nil }
+        })
+        let active = bridge.activeSpaceID()
+        return DesktopSnapshot(current: active.flatMap { desktops.contains($0) ? $0 : nil },
+            userDesktops: desktops,
+            visibleDesktops: Set(displays.map(\.currentSpaceID)).intersection(desktops))
+    }
+
     /// Restore Canvas-owned windows if macOS reassigned a parked window to a
     /// different desktop while it was outside the visible strip viewport.
     @discardableResult

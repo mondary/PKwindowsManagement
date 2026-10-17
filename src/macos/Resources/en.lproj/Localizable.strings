@@ -319,3 +319,8 @@
 "Also used by %@ — this line runs." = "Also used by %@ — this line runs.";
 
 "Also used by %@ — on key press, %@ runs instead." = "Also used by %@ — on key press, %@ runs instead.";
+
+/* Desktop tiling scopes */
+"Tile Current Desktop" = "Tile Current Desktop";
+"Tile All Desktops" = "Tile All Desktops";
+"Bento tiling fills each desktop separately, up to 12 windows per display. Windows shared across desktops are excluded." = "Bento tiling fills each desktop separately, up to 12 windows per display. Windows shared across desktops are excluded.";

@@ -71,14 +71,17 @@ enum CanvasWindowAccess {
     /// Verified Canvas placement; scrolling remains position-only when size
     /// already matches. Called exclusively on the Canvas worker queue.
     static func applyCanvasFrame(_ frame: CGRect, window: AXUIElement,
-                                 valid: () -> Bool) -> CanvasFrameApplication.Result {
+                                 requireExactSize: Bool = false, valid: () -> Bool) -> CanvasFrameApplication.Result {
         let original = self.frame(window)
         var pid: pid_t = 0
         AXUIElementGetPid(window, &pid)
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 0.15)
         let key = "AXEnhancedUserInterface" as CFString
-        let resizing = original.map { !CanvasFrameApplication.fitsSize($0.size, frame.size) } ?? true
+        let resizing = original.map {
+            requireExactSize ? !CanvasFrameApplication.sameSize($0.size, frame.size)
+                : !CanvasFrameApplication.fitsSize($0.size, frame.size)
+        } ?? true
         let enhanced = resizing && value(app, "AXEnhancedUserInterface") as? Bool == true
         let disabled = enhanced && setValue(app, key, kCFBooleanFalse) == .success
         defer { if disabled { setValue(app, key, kCFBooleanTrue) } }
@@ -92,7 +95,7 @@ enum CanvasWindowAccess {
                 var point = proposed
                 guard let value = AXValueCreate(.cgPoint, &point) else { return false }
                 return setValue(window, kAXPositionAttribute as CFString, value) == .success
-            }, pause: { Thread.sleep(forTimeInterval: $0) }, valid: valid)
+            }, pause: { Thread.sleep(forTimeInterval: $0) }, valid: valid, requireExactSize: requireExactSize)
     }
 
     /// `reconcile` enables the temporary AXManualAccessibility initialization;

@@ -52,6 +52,7 @@ enum WindowSnapAction: CaseIterable {
     case centerThreeFourths
     case lastThreeFourths
     case tileAll
+    case tileAllDesktops
 }
 
 struct WindowMargins: Codable, Equatable {
@@ -90,6 +91,8 @@ private enum WindowCycleFamily {
 final class WindowSnapService {
     func perform(_ action: WindowSnapAction, preset: WindowMarginPreset = WindowMarginPreset()) {
         guard ensureAccessibilityPermission() else { return }
+        _ = Self.tilingCancellationObservers
+        Self.tilingGeneration += 1
 
         if action == .maximizeAll || action == .maximizeAllInApp {
             let apps: [NSRunningApplication]
@@ -104,8 +107,8 @@ final class WindowSnapService {
             return
         }
 
-        if action == .tileAll {
-            tileAllWindows(preset: preset)
+        if action == .tileAll || action == .tileAllDesktops {
+            tileWindows(scope: action == .tileAll ? .currentDesktop : .allDesktops)
             return
         }
 
@@ -271,7 +274,7 @@ final class WindowSnapService {
         case .bottomLastSixth:
             let w = floor(baseAX.width / 3.0)
             targetFrame = CGRect(x: baseAX.maxX - w, y: baseAX.midY, width: w, height: floor(baseAX.height / 2.0))
-        case .restore, .toggleFullscreen, .maximizeAll, .maximizeAllInApp, .tileAll:
+        case .restore, .toggleFullscreen, .maximizeAll, .maximizeAllInApp, .tileAll, .tileAllDesktops:
             targetFrame = currentFrame
         case .nextDisplay, .previousDisplay:
             guard let moved = moveToAnotherDisplay(
@@ -308,40 +311,82 @@ final class WindowSnapService {
         }
     }
 
-    /// Carrelage global : toutes les fenêtres visibles de tous les apps,
-    /// écran par écran, chacune dans la grille bento de son propre écran — les
-    /// fenêtres ne traversent jamais un écran.
-    private func tileAllWindows(preset: WindowMarginPreset) {
-        let tiles = allTileableWindows()
-        guard !tiles.isEmpty else { return }
+    private static let tilingQueue = DispatchQueue(label: "design.mondary.windows.bento", qos: .userInitiated)
+    // Accessed on main only. A new snap command supersedes pending AX work.
+    private static var tilingGeneration = 0
+    private static let tilingCancellationObservers: [NSObjectProtocol] = [
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification,
+            object: nil, queue: .main) { _ in tilingGeneration += 1 },
+        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil, queue: .main) { _ in tilingGeneration += 1 }
+    ]
 
+    private struct TileWindow {
+        let window: AXUIElement
+        let id: CGWindowID
+        let frame: CGRect
+        let desktop: UInt64
+        let rank: Int
+    }
+
+    /// Each (desktop, display) gets its own composition and twelve-window cap.
+    /// No Space switching or window reassignment is needed for either scope.
+    private func tileWindows(scope: BentoTiling.Scope) {
+        guard let desktops = SpaceManagementService.desktopSnapshot(),
+              scope == .allDesktops || desktops.current != nil else { NSSound.beep(); return }
+        let tiles = allTileableWindows(scope: scope, desktops: desktops)
+        guard !tiles.isEmpty else { return }
+        let generation = Self.tilingGeneration
         let mainHeight = primaryScreenHeight
-        let appElements = Dictionary(
-            uniqueKeysWithValues: Set(tiles.map(\.pid)).map { ($0, AXUIElementCreateApplication($0)) }
-        )
-        var screens: [CGDirectDisplayID: [(window: AXUIElement, frame: CGRect, pid: pid_t)]] = [:]
+        var screens: [CanvasWorkspace: [TileWindow]] = [:]
         for tile in tiles {
             guard let screen = screen(for: tile.frame),
                   let displayID = screen.launchpadDisplayID
             else { continue }
-            screens[displayID, default: []].append(tile)
+            screens[CanvasWorkspace(displayID: displayID, spaceID: tile.desktop), default: []].append(tile)
         }
-
-        for (displayID, windowTiles) in screens {
-            guard let screen = NSScreen.screen(forDisplayID: displayID) else { continue }
+        let plans = screens.compactMap { workspace, windows -> (CanvasWorkspace, CGRect, [TileWindow])? in
+            guard let screen = NSScreen.screen(forDisplayID: workspace.displayID) else { return nil }
             let visible = screen.visibleFrame
-            let axTop = mainHeight - visible.maxY
-            let baseAX = CGRect(x: visible.minX, y: axTop, width: visible.width, height: visible.height)
-            // Ordre de lecture (haut vers bas, gauche vers droite) : la fenêtre
-            // la plus en haut à gauche finit dans la première case.
-            let ordered = windowTiles.sorted {
-                ($0.frame.minY, $0.frame.minX) < ($1.frame.minY, $1.frame.minX)
-            }
-            for (tile, cell) in zip(ordered, CanvasLayout.bentoFrames(in: baseAX, windows: ordered.count)) {
-                let frame = insetByGaps(cell, area: baseAX, by: preset.general)
-                Self.restoreStore[Self.windowKey(for: tile.window)] = tile.frame
-                let appElement = appElements[tile.pid] ?? AXUIElementCreateApplication(tile.pid)
-                setFrame(frame, for: tile.window, on: appElement)
+            let area = CGRect(x: visible.minX, y: mainHeight - visible.maxY, width: visible.width, height: visible.height)
+            return (workspace, area, Array(windows.prefix(CanvasLayout.maximumBentoWindows)))
+        }
+        Self.tilingQueue.async {
+            let valid = { DispatchQueue.main.sync { Self.tilingGeneration == generation } }
+            for (workspace, area, windows) in plans {
+                guard valid() else { return }
+                var saved = Set<Int>()
+                let selected = BentoTiling.arrange(in: area, count: windows.count, apply: { index, target in
+                    let tile = windows[index]
+                    if saved.insert(index).inserted {
+                        DispatchQueue.main.sync {
+                            if Self.tilingGeneration == generation {
+                                Self.restoreStore[Self.windowKey(for: tile.window)] = tile.frame
+                            }
+                        }
+                    }
+                    let windowValid = {
+                        valid() && SpaceManagementService.desktops(forWindow: tile.id) == [tile.desktop]
+                    }
+                    let result = CanvasWindowAccess.applyCanvasFrame(target, window: tile.window,
+                        requireExactSize: true, valid: windowValid)
+                    return result.accepted ? result.actual : nil
+                }, restore: { index in
+                    let tile = windows[index]
+                    _ = CanvasWindowAccess.applyCanvasFrame(tile.frame, window: tile.window, valid: {
+                        valid() && SpaceManagementService.desktops(forWindow: tile.id) == [tile.desktop]
+                    })
+                }, valid: valid)
+                // Raising an off-Space window can switch desktops. Only bring
+                // forward the bento on desktops that were already visible.
+                if desktops.visibleDesktops.contains(workspace.spaceID) {
+                    for index in selected.reversed() {
+                        guard valid() else { return }
+                        let tile = windows[index]
+                        guard SpaceManagementService.desktops(forWindow: tile.id) == [tile.desktop] else { continue }
+                        CanvasWindowAccess.raise(tile.window)
+                    }
+                }
             }
         }
     }
@@ -351,7 +396,8 @@ final class WindowSnapService {
     /// la réconciliation AX de chaque app (Electron/VSCode inclues). Les
     /// fenêtres de PKwindowsManagement sont exclues : l'action est souvent
     /// déclenchée depuis les réglages, qui ne doit pas se carreler lui-même.
-    private func allTileableWindows() -> [(window: AXUIElement, frame: CGRect, pid: pid_t)] {
+    private func allTileableWindows(scope: BentoTiling.Scope,
+                                    desktops: SpaceManagementService.DesktopSnapshot) -> [TileWindow] {
         let ownPID = ProcessInfo.processInfo.processIdentifier
         let apps = NSWorkspace.shared.runningApplications.filter {
             $0.activationPolicy == .regular && !$0.isTerminated && !$0.isHidden
@@ -359,12 +405,18 @@ final class WindowSnapService {
         }
         guard !apps.isEmpty else { return [] }
 
+        // Even covered/offscreen windows can belong to the active Space.
+        // Exact membership below, not on-screen visibility, defines the scope.
         let infos = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
         let expectedByPID = CanvasWindowAccess.expectedWindowIDs(in: infos)
+        let orderedIDs = infos.compactMap { ($0[kCGWindowNumber as String] as? NSNumber)?.uint32Value }
+        let ranks = Dictionary(orderedIDs.enumerated().map { ($0.element, $0.offset) }, uniquingKeysWith: min)
 
-        var result: [(AXUIElement, CGRect, pid_t)] = []
+        var result: [TileWindow] = []
         for app in apps {
             let pid = app.processIdentifier
+            let expectedIDs = expectedByPID[pid] ?? []
+            guard !expectedIDs.isEmpty else { continue }
             let windows = CanvasWindowAccess.windows(
                 pid: pid,
                 expectedWindowIDs: expectedByPID[pid] ?? [],
@@ -374,14 +426,18 @@ final class WindowSnapService {
                 // `eligible` écarte dialogues, fenêtres réduites ou plein
                 // écran et fenêtres non déplaçables : la grille ne réserve pas
                 // de case pour une fenêtre qui ne bougera pas.
-                guard CanvasWindowAccess.eligible(window),
+                guard let id = CanvasWindowAccess.id(window), expectedIDs.contains(id),
+                      let desktop = BentoTiling.desktop(for: SpaceManagementService.desktops(forWindow: id),
+                          scope: scope, current: desktops.current, userDesktops: desktops.userDesktops),
+                      CanvasWindowAccess.eligible(window),
                       let windowFrame = frame(of: window),
                       windowFrame.width > 80, windowFrame.height > 80
                 else { continue }
-                result.append((window, windowFrame, pid))
+                result.append(TileWindow(window: window, id: id, frame: windowFrame,
+                                         desktop: desktop, rank: ranks[id] ?? Int.max))
             }
         }
-        return result
+        return result.sorted { $0.rank < $1.rank }
     }
 
     private func isMinimized(_ window: AXUIElement) -> Bool {
@@ -728,6 +784,7 @@ extension ShortcutAction {
         case .windowCenterThreeFourths: .centerThreeFourths
         case .windowLastThreeFourths: .lastThreeFourths
         case .windowTileAll: .tileAll
+        case .windowTileAllDesktops: .tileAllDesktops
         case .desktopCreate, .desktopCloseCurrent, .windowNextDesktop, .windowPreviousDesktop,
              .desktopMoveLeft, .desktopMoveRight,
              .canvasToggle, .canvasPrevious, .canvasNext, .canvasRestore,

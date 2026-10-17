@@ -568,3 +568,8 @@
 "Also used by %@ — this line runs." = "Auch belegt von %@ — diese Zeile wird ausgeführt.";
 
 "Also used by %@ — on key press, %@ runs instead." = "Auch belegt von %@ — beim Drücken wird stattdessen %@ ausgeführt.";
+
+/* Desktop tiling scopes */
+"Tile Current Desktop" = "Aktuellen Schreibtisch kacheln";
+"Tile All Desktops" = "Alle Schreibtische kacheln";
+"Bento tiling fills each desktop separately, up to 12 windows per display. Windows shared across desktops are excluded." = "Das Bento-Layout füllt jeden Schreibtisch separat mit bis zu 12 Fenstern pro Bildschirm. Fenster auf mehreren Schreibtischen werden ausgeschlossen.";

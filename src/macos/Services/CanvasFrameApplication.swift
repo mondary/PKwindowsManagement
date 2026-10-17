@@ -35,8 +35,13 @@ enum CanvasFrameApplication {
     static func apply(_ target: CGRect, initial: CGRect?,
                       read: () -> CGRect?, size: (CGSize) -> Bool,
                       position: (CGPoint) -> Bool, pause: (Double) -> Void,
-                      valid: () -> Bool = { true }) -> Result {
-        let resizing = initial.map { !fitsSize($0.size, target.size) } ?? true
+                      valid: () -> Bool = { true }, requireExactSize: Bool = false) -> Result {
+        func fits(_ size: CGSize) -> Bool {
+            requireExactSize
+                ? abs(size.width - target.width) <= 2 && abs(size.height - target.height) <= 2
+                : fitsSize(size, target.size)
+        }
+        let resizing = initial.map { !fits($0.size) } ?? true
         var requested = target.size
         var adjustedRounding = false
         var accepted = true
@@ -56,7 +61,7 @@ enum CanvasFrameApplication {
             }
             guard valid() else { return Result(actual: nil, accepted: false, confirmedHeightConstraint: false, confirmedWidthConstraint: false) }
             actual = read()
-            if let actual, fitsSize(actual.size, target.size) { break }
+            if let actual, fits(actual.size) { break }
             if !adjustedRounding, let actual {
                 let w = actual.width - target.width, h = actual.height - target.height
                 if w > 2 && w <= 24 { requested.width = max(1, target.width - w - 1); adjustedRounding = true }

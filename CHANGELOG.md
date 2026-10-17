@@ -1,5 +1,18 @@
 # Changelog
 
+## [2026.10.83] - 2026-10-17
+### Changed
+- « Paver le bureau actuel » conserve le raccourci ⌃⌥T et sa configuration existante, mais cible uniquement le Space actif, y compris en multi-écrans.
+- Nouvelle commande distincte « Paver tous les bureaux », sans raccourci par défaut : chaque couple bureau/écran reçoit son propre pavage bento bord à bord, sa capacité adaptée et son plafond de 12 fenêtres. Aucun changement de bureau ni déplacement de fenêtre vers un autre Space.
+- Les fenêtres partagées entre plusieurs bureaux, en plein écran ou dont le bureau est indéterminé sont exclues ; leur appartenance est revérifiée pendant le placement. Libellés et aide traduits en FR/EN/DE/ES.
+
+## [2026.10.82] - 2026-10-17
+### Fixed
+- Pavage global : seules les fenêtres du bureau visible occupent une case ; celles des autres Spaces sont exclues. Les cases remplissent la surface utile bord à bord, sans les marges de snap.
+- Compositions bento adaptées au nombre de fenêtres : quatre en 2×2, grandes cases prioritaires dans les compositions denses, plafond de douze par écran et capacité réduite pour préserver des cases d'au moins 420×280 points (sauf fenêtre unique).
+- Priorité aux fenêtres au premier plan ; le surplus reste derrière sans fermeture ni minimisation. Vérification des placements Accessibility et recomposition en cas de taille minimale, fenêtre disparue ou refus de placement ; restauration des fenêtres écartées après un essai.
+- Calcul et négociation du placement hors du thread principal, interruption par une nouvelle commande de placement. Tests de couverture, chevauchements, capacité, refus Accessibility et annulation ajoutés au build Dev.
+
 ## [2026.10.81] - 2026-10-16
 ### Changed
 - Présence : landing FR/EN et hub des apps synchronisés avec le carrelage de toutes les fenêtres et la détection des conflits de raccourcis ; captures fenêtres rafraîchies. Publié sur mondary.design/apps (hub) et mondary.design/apps/Macos_PKwinsowsmanagement (landing), contenus et tailles vérifiés en ligne.

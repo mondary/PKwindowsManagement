@@ -569,3 +569,8 @@
 "Also used by %@ — this line runs." = "Déjà utilisé par %@ — c’est cette ligne qui s’exécute.";
 
 "Also used by %@ — on key press, %@ runs instead." = "Déjà utilisé par %@ — à l’appui, c’est « %@ » qui s’exécute.";
+
+/* Desktop tiling scopes */
+"Tile Current Desktop" = "Paver le bureau actuel";
+"Tile All Desktops" = "Paver tous les bureaux";
+"Bento tiling fills each desktop separately, up to 12 windows per display. Windows shared across desktops are excluded." = "Le pavage bento remplit chaque bureau séparément, avec au maximum 12 fenêtres par écran. Les fenêtres partagées entre plusieurs bureaux sont exclues.";

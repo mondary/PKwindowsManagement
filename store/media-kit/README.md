@@ -196,3 +196,7 @@ pas une mesure de performance d'un hébergement de production ni un score Lighth
 
 Objectifs du brief atteints dans ce contexte : initial < 1,5 Mo, LCP < 2,5 s, CLS < 0,1.
 Les grandes images PNG et l'archive ne sont chargées qu'en suivant les liens.
+
+### Pavage Dev 2026.10.83
+
+`sources/screenshots/tiling-{fr,en}.png` montrent la section SwiftUI de production « Taille et position » : bureau actuel sur ⌃⌥T, tous les bureaux sans raccourci par défaut, aide sur le périmètre. Rendu natif isolé à 820×1000 points, préférences jetables, sans AppDelegate ni raccourcis globaux. Seule la visibilité de `sizeSection()` a été élargie dans une copie temporaire pour capturer la section complète. Ces rendus vérifient les libellés ; ils ne valident pas le redimensionnement de fenêtres externes sur plusieurs Spaces.

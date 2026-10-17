@@ -7,6 +7,11 @@ enum ShortcutConflictChecks {
     }
 
     static func main() {
+        // The previous tiling binding now targets only the current desktop.
+        // The broader action is opt-in, never silently assigned the same key.
+        precondition(ShortcutAction(rawValue: "windowTileAll") == .windowTileAll)
+        precondition(ShortcutAction.windowTileAll.defaultShortcut == .init(key: "t", modifier: .controlOption))
+        precondition(ShortcutAction.windowTileAllDesktops.defaultShortcut == nil)
         let controlOption = ShortcutModifierPreset.controlOption
         let controlShift = ShortcutModifierPreset.controlShift
 

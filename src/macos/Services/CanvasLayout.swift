@@ -64,32 +64,65 @@ enum CanvasLayout {
         max(1, (max(0, windows) + rows - 1) / rows)
     }
 
-    /// Fill a whole display with balanced bento columns. Each column spans the
-    /// full height and divides it evenly among its windows, so arbitrary counts
-    /// never leave the empty cells of a conventional rectangular grid.
-    static func bentoFrames(in area: CGRect, windows count: Int) -> [CGRect] {
-        guard count > 0 else { return [] }
-        let minimumColumns = max(1, (count + 3) / 4)
-        let maximumColumns = min(4, count)
-        let ideal = sqrt(Double(count) * Double(max(1, area.width)) / Double(max(1, area.height)))
-        let columns = min(maximumColumns, max(minimumColumns, Int(ideal.rounded())))
-        let baseCount = count / columns
-        let widerColumns = count % columns
-        let columnWidth = area.width / CGFloat(columns)
+    static let maximumBentoWindows = 12
+    static let comfortableBentoSize = CGSize(width: 420, height: 280)
+
+    /// Deliberate compositions, not an incomplete rectangular grid. The first
+    /// windows get the largest cells. Four stays 2×2; denser layouts mix sizes.
+    /// Shared, rounded boundaries ensure adjacent cells meet even on odd sizes.
+    static func bentoFrames(in area: CGRect, windows count: Int, transposed: Bool = false) -> [CGRect] {
+        guard count > 0, area.width > 0, area.height > 0 else { return [] }
+        let patterns = [
+            [1], [1, 1], [1, 2], [2, 2], [1, 2, 2], [2, 2, 2],
+            [2, 2, 3], [2, 3, 3], [2, 3, 4], [3, 3, 4],
+            [2, 3, 3, 3], [2, 3, 3, 4]
+        ]
+        let rows = patterns[min(count, maximumBentoWindows) - 1]
+        let width = transposed ? area.height : area.width
+        let height = transposed ? area.width : area.height
+        func boundary(_ extent: CGFloat, _ index: Int, _ total: Int) -> CGFloat {
+            index == total ? extent : (extent * CGFloat(index) / CGFloat(total)).rounded()
+        }
         var frames: [CGRect] = []
-        frames.reserveCapacity(count)
-        for column in 0..<columns {
-            let rows = baseCount + (column < widerColumns ? 1 : 0)
-            let x = area.minX + CGFloat(column) * columnWidth
-            let width = column == columns - 1 ? area.maxX - x : columnWidth
-            let rowHeight = area.height / CGFloat(rows)
-            for row in 0..<rows {
-                let y = area.minY + CGFloat(row) * rowHeight
-                let height = row == rows - 1 ? area.maxY - y : rowHeight
-                frames.append(CGRect(x: x, y: y, width: width, height: height))
+        for (column, rowCount) in rows.enumerated() {
+            let x = boundary(width, column, rows.count)
+            let right = boundary(width, column + 1, rows.count)
+            for row in 0..<rowCount {
+                let y = boundary(height, row, rowCount)
+                let bottom = boundary(height, row + 1, rowCount)
+                frames.append(transposed
+                    ? CGRect(x: area.minX + y, y: area.minY + x, width: bottom - y, height: right - x)
+                    : CGRect(x: area.minX + x, y: area.minY + y, width: right - x, height: bottom - y))
             }
         }
         return frames
+    }
+
+    /// Use fewer windows when the screen or an application's minimum size
+    /// cannot accommodate the composition. Excess windows stay behind it.
+    static func bentoPlan(in area: CGRect, minimumSizes: [CGSize]) -> [CGRect] {
+        let limit = min(minimumSizes.count, maximumBentoWindows)
+        guard limit > 0, area.width > 0, area.height > 0 else { return [] }
+        for count in stride(from: limit, through: 1, by: -1) {
+            let candidates = [false, true].map { bentoFrames(in: area, windows: count, transposed: $0) }
+                .filter { frames in
+                    zip(frames, minimumSizes).allSatisfy { frame, minimum in
+                        frame.width + 2 >= minimum.width && frame.height + 2 >= minimum.height
+                            && (count == 1 || (frame.width >= comfortableBentoSize.width
+                                && frame.height >= comfortableBentoSize.height))
+                    }
+                }
+            // Prefer useful landscape cells, including on portrait monitors.
+            if let best = candidates.min(by: { bentoScore($0) < bentoScore($1) }) { return best }
+        }
+        return []
+    }
+
+    private static func bentoScore(_ frames: [CGRect]) -> Double {
+        frames.reduce(0) { score, frame in
+            let deviation = log(Double(frame.width / frame.height) / 1.5)
+            return score + deviation * deviation
+        }
     }
 
     struct Column: Equatable {

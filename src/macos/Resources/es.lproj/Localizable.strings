@@ -568,3 +568,8 @@
 "Also used by %@ — this line runs." = "También lo usa %@ — esta línea se ejecuta.";
 
 "Also used by %@ — on key press, %@ runs instead." = "También lo usa %@ — al pulsar, se ejecuta %@ en su lugar.";
+
+/* Desktop tiling scopes */
+"Tile Current Desktop" = "Organizar el escritorio actual";
+"Tile All Desktops" = "Organizar todos los escritorios";
+"Bento tiling fills each desktop separately, up to 12 windows per display. Windows shared across desktops are excluded." = "El mosaico bento llena cada escritorio por separado, con hasta 12 ventanas por pantalla. Se excluyen las ventanas compartidas entre varios escritorios.";

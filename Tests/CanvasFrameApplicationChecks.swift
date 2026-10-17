@@ -36,6 +36,14 @@ enum CanvasFrameApplicationChecks {
         var sizeWrites = 0
         _ = CanvasFrameApplication.apply(scrolled, initial: half, read: { scrolled }, size: { _ in sizeWrites += 1; return true }, position: { _ in true }, pause: { _ in fatalError("scroll must not sleep") })
         assert(sizeWrites == 0)
+        // Bento must expand a slightly undersized cell: the scrolling Canvas's
+        // character-grid tolerance would otherwise preserve a visible hole.
+        var bentoCell = half.insetBy(dx: 8, dy: 8)
+        let exact = CanvasFrameApplication.apply(half, initial: bentoCell, read: { bentoCell }, size: { size in
+            bentoCell.size = size
+            return true
+        }, position: { point in bentoCell.origin = point; return true }, pause: { _ in }, requireExactSize: true)
+        precondition(exact.accepted && exact.actual == half)
         var valid = true
         var count = 0
         let interrupted = CanvasFrameApplication.apply(half, initial: full, read: { half }, size: { _ in count += 1; return true }, position: { _ in true }, pause: { _ in valid = false }, valid: { valid })
