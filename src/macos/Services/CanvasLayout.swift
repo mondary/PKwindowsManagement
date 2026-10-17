@@ -104,18 +104,26 @@ enum CanvasLayout {
         let limit = min(minimumSizes.count, maximumBentoWindows)
         guard limit > 0, area.width > 0, area.height > 0 else { return [] }
         for count in stride(from: limit, through: 1, by: -1) {
-            let candidates = [false, true].map { bentoFrames(in: area, windows: count, transposed: $0) }
-                .filter { frames in
-                    zip(frames, minimumSizes).allSatisfy { frame, minimum in
-                        frame.width + 2 >= minimum.width && frame.height + 2 >= minimum.height
-                            && (count == 1 || (frame.width >= comfortableBentoSize.width
-                                && frame.height >= comfortableBentoSize.height))
-                    }
-                }
+            let upright: [CGRect] = bentoFrames(in: area, windows: count, transposed: false)
+            let rotated: [CGRect] = bentoFrames(in: area, windows: count, transposed: true)
+            let layouts: [[CGRect]] = [upright, rotated]
+            let candidates: [[CGRect]] = layouts.filter { frames in
+                fitsBento(frames, minimumSizes: minimumSizes, count: count)
+            }
             // Prefer useful landscape cells, including on portrait monitors.
             if let best = candidates.min(by: { bentoScore($0) < bentoScore($1) }) { return best }
         }
         return []
+    }
+
+    private static func fitsBento(_ frames: [CGRect], minimumSizes: [CGSize], count: Int) -> Bool {
+        for (frame, minimum) in zip(frames, minimumSizes) {
+            guard frame.width + 2 >= minimum.width, frame.height + 2 >= minimum.height else { return false }
+            guard count == 1
+                || (frame.width >= comfortableBentoSize.width && frame.height >= comfortableBentoSize.height)
+            else { return false }
+        }
+        return true
     }
 
     private static func bentoScore(_ frames: [CGRect]) -> Double {

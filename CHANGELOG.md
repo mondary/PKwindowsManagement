@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.84] - 2026-10-17
+### Fixed
+- Compilation CI : inférence trop lente dans le calcul du plan bento avec le compilateur des runners ; expressions séparées et typées, même comportement.
+
 ## [2026.10.83] - 2026-10-17
 ### Changed
 - « Paver le bureau actuel » conserve le raccourci ⌃⌥T et sa configuration existante, mais cible uniquement le Space actif, y compris en multi-écrans.
