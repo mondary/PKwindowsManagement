@@ -93,6 +93,10 @@ final class WindowSnapService {
         guard ensureAccessibilityPermission() else { return }
         _ = Self.tilingCancellationObservers
         Self.tilingGeneration += 1
+        // Space changes during a fullscreen exit must not cancel the deferred
+        // maximize that follows it; only a new user command does.
+        Self.snapGeneration += 1
+        let generation = Self.snapGeneration
 
         if action == .maximizeAll || action == .maximizeAllInApp {
             let apps: [NSRunningApplication]
@@ -102,7 +106,7 @@ final class WindowSnapService {
                 apps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
             }
             for app in apps {
-                maximizeAllWindows(of: app, preset: preset)
+                maximizeAllWindows(of: app, preset: preset, generation: generation)
             }
             return
         }
@@ -124,6 +128,15 @@ final class WindowSnapService {
         }
         if action == .toggleFullscreen {
             toggleFullScreen(for: focusedWindow)
+            return
+        }
+        // A native fullscreen window lives on its own Space and ignores frame
+        // changes. Leave fullscreen first, then maximize once macOS has
+        // returned the window to its desktop.
+        if action == .maximize, isFullScreen(focusedWindow) {
+            if leaveFullScreen(focusedWindow) {
+                maximizeAfterLeavingFullScreen([focusedWindow], preset: preset, generation: generation)
+            }
             return
         }
 
@@ -292,28 +305,145 @@ final class WindowSnapService {
         setFrame(finalFrame, for: focusedWindow, on: appElement)
     }
 
-    private func maximizeAllWindows(of app: NSRunningApplication, preset: WindowMarginPreset) {
+    /// Native fullscreen windows live on their own Space and ignore frame
+    /// changes. Leaving fullscreen is an animated Space transition, so their
+    /// almost-maximized frame is applied only once the window is back on its
+    /// desktop and its frame has settled.
+    private func maximizeAllWindows(of app: NSRunningApplication, preset: WindowMarginPreset, generation: Int) {
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        AXUIElementSetMessagingTimeout(appElement, 0.5)
         var windowsRef: AnyObject?
-        guard AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) == .success,
-              let windows = windowsRef as? [AXUIElement]
-        else { return }
-        for window in windows {
-            if isMinimized(window) { continue }
-            guard let windowFrame = frame(of: window),
-                  let targetScreen = screen(for: windowFrame)
-            else { continue }
-            let mainHeight = primaryScreenHeight
-            let visible = targetScreen.visibleFrame
-            let visibleAX = CGRect(x: visible.minX, y: mainHeight - visible.maxY, width: visible.width, height: visible.height)
-            Self.restoreStore[Self.windowKey(for: window)] = windowFrame
-            setFrame(insetFrame(visibleAX, by: preset.almostFull), for: window, on: appElement)
+        let status = AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef)
+        // Chromium hides windows that live on another Space (a fullscreen
+        // Chrome window, typically). Reconcile against WindowServer so those
+        // windows can still be taken out of fullscreen and maximized.
+        var windows = status == .success ? ((windowsRef as? [AXUIElement]) ?? []) : []
+        if windows.isEmpty {
+            windows = CanvasWindowAccess.windows(
+                pid: app.processIdentifier,
+                expectedWindowIDs: CanvasWindowAccess.expectedWindowIDs(pid: app.processIdentifier),
+                reconcile: true
+            )
         }
+        guard !windows.isEmpty else { return }
+
+        var fullScreenWindows: [AXUIElement] = []
+        for window in windows {
+            AXUIElementSetMessagingTimeout(window, 1.0)
+            if isMinimized(window) { continue }
+            if isFullScreen(window) {
+                if leaveFullScreen(window) { fullScreenWindows.append(window) }
+                continue
+            }
+            maximize(window, on: appElement, preset: preset)
+        }
+        if !fullScreenWindows.isEmpty {
+            maximizeAfterLeavingFullScreen(fullScreenWindows, preset: preset, generation: generation)
+        }
+    }
+
+    private func maximize(_ window: AXUIElement, on appElement: AXUIElement, preset: WindowMarginPreset) {
+        guard let windowFrame = frame(of: window),
+              let targetFrame = maximizeTargetFrame(for: windowFrame, preset: preset)
+        else { return }
+        Self.restoreStore[Self.windowKey(for: window)] = windowFrame
+        setFrame(targetFrame, for: window, on: appElement)
+    }
+
+    private func maximizeTargetFrame(for windowFrame: CGRect, preset: WindowMarginPreset) -> CGRect? {
+        guard let targetScreen = screen(for: windowFrame) else { return nil }
+        let mainHeight = primaryScreenHeight
+        let visible = targetScreen.visibleFrame
+        let visibleAX = CGRect(x: visible.minX, y: mainHeight - visible.maxY,
+                               width: visible.width, height: visible.height)
+        return insetFrame(visibleAX, by: preset.almostFull)
+    }
+
+    private static let fullScreenQueue = DispatchQueue(
+        label: "design.mondary.windows.fullscreen", qos: .userInitiated)
+
+    private func maximizeAfterLeavingFullScreen(_ windows: [AXUIElement],
+                                                preset: WindowMarginPreset,
+                                                generation: Int) {
+        let targets = windows.map { window -> (AXUIElement, pid_t) in
+            var pid: pid_t = 0
+            AXUIElementGetPid(window, &pid)
+            return (window, pid)
+        }
+        Self.fullScreenQueue.async {
+            for (window, pid) in targets {
+                guard pid != 0, Self.snapGenerationIsCurrent(generation) else { continue }
+                guard self.waitUntilFullScreenExitSettles(window, generation: generation),
+                      !self.isFullScreen(window) else { continue }
+
+                let appElement = AXUIElementCreateApplication(pid)
+                AXUIElementSetMessagingTimeout(appElement, 0.5)
+                let targetFrame = DispatchQueue.main.sync { () -> CGRect? in
+                    guard Self.snapGeneration == generation,
+                          let windowFrame = self.frame(of: window)
+                    else { return nil }
+                    return self.maximizeTargetFrame(for: windowFrame, preset: preset)
+                }
+                guard let targetFrame else { continue }
+
+                DispatchQueue.main.sync {
+                    guard Self.snapGeneration == generation,
+                          let windowFrame = self.frame(of: window)
+                    else { return }
+                    Self.restoreStore[Self.windowKey(for: window)] = windowFrame
+                }
+                guard Self.snapGenerationIsCurrent(generation) else { continue }
+                self.setFrame(targetFrame, for: window, on: appElement)
+            }
+        }
+    }
+
+    /// `AXFullScreen` flips to false as soon as the transition starts; wait
+    /// for the restored frame to stop moving (or give up and leave the window
+    /// alone) so the target screen and restore point are the real ones.
+    private func waitUntilFullScreenExitSettles(_ window: AXUIElement, generation: Int) -> Bool {
+        let deadline = Date().addingTimeInterval(3)
+        var previous: CGRect?
+        var stableTicks = 0
+        while Date() < deadline {
+            guard Self.snapGenerationIsCurrent(generation) else { return false }
+            if !isFullScreen(window) {
+                let current = frame(of: window)
+                if let current, let previous, framesMatch(current, previous) {
+                    stableTicks += 1
+                    if stableTicks >= 3 { return true }
+                } else {
+                    stableTicks = 0
+                }
+                previous = current
+            }
+            Thread.sleep(forTimeInterval: 0.08)
+        }
+        return !isFullScreen(window)
+    }
+
+    private static func snapGenerationIsCurrent(_ generation: Int) -> Bool {
+        if Thread.isMainThread { return snapGeneration == generation }
+        return DispatchQueue.main.sync { snapGeneration == generation }
+    }
+
+    private func isFullScreen(_ window: AXUIElement) -> Bool {
+        var value: AnyObject?
+        guard AXUIElementCopyAttributeValue(window, "AXFullScreen" as CFString, &value) == .success else { return false }
+        return (value as? Bool) ?? false
+    }
+
+    @discardableResult
+    private func leaveFullScreen(_ window: AXUIElement) -> Bool {
+        AXUIElementSetAttributeValue(window, "AXFullScreen" as CFString, kCFBooleanFalse) == .success
     }
 
     private static let tilingQueue = DispatchQueue(label: "design.mondary.windows.bento", qos: .userInitiated)
     // Accessed on main only. A new snap command supersedes pending AX work.
     private static var tilingGeneration = 0
+    /// Explicit user commands only: Space transitions caused by leaving
+    /// fullscreen keep the deferred maximize alive.
+    private static var snapGeneration = 0
     private static let tilingCancellationObservers: [NSObjectProtocol] = [
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification,
             object: nil, queue: .main) { _ in tilingGeneration += 1 },

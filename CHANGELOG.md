@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.86] - 2026-10-22
+### Fixed
+- « Tout maximiser », « Tout maximiser (app active) » et « Presque maximiser » sortent désormais les fenêtres en plein écran natif (Chrome, etc.) de leur Space avant de les presque-maximiser. La fenêtre est laissée au repos le temps que macOS termine la transition, puis dimensionnée selon son écran réel : le plein écran ne reprend plus le dessus et les autres fenêtres restent visibles.
+
 ## [2026.10.85] - 2026-10-22
 ### Added
 - Mode Switch opt-in : l’option « Utiliser ⌘Tab pour ouvrir les aperçus de fenêtres » (Réglages → Fenêtres) remplace le sélecteur d’apps de macOS. ⌘ maintenu, `⇥`/`⇧⇥` parcourent les fenêtres, relâcher ⌘ active la sélection et `Échap` annule. Le raccourci existant `⌃⌥⇥` reste disponible.

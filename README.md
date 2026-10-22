@@ -23,7 +23,7 @@ PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres
 ## ✅ Fonctionnalités
 - Snap des fenêtres actives sur les moitiés, tiers, quarts et coins de l'écran.
 - `Tout maximiser` : passe toutes les fenêtres visibles de tous les écrans en presque maximisé, raccourci par défaut `Ctrl + Option + G`.
-- `Tout maximiser (app active)` : idem, limité aux fenêtres de l'application au premier plan, raccourci par défaut `Ctrl + Shift + D`.
+- `Tout maximiser (app active)` : idem, limité aux fenêtres de l'application au premier plan, raccourci par défaut `Ctrl + Shift + D`. Les fenêtres en plein écran (Chrome, etc.) sortent d'abord du plein écran et de leur Space avant d'être presque maximisées.
 - `Paver le bureau actuel` : `Ctrl + Option + T` cible uniquement le Space actif. `Paver tous les bureaux` est une commande séparée, avec un raccourci configurable vide par défaut. Chaque bureau/écran reçoit son propre bento bord à bord : 4 fenêtres en 2×2, des cases de tailles variées dans les compositions denses, jusqu’à 12 selon la place disponible. Les fenêtres partagées entre plusieurs bureaux sont exclues ; le surplus reste derrière.
 - Déplacement de la fenêtre vers l'écran suivant ou précédent.
 - Gestion expérimentale des bureaux macOS (Spaces) : création/fermeture, déplacement de la fenêtre active vers le bureau voisin et fond d’écran aléatoire optionnel depuis un dossier choisi.
