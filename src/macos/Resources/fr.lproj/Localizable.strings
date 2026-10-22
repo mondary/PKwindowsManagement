@@ -553,9 +553,27 @@
 
 "This window cannot be closed right now. Open it or refresh the list." = "Impossible de fermer cette fenêtre pour le moment. Ouvrez-la ou actualisez la liste.";
 
-"Use ⌘W to close only the selected window. ⌘Q is disabled in this picker." = "Utilisez ⌘W pour fermer uniquement la fenêtre sélectionnée. ⌘Q est désactivé dans ce sélecteur.";
+"Quit app" = "Quitter l’app";
 
-"Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Fermez les fenêtres une par une avec ⌘W ou le bouton ×. Le sélecteur reste ouvert ; vous gardez la main sur les demandes d’enregistrement.";
+"Quit %@" = "Quitter %@";
+
+"Quitting %@…" = "Arrêt de %@…";
+
+"Use ⌘Tab to open window previews" = "Utiliser ⌘↹ pour ouvrir les aperçus de fenêtres";
+
+"Replaces the macOS app switcher while enabled. Hold ⌘, press Tab to cycle and release ⌘ to activate. ⌘W closes the selected window; ⌘Q quits its app." = "Remplace le sélecteur d’apps de macOS tant que l’option est active. Maintenez ⌘, appuyez sur ↹ pour parcourir et relâchez ⌘ pour activer. ⌘W ferme la fenêtre sélectionnée ; ⌘Q quitte son app.";
+
+"Type directly while ⌘ is held to filter windows." = "Tapez directement pendant que ⌘ est maintenu pour filtrer les fenêtres.";
+
+"Keep the picker open when ⌘ is released" = "Garder le sélecteur ouvert au relâchement de ⌘";
+
+"Releasing ⌘ keeps the picker open. Return activates the selected window; Escape cancels." = "Relâcher ⌘ garde le sélecteur ouvert. Entrée active la fenêtre sélectionnée ; Échap annule.";
+
+"The app has not quit yet. A save dialog may be waiting, or it refused to quit." = "L’app ne s’est pas encore arrêtée. Une demande d’enregistrement est peut-être en attente, ou elle a refusé de quitter.";
+
+"This app cannot be quit right now. Try again or quit it from the app." = "Impossible de quitter cette app pour le moment. Réessayez ou quittez-la depuis l’app.";
+
+"Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Fermez les fenêtres une par une avec ⌘W ou le bouton ×, ou quittez l’app sélectionnée avec ⌘Q. Le sélecteur reste ouvert ; vous gardez la main sur les demandes d’enregistrement.";
 
 /* Shortcut conflicts */
 "Shortcut conflicts" = "Conflits de raccourcis";

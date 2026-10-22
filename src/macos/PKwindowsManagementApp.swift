@@ -39,6 +39,7 @@ struct PKwindowsManagementApp: App {
                 }
             }
         )
+        CommandTabMonitor.shared.start(settings: settings)
     }
 
     var body: some Scene {
@@ -392,7 +393,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         let details: String
         switch self {
         case .general: details = "general général système system language langue accessibilité accessibility sauvegarde backup"
-        case .windows: details = "canvas open canvas horizontal margins marges fenêtres windows"
+        case .windows: details = "canvas open canvas horizontal margins marges fenêtres windows aperçus previews switcher cmd tab quitter quit"
         case .rooms: details = "rooms room projets projects espaces fenêtres windows disposition layout écran screen salles räume habitaciones"
         case .launchpad: details = "activation hot corner coin actif raccourci shortcut applications"
         case .appearance: details = "style theme thème organisation organization groupes categories catégories grille grid navigation"

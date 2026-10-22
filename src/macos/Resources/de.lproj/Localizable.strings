@@ -552,9 +552,27 @@
 
 "This window cannot be closed right now. Open it or refresh the list." = "Dieses Fenster kann gerade nicht geschlossen werden. Öffne es oder aktualisiere die Liste.";
 
-"Use ⌘W to close only the selected window. ⌘Q is disabled in this picker." = "Mit ⌘W schließt du nur das ausgewählte Fenster. ⌘Q ist in dieser Auswahl deaktiviert.";
+"Quit app" = "App beenden";
 
-"Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Schließe einzelne Fenster mit ⌘W oder der Taste ×. Die Auswahl bleibt offen; Speicherdialoge bestätigst du selbst.";
+"Quit %@" = "%@ beenden";
+
+"Quitting %@…" = "%@ wird beendet…";
+
+"Use ⌘Tab to open window previews" = "⌘Tab zum Öffnen der Fenstervorschau verwenden";
+
+"Replaces the macOS app switcher while enabled. Hold ⌘, press Tab to cycle and release ⌘ to activate. ⌘W closes the selected window; ⌘Q quits its app." = "Ersetzt bei Aktivierung den App-Umschalter von macOS. ⌘ halten, Tab zum Blättern drücken und ⌘ zum Aktivieren loslassen. ⌘W schließt das ausgewählte Fenster; ⌘Q beendet seine App.";
+
+"Type directly while ⌘ is held to filter windows." = "Tippe direkt, während ⌘ gedrückt ist, um Fenster zu filtern.";
+
+"Keep the picker open when ⌘ is released" = "Auswahl beim Loslassen von ⌘ geöffnet lassen";
+
+"Releasing ⌘ keeps the picker open. Return activates the selected window; Escape cancels." = "Beim Loslassen von ⌘ bleibt die Auswahl offen. Eingabe aktiviert das ausgewählte Fenster; Escape bricht ab.";
+
+"The app has not quit yet. A save dialog may be waiting, or it refused to quit." = "Die App wurde noch nicht beendet. Möglicherweise wartet ein Speicherdialog, oder sie hat das Beenden abgelehnt.";
+
+"This app cannot be quit right now. Try again or quit it from the app." = "Diese App kann gerade nicht beendet werden. Versuche es erneut oder beende sie in der App.";
+
+"Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Schließe einzelne Fenster mit ⌘W oder der ×-Taste oder beende die ausgewählte App mit ⌘Q. Die Auswahl bleibt offen; Speicherdialoge bleiben unter deiner Kontrolle.";
 
 /* Shortcut conflicts */
 "Shortcut conflicts" = "Konflikte bei Tastenkürzeln";

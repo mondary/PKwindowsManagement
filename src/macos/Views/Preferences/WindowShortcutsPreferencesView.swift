@@ -203,9 +203,20 @@ struct WindowShortcutsPreferencesView: View {
                 Label(localizedString("Window previews"), systemImage: "rectangle.on.rectangle")
                     .font(.headline)
                 Spacer()
+                Button(localizedString("Enable previews…")) { WindowSwitcherController.shared.requestPreviews() }
+                    .help(localizedString("Thumbnails require Screen Recording permission. macOS may ask you to restart the app."))
                 Button(localizedString("Open Window Previews")) { WindowSwitcherController.shared.show() }
             }
             Text(localizedString("Find a window by its thumbnail, app or title. Tab browses, Return opens and Escape cancels. Thumbnails require Screen Recording permission."))
+                .font(.caption).foregroundStyle(.secondary)
+            Toggle(localizedString("Use ⌘Tab to open window previews"), isOn: $settings.windowSwitcherUsesCommandTab)
+            Text(localizedString("Replaces the macOS app switcher while enabled. Hold ⌘, press Tab to cycle and release ⌘ to activate. ⌘W closes the selected window; ⌘Q quits its app."))
+                .font(.caption).foregroundStyle(.secondary)
+            Text(localizedString("Type directly while ⌘ is held to filter windows."))
+                .font(.caption).foregroundStyle(.secondary)
+            Toggle(localizedString("Keep the picker open when ⌘ is released"), isOn: $settings.windowSwitcherStickyCommandTab)
+                .disabled(!settings.windowSwitcherUsesCommandTab)
+            Text(localizedString("Releasing ⌘ keeps the picker open. Return activates the selected window; Escape cancels."))
                 .font(.caption).foregroundStyle(.secondary)
             Text(localizedString("Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control."))
                 .font(.caption).foregroundStyle(.secondary)

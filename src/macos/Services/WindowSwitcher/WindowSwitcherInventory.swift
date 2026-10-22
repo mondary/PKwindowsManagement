@@ -123,6 +123,22 @@ enum WindowSwitcherInventory {
         }, pause: { Thread.sleep(forTimeInterval: 0.05) })
     }
 
+    /// Ask the app that owns the selected window to quit. Graceful by design:
+    /// the owning app keeps control of its save dialogs and unsaved documents.
+    /// Worker only: launching a quit request and observing it can wait.
+    static func quit(pid: pid_t, launchedAt: Date?) -> WindowQuitRequest.Result {
+        WindowQuitRequest.run(isCancelled: { Task.isCancelled }, validate: {
+            guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated,
+                  app.launchDate == launchedAt else { return false }
+            return true
+        }, terminate: {
+            guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated else { return false }
+            return app.terminate()
+        }, isTerminated: {
+            NSRunningApplication(processIdentifier: pid)?.isTerminated ?? true
+        }, pause: { Thread.sleep(forTimeInterval: 0.05) })
+    }
+
     /// Runs on a worker, after the picker has relinquished keyboard focus.
     static func activate(_ candidate: Candidate, selectionTicket: UInt64) -> Bool {
         func stillCurrent() -> Bool {

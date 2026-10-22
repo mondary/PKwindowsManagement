@@ -1,5 +1,22 @@
 # Changelog
 
+## [2026.10.85] - 2026-10-22
+### Added
+- Mode Switch opt-in : l’option « Utiliser ⌘Tab pour ouvrir les aperçus de fenêtres » (Réglages → Fenêtres) remplace le sélecteur d’apps de macOS. ⌘ maintenu, `⇥`/`⇧⇥` parcourent les fenêtres, relâcher ⌘ active la sélection et `Échap` annule. Le raccourci existant `⌃⌥⇥` reste disponible.
+- Saisie directe pendant que ⌘ est maintenu : les lettres imprimables alimentent la recherche au lieu d’être interprétées comme des commandes AppKit ; `⌫` efface le dernier caractère. L’option « Garder le sélecteur ouvert au relâchement de ⌘ » permet de relâcher, de continuer à chercher puis d’activer avec `Entrée`.
+- Interception de `⌘⇥` par un `CGEventTap` dédié installé à la tête du flux de session, créé uniquement quand l’option est active et retiré immédiatement à sa désactivation. Si macOS refuse le tap, le sélecteur système reste actif et la création est retentée.
+- `⌘Q` dans le sélecteur quitte l’app de la fenêtre sélectionnée par un arrêt gracieux (`NSRunningApplication.terminate()`) : les dialogues d’enregistrement restent gérés par l’app. Après confirmation, toutes ses fenêtres sont retirées et la sélection passe à la suivante. Menu contextuel « Quitter l’app » sur chaque carte.
+- Bouton « Autoriser les aperçus… » dans Réglages → Fenêtres : déclenche la demande d’enregistrement de l’écran sans devoir ouvrir le sélecteur.
+### Changed
+- Le sélecteur affiche l’app en cours d’arrêt, désactive les actions pendant l’opération et met à jour son pied de page (`⌘W` fermer, `⌘Q` quitter l’app).
+- Les offsets `⇥`/`⇧⇥` s’accumulent pendant le chargement de l’inventaire puis s’appliquent d’un coup ; le relâchement de ⌘ pendant ce chargement active la fenêtre dès qu’elle est disponible.
+- Traductions FR/EN/DE/ES des nouveaux libellés et de l’option. Sauvegarde des réglages en version 13 avec les nouveaux booléens.
+### Fixed
+- La scène `Settings` vide de SwiftUI ne s’ouvre plus à côté de la vraie fenêtre de réglages : elle est retirée dès qu’elle devient visible ou que l’app s’active, sans toucher à la fenêtre personnalisée.
+### Tests
+- Sélection après arrêt d’une app multi-fenêtres, cycle initial `⌘⇥`/`⇧⌘⇥` et offsets négatifs/positifs.
+- Demande d’arrêt : annulation, app obsolète, refus, arrêt gracieux et attente d’un dialogue d’enregistrement.
+
 ## [2026.10.84] - 2026-10-17
 ### Fixed
 - Compilation CI : inférence trop lente dans le calcul du plan bento avec le compilateur des runners ; expressions séparées et typées, même comportement.

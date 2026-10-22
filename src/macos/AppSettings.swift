@@ -49,6 +49,8 @@ final class AppSettings: ObservableObject {
         static let spaceWallpaperFolder = "space-wallpaper-folder"
         static let spaceWallpaperOnCreate = "space-wallpaper-on-create"
         static let spaceFollowMovedWindow = "space-follow-moved-window"
+        static let windowSwitcherUsesCommandTab = "window-switcher-uses-command-tab"
+        static let windowSwitcherStickyCommandTab = "window-switcher-sticky-command-tab"
         static let canvasRowsPerColumn = "canvas-rows-per-column"
     }
 
@@ -247,6 +249,22 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    /// Replaces the system ⌘⇥ switcher with the window picker while enabled.
+    @Published var windowSwitcherUsesCommandTab: Bool {
+        didSet {
+            defaults.set(windowSwitcherUsesCommandTab, forKey: Keys.windowSwitcherUsesCommandTab)
+            scheduleAutoBackup()
+        }
+    }
+
+    /// Keeps the picker open when ⌘ is released, so search stays available.
+    @Published var windowSwitcherStickyCommandTab: Bool {
+        didSet {
+            defaults.set(windowSwitcherStickyCommandTab, forKey: Keys.windowSwitcherStickyCommandTab)
+            scheduleAutoBackup()
+        }
+    }
+
     /// Legacy uniform-grid preference, retained only for backup compatibility.
     /// Canvas now uses per-window height choices for the active session.
     @Published var canvasRowsPerColumn: Int {
@@ -357,6 +375,8 @@ final class AppSettings: ObservableObject {
         }
         spaceWallpaperOnCreate = defaults.object(forKey: Keys.spaceWallpaperOnCreate) as? Bool ?? true
         spaceFollowMovedWindow = defaults.object(forKey: Keys.spaceFollowMovedWindow) as? Bool ?? true
+        windowSwitcherUsesCommandTab = defaults.object(forKey: Keys.windowSwitcherUsesCommandTab) as? Bool ?? false
+        windowSwitcherStickyCommandTab = defaults.object(forKey: Keys.windowSwitcherStickyCommandTab) as? Bool ?? false
         let storedRows = defaults.integer(forKey: Keys.canvasRowsPerColumn)
         canvasRowsPerColumn = storedRows == 1 ? 1 : 2
 
@@ -662,7 +682,7 @@ final class AppSettings: ObservableObject {
 
     func exportBackup() throws -> Data {
         let backup = SettingsBackup(
-            version: 12,
+            version: 13,
             windowShortcuts: Dictionary(uniqueKeysWithValues: shortcuts.map { ($0.key.rawValue, $0.value) }),
             launchShortcuts: launchShortcuts,
             snippets: snippets,
@@ -695,6 +715,8 @@ final class AppSettings: ObservableObject {
             spaceWallpaperFolderPath: spaceWallpaperFolder?.path,
             spaceWallpaperOnCreate: spaceWallpaperOnCreate,
             spaceFollowMovedWindow: spaceFollowMovedWindow,
+            windowSwitcherUsesCommandTab: windowSwitcherUsesCommandTab,
+            windowSwitcherStickyCommandTab: windowSwitcherStickyCommandTab,
             canvasRowsPerColumn: canvasRowsPerColumn
         )
         let encoder = JSONEncoder()
@@ -725,7 +747,7 @@ final class AppSettings: ObservableObject {
 
     func importBackup(_ data: Data) throws {
         let backup = try JSONDecoder().decode(SettingsBackup.self, from: data)
-        guard (1...12).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
+        guard (1...13).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
 
         shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.compactMap { action in
             backup.windowShortcuts[action.rawValue].map { (action, $0) } ?? action.defaultShortcut.map { (action, $0) }
@@ -766,6 +788,8 @@ final class AppSettings: ObservableObject {
         }
         spaceWallpaperOnCreate = backup.spaceWallpaperOnCreate ?? spaceWallpaperOnCreate
         spaceFollowMovedWindow = backup.spaceFollowMovedWindow ?? spaceFollowMovedWindow
+        windowSwitcherUsesCommandTab = backup.windowSwitcherUsesCommandTab ?? windowSwitcherUsesCommandTab
+        windowSwitcherStickyCommandTab = backup.windowSwitcherStickyCommandTab ?? windowSwitcherStickyCommandTab
         if let rows = backup.canvasRowsPerColumn { canvasRowsPerColumn = max(1, min(2, rows)) }
 
         saveShortcuts()
@@ -1134,6 +1158,8 @@ private struct SettingsBackup: Codable {
     let spaceWallpaperFolderPath: String?
     let spaceWallpaperOnCreate: Bool?
     let spaceFollowMovedWindow: Bool?
+    let windowSwitcherUsesCommandTab: Bool?
+    let windowSwitcherStickyCommandTab: Bool?
     let canvasRowsPerColumn: Int?
 }
 

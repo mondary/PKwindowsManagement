@@ -552,9 +552,27 @@
 
 "This window cannot be closed right now. Open it or refresh the list." = "No se puede cerrar esta ventana ahora. Ábrela o actualiza la lista.";
 
-"Use ⌘W to close only the selected window. ⌘Q is disabled in this picker." = "Usa ⌘W para cerrar solo la ventana seleccionada. ⌘Q está desactivado en este selector.";
+"Quit app" = "Salir de la app";
 
-"Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Cierra ventanas individualmente con ⌘W o el botón ×. El selector permanece abierto; tú decides en los diálogos para guardar.";
+"Quit %@" = "Salir de %@";
+
+"Quitting %@…" = "Saliendo de %@…";
+
+"Use ⌘Tab to open window previews" = "Usar ⌘Tab para abrir las vistas previas de ventanas";
+
+"Replaces the macOS app switcher while enabled. Hold ⌘, press Tab to cycle and release ⌘ to activate. ⌘W closes the selected window; ⌘Q quits its app." = "Sustituye al selector de apps de macOS mientras está activado. Mantén ⌘, pulsa Tab para recorrer y suelta ⌘ para activar. ⌘W cierra la ventana seleccionada; ⌘Q sale de su app.";
+
+"Type directly while ⌘ is held to filter windows." = "Escribe directamente mientras ⌘ está pulsado para filtrar ventanas.";
+
+"Keep the picker open when ⌘ is released" = "Mantener el selector abierto al soltar ⌘";
+
+"Releasing ⌘ keeps the picker open. Return activates the selected window; Escape cancels." = "Soltar ⌘ mantiene el selector abierto. Intro activa la ventana seleccionada; Esc cancela.";
+
+"The app has not quit yet. A save dialog may be waiting, or it refused to quit." = "La app aún no ha salido. Puede que haya un diálogo para guardar pendiente o que haya rechazado salir.";
+
+"This app cannot be quit right now. Try again or quit it from the app." = "No se puede salir de esta app ahora. Inténtalo de nuevo o sal desde la app.";
+
+"Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Cierra ventanas individuales con ⌘W o el botón ×, o sale de la app seleccionada con ⌘Q. El selector permanece abierto; los diálogos para guardar siguen bajo tu control.";
 
 /* Shortcut conflicts */
 "Shortcut conflicts" = "Conflictos de atajos";

@@ -23,6 +23,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private let roomsHotKeySignature = fourCharCode("PKRM")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        SettingsWindowController.shared.startArtifactCleanup()
         automaticTerminationActivity = ProcessInfo.processInfo.beginActivity(
             options: .automaticTerminationDisabled,
             reason: "Keep menu bar controls and global shortcuts active"
@@ -62,6 +63,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         registerRoomsHotKey()
         UpdaterManager.shared.start()
         SettingsWindowController.shared.showSettings()
+        DispatchQueue.main.async { SettingsWindowController.shared.hideSwiftUISettingsArtifacts() }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -82,7 +84,9 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         }
         hotCornerTimer?.invalidate()
         hotCornerTimer = nil
+        SettingsWindowController.shared.stopArtifactCleanup()
         LaunchShortcutMonitor.shared.stop()
+        CommandTabMonitor.shared.stop()
         unregisterLaunchpadHotKey()
         unregisterRoomsHotKey()
         if let launchpadHotKeyHandler {
@@ -145,6 +149,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         termination.request(sender) { completion in
             LaunchShortcutMonitor.shared.stop()
+            CommandTabMonitor.shared.stop()
             SpaceManagementService.shared.userChangedWindowSelection()
             HorizontalCanvasService.shared.shutdown(completion: completion)
         }

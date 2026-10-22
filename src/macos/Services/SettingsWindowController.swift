@@ -13,9 +13,45 @@ final class SettingsWindowController: NSWindowController {
         }
     }
     var makeContent: (() -> NSViewController)?
+    private var artifactObservers: [NSObjectProtocol] = []
 
     private init() { super.init(window: nil) }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    /// SwiftUI's dummy `Settings { EmptyView() }` scene opens its own tiny
+    /// window titled "<App> Settings". It is not our custom settings window
+    /// (identifier "settings", title without the suffix).
+    static func isSwiftUISettingsArtifact(_ window: NSWindow) -> Bool {
+        window.title.hasSuffix(" Settings") && window.identifier?.rawValue != "settings"
+    }
+
+    /// Keep the real settings window and silently retire the SwiftUI artifact.
+    func startArtifactCleanup() {
+        hideSwiftUISettingsArtifacts()
+        guard artifactObservers.isEmpty else { return }
+        let names = [NSWindow.didBecomeKeyNotification,
+                     NSWindow.didBecomeMainNotification,
+                     NSApplication.didBecomeActiveNotification]
+        artifactObservers = names.map { name in
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                DispatchQueue.main.async { self?.hideSwiftUISettingsArtifacts() }
+            }
+        }
+    }
+
+    func stopArtifactCleanup() {
+        for observer in artifactObservers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        artifactObservers.removeAll()
+    }
+
+    func hideSwiftUISettingsArtifacts() {
+        for window in NSApp.windows where Self.isSwiftUISettingsArtifact(window) {
+            window.isExcludedFromWindowsMenu = true
+            window.orderOut(nil)
+        }
+    }
 
     func prepareWindow() {
         precondition(Thread.isMainThread)

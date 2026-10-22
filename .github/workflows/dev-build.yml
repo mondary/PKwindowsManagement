@@ -53,12 +53,19 @@ jobs:
           swiftc src/macos/Localization.swift src/macos/KeyboardShortcutSetting.swift src/macos/Services/ShortcutConflicts.swift Tests/ShortcutConflictChecks.swift -o "$RUNNER_TEMP/shortcut-conflict-checks"
           "$RUNNER_TEMP/shortcut-conflict-checks"
 
+      - name: Check settings window ownership
+        run: |
+          swiftc src/macos/Services/SettingsWindowController.swift Tests/SettingsWindowChecks.swift -o "$RUNNER_TEMP/settings-window-checks"
+          "$RUNNER_TEMP/settings-window-checks"
+
       - name: Check window picker and capture lifecycle
         run: |
           swiftc src/macos/Services/WindowSwitcher/WindowSwitcherState.swift Tests/WindowSwitcherChecks.swift -o "$RUNNER_TEMP/window-picker-checks"
           "$RUNNER_TEMP/window-picker-checks"
           swiftc src/macos/Services/WindowSwitcher/WindowCloseRequest.swift Tests/WindowCloseRequestChecks.swift -o "$RUNNER_TEMP/window-close-checks"
           "$RUNNER_TEMP/window-close-checks"
+          swiftc src/macos/Services/WindowSwitcher/WindowQuitRequest.swift Tests/WindowQuitRequestChecks.swift -o "$RUNNER_TEMP/window-quit-checks"
+          "$RUNNER_TEMP/window-quit-checks"
           swiftc src/macos/Services/WindowSwitcher/WindowCaptureRequest.swift Tests/WindowCaptureRequestChecks.swift -o "$RUNNER_TEMP/window-capture-checks"
           "$RUNNER_TEMP/window-capture-checks"
 

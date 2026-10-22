@@ -17,14 +17,21 @@ final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var generation = UUID()
     @Published var message = ""
     @Published private(set) var closingID: WindowSwitcherID?
+    @Published private(set) var quittingPID: pid_t?
+    @Published private(set) var quittingName: String?
+    var onReady: (() -> Void)?
     var columns = 3
+    var isBusy: Bool { closingID != nil || quittingPID != nil }
     private(set) var icons: [pid_t: NSImage] = [:]
     private var candidates: [WindowSwitcherID: WindowSwitcherInventory.Candidate] = [:]
+    private var focusedID: WindowSwitcherID?
     private var inventoryTask: Task<WindowSwitcherInventory.Snapshot, Never>?
     private var loadingTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
     private var closeTask: Task<WindowCloseRequest.Result, Never>?
     private var closeResultTask: Task<Void, Never>?
+    private var quitTask: Task<WindowQuitRequest.Result, Never>?
+    private var quitResultTask: Task<Void, Never>?
     private var capture = WindowThumbnailCapture()
     private var pendingPreviews: [WindowSwitcherID] = []
     private var attemptedPreviews = Set<WindowSwitcherID>()
@@ -67,10 +74,12 @@ final class WindowSwitcherModel: ObservableObject {
             guard let self, !Task.isCancelled, self.isOpen, self.generation == token else { return }
             self.candidates = Dictionary(uniqueKeysWithValues: result.candidates.map { ($0.item.id, $0) })
             self.items = result.candidates.map(\.item)
+            self.focusedID = result.focused
             self.selectedID = previousSelection == nil && self.query.isEmpty
                 ? WindowSwitcherState.initialSelection(in: self.items, focused: result.focused)
                 : WindowSwitcherState.selection(in: self.filteredItems, keeping: previousSelection)
             self.isLoading = false
+            self.onReady?()
         }
     }
 
@@ -81,9 +90,15 @@ final class WindowSwitcherModel: ObservableObject {
         previewTask?.cancel()
         closeTask?.cancel()
         closeResultTask?.cancel()
+        quitTask?.cancel()
+        quitResultTask?.cancel()
         closeTask = nil
         closeResultTask = nil
+        quitTask = nil
+        quitResultTask = nil
         closingID = nil
+        quittingPID = nil
+        quittingName = nil
         inventoryTask = nil
         loadingTask = nil
         previewTask = nil
@@ -95,6 +110,7 @@ final class WindowSwitcherModel: ObservableObject {
         candidates.removeAll()
         items.removeAll()
         icons.removeAll()
+        focusedID = nil
         selectedID = nil
         isLoading = false
         capture = WindowThumbnailCapture()
@@ -104,11 +120,19 @@ final class WindowSwitcherModel: ObservableObject {
         selectedID = WindowSwitcherState.moved(in: filteredItems, from: selectedID, by: delta, wrapping: wrapping)
     }
 
+    func applyCommandTabOffset(_ offset: Int) {
+        if !query.isEmpty {
+            selectedID = filteredItems.first?.id
+        } else {
+            selectedID = WindowSwitcherState.commandTabSelection(in: filteredItems, focused: focusedID, offset: offset)
+        }
+    }
+
     func candidate(for id: WindowSwitcherID) -> WindowSwitcherInventory.Candidate? { candidates[id] }
 
     func closeWindow(_ id: WindowSwitcherID) {
         precondition(Thread.isMainThread)
-        guard isOpen, closingID == nil, let candidate = candidates[id] else { return }
+        guard isOpen, closingID == nil, quittingPID == nil, let candidate = candidates[id] else { return }
         closingID = id
         message = ""
         let token = generation
@@ -135,6 +159,55 @@ final class WindowSwitcherModel: ObservableObject {
                 self.message = localizedString("The window has not closed yet. Open it to check for a save dialog, or refresh the list.")
             case .unavailable, .failed:
                 self.message = localizedString("This window cannot be closed right now. Open it or refresh the list.")
+            case .cancelled: break
+            }
+        }
+    }
+
+    /// Quits the app that owns the selected window, not just that window.
+    /// The request is graceful so the app still owns its save dialogs.
+    func quitApp(_ id: WindowSwitcherID) {
+        precondition(Thread.isMainThread)
+        guard isOpen, closingID == nil, quittingPID == nil, let candidate = candidates[id] else { return }
+        let appName = candidate.item.appName
+        let pid = id.pid
+        let launchedAt = candidate.launchedAt
+        quittingPID = pid
+        quittingName = appName
+        message = ""
+        let token = generation
+        let work = Task.detached(priority: .userInitiated) {
+            WindowSwitcherInventory.quit(pid: pid, launchedAt: launchedAt)
+        }
+        quitTask = work
+        quitResultTask = Task { @MainActor [weak self] in
+            let result = await work.value
+            guard let self, !Task.isCancelled, self.isOpen, self.generation == token else { return }
+            self.quittingPID = nil
+            self.quittingName = nil
+            self.quitTask = nil
+            self.quitResultTask = nil
+            switch result {
+            case .quit:
+                let removed = self.items.filter { $0.id.pid == pid }.map(\.id)
+                let next = WindowSwitcherState.selectionAfterQuitting(
+                    pid: pid, in: self.filteredItems, selected: self.selectedID)
+                self.items.removeAll { $0.id.pid == pid }
+                for window in removed {
+                    self.candidates.removeValue(forKey: window)
+                    self.images.removeValue(forKey: window)
+                    self.completedPreviews.remove(window)
+                    self.attemptedPreviews.remove(window)
+                    self.pendingPreviews.removeAll { $0 == window }
+                    self.imageOrder.removeAll { $0 == window }
+                }
+                self.icons.removeValue(forKey: pid)
+                if self.focusedID?.pid == pid { self.focusedID = nil }
+                self.selectedID = next
+            case .pending:
+                self.message = localizedString("The app has not quit yet. A save dialog may be waiting, or it refused to quit.")
+            case .failed:
+                self.message = localizedString("This app cannot be quit right now. Try again or quit it from the app.")
             case .cancelled: break
             }
         }

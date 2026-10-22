@@ -44,6 +44,37 @@ enum WindowSwitcherState {
         return remaining[min(index, remaining.count - 1)].id
     }
 
+    /// Quitting an app removes every window it owns. Keep an unrelated
+    /// selection, otherwise move to the nearest window that survived.
+    static func selectionAfterQuitting(pid: Int32, in items: [WindowSwitcherItem],
+                                       selected: WindowSwitcherID?) -> WindowSwitcherID? {
+        let remaining = items.filter { $0.id.pid != pid }
+        guard !remaining.isEmpty else { return nil }
+        guard let selected, selected.pid == pid else {
+            return selection(in: remaining, keeping: selected)
+        }
+        let index = items.firstIndex { $0.id == selected } ?? 0
+        if let next = items[index...].first(where: { $0.id.pid != pid }) { return next.id }
+        return remaining[min(index, remaining.count - 1)].id
+    }
+
+    /// Hold-⌘ cycling starts on the previously used window, or on the least
+    /// recently used one for the first ⇧⌘⇥. Offsets accumulate while the
+    /// inventory is still loading.
+    static func commandTabSelection(in items: [WindowSwitcherItem], focused: WindowSwitcherID?,
+                                    offset: Int) -> WindowSwitcherID? {
+        guard !items.isEmpty else { return nil }
+        if offset == 0 { return initialSelection(in: items, focused: focused) }
+        let index: Int
+        if offset > 0 {
+            let initial = (items.count > 1 && items.first?.id == focused) ? 1 : 0
+            index = (initial + offset) % items.count
+        } else {
+            index = ((items.count + offset) % items.count + items.count) % items.count
+        }
+        return items[index].id
+    }
+
     static func moved(in items: [WindowSwitcherItem], from id: WindowSwitcherID?, by offset: Int,
                       wrapping: Bool) -> WindowSwitcherID? {
         guard !items.isEmpty else { return nil }

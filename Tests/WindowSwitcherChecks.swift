@@ -26,6 +26,25 @@ enum WindowSwitcherChecks {
         precondition(WindowSwitcherState.initialSelection(in: [items[0]], focused: items[0].id) == items[0].id)
         precondition(WindowSwitcherState.initialSelection(in: [], focused: nil) == nil)
         precondition(WindowSwitcherState.initialSelection(in: items, focused: nil) == items[0].id)
+        // Hold-⌘ starts on the previous window, ⇧⌘⇥ on the least recent one,
+        // and offsets keep accumulating while the inventory is loading.
+        precondition(WindowSwitcherState.commandTabSelection(in: items, focused: items[0].id, offset: 0) == items[1].id)
+        precondition(WindowSwitcherState.commandTabSelection(in: items, focused: items[0].id, offset: 1) == items[2].id)
+        precondition(WindowSwitcherState.commandTabSelection(in: items, focused: items[0].id, offset: 2) == items[3].id)
+        precondition(WindowSwitcherState.commandTabSelection(in: items, focused: items[0].id, offset: -1) == items[63].id)
+        precondition(WindowSwitcherState.commandTabSelection(in: items, focused: items[0].id, offset: -2) == items[62].id)
+        precondition(WindowSwitcherState.commandTabSelection(in: items, focused: items[0].id, offset: -64) == items[0].id)
+        precondition(WindowSwitcherState.commandTabSelection(in: items, focused: nil, offset: 0) == items[0].id)
+        precondition(WindowSwitcherState.commandTabSelection(in: items, focused: nil, offset: 1) == items[1].id)
+        precondition(WindowSwitcherState.commandTabSelection(in: [items[0]], focused: items[0].id, offset: -1) == items[0].id)
+        precondition(WindowSwitcherState.commandTabSelection(in: [], focused: nil, offset: -1) == nil)
+        // Quitting an app removes all of its windows at once.
+        precondition(WindowSwitcherState.selectionAfterQuitting(pid: 100, in: items, selected: items[0].id) == items[16].id)
+        precondition(WindowSwitcherState.selectionAfterQuitting(pid: 100, in: items, selected: items[4].id) == items[16].id)
+        precondition(WindowSwitcherState.selectionAfterQuitting(pid: 100, in: items, selected: items[40].id) == items[40].id)
+        precondition(WindowSwitcherState.selectionAfterQuitting(pid: 103, in: items, selected: items[63].id) == items[47].id)
+        precondition(WindowSwitcherState.selectionAfterQuitting(pid: 100, in: [items[0]], selected: items[0].id) == nil)
+        precondition(WindowSwitcherState.selectionAfterQuitting(pid: 100, in: [], selected: nil) == nil)
         let filtered = WindowSwitcherState.filtered(items, query: "safari")
         for index in filtered.indices {
             let selected = filtered[index].id

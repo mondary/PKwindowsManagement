@@ -91,15 +91,29 @@ Tests de sélection/capture et rendu avec données fictives validés ; activatio
 inter-apps et inter-Spaces à vérifier dans l’app installée.
 
 Aucun `WindowFocuser`, `PrivateSPI`, cache AX ou autre code Switch n’est importé
-sous la licence MIT du projet PK. Le remplacement de ⌘Tab, le déplacement vers le
-Space courant et la commande pour quitter une app restent hors de cette version.
+sous la licence MIT du projet PK. Le déplacement vers le Space courant reste hors
+de cette version.
 
 **Fermeture sélective (Dev locale 2026.10.79)** : ⌘W ou × sur une miniature
 actionne uniquement le bouton AXCloseButton de cette fenêtre. Le sélecteur reste
 ouvert et choisit la fenêtre suivante après confirmation de la fermeture.
 La recherche est conservée ; les dialogues d’enregistrement ne sont jamais validés
-automatiquement. ⌘Q est intercepté dans le panneau. Tests injectés de fermeture et
-de sélection ; validation sur les fenêtres d’applications externes encore à effectuer.
+automatiquement. ⌘Q est intercepté dans le panneau ; depuis la Dev 85, il quitte
+l’app ciblée. Tests injectés de fermeture et de sélection ; validation sur les
+fenêtres d’applications externes encore à effectuer.
+
+**Mode Switch complet (Dev locale 2026.10.85)** : option opt-in « Utiliser ⌘Tab
+pour ouvrir les aperçus de fenêtres ». Un `CGEventTap` dédié, installé à la tête
+du flux de session et retiré à la désactivation, capture ⌘⇥ avant le sélecteur
+système. ⌘ maintenu, ⇥/⇧⇥ parcourent les fenêtres (les offsets s’accumulent
+pendant le chargement de l’inventaire), relâcher ⌘ active la sélection et Échap
+annule. ⌘W ferme la fenêtre ciblée ; ⌘Q quitte l’app propriétaire via
+`NSRunningApplication.terminate()`, donc avec ses propres dialogues
+d’enregistrement, puis retire toutes ses fenêtres de la grille. La saisie
+directe pendant que ⌘ est maintenu filtre la liste (les lettres sont traitées
+comme du texte, pas comme des commandes AppKit) ; l’option persistante permet
+de relâcher ⌘ sans fermer le sélecteur, puis d’utiliser Entrée ou Échap. Aucun
+code Switch n’est importé.
 
 ## 5. Références sans code
 

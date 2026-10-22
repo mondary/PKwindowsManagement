@@ -14,6 +14,16 @@ struct WindowSwitcherView: View {
                 permissionView
             } else {
                 if !model.previewsGranted { previewPermissionBanner }
+                if let name = model.quittingName {
+                    HStack(spacing: 10) {
+                        ProgressView().controlSize(.small)
+                        Text(String(format: localizedString("Quitting %@…"), name))
+                            .font(.caption).foregroundStyle(.secondary)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .background(.primary.opacity(0.035))
+                }
                 if !model.message.isEmpty {
                     Text(model.message).font(.callout).foregroundStyle(.orange)
                         .frame(maxWidth: .infinity, alignment: .leading).padding(16)
@@ -36,7 +46,8 @@ struct WindowSwitcherView: View {
             HStack(spacing: 16) {
                 Text("⇥  " + localizedString("Browse"))
                 Text("↵  " + localizedString("Open"))
-                Text("⌘W  " + localizedString("Close window"))
+                Text("⌘W  " + localizedString("Close"))
+                Text("⌘Q  " + localizedString("Quit app"))
                 if model.columns >= 3 { Text("⌘1–9  " + localizedString("Quick select")) }
                 Spacer(minLength: 0)
                 Text("esc  " + localizedString("Dismiss picker"))
@@ -88,8 +99,10 @@ struct WindowSwitcherView: View {
                         WindowSwitcherCard(item: item, icon: model.icons[item.id.pid], image: model.images[item.id],
                             isSelected: model.selectedID == item.id, rank: rank,
                             isLoadingPreview: model.previewsGranted && !model.completedPreviews.contains(item.id),
-                            isClosing: model.closingID == item.id, closeInProgress: model.closingID != nil,
-                            onActivate: { onActivate(item.id) }, onCloseWindow: { model.closeWindow(item.id) })
+                            isClosing: model.closingID == item.id, isQuitting: model.quittingPID == item.id.pid,
+                            closeInProgress: model.isBusy,
+                            onActivate: { onActivate(item.id) }, onCloseWindow: { model.closeWindow(item.id) },
+                            onQuitApp: { model.quitApp(item.id) })
                             .id(item.id)
                             .onAppear { model.requestPreview(item.id) }
                     }
@@ -134,9 +147,11 @@ struct WindowSwitcherCard: View {
     let rank: Int
     var isLoadingPreview = false
     var isClosing = false
+    var isQuitting = false
     var closeInProgress = false
     let onActivate: () -> Void
     let onCloseWindow: () -> Void
+    let onQuitApp: () -> Void
 
     var body: some View {
         Button(action: onActivate) {
@@ -160,6 +175,12 @@ struct WindowSwitcherCard: View {
         .accessibilityHint(localizedString("Activate this window"))
         .disabled(closeInProgress)
         .overlay(alignment: .topTrailing) { closeButton.padding(16) }
+        .contextMenu {
+            Button(localizedString("Close window")) { onCloseWindow() }
+                .disabled(closeInProgress)
+            Button(String(format: localizedString("Quit %@"), item.appName)) { onQuitApp() }
+                .disabled(closeInProgress)
+        }
     }
 
     private var closeButton: some View {
@@ -211,6 +232,10 @@ struct WindowSwitcherCard: View {
                         Text(localizedString("Preview unavailable")).font(.caption).foregroundStyle(.secondary)
                     }
                 }
+            }
+            if isQuitting {
+                RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.22))
+                ProgressView().controlSize(.small)
             }
         }
         .frame(height: 132)

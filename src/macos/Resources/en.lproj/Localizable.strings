@@ -303,9 +303,27 @@
 
 "This window cannot be closed right now. Open it or refresh the list." = "This window cannot be closed right now. Open it or refresh the list.";
 
-"Use ⌘W to close only the selected window. ⌘Q is disabled in this picker." = "Use ⌘W to close only the selected window. ⌘Q is disabled in this picker.";
+"Quit app" = "Quit app";
 
-"Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control.";
+"Quit %@" = "Quit %@";
+
+"Quitting %@…" = "Quitting %@…";
+
+"Use ⌘Tab to open window previews" = "Use ⌘Tab to open window previews";
+
+"Replaces the macOS app switcher while enabled. Hold ⌘, press Tab to cycle and release ⌘ to activate. ⌘W closes the selected window; ⌘Q quits its app." = "Replaces the macOS app switcher while enabled. Hold ⌘, press Tab to cycle and release ⌘ to activate. ⌘W closes the selected window; ⌘Q quits its app.";
+
+"Type directly while ⌘ is held to filter windows." = "Type directly while ⌘ is held to filter windows.";
+
+"Keep the picker open when ⌘ is released" = "Keep the picker open when ⌘ is released";
+
+"Releasing ⌘ keeps the picker open. Return activates the selected window; Escape cancels." = "Releasing ⌘ keeps the picker open. Return activates the selected window; Escape cancels.";
+
+"The app has not quit yet. A save dialog may be waiting, or it refused to quit." = "The app has not quit yet. A save dialog may be waiting, or it refused to quit.";
+
+"This app cannot be quit right now. Try again or quit it from the app." = "This app cannot be quit right now. Try again or quit it from the app.";
+
+"Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Close individual windows with ⌘W or the × button, or quit the selected app with ⌘Q. The picker stays open; save dialogs remain under your control.";
 
 /* Shortcut conflicts */
 "Shortcut conflicts" = "Shortcut conflicts";
