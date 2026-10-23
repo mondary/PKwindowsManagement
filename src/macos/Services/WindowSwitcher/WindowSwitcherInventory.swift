@@ -47,11 +47,17 @@ enum WindowSwitcherInventory {
         var seen = Set<WindowSwitcherID>()
         for app in apps {
             if Task.isCancelled { break }
-            let windows = CanvasWindowAccess.windows(pid: app.pid, expectedWindowIDs: expected[app.pid] ?? [], reconcile: true)
+            let realWindows = expected[app.pid] ?? []
+            let windows = CanvasWindowAccess.windows(pid: app.pid, expectedWindowIDs: realWindows, reconcile: true)
             for window in windows {
                 if Task.isCancelled { break }
                 guard CanvasWindowAccess.value(window, kAXRoleAttribute) as? String == kAXWindowRole,
                       let id = CanvasWindowAccess.id(window) else { continue }
+                // Source de vérité : la liste CG (layer 0, taille plausible).
+                // Les apps de barre de menus (accessory : MonitorControl,
+                // Powerlines, Whisper…) exposent des fenêtres AX fantômes qui
+                // produisaient des entrées Cmd+Tab sans fenêtre réelle.
+                guard realWindows.contains(id) else { continue }
                 let subrole = CanvasWindowAccess.value(window, kAXSubroleAttribute) as? String
                 let document = subrole == kAXStandardWindowSubrole || subrole == nil || subrole == kAXUnknownSubrole
                     || (subrole == kAXDialogSubrole && CanvasWindowAccess.value(window, kAXMinimizeButtonAttribute) != nil)

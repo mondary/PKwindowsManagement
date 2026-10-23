@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.10.87] - 2026-10-23
+### Fixed
+- **Plus de fausses fenêtres dans ⌘Tab** : les apps de barre de menus (MonitorControl en double, Powerlines, Whisper, widgets…) apparaissaient comme des fenêtres alors qu'elles n'en ont pas — leurs fenêtres AX fantômes passaient le filtre de l'inventaire. Une fenêtre n'est désormais listée que si elle existe réellement côté CG (layer 0, taille plausible), la même source de vérité que le rang d'affichage et l'état à l'écran.
+
+### Added
+- **Aperçu ⌘Tab plus grand** : le panneau passe de 880×640 à 1120×760 maximum (toujours borné à l'écran), avec un palier à 4 colonnes au-delà de 1 000 px de large — plus de vignettes visibles d'un coup sur les grands écrans.
+
 ## [2026.10.86] - 2026-10-22
 ### Fixed
 - « Tout maximiser », « Tout maximiser (app active) » et « Presque maximiser » sortent désormais les fenêtres en plein écran natif (Chrome, etc.) de leur Space avant de les presque-maximiser. La fenêtre est laissée au repos le temps que macOS termine la transition, puis dimensionnée selon son écran réel : le plein écran ne reprend plus le dessus et les autres fenêtres restent visibles.
