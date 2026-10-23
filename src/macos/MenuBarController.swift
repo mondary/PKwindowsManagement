@@ -161,7 +161,11 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     }
 
     @objc private func checkForUpdates() {
-        UpdaterManager.shared.checkForUpdates()
+        // Le menu doit produire un résultat visible : rafraîchir les libellés
+        // en arrière-plan (checkForUpdates) ne montre rien depuis la barre de
+        // menus. Le flux complet ouvre Réglages → À propos et propose
+        // l'installation (ou passe la main à Sparkle).
+        UpdaterManager.shared.checkForUpdatesOrSwitch()
     }
 
     @objc private func openURLSnippet(_ sender: NSMenuItem) {

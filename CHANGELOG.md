@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.88] - 2026-10-23
+### Fixed
+- **« Rechercher les mises à jour » ne faisait rien depuis le menu de l'icône** : l'entrée déclenchait le rafraîchissement silencieux des numéros de version (`checkForUpdates`), sans aucune interface — un clic semblait mort. Elle déclenche désormais le flux complet : ouverture de Réglages → À propos, proposition « Installer x.y.z » quand une version plus récente existe, sinon passage à Sparkle. Les mises à jour 2026.10.87-dev déjà publiées sont accessibles via Réglages → À propos en attendant cette build.
+
 ## [2026.10.87] - 2026-10-23
 ### Fixed
 - **Plus de fausses fenêtres dans ⌘Tab** : les apps de barre de menus (MonitorControl en double, Powerlines, Whisper, widgets…) apparaissaient comme des fenêtres alors qu'elles n'en ont pas — leurs fenêtres AX fantômes passaient le filtre de l'inventaire. Une fenêtre n'est désormais listée que si elle existe réellement côté CG (layer 0, taille plausible), la même source de vérité que le rang d'affichage et l'état à l'écran.
