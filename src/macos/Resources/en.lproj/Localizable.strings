@@ -29,6 +29,17 @@
 "Rename" = "Rename";
 "Duplicate" = "Duplicate";
 "Room actions" = "Room actions";
+"Type · ↑↓ choose · ↵ open/create · ⌘K actions · ⌘L layout · ⌥↑↓ Monocle · ⌘N new" = "Type · ↑↓ choose · ↵ open/create · ⌘K actions · ⌘L layout · ⌥↑↓ Monocle · ⌘N new";
+"↑↓ windows · ⌥Space select · ⌘L layout · ⌘D screen · ↵ create" = "↑↓ windows · ⌥Space select · ⌘L layout · ⌘D screen · ↵ create";
+"Choose a layout" = "Choose a layout";
+"↑↓ choose · ↵ confirm · Esc back" = "↑↓ choose · ↵ confirm · Esc back";
+"Adapt to the screen" = "Adapt to the screen";
+"Large main window, others beside it" = "Large main window, others beside it";
+"Windows in columns" = "Windows in columns";
+"Windows in a grid" = "Windows in a grid";
+"Main window and overlapping side cards" = "Main window and overlapping side cards";
+"Alternate vertical and horizontal splits" = "Alternate vertical and horizontal splits";
+"One window visible, others minimized" = "One window visible, others minimized";
 "Switch room" = "Switch room";
 "Create room with name “%@”" = "Create room “%@”";
 "Click windows in order — 1 is the main spot" = "Click windows in order — 1 is the main spot";

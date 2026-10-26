@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.103] - 2026-10-26
+### Changed
+- Le panneau Rooms (`⌃⌥R` et `⌘⇧R`) place le curseur dans la recherche : saisir un nom filtre les rooms et propose toujours « Créer la room ». `↑`/`↓` choisissent le résultat, `↵` ouvre ou démarre la création.
+- `⌘K` montre les actions explicites de la room sélectionnée (ouvrir, éditer, disposition, minimiser) ; `⌘L` ou `⇥` montre les sept dispositions avec miniatures et explications, dont Dwindle. `⌥↑`/`⌥↓` parcourt les onglets Monocle. `Échap` revient à la liste sans changer la disposition.
+- La création se fait au clavier : nom prérempli depuis la recherche, `↑`/`↓` parcourent les fenêtres, `⌥Espace` les sélectionne, `⌘L` choisit la disposition, `⌘D` choisit l'écran et `↵` crée la room quand elle est prête.
+
 ## [2026.10.102] - 2026-10-26
 ### Added
 - Dispositions Dwindle (partitions alternées) et Monocle (une fenêtre active, autres fenêtres minimisées, onglets sélectionnables), disponibles dans les rooms et leurs aperçus.

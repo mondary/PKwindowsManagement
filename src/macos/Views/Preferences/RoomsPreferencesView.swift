@@ -150,6 +150,7 @@ struct RoomEditorView: View {
     @State private var screens: [RoomEngine.ScreenOption] = []
     @State private var loading = false
     @State private var permissionMissing = false
+    @FocusState private var nameFocused: Bool
     private let isNew: Bool
     private let loadsWindowOffers: Bool
 
@@ -167,7 +168,9 @@ struct RoomEditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(localizedString(isNew ? "New Room" : "Edit Room")).font(.title2.bold())
-            TextField(localizedString("Room name"), text: $draft.name).textFieldStyle(.roundedBorder)
+            TextField(localizedString("Room name"), text: $draft.name)
+                .textFieldStyle(.roundedBorder)
+                .focused($nameFocused)
             Picker(localizedString("Screen"), selection: $draft.displayUUID) {
                 Text(localizedString("Screen under pointer")).tag(String?.none)
                 ForEach(screens) { screen in Text(screen.name).tag(Optional(screen.uuid)) }
@@ -232,7 +235,10 @@ struct RoomEditorView: View {
         }
         .padding(24)
         .frame(width: 620, height: 580)
-        .onAppear { refresh() }
+        .onAppear {
+            refresh()
+            DispatchQueue.main.async { nameFocused = true }
+        }
     }
 
     private var layoutChoices: some View {

@@ -7,9 +7,8 @@ private final class RoomsPanel: NSPanel {
 }
 
 /// Compact floating panel hosting the Rooms switcher, opened from the menu bar
-/// item or the global ⌃⌥R hotkey. Keyboard: Escape closes, Return walks into
-/// the selected room, Tab / ⇧Tab cycles its layout, ⌘⌫ deletes it, ↑↓ move the
-/// selection.
+/// item or the global ⌃⌥R hotkey. Search is focused on entry; arrows navigate
+/// room/create results, ⌘K shows actions, and ⌘L shows explicit layouts.
 final class RoomsOverlayController {
     static let shared = RoomsOverlayController()
 
@@ -26,21 +25,19 @@ final class RoomsOverlayController {
     }
 
     func show() {
-        show(keyboardMode: false)
+        showPanel()
     }
 
     func showKeyboardMode() {
-        show(keyboardMode: true)
+        showPanel()
     }
 
-    private func show(keyboardMode: Bool) {
+    private func showPanel() {
         if panel?.isVisible == true {
-            model.isKeyboardMode = keyboardMode
             panel?.makeKeyAndOrderFront(nil)
             return
         }
         model.prepare()
-        model.isKeyboardMode = keyboardMode
 
         let size = NSSize(width: 560, height: 540)
         let origin = centeredOrigin(size: size)
@@ -73,10 +70,7 @@ final class RoomsOverlayController {
         panel.makeKeyAndOrderFront(nil)
         panel.orderFrontRegardless()
 
-        // Give the search field the keyboard, like a Spotlight panel.
-        DispatchQueue.main.async {
-            panel.makeFirstResponder(hosting.view)
-        }
+        // ListView's FocusState puts the insertion point in search on appear.
     }
 
     func hide() {
@@ -106,29 +100,24 @@ final class RoomsOverlayController {
     private func handleKey(_ event: NSEvent) -> NSEvent? {
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
 
-        if model.isKeyboardMode && !model.isCreating {
-            if event.keyCode == 53 { hide(); return nil }
-            if event.keyCode == 36 || event.keyCode == 76 {
-                if !event.isARepeat && model.activateSelected() { hide() }
-                return nil
-            }
-            guard modifiers.isDisjoint(with: [.command, .control, .option]) else { return event }
+        if model.isChoosingLayout || model.isChoosingAction {
             switch event.keyCode {
-            case 123: model.moveSelection(-1); return nil  // ← previous room
-            case 124: model.moveSelection(1); return nil   // → next room
-            case 48: model.cycleLayout(forward: !modifiers.contains(.shift)); return nil
-            case 126, 125: // ↑↓ select the Monocle tab, otherwise cycle the layout
-                if model.selectedRoom?.layout == .monocle {
-                    model.cycleMonocleTab(event.keyCode == 125 ? 1 : -1)
-                } else {
-                    model.cycleLayout(forward: event.keyCode == 125)
+            case 53:
+                model.isChoosingLayout = false
+                model.isChoosingAction = false
+            case 125: model.moveMenuSelection(1)
+            case 126: model.moveMenuSelection(-1)
+            case 36, 76:
+                if model.isChoosingLayout {
+                    model.selectLayout()
+                } else if model.performAction() {
+                    hide()
                 }
-                return nil
-            default: return nil // No typing into search in the modal submap.
+            default: break
             }
+            return nil
         }
 
-        // Escape: leave creation first, then close the panel.
         if event.keyCode == 53 {
             if model.isCreating {
                 model.isCreating = false
@@ -139,18 +128,56 @@ final class RoomsOverlayController {
         }
 
         if model.isCreating {
-            if event.keyCode == 36, model.canCreateRoom {  // Return
+            if modifiers.contains(.command), event.keyCode == 37 { // ⌘L: layout choices
+                model.beginLayoutSelection()
+                return nil
+            }
+            if modifiers.contains(.command), event.keyCode == 2 { // ⌘D: target screen
+                model.cycleScreen()
+                return nil
+            }
+            if modifiers.contains(.option), event.keyCode == 49 { // ⌥Space: window pick
+                model.toggleSelectedOffer()
+                return nil
+            }
+            if modifiers.contains(.command), event.keyCode == 1, model.canCreateRoom { // ⌘S
                 model.createRoom()
+                return nil
+            }
+            if event.keyCode == 125 { model.moveOfferSelection(1); return nil }
+            if event.keyCode == 126 { model.moveOfferSelection(-1); return nil }
+            if event.keyCode == 36 || event.keyCode == 76 {
+                if model.canCreateRoom { model.createRoom() }
+                else { model.toggleSelectedOffer() }
                 return nil
             }
             return event
         }
 
+        if modifiers.contains(.command), event.keyCode == 45 { // ⌘N
+            model.beginCreation()
+            return nil
+        }
+        if modifiers.contains(.command), event.keyCode == 40, model.selectedRoom != nil { // ⌘K
+            model.menuSelection = 0
+            model.isChoosingAction = true
+            return nil
+        }
+        if modifiers.contains(.command), event.keyCode == 14, let room = model.selectedRoom { // ⌘E
+            model.editingRoom = room
+            return nil
+        }
+        if modifiers.contains(.command), event.keyCode == 37, model.selectedRoom != nil { // ⌘L
+            model.beginLayoutSelection()
+            return nil
+        }
+
         switch event.keyCode {
-        case 48:  // Tab / ⇧Tab
-            model.cycleLayout(forward: !modifiers.contains(.shift))
+        case 48:  // Tab: choose an explicit layout, not a blind cycle.
+            if model.selectedRoom != nil { model.beginLayoutSelection() }
             return nil
         case 36, 76:  // Return / keypad Enter
+            if model.isCreateSelected { model.beginCreation(); return nil }
             if model.activateSelected() { hide() }
             return nil
         case 51:  // Delete
@@ -164,9 +191,17 @@ final class RoomsOverlayController {
                 model.closeSelected()
                 return nil
             }
+            if modifiers.contains(.option), model.selectedRoom?.layout == .monocle {
+                model.cycleMonocleTab(1)
+                return nil
+            }
             model.moveSelection(1)
             return nil
         case 126:  // ↑
+            if modifiers.contains(.option), model.selectedRoom?.layout == .monocle {
+                model.cycleMonocleTab(-1)
+                return nil
+            }
             model.moveSelection(-1)
             return nil
         default:

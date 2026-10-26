@@ -305,6 +305,17 @@
 "Rename" = "Renommer";
 "Duplicate" = "Dupliquer";
 "Room actions" = "Actions de room";
+"Type · ↑↓ choose · ↵ open/create · ⌘K actions · ⌘L layout · ⌥↑↓ Monocle · ⌘N new" = "Saisir · ↑↓ choisir · ↵ ouvrir/créer · ⌘K actions · ⌘L disposition · ⌥↑↓ Monocle · ⌘N nouvelle";
+"↑↓ windows · ⌥Space select · ⌘L layout · ⌘D screen · ↵ create" = "↑↓ fenêtres · ⌥Espace sélectionner · ⌘L disposition · ⌘D écran · ↵ créer";
+"Choose a layout" = "Choisir une disposition";
+"↑↓ choose · ↵ confirm · Esc back" = "↑↓ choisir · ↵ confirmer · Échap retour";
+"Adapt to the screen" = "S'adapte à l'écran";
+"Large main window, others beside it" = "Grande fenêtre principale, autres à côté";
+"Windows in columns" = "Fenêtres en colonnes";
+"Windows in a grid" = "Fenêtres en grille";
+"Main window and overlapping side cards" = "Fenêtre principale et cartes latérales empilées";
+"Alternate vertical and horizontal splits" = "Découpes verticales et horizontales alternées";
+"One window visible, others minimized" = "Une fenêtre visible, les autres minimisées";
 "Switch room" = "Changer de room";
 "Create room with name “%@”" = "Créer la room « %@ »";
 "Click windows in order — 1 is the main spot" = "Clique les fenêtres dans l'ordre — 1 est la place principale";

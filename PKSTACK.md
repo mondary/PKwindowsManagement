@@ -9,6 +9,7 @@ Skills used for this project:
 - Focus/Canvas regression QA — `WindowMoveSequenceChecks` covers rapid queued moves and click cancellation; `CanvasLayoutChecks` covers constant titlebar alignment and selected-window visibility across monitor topologies. Dev 52 user test failed; Dev 54 runtime retest pending (app not assigned to the dedicated agent Space; Dev 53 CI compiler compatibility fixed in 54).
 - `app-presence-sync` — README FR/EN and local landing download link match the latest verified Stable; defer hub/FTP publication until the Dev UI has been tested.
 - Dev 102 — Dwindle/Monocle rooms and a dedicated ⌘⇧R keyboard mode. Geometry tests and FR/EN documentation updated; local landing Dev note updated. Hub/FTP publication and new screenshots deferred until UI validation without using the user's desktop.
+- Dev 103 — ⌃⌥R and ⌘⇧R now share a searchable, keyboard-first Rooms panel. Explicit action/layout lists, prefilled creation name and keyboard window/display/layout selection replace blind cycling. Local build and tests, no user-desktop interaction; hub/FTP and screenshots still await UI acceptance.
 - `premium-promo-media` — audited the existing landing/media pipeline; defer feature claims, refreshed captures, hub, and FTP until a Dev build can be tested.
 - `macos-menu-and-settings` — menu-bar action placement and aligned icons.
 - `pk-settings-shell` — Shared settings shell; Credits uses official project icons and full-row links, with one persistent footer across every settings page.

@@ -6,8 +6,13 @@ final class RoomsSwitcherModel: ObservableObject {
     @Published var query = "" { didSet { selection = 0 } }
     @Published var selection = 0
     @Published var isCreating = false
-    @Published var isKeyboardMode = false
+    @Published var isChoosingLayout = false
+    @Published var isChoosingAction = false
+    @Published var menuSelection = 0
+    @Published var offerSelection = 0
+    @Published var editingRoom: Room?
     @Published var newName = ""
+    @Published var newLayout: RoomLayoutKind = .auto
     /// Windows picked for the new room, in click order: index 0 is the main spot.
     @Published var picked: [RoomEngine.WindowOffer] = []
     @Published var offers: [RoomEngine.WindowOffer] = []
@@ -37,13 +42,27 @@ final class RoomsSwitcherModel: ObservableObject {
         return filtered[selection]
     }
 
+    var isCreateSelected: Bool { selection == rooms.count }
+
+    func beginCreation() {
+        newName = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        newLayout = .auto
+        picked = []
+        offerSelection = 0
+        isCreating = true
+        refreshOffers()
+    }
+
     /// Called each time the panel opens.
     func prepare() {
         query = ""
         selection = 0
         isCreating = false
-        isKeyboardMode = false
+        isChoosingLayout = false
+        isChoosingAction = false
+        editingRoom = nil
         newName = ""
+        newLayout = .auto
         picked = []
         offers = []
         newDisplayUUID = nil
@@ -67,9 +86,45 @@ final class RoomsSwitcherModel: ObservableObject {
     }
 
     func moveSelection(_ delta: Int) {
-        let count = rooms.count
-        guard count > 0 else { return }
+        let count = rooms.count + 1 // The last result always creates a room.
         selection = ((selection + delta) % count + count) % count
+    }
+
+    func moveMenuSelection(_ delta: Int) {
+        let count = isChoosingLayout ? RoomLayoutKind.allCases.count : 4
+        menuSelection = ((menuSelection + delta) % count + count) % count
+    }
+
+    func beginLayoutSelection() {
+        isChoosingAction = false
+        isChoosingLayout = true
+        let current = isCreating ? newLayout : selectedRoom?.layout ?? .auto
+        menuSelection = RoomLayoutKind.allCases.firstIndex(of: current) ?? 0
+    }
+
+    func selectLayout() {
+        guard RoomLayoutKind.allCases.indices.contains(menuSelection) else { return }
+        let kind = RoomLayoutKind.allCases[menuSelection]
+        if isCreating {
+            newLayout = kind
+        } else if var room = selectedRoom {
+            room.layout = kind
+            store.upsert(room)
+        }
+        isChoosingLayout = false
+    }
+
+    func performAction() -> Bool {
+        guard let room = selectedRoom else { return false }
+        isChoosingAction = false
+        switch menuSelection {
+        case 0: activate(room: room); return true
+        case 1: editingRoom = room
+        case 2: beginLayoutSelection()
+        case 3: minimize(room: room)
+        default: break
+        }
+        return false
     }
 
     func cycleLayout(forward: Bool) {
@@ -142,6 +197,22 @@ final class RoomsSwitcherModel: ObservableObject {
         }
     }
 
+    func moveOfferSelection(_ delta: Int) {
+        guard !offers.isEmpty else { return }
+        offerSelection = ((offerSelection + delta) % offers.count + offers.count) % offers.count
+    }
+
+    func toggleSelectedOffer() {
+        guard offers.indices.contains(offerSelection) else { return }
+        togglePick(offers[offerSelection])
+    }
+
+    func cycleScreen() {
+        let options = [String?.none] + screens.map { Optional($0.uuid) }
+        let current = options.firstIndex(of: newDisplayUUID) ?? 0
+        newDisplayUUID = options[(current + 1) % options.count]
+    }
+
     func isPicked(_ offer: RoomEngine.WindowOffer) -> Bool {
         picked.contains(offer)
     }
@@ -155,7 +226,8 @@ final class RoomsSwitcherModel: ObservableObject {
         let windows = picked.map { offer in
             RoomWindow(bundleID: offer.bundleID, appName: offer.appName, title: offer.title, windowID: offer.windowID)
         }
-        let room = Room(name: newName.trimmingCharacters(in: .whitespaces), windows: windows, displayUUID: newDisplayUUID)
+        let room = Room(name: newName.trimmingCharacters(in: .whitespaces), windows: windows,
+                        layout: newLayout, displayUUID: newDisplayUUID)
         store.upsert(room)
         isCreating = false
         newName = ""
@@ -203,18 +275,12 @@ private struct ListView: View {
     @ObservedObject var model: RoomsSwitcherModel
     let onActivateRoom: () -> Void
     @FocusState private var searchFocused: Bool
-    @State private var editingRoom: Room?
 
     var body: some View {
         VStack(spacing: 12) {
             searchField
-            if model.rooms.isEmpty {
-                EmptyStateView {
-                    model.isKeyboardMode = false
-                    model.isCreating = true
-                    model.refreshOffers()
-                }
-                Spacer()
+            if model.isChoosingLayout || model.isChoosingAction {
+                RoomMenuView(model: model, onActivateRoom: onActivateRoom)
             } else {
                 ScrollView {
                     LazyVStack(spacing: 8) {
@@ -230,13 +296,26 @@ private struct ListView: View {
                                     if model.activateSelected() { onActivateRoom() }
                                 }
                                 .contextMenu {
-                                    Button(localizedString("Edit Room")) { editingRoom = room }
+                                    Button(localizedString("Edit Room")) { model.editingRoom = room }
                                     Button(localizedString("Minimize Room")) { model.minimize(room: room) }
                                 }
                                 .onHover { hovering in
                                     if hovering { model.selection = index }
                                 }
                         }
+                        Button { model.beginCreation() } label: {
+                            Label(model.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                  ? localizedString("New Room")
+                                  : String(format: localizedString("Create room with name “%@”"), model.query),
+                                  systemImage: "plus.circle")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(12)
+                                .background(model.isCreateSelected ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.045),
+                                            in: RoundedRectangle(cornerRadius: 12))
+                                .overlay(RoundedRectangle(cornerRadius: 12)
+                                    .strokeBorder(model.isCreateSelected ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 2)
                 }
@@ -254,14 +333,14 @@ private struct ListView: View {
                         .foregroundStyle(.white)
                 }
                 .buttonStyle(.plain)
-                Button(localizedString("Edit Room")) { editingRoom = model.selectedRoom }
+                Button(localizedString("Edit Room")) { model.editingRoom = model.selectedRoom }
                     .buttonStyle(.plain)
                     .font(.system(size: 12, weight: .medium))
                     .padding(.horizontal, 11)
                     .padding(.vertical, 6)
                     .background(.primary.opacity(0.06), in: Capsule())
                     .foregroundStyle(.primary.opacity(0.75))
-                Button(localizedString("Change layout")) { model.cycleLayout(forward: true) }
+                Button(localizedString("Change layout")) { model.beginLayoutSelection() }
                     .buttonStyle(.plain)
                     .font(.system(size: 12, weight: .medium))
                     .padding(.horizontal, 11)
@@ -279,8 +358,8 @@ private struct ListView: View {
             .disabled(model.selectedRoom == nil)
         }
         .padding(16)
-        .onAppear { searchFocused = true }
-        .sheet(item: $editingRoom) { room in
+        .onAppear { DispatchQueue.main.async { searchFocused = true } }
+        .sheet(item: $model.editingRoom) { room in
             RoomEditorView(room: room, store: model.store)
         }
     }
@@ -296,9 +375,7 @@ private struct ListView: View {
                 .foregroundStyle(.primary)
                 .focused($searchFocused)
             Button {
-                model.isKeyboardMode = false
-                model.isCreating = true
-                model.refreshOffers()
+                model.beginCreation()
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 13, weight: .semibold))
@@ -319,11 +396,10 @@ private struct ListView: View {
 
     private var footer: some View {
         HStack {
-            Text(model.isKeyboardMode
-                 ? localizedString("Room mode · ←→ rooms · ⇥ layout · ↑↓ Monocle tabs · ↵ open · Esc close")
-                 : localizedString("↵ open · ⇥ layout · ⌘1-9 open nth · ⌘⌫ delete · ⌘↓ close"))
+            Text(localizedString("Type · ↑↓ choose · ↵ open/create · ⌘K actions · ⌘L layout · ⌥↑↓ Monocle · ⌘N new"))
                 .font(.system(size: 10.5))
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
             Text("\(model.rooms.count)")
                 .font(.system(size: 10.5, weight: .semibold))
@@ -333,6 +409,95 @@ private struct ListView: View {
 }
 
 // MARK: - Room row
+
+private struct RoomMenuView: View {
+    @ObservedObject var model: RoomsSwitcherModel
+    let onActivateRoom: () -> Void
+
+    private var actionTitles: [String] {
+        [localizedString("Open Room"), localizedString("Edit Room"),
+         localizedString("Change layout"), localizedString("Minimize Room")]
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(model.isChoosingLayout ? localizedString("Choose a layout") : localizedString("Room actions"))
+                .font(.headline)
+            Text(model.isCreating ? model.newName : model.selectedRoom?.name ?? "")
+                .font(.caption).foregroundStyle(.secondary)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 6) {
+                    if model.isChoosingLayout {
+                        ForEach(Array(RoomLayoutKind.allCases.enumerated()), id: \.element.id) { index, kind in
+                            Button {
+                                model.menuSelection = index
+                                model.selectLayout()
+                            } label: {
+                                HStack(spacing: 12) {
+                                    RoomLayoutDiagram(windows: model.isCreating
+                                        ? model.picked.map { RoomWindow(bundleID: $0.bundleID, appName: $0.appName,
+                                                                        title: $0.title, windowID: $0.windowID) }
+                                        : model.selectedRoom?.windows ?? [], kind: kind)
+                                        .frame(width: 100)
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(kind.title).font(.body.weight(.semibold))
+                                        Text(layoutHint(kind)).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    if kind == (model.isCreating ? model.newLayout : model.selectedRoom?.layout) {
+                                        Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.accentColor)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
+                            .id(index)
+                            .padding(8)
+                            .background(model.menuSelection == index ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.04),
+                                        in: RoundedRectangle(cornerRadius: 9))
+                            .accessibilityAddTraits(model.menuSelection == index ? [.isSelected] : [])
+                        }
+                    } else {
+                        ForEach(actionTitles.indices, id: \.self) { index in
+                            Button {
+                                model.menuSelection = index
+                                if model.performAction() { onActivateRoom() }
+                            } label: {
+                                Text(actionTitles[index]).frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
+                            .id(index)
+                            .padding(12)
+                            .background(model.menuSelection == index ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.04),
+                                        in: RoundedRectangle(cornerRadius: 9))
+                            .accessibilityAddTraits(model.menuSelection == index ? [.isSelected] : [])
+                        }
+                    }
+                    }
+                }
+                .onChange(of: model.menuSelection) { index in
+                    withAnimation { proxy.scrollTo(index, anchor: .center) }
+                }
+            }
+            Text(localizedString("↑↓ choose · ↵ confirm · Esc back"))
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func layoutHint(_ kind: RoomLayoutKind) -> String {
+        switch kind {
+        case .auto: return localizedString("Adapt to the screen")
+        case .focus: return localizedString("Large main window, others beside it")
+        case .columns: return localizedString("Windows in columns")
+        case .grid: return localizedString("Windows in a grid")
+        case .stack: return localizedString("Main window and overlapping side cards")
+        case .dwindle: return localizedString("Alternate vertical and horizontal splits")
+        case .monocle: return localizedString("One window visible, others minimized")
+        }
+    }
+}
 
 private struct RoomRowView: View {
     let room: Room
@@ -476,6 +641,9 @@ private struct CreationView: View {
 
     var body: some View {
         VStack(spacing: 12) {
+            if model.isChoosingLayout {
+                RoomMenuView(model: model, onActivateRoom: {})
+            } else {
             HStack(spacing: 10) {
                 Image(systemName: "plus")
                     .font(.system(size: 15, weight: .medium))
@@ -505,9 +673,10 @@ private struct CreationView: View {
                 .strokeBorder(.primary.opacity(0.07), lineWidth: 1))
 
             HStack {
-                Text(localizedString("Click windows in order — 1 is the main spot"))
+                Text(localizedString("↑↓ windows · ⌥Space select · ⌘L layout · ⌘D screen · ↵ create"))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer()
                 Text(String(format: localizedString("%d window(s) selected"), model.picked.count))
                     .font(.system(size: 11))
@@ -515,6 +684,18 @@ private struct CreationView: View {
             }
 
             screenPicker(model: model)
+            Button {
+                model.beginLayoutSelection()
+            } label: {
+                HStack {
+                    Text(localizedString("Layout"))
+                    Text(model.newLayout.title).fontWeight(.semibold)
+                    Image(systemName: "chevron.down")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(localizedString("Layout")): \(model.newLayout.title)")
 
             if model.loadingOffers {
                 Spacer()
@@ -529,25 +710,33 @@ private struct CreationView: View {
                     .foregroundStyle(Color.accentColor)
                 Spacer()
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 4) {
-                        ForEach(model.offers) { offer in
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 4) {
+                        ForEach(Array(model.offers.enumerated()), id: \.element.id) { index, offer in
                             WindowOfferRow(
                                 offer: offer,
                                 pickIndex: model.isPicked(offer) ? model.picked.firstIndex(of: offer).map { $0 + 1 } : nil
                             ) {
                                 model.togglePick(offer)
                             }
+                            .overlay(RoundedRectangle(cornerRadius: 9)
+                                .strokeBorder(index == model.offerSelection ? Color.accentColor : .clear, lineWidth: 2))
+                            .id(index)
                         }
+                        .padding(.horizontal, 2)
                     }
-                    .padding(.horizontal, 2)
+                    .onChange(of: model.offerSelection) { index in
+                        withAnimation { proxy.scrollTo(index, anchor: .center) }
+                    }
                 }
+            }
             }
 
             if !model.picked.isEmpty {
                 RoomLayoutDiagram(
                     windows: model.picked.map { RoomWindow(bundleID: $0.bundleID, appName: $0.appName, title: $0.title, windowID: $0.windowID) },
-                    kind: .auto
+                    kind: model.newLayout
                 )
                 .frame(width: 220)
             }
@@ -569,9 +758,13 @@ private struct CreationView: View {
                 .buttonStyle(.plain)
                 .disabled(!model.canCreateRoom)
             }
+            }
         }
         .padding(16)
-        .onAppear { nameFocused = true }
+        .onAppear { DispatchQueue.main.async { nameFocused = true } }
+        .onChange(of: model.isChoosingLayout) { choosing in
+            if !choosing { DispatchQueue.main.async { nameFocused = true } }
+        }
     }
 }
 
