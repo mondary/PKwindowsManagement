@@ -9,21 +9,12 @@ struct WindowSwitcherView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
+            Divider().opacity(0.55)
             if !model.accessibilityGranted {
                 permissionView
             } else {
                 if !model.previewsGranted { previewPermissionBanner }
-                if let name = model.quittingName {
-                    HStack(spacing: 10) {
-                        ProgressView().controlSize(.small)
-                        Text(String(format: localizedString("Quitting %@…"), name))
-                            .font(.caption).foregroundStyle(.secondary)
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 16).padding(.vertical, 10)
-                    .background(.primary.opacity(0.035))
-                }
+                if let name = model.quittingName { quittingBanner(name) }
                 if !model.message.isEmpty {
                     Text(model.message).font(.callout).foregroundStyle(.orange)
                         .frame(maxWidth: .infinity, alignment: .leading).padding(16)
@@ -32,69 +23,108 @@ struct WindowSwitcherView: View {
                     ProgressView(localizedString("Loading windows…"))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if model.filteredItems.isEmpty {
-                    VStack(spacing: 10) {
-                        Image(systemName: "macwindow").font(.system(size: 32)).foregroundStyle(.secondary)
-                        Text(localizedString(model.query.isEmpty ? "No windows available" : "No matching windows"))
-                        Button(localizedString("Refresh")) { model.prepare(resetSearch: false) }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    emptyView
                 } else {
                     windowGrid
                 }
             }
-            Divider()
-            HStack(spacing: 16) {
-                Text("⇥  " + localizedString("Browse"))
-                Text("↵  " + localizedString("Open"))
-                Text("⌘W  " + localizedString("Close"))
-                Text("⌘Q  " + localizedString("Quit app"))
-                if model.columns >= 3 { Text("⌘1–9  " + localizedString("Quick select")) }
-                Spacer(minLength: 0)
-                Text("esc  " + localizedString("Dismiss picker"))
-            }
-            .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 20).padding(.vertical, 12)
+            Divider().opacity(0.55)
+            footer
         }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(.primary.opacity(0.12), lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(.primary.opacity(0.12), lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
         .onAppear { searchFocused = true }
     }
 
+    // MARK: - Header
+
     private var header: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Label(localizedString("Window previews"), systemImage: "rectangle.on.rectangle")
-                    .font(.headline)
-                if !model.isLoading, model.accessibilityGranted {
-                    Text("\(model.filteredItems.count)").font(.callout.monospacedDigit()).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button { model.prepare(resetSearch: false) } label: { Image(systemName: "arrow.clockwise") }
-                    .help(localizedString("Refresh") + " (⌘R)")
-                    .accessibilityLabel(localizedString("Refresh"))
-                Button(action: onClose) { Image(systemName: "xmark") }
-                    .help(localizedString("Dismiss picker"))
-                    .accessibilityLabel(localizedString("Dismiss picker"))
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                title
+                Spacer(minLength: 12)
+                searchField.frame(maxWidth: 400)
+                headerButtons
             }
-            .buttonStyle(.plain)
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField(localizedString("Search by app or window title"), text: $model.query)
-                    .textFieldStyle(.plain).font(.system(size: 17)).focused($searchFocused)
-                    .accessibilityLabel(localizedString("Search by app or window title"))
-                if !model.query.isEmpty {
-                    Button { model.query = ""; searchFocused = true } label: { Image(systemName: "xmark.circle.fill") }
-                        .buttonStyle(.plain).foregroundStyle(.secondary).accessibilityLabel(localizedString("Clear"))
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    title
+                    Spacer(minLength: 12)
+                    headerButtons
                 }
+                searchField
             }
         }
-        .padding(20)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
     }
+
+    private var title: some View {
+        HStack(spacing: 9) {
+            Label(localizedString("Window previews"), systemImage: "rectangle.on.rectangle")
+                .font(.headline)
+            if !model.isLoading, model.accessibilityGranted {
+                Text("\(model.filteredItems.count)")
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(.primary.opacity(0.06), in: Capsule())
+            }
+        }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
+            TextField(localizedString("Search by app or window title"), text: $model.query)
+                .textFieldStyle(.plain)
+                .font(.system(size: 14))
+                .focused($searchFocused)
+                .accessibilityLabel(localizedString("Search by app or window title"))
+            if !model.query.isEmpty {
+                Button { model.query = ""; searchFocused = true } label: {
+                    Image(systemName: "xmark.circle.fill")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(localizedString("Clear"))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(.primary.opacity(0.07), lineWidth: 1)
+        )
+    }
+
+    private var headerButtons: some View {
+        HStack(spacing: 2) {
+            Button { model.prepare(resetSearch: false) } label: { Image(systemName: "arrow.clockwise") }
+                .help(localizedString("Refresh") + " (⌘R)")
+                .accessibilityLabel(localizedString("Refresh"))
+            Button(action: onClose) { Image(systemName: "xmark") }
+                .help(localizedString("Dismiss picker"))
+                .accessibilityLabel(localizedString("Dismiss picker"))
+        }
+        .buttonStyle(.plain)
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(.secondary)
+        .frame(height: 26)
+    }
+
+    // MARK: - Content
 
     private var windowGrid: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: model.columns), spacing: 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: model.columns),
+                          spacing: 12) {
                     ForEach(Array(model.filteredItems.enumerated()), id: \.element.id) { rank, item in
                         WindowSwitcherCard(item: item, icon: model.icons[item.id.pid], image: model.images[item.id],
                             isSelected: model.selectedID == item.id, rank: rank,
@@ -114,6 +144,26 @@ struct WindowSwitcherView: View {
                 if let id { proxy.scrollTo(id, anchor: .center) }
             }
         }
+    }
+
+    private var emptyView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "macwindow").font(.system(size: 34, weight: .light)).foregroundStyle(.secondary)
+            Text(localizedString(model.query.isEmpty ? "No windows available" : "No matching windows"))
+            Button(localizedString("Refresh")) { model.prepare(resetSearch: false) }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func quittingBanner(_ name: String) -> some View {
+        HStack(spacing: 10) {
+            ProgressView().controlSize(.small)
+            Text(String(format: localizedString("Quitting %@…"), name))
+                .font(.caption).foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 9)
+        .background(.primary.opacity(0.035))
     }
 
     private var previewPermissionBanner: some View {
@@ -137,6 +187,33 @@ struct WindowSwitcherView: View {
         }
         .padding(32).frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+
+    // MARK: - Footer
+
+    private var footer: some View {
+        HStack(spacing: 14) {
+            hint("⇥", "Browse")
+            hint("↵", "Open")
+            hint("⌘W", "Close")
+            hint("⌘Q", "Quit app")
+            if model.columns >= 3 { hint("⌘1–9", "Quick select") }
+            Spacer(minLength: 0)
+            hint("esc", "Dismiss picker")
+        }
+        .font(.caption2).foregroundStyle(.secondary)
+        .padding(.horizontal, 18).padding(.vertical, 10)
+    }
+
+    private func hint(_ key: String, _ title: String) -> some View {
+        HStack(spacing: 5) {
+            Text(key)
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(.primary.opacity(0.8))
+                .padding(.horizontal, 5).padding(.vertical, 2)
+                .background(.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+            Text(localizedString(title))
+        }
+    }
 }
 
 struct WindowSwitcherCard: View {
@@ -152,29 +229,25 @@ struct WindowSwitcherCard: View {
     let onActivate: () -> Void
     let onCloseWindow: () -> Void
     let onQuitApp: () -> Void
+    @State private var isHovering = false
 
     var body: some View {
-        Button(action: onActivate) {
-            VStack(alignment: .leading, spacing: 10) {
-                thumbnail
-                caption
-                if let status {
-                    Text(localizedString(status)).font(.caption2).foregroundStyle(.secondary)
-                }
+        ZStack(alignment: .topTrailing) {
+            Button(action: onActivate) {
+                cardSurface
             }
-            .padding(10)
-            .frame(maxWidth: .infinity, minHeight: 210, alignment: .topLeading)
-            .background(backgroundColor, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(selectionBorder)
-            .contentShape(RoundedRectangle(cornerRadius: 12))
+            .buttonStyle(.plain)
+            .disabled(closeInProgress)
+            .help(item.appName + " — " + item.displayTitle)
+            .accessibilityLabel(item.appName + ", " + item.displayTitle)
+            .accessibilityValue(isSelected ? localizedString("Selected") : "")
+            .accessibilityHint(localizedString("Activate this window"))
+            closeButton.padding(10)
         }
-        .buttonStyle(.plain)
-        .help(item.appName + " — " + item.displayTitle)
-        .accessibilityLabel(item.appName + ", " + item.displayTitle)
-        .accessibilityValue(isSelected ? localizedString("Selected") : "")
-        .accessibilityHint(localizedString("Activate this window"))
-        .disabled(closeInProgress)
-        .overlay(alignment: .topTrailing) { closeButton.padding(16) }
+        .scaleEffect(isSelected ? 1.012 : (isHovering ? 1.005 : 1))
+        .animation(.easeOut(duration: 0.16), value: isSelected)
+        .animation(.easeOut(duration: 0.14), value: isHovering)
+        .onHover { hovering in isHovering = hovering }
         .contextMenu {
             Button(localizedString("Close window")) { onCloseWindow() }
                 .disabled(closeInProgress)
@@ -183,10 +256,150 @@ struct WindowSwitcherCard: View {
         }
     }
 
+    private var cardSurface: some View {
+        ZStack {
+            thumbnail
+            overlayGradient
+            if isQuitting {
+                Color.black.opacity(0.42)
+                ProgressView().controlSize(.small).tint(.white)
+            }
+            cardContent
+        }
+        .aspectRatio(1.45, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(cardBorder)
+        .shadow(color: .black.opacity(isSelected ? 0.26 : 0.16),
+                radius: isSelected ? 14 : 8, y: 6)
+        .shadow(color: isSelected ? Color.accentColor.opacity(0.26) : .clear, radius: 12)
+    }
+
+    // MARK: - Full-bleed preview
+
+    private var thumbnail: some View {
+        ZStack {
+            Color.black.opacity(0.88)
+            if let image {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+            } else {
+                fallbackThumbnail
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var fallbackThumbnail: some View {
+        ZStack {
+            LinearGradient(colors: [Color.accentColor.opacity(0.42), .black.opacity(0.86)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+            Circle()
+                .fill(Color.accentColor.opacity(0.28))
+                .frame(width: 220, height: 220)
+                .blur(radius: 46)
+                .offset(x: -70, y: -52)
+            VStack(spacing: 10) {
+                appIcon
+                    .frame(width: 54, height: 54)
+                    .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
+                if isLoadingPreview {
+                    ProgressView().controlSize(.small).tint(.white)
+                } else {
+                    Text(localizedString("Preview unavailable"))
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.62))
+                }
+            }
+        }
+    }
+
+    private var overlayGradient: some View {
+        LinearGradient(stops: [
+            .init(color: .black.opacity(0.42), location: 0),
+            .init(color: .black.opacity(0.05), location: 0.28),
+            .init(color: .clear, location: 0.52),
+            .init(color: .black.opacity(0.84), location: 1)
+        ], startPoint: .top, endPoint: .bottom)
+        .allowsHitTesting(false)
+    }
+
+    // MARK: - Overlay chrome
+
+    private var cardContent: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                rankBadge
+                Spacer(minLength: 0)
+            }
+            if let status {
+                statusBadge(status)
+            }
+            Spacer(minLength: 0)
+            caption
+        }
+        .padding(11)
+        .allowsHitTesting(false)
+    }
+
+    @ViewBuilder private var rankBadge: some View {
+        if rank < 9 {
+            Text("⌘\(rank + 1)")
+                .font(.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit())
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(.black.opacity(0.4), in: Capsule())
+                .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
+                .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
+        }
+    }
+
+    private func statusBadge(_ key: String) -> some View {
+        Label(localizedString(key), systemImage: statusIcon)
+            .font(.system(size: 9.5, weight: .semibold))
+            .foregroundStyle(.white.opacity(0.92))
+            .padding(.horizontal, 7).padding(.vertical, 3)
+            .background(.black.opacity(0.42), in: Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 1))
+    }
+
+    private var caption: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            appIcon
+                .frame(width: 22, height: 22)
+                .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+            VStack(alignment: .leading, spacing: 1) {
+                if item.title.isEmpty {
+                    Text(item.appName).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                } else {
+                    Text(item.appName)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.72))
+                        .lineLimit(1)
+                    Text(item.title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                }
+            }
+            .foregroundStyle(.white)
+            .shadow(color: .black.opacity(0.45), radius: 2, y: 1)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var cardBorder: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .strokeBorder(isSelected ? Color.accentColor : Color.white.opacity(isHovering ? 0.26 : 0.14),
+                          lineWidth: isSelected ? 2.5 : 1)
+    }
+
     private var closeButton: some View {
         Button(action: onCloseWindow) { closeGlyph }
             .buttonStyle(.plain)
             .disabled(closeInProgress)
+            .opacity(isHovering || isSelected || isClosing ? 1 : 0.62)
             .help(localizedString("Close window") + " — " + item.displayTitle + " (⌘W)")
             .accessibilityLabel(closeAccessibilityLabel)
     }
@@ -197,63 +410,16 @@ struct WindowSwitcherCard: View {
 
     private var closeGlyph: some View {
         ZStack {
-            Circle().fill(Color(nsColor: .controlBackgroundColor))
+            Circle().fill(Color.black.opacity(0.38))
             if isClosing {
-                ProgressView().controlSize(.small)
+                ProgressView().controlSize(.small).tint(.white)
             } else {
-                Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
+                Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
             }
         }
         .frame(width: 28, height: 28)
-        .overlay(Circle().strokeBorder(Color.primary.opacity(0.15), lineWidth: 1))
-        .contentShape(Circle())
-    }
-
-    private var backgroundColor: Color {
-        isSelected ? Color.accentColor.opacity(0.10) : Color(nsColor: .controlBackgroundColor).opacity(0.75)
-    }
-
-    private var selectionBorder: some View {
-        RoundedRectangle(cornerRadius: 12).strokeBorder(
-            isSelected ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: isSelected ? 2 : 1)
-    }
-
-    private var thumbnail: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.045))
-            if let image {
-                Image(nsImage: image).renderingMode(.original).resizable().scaledToFit().padding(4)
-            } else {
-                VStack(spacing: 8) {
-                    appIcon.frame(width: 44, height: 44)
-                    if isLoadingPreview {
-                        ProgressView().controlSize(.small).accessibilityLabel(localizedString("Loading windows…"))
-                    } else {
-                        Text(localizedString("Preview unavailable")).font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-            }
-            if isQuitting {
-                RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.22))
-                ProgressView().controlSize(.small)
-            }
-        }
-        .frame(height: 132)
-        .clipped()
-    }
-
-    private var caption: some View {
-        HStack(spacing: 8) {
-            appIcon.frame(width: 24, height: 24)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(item.appName).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                Text(item.displayTitle).font(.system(size: 12, weight: .medium)).lineLimit(1)
-            }
-            Spacer(minLength: 0)
-            if rank < 9 {
-                Text("⌘\(rank + 1)").font(.caption.monospaced()).foregroundStyle(.secondary)
-            }
-        }
+        .overlay(Circle().strokeBorder(.white.opacity(0.2), lineWidth: 1))
+        .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
     }
 
     @ViewBuilder private var appIcon: some View {
@@ -267,5 +433,12 @@ struct WindowSwitcherCard: View {
         if item.isFullScreen { return "Fullscreen" }
         if !item.isOnScreen { return "Off screen" }
         return nil
+    }
+
+    private var statusIcon: String {
+        if item.isMinimized { return "rectangle.compress.vertical" }
+        if item.isHidden { return "eye.slash" }
+        if item.isFullScreen { return "arrow.up.left.and.arrow.down.right" }
+        return "rectangle.dashed"
     }
 }

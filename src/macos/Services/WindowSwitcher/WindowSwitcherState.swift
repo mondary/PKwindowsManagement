@@ -121,9 +121,9 @@ enum WindowSwitcherState {
 
     static func thumbnailSize(for size: CGSize) -> CGSize {
         guard size.width.isFinite, size.height.isFinite, size.width > 0, size.height > 0 else {
-            return CGSize(width: 480, height: 300)
+            return CGSize(width: 640, height: 400)
         }
-        let scale = min(480 / size.width, 300 / size.height, 1)
+        let scale = min(640 / size.width, 400 / size.height, 1)
         return CGSize(width: max(1, (size.width * scale).rounded()),
                       height: max(1, (size.height * scale).rounded()))
     }

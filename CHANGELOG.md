@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.10.90] - 2026-10-26
+### Changed
+- **Aperçus ⌘Tab pleine tuile** : la vignette occupe désormais toute la carte, sans bloc nom/icône séparé. Le nom de l'app, le titre de la fenêtre, le badge `⌘1–9`, la croix de fermeture et l'état (réduite, masquée, plein écran, hors écran) sont posés en surimpression sur des dégradés sombres. En-tête compacté avec recherche intégrée et pied de page en touches de clavier.
+- **Vignettes plus nettes** : captures portées de 480×300 à 640×400 pour remplir les tuiles agrandies.
+
 ## [2026.10.89] - 2026-10-26
 ### Fixed
 - **⌘Tab / ⇧⌘Tab : plus d'apps de barre de menus ni de widgets** : le sélecteur n'interroge plus que les applications normales (politique d'activation `regular`). Les apps de barre de menus, widgets du Bureau et du Centre de notifications, agents système et panneaux HUD sont écartés à la source, même lorsqu'ils exposent une fenêtre WindowServer réelle. Une liste de bundles système sert de garde-fou si macOS leur attribue transitoirement une politique normale.

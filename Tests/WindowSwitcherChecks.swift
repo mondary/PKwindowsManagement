@@ -94,11 +94,11 @@ enum WindowSwitcherChecks {
                      CGSize(width: 1, height: 1), .zero, CGSize(width: -1, height: 2),
                      CGSize(width: CGFloat.infinity, height: 50)] {
             let result = WindowSwitcherState.thumbnailSize(for: size)
-            precondition(result.width >= 1 && result.width <= 480)
-            precondition(result.height >= 1 && result.height <= 300)
+            precondition(result.width >= 1 && result.width <= 640)
+            precondition(result.height >= 1 && result.height <= 400)
         }
         let portrait = WindowSwitcherState.thumbnailSize(for: CGSize(width: 1000, height: 2000))
-        precondition(portrait == CGSize(width: 150, height: 300))
+        precondition(portrait == CGSize(width: 200, height: 400))
         print("Window switcher checks passed: search/accents, identity, 1–64 windows, filtering/closure selection, grid navigation and bounded thumbnails")
     }
 }
