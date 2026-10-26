@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.96] - 2026-10-26
+### Fixed
+- **Clic dans les aperçus ⌘Tab** : un clic sur **Nouvelle room**, une croix ou une carte ne referme plus le sélecteur quand la fenêtre Réglages est ouverte derrière. Le panneau reprend le focus au lieu de se masquer ; il ne se ferme que sur un clic réellement extérieur, `Échap` ou changement d'app/espace.
+
 ## [2026.10.95] - 2026-10-26
 ### Added
 - **Raccourcis de création de room** : `⌘N` ouvre le mode **Nouvelle room** depuis les aperçus. `⌥Espace` ajoute ou retire la fenêtre sélectionnée dans l'ordre, `↵` crée la room, `Échap` annule.

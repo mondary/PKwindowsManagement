@@ -122,7 +122,20 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         model.stop()
     }
 
-    func windowDidResignKey(_ notification: Notification) { hide() }
+    func windowDidResignKey(_ notification: Notification) {
+        guard isVisible, let panel else { return }
+        // Clicking a picker control can activate the app and hand key status
+        // to the Settings window behind the panel. Keep the picker open and
+        // take key status back; only leave when another app is really active.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.isVisible, self.panel === panel else { return }
+            if NSApp.isActive {
+                self.panel?.makeKey()
+            } else {
+                self.hide()
+            }
+        }
+    }
 
     private func modelDidBecomeReady() {
         guard isVisible else { return }
