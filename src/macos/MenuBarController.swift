@@ -9,6 +9,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var launchpadHotKey: EventHotKeyRef?
     private var launchpadHotKeyHandler: EventHandlerRef?
     private var roomsHotKey: EventHotKeyRef?
+    private var roomsModeHotKey: EventHotKeyRef?
     private var launchpadHotKeyObserver: NSObjectProtocol?
     private var hotCornerObserver: NSObjectProtocol?
     private var languageObserver: NSObjectProtocol?
@@ -96,6 +97,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         CommandTabMonitor.shared.stop()
         unregisterLaunchpadHotKey()
         unregisterRoomsHotKey()
+        if let roomsModeHotKey { UnregisterEventHotKey(roomsModeHotKey); self.roomsModeHotKey = nil }
         if let launchpadHotKeyHandler {
             RemoveEventHandler(launchpadHotKeyHandler)
             self.launchpadHotKeyHandler = nil
@@ -419,6 +421,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     /// configurable shortcut can come later).
     private func registerRoomsHotKey() {
         unregisterRoomsHotKey()
+        if let roomsModeHotKey { UnregisterEventHotKey(roomsModeHotKey); self.roomsModeHotKey = nil }
         ensureLaunchpadHotKeyHandler()
         let status = RegisterEventHotKey(
             UInt32(kVK_ANSI_R),
@@ -438,6 +441,15 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             shortcut: KeyboardShortcutSetting(key: "r", modifier: .controlOption),
             accepted: status == noErr
         )
+        let modeStatus = RegisterEventHotKey(
+            UInt32(kVK_ANSI_R), UInt32(cmdKey | shiftKey),
+            EventHotKeyID(signature: roomsHotKeySignature, id: 3),
+            GetEventDispatcherTarget(), 0, &roomsModeHotKey
+        )
+        if modeStatus != noErr {
+            roomsModeHotKey = nil
+            NSLog("PKwindowsManagement: failed to register room keyboard mode hotkey (%d)", modeStatus)
+        }
     }
 
     private func unregisterRoomsHotKey() {
@@ -567,6 +579,8 @@ private func launchpadHotKeyCallback(
             controller.handleLaunchpadHotKey()
         case (fourCharCode("PKRM"), 2):
             RoomsOverlayController.shared.toggle()
+        case (fourCharCode("PKRM"), 3):
+            RoomsOverlayController.shared.showKeyboardMode()
         default:
             break
         }

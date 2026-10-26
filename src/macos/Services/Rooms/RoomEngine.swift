@@ -85,10 +85,18 @@ final class RoomEngine {
                 guard frames.indices.contains(slotIndex),
                       let candidate = candidates[safe: windowIndex]
                 else { continue }
-                if candidate.isMinimized {
+                let isMonocleBackground = room.layout == .monocle && slotIndex != max(0, min(room.focusedWindowIndex, room.windows.count - 1))
+                if !isMonocleBackground && candidate.isMinimized {
                     setBool(kAXMinimizedAttribute as CFString, false, on: candidate.element)
                 }
                 setFrame(frames[slotIndex], for: candidate.element, on: candidate.appElement)
+                if isMonocleBackground && !candidate.isMinimized {
+                    setBool(kAXMinimizedAttribute as CFString, true, on: candidate.element)
+                }
+                if room.layout == .monocle && !isMonocleBackground {
+                    AXUIElementSetAttributeValue(candidate.element, kAXMainAttribute as CFString, kCFBooleanTrue)
+                    AXUIElementPerformAction(candidate.element, kAXRaiseAction as CFString)
+                }
                 report.placed += 1
                 placedNames.append(candidate.info.title.isEmpty ? candidate.app.localizedName ?? "" : candidate.info.title)
             }
@@ -103,8 +111,9 @@ final class RoomEngine {
         }
 
         // 5. Land in the room's first app so typing goes there.
-        if let first = room.windows.first,
-           let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: first.bundleID) {
+        let focusIndex = room.layout == .monocle ? max(0, min(room.focusedWindowIndex, room.windows.count - 1)) : 0
+        if room.windows.indices.contains(focusIndex),
+           let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: room.windows[focusIndex].bundleID) {
             let configuration = NSWorkspace.OpenConfiguration()
             configuration.activates = true
             _ = try? await NSWorkspace.shared.openApplication(at: url, configuration: configuration)

@@ -29,6 +29,7 @@ enum RoomIconCache {
 struct RoomLayoutDiagram: View {
     let windows: [RoomWindow]
     let kind: RoomLayoutKind
+    var focusedWindowIndex = 0
     /// Tile gap in preview points (the real layout uses RoomTiler.gap).
     private let previewGap: CGFloat = 4
 
@@ -53,7 +54,21 @@ struct RoomLayoutDiagram: View {
                             .strokeBorder(Color.primary.opacity(0.14), lineWidth: 1)
                     )
                 ForEach(Array(frames.enumerated()), id: \.offset) { index, frame in
-                    tile(window: windows[index], index: index, frame: frame)
+                    if resolvedKind != .monocle || index == max(0, min(focusedWindowIndex, windows.count - 1)) {
+                        tile(window: windows[index], index: index, frame: frame)
+                    }
+                }
+                if resolvedKind == .monocle && windows.count > 1 {
+                    HStack(spacing: 3) {
+                        ForEach(windows.indices, id: \.self) { index in
+                            Circle()
+                                .fill(index == focusedWindowIndex ? Color.accentColor : Color.secondary.opacity(0.5))
+                                .frame(width: 5, height: 5)
+                        }
+                    }
+                    .padding(5)
+                    .background(.regularMaterial, in: Capsule())
+                    .padding(7)
                 }
             }
         }

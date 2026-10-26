@@ -32,6 +32,10 @@ enum RoomTiler {
             return grid(n, columns: columns, in: a, gap: gap)
         case .stack:
             return stack(n, in: a, gap: gap).map { clamp($0, into: a) }
+        case .dwindle:
+            return dwindle(n, in: a, gap: gap)
+        case .monocle:
+            return Array(repeating: a, count: n)
         }
     }
 
@@ -104,6 +108,28 @@ enum RoomTiler {
         return [hero] + (0..<m).map { k in
             CGRect(x: x, y: a.minY + peek * CGFloat(m - 1 - k), width: widths[1], height: height)
         }
+    }
+
+    /// Repeatedly split the remaining region, alternating vertical and horizontal.
+    /// Slot order is stable, and the last slot takes all remaining space.
+    private static func dwindle(_ n: Int, in a: CGRect, gap: CGFloat) -> [CGRect] {
+        var remainder = a
+        var result: [CGRect] = []
+        for index in 0..<n {
+            guard index < n - 1 else { result.append(remainder); break }
+            if index.isMultiple(of: 2) {
+                let widths = distribute(remainder.width, gap: gap, weights: [1, 1])
+                result.append(CGRect(x: remainder.minX, y: remainder.minY, width: widths[0], height: remainder.height))
+                remainder = CGRect(x: remainder.minX + widths[0] + gap, y: remainder.minY,
+                                   width: widths[1], height: remainder.height)
+            } else {
+                let heights = distribute(remainder.height, gap: gap, weights: [1, 1])
+                result.append(CGRect(x: remainder.minX, y: remainder.minY, width: remainder.width, height: heights[0]))
+                remainder = CGRect(x: remainder.minX, y: remainder.minY + heights[0] + gap,
+                                   width: remainder.width, height: heights[1])
+            }
+        }
+        return result
     }
 
     /// Splits `total` (minus gaps) by `weights`. Rounded so the pieces still add

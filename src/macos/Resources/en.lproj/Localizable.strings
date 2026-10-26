@@ -18,6 +18,7 @@
 "Pointer's screen" = "Pointer's screen";
 "Disconnected screen" = "Disconnected screen";
 "↵ open · ⇥ layout · ⌘1-9 open nth · ⌘⌫ delete · ⌘↓ close" = "↵ open · ⇥ layout · ⌘1-9 open nth · ⌘⌫ delete · ⌘↓ close";
+"Room mode · ←→ rooms · ⇥ layout · ↑↓ Monocle tabs · ↵ open · Esc close" = "Room mode · ←→ rooms · ⇥ layout · ↑↓ Monocle tabs · ↵ open · Esc close";
 "New Room" = "New Room";
 "Room name" = "Room name";
 "Running apps" = "Running apps";

@@ -26,8 +26,21 @@ final class RoomsOverlayController {
     }
 
     func show() {
-        guard panel?.isVisible != true else { return }
+        show(keyboardMode: false)
+    }
+
+    func showKeyboardMode() {
+        show(keyboardMode: true)
+    }
+
+    private func show(keyboardMode: Bool) {
+        if panel?.isVisible == true {
+            model.isKeyboardMode = keyboardMode
+            panel?.makeKeyAndOrderFront(nil)
+            return
+        }
         model.prepare()
+        model.isKeyboardMode = keyboardMode
 
         let size = NSSize(width: 560, height: 540)
         let origin = centeredOrigin(size: size)
@@ -92,6 +105,28 @@ final class RoomsOverlayController {
     /// Returns nil when the event was consumed.
     private func handleKey(_ event: NSEvent) -> NSEvent? {
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+
+        if model.isKeyboardMode && !model.isCreating {
+            if event.keyCode == 53 { hide(); return nil }
+            if event.keyCode == 36 || event.keyCode == 76 {
+                if !event.isARepeat && model.activateSelected() { hide() }
+                return nil
+            }
+            guard modifiers.isDisjoint(with: [.command, .control, .option]) else { return event }
+            switch event.keyCode {
+            case 123: model.moveSelection(-1); return nil  // ← previous room
+            case 124: model.moveSelection(1); return nil   // → next room
+            case 48: model.cycleLayout(forward: !modifiers.contains(.shift)); return nil
+            case 126, 125: // ↑↓ select the Monocle tab, otherwise cycle the layout
+                if model.selectedRoom?.layout == .monocle {
+                    model.cycleMonocleTab(event.keyCode == 125 ? 1 : -1)
+                } else {
+                    model.cycleLayout(forward: event.keyCode == 125)
+                }
+                return nil
+            default: return nil // No typing into search in the modal submap.
+            }
+        }
 
         // Escape: leave creation first, then close the panel.
         if event.keyCode == 53 {

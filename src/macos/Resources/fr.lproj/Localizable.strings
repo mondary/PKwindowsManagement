@@ -294,6 +294,7 @@
 "Pointer's screen" = "Écran du pointeur";
 "Disconnected screen" = "Écran débranché";
 "↵ open · ⇥ layout · ⌘1-9 open nth · ⌘⌫ delete · ⌘↓ close" = "↵ ouvrir · ⇥ disposition · ⌘1-9 ouvrir la n-ième · ⌘⌫ supprimer · ⌘↓ fermer";
+"Room mode · ←→ rooms · ⇥ layout · ↑↓ Monocle tabs · ↵ open · Esc close" = "Mode Room · ←→ rooms · ⇥ disposition · ↑↓ onglets Monocle · ↵ ouvrir · Échap fermer";
 "New Room" = "Nouvelle room";
 "Room name" = "Nom de la room";
 "Running apps" = "Apps actives";

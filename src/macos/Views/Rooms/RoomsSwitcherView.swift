@@ -6,6 +6,7 @@ final class RoomsSwitcherModel: ObservableObject {
     @Published var query = "" { didSet { selection = 0 } }
     @Published var selection = 0
     @Published var isCreating = false
+    @Published var isKeyboardMode = false
     @Published var newName = ""
     /// Windows picked for the new room, in click order: index 0 is the main spot.
     @Published var picked: [RoomEngine.WindowOffer] = []
@@ -41,6 +42,7 @@ final class RoomsSwitcherModel: ObservableObject {
         query = ""
         selection = 0
         isCreating = false
+        isKeyboardMode = false
         newName = ""
         picked = []
         offers = []
@@ -73,6 +75,13 @@ final class RoomsSwitcherModel: ObservableObject {
     func cycleLayout(forward: Bool) {
         guard var room = selectedRoom else { return }
         room.layout = forward ? room.layout.next : room.layout.previous
+        store.upsert(room)
+    }
+
+    func cycleMonocleTab(_ delta: Int) {
+        guard var room = selectedRoom, room.layout == .monocle, !room.windows.isEmpty else { return }
+        let count = room.windows.count
+        room.focusedWindowIndex = ((room.focusedWindowIndex + delta) % count + count) % count
         store.upsert(room)
     }
 
@@ -201,6 +210,7 @@ private struct ListView: View {
             searchField
             if model.rooms.isEmpty {
                 EmptyStateView {
+                    model.isKeyboardMode = false
                     model.isCreating = true
                     model.refreshOffers()
                 }
@@ -286,6 +296,7 @@ private struct ListView: View {
                 .foregroundStyle(.primary)
                 .focused($searchFocused)
             Button {
+                model.isKeyboardMode = false
                 model.isCreating = true
                 model.refreshOffers()
             } label: {
@@ -308,7 +319,9 @@ private struct ListView: View {
 
     private var footer: some View {
         HStack {
-            Text(localizedString("↵ open · ⇥ layout · ⌘1-9 open nth · ⌘⌫ delete · ⌘↓ close"))
+            Text(model.isKeyboardMode
+                 ? localizedString("Room mode · ←→ rooms · ⇥ layout · ↑↓ Monocle tabs · ↵ open · Esc close")
+                 : localizedString("↵ open · ⇥ layout · ⌘1-9 open nth · ⌘⌫ delete · ⌘↓ close"))
                 .font(.system(size: 10.5))
                 .foregroundStyle(.secondary)
             Spacer()
@@ -374,7 +387,7 @@ private struct RoomRowView: View {
                 }
             }
             Spacer(minLength: 10)
-            RoomLayoutDiagram(windows: room.windows, kind: room.layout)
+            RoomLayoutDiagram(windows: room.windows, kind: room.layout, focusedWindowIndex: room.focusedWindowIndex)
                 .frame(width: 150)
         }
         .padding(12)

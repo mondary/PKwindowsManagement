@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.10.102] - 2026-10-26
+### Added
+- Dispositions Dwindle (partitions alternées) et Monocle (une fenêtre active, autres fenêtres minimisées, onglets sélectionnables), disponibles dans les rooms et leurs aperçus.
+- Mode clavier Room via `⌘⇧R` : `←`/`→` choisissent la room, `↑`/`↓` changent sa disposition ou l'onglet Monocle, `↵` l'ouvre, `Échap` ferme le panneau. `⌃⌥R` conserve son comportement antérieur.
+
 ## [2026.10.101] - 2026-10-26
 ### Changed
 - **Fenêtre Rooms restylée** : le panneau Rooms (`⌃⌥R`) abandonne son dégradé bleu nuit pour le même rendu que les aperçus `⌘Tab` — matériau clair adaptatif, texte principal/secondaire, cartes avec bordure accent à la sélection, boutons en capsules. La création (nom, chips d'écran, liste des fenêtres, miniature) suit le même style.

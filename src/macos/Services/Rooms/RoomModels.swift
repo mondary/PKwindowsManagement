@@ -8,6 +8,8 @@ enum RoomLayoutKind: String, Codable, CaseIterable, Identifiable {
     case columns
     case grid
     case stack
+    case dwindle
+    case monocle
 
     var id: String { rawValue }
 
@@ -18,6 +20,8 @@ enum RoomLayoutKind: String, Codable, CaseIterable, Identifiable {
         case .columns: return localizedString("Columns")
         case .grid: return localizedString("Grid")
         case .stack: return localizedString("Stack")
+        case .dwindle: return "Dwindle"
+        case .monocle: return "Monocle"
         }
     }
 
@@ -69,6 +73,8 @@ struct Room: Codable, Identifiable, Hashable {
     var name: String
     var windows: [RoomWindow]
     var layout: RoomLayoutKind
+    /// Active tab in Monocle; retained when switching to another layout.
+    var focusedWindowIndex: Int
     var createdAt: Date
     /// Target display (CGDisplay UUID string). Nil = the screen under the
     /// pointer when the room is activated, like the upstream Rooms app.
@@ -79,6 +85,7 @@ struct Room: Codable, Identifiable, Hashable {
         self.name = name
         self.windows = windows
         self.layout = layout
+        self.focusedWindowIndex = 0
         self.createdAt = Date()
         self.displayUUID = displayUUID
     }
@@ -97,6 +104,7 @@ struct Room: Codable, Identifiable, Hashable {
         }
         windows = decoded
         layout = try c.decodeIfPresent(RoomLayoutKind.self, forKey: .layout) ?? .auto
+        focusedWindowIndex = try c.decodeIfPresent(Int.self, forKey: .focusedWindowIndex) ?? 0
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         displayUUID = try c.decodeIfPresent(String.self, forKey: .displayUUID)
     }
@@ -113,6 +121,7 @@ struct Room: Codable, Identifiable, Hashable {
         case windows
         case apps
         case layout
+        case focusedWindowIndex
         case createdAt
         case displayUUID
     }
@@ -124,6 +133,7 @@ struct Room: Codable, Identifiable, Hashable {
         try c.encode(name, forKey: .name)
         try c.encode(windows, forKey: .windows)
         try c.encode(layout, forKey: .layout)
+        try c.encode(focusedWindowIndex, forKey: .focusedWindowIndex)
         try c.encode(createdAt, forKey: .createdAt)
         try c.encodeIfPresent(displayUUID, forKey: .displayUUID)
     }

@@ -897,6 +897,8 @@ private struct RoomPickerCard: View {
         case .columns: return "rectangle.split.3x1"
         case .grid: return "square.grid.3x3"
         case .stack: return "rectangle.stack"
+        case .dwindle: return "rectangle.split.2x2"
+        case .monocle: return "rectangle.on.rectangle"
         }
     }
 }
