@@ -360,7 +360,7 @@ private struct RoomRowView: View {
                 .padding(.top, 1)
                 Text(room.layout.title)
                     .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 2.5)
                     .background(Capsule().fill(isSelected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.06)))
