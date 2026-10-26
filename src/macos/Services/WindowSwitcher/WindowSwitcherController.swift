@@ -15,6 +15,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     private var outsideClickMonitor: Any?
     private var localClickMonitor: Any?
     private var spaceObserver: NSObjectProtocol?
+    private var appActivationObserver: NSObjectProtocol?
     private var activationTask: Task<Void, Never>?
     private var interactionID = UUID()
     private var presentation = Presentation.standard
@@ -124,16 +125,12 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
 
     func windowDidResignKey(_ notification: Notification) {
         guard isVisible, let panel else { return }
-        // Clicking a picker control can activate the app and hand key status
-        // to the Settings window behind the panel. Keep the picker open and
-        // take key status back; only leave when another app is really active.
+        // A picker control can hand key status to the Settings window behind
+        // the panel. Keep the picker interactive by taking key status back;
+        // switching to another app is handled by the activation observer.
         DispatchQueue.main.async { [weak self] in
             guard let self, self.isVisible, self.panel === panel else { return }
-            if NSApp.isActive {
-                self.panel?.makeKey()
-            } else {
-                self.hide()
-            }
+            self.panel?.makeKey()
         }
     }
 
@@ -184,6 +181,15 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in self?.hide() }
+        appActivationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] note in
+            guard let self, self.isVisible else { return }
+            let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            if app?.processIdentifier != ProcessInfo.processInfo.processIdentifier {
+                self.hide()
+            }
+        }
     }
 
     private func removeMonitors() {
@@ -195,6 +201,8 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         localClickMonitor = nil
         if let spaceObserver { NSWorkspace.shared.notificationCenter.removeObserver(spaceObserver) }
         spaceObserver = nil
+        if let appActivationObserver { NSWorkspace.shared.notificationCenter.removeObserver(appActivationObserver) }
+        appActivationObserver = nil
     }
 
     private func handleKey(_ event: NSEvent) -> NSEvent? {

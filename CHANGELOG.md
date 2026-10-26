@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.97] - 2026-10-26
+### Fixed
+- **Clics dans les aperçus ⌘Tab, correctif complet** : le panneau reprend le focus après un clic sur **Nouvelle room**, une carte, une croix ou **Créer la room**, même quand Réglages est derrière. Il ne se ferme plus sur ces interactions ; la fermeture reste déclenchée par un clic réellement extérieur, `Échap`, un changement d'espace ou l'activation d'une autre application.
+
 ## [2026.10.96] - 2026-10-26
 ### Fixed
 - **Clic dans les aperçus ⌘Tab** : un clic sur **Nouvelle room**, une croix ou une carte ne referme plus le sélecteur quand la fenêtre Réglages est ouverte derrière. Le panneau reprend le focus au lieu de se masquer ; il ne se ferme que sur un clic réellement extérieur, `Échap` ou changement d'app/espace.
