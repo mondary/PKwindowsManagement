@@ -304,7 +304,7 @@ final class WindowSwitcherModel: ObservableObject {
         return rooms[roomCycleIndex]
     }
 
-    private var roomActionTarget: Room? {
+    var roomActionTarget: Room? {
         guard let id = roomActionTargetID else { return nil }
         return roomStore.rooms.first { $0.id == id }
     }
