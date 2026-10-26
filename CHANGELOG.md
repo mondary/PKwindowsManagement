@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.101] - 2026-10-26
+### Changed
+- **Fenêtre Rooms restylée** : le panneau Rooms (`⌃⌥R`) abandonne son dégradé bleu nuit pour le même rendu que les aperçus `⌘Tab` — matériau clair adaptatif, texte principal/secondaire, cartes avec bordure accent à la sélection, boutons en capsules. La création (nom, chips d'écran, liste des fenêtres, miniature) suit le même style.
+
 ## [2026.10.100] - 2026-10-26
 ### Added
 - **Bascule clavier des rooms** : `⌥⇥` passe à la room suivante, `⌥⇧⇥` à la précédente — la room s'active immédiatement avec sa disposition, sans clic.

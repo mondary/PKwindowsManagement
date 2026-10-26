@@ -180,21 +180,11 @@ struct RoomsSwitcherView: View {
             }
         }
         .frame(width: 560, height: 540)
-        .background(background)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .strokeBorder(.primary.opacity(0.12), lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .environment(\.locale, AppLocalization.currentLanguage.locale)
-    }
-
-    private var background: some View {
-        LinearGradient(
-            colors: [
-                Color(red: 0.06, green: 0.08, blue: 0.25).opacity(0.98),
-                Color(red: 0.10, green: 0.13, blue: 0.32).opacity(0.97),
-                Color(red: 0.02, green: 0.04, blue: 0.14).opacity(0.99)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
     }
 }
 
@@ -242,17 +232,39 @@ private struct ListView: View {
                 }
             }
             footer
-            VStack(spacing: 8) {
-                HStack(spacing: 12) {
-                    Button(localizedString("Open Room")) {
-                        if model.activateSelected() { onActivateRoom() }
-                    }
-                    Button(localizedString("Edit Room")) { editingRoom = model.selectedRoom }
+            HStack(spacing: 8) {
+                Button {
+                    if model.activateSelected() { onActivateRoom() }
+                } label: {
+                    Label(localizedString("Open Room"), systemImage: "arrow.up.forward")
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(Color.accentColor.opacity(0.9)))
+                        .foregroundStyle(.white)
                 }
-                HStack(spacing: 12) {
-                    Button(localizedString("Change layout")) { model.cycleLayout(forward: true) }
-                    Button(localizedString("Minimize Room")) { model.closeSelected() }
-                }
+                .buttonStyle(.plain)
+                Button(localizedString("Edit Room")) { editingRoom = model.selectedRoom }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 12, weight: .medium))
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 6)
+                    .background(.primary.opacity(0.06), in: Capsule())
+                    .foregroundStyle(.primary.opacity(0.75))
+                Button(localizedString("Change layout")) { model.cycleLayout(forward: true) }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 12, weight: .medium))
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 6)
+                    .background(.primary.opacity(0.06), in: Capsule())
+                    .foregroundStyle(.primary.opacity(0.75))
+                Button(localizedString("Minimize Room")) { model.closeSelected() }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 12, weight: .medium))
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 6)
+                    .background(.primary.opacity(0.06), in: Capsule())
+                    .foregroundStyle(.primary.opacity(0.75))
             }
             .disabled(model.selectedRoom == nil)
         }
@@ -267,11 +279,11 @@ private struct ListView: View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.white.opacity(0.55))
+                .foregroundStyle(.secondary)
             TextField(localizedString("Search or create a room…"), text: $model.query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 17, weight: .medium))
-                .foregroundColor(.white)
+                .foregroundStyle(.primary)
                 .focused($searchFocused)
             Button {
                 model.isCreating = true
@@ -279,9 +291,9 @@ private struct ListView: View {
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.85))
+                    .foregroundStyle(.secondary)
                     .frame(width: 24, height: 24)
-                    .background(Circle().fill(Color.white.opacity(0.12)))
+                    .background(Circle().fill(.primary.opacity(0.06)))
             }
             .buttonStyle(.plain)
             .help(localizedString("New Room"))
@@ -289,21 +301,20 @@ private struct ListView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(0.09))
-        )
+        .background(.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .strokeBorder(.primary.opacity(0.07), lineWidth: 1))
     }
 
     private var footer: some View {
         HStack {
             Text(localizedString("↵ open · ⇥ layout · ⌘1-9 open nth · ⌘⌫ delete · ⌘↓ close"))
                 .font(.system(size: 10.5))
-                .foregroundColor(.white.opacity(0.45))
+                .foregroundStyle(.secondary)
             Spacer()
             Text("\(model.rooms.count)")
                 .font(.system(size: 10.5, weight: .semibold))
-                .foregroundColor(.white.opacity(0.45))
+                .foregroundStyle(.secondary)
         }
     }
 }
@@ -325,11 +336,11 @@ private struct RoomRowView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(room.name)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(isSelected ? .white : .white.opacity(0.92))
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
                 Text(subtitle)
                     .font(.system(size: 10.5))
-                    .foregroundColor(isSelected ? .white.opacity(0.75) : .white.opacity(0.5))
+                    .foregroundStyle(.secondary)
                     .lineLimit(3)
                 HStack(spacing: 4) {
                     ForEach(Array(room.windows.prefix(5).enumerated()), id: \.element.id) { index, window in
@@ -343,23 +354,23 @@ private struct RoomRowView: View {
                     if room.windows.count > 5 {
                         Text("+\(room.windows.count - 5)")
                             .font(.system(size: 9, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.5))
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .padding(.top, 1)
                 Text(room.layout.title)
                     .font(.system(size: 9.5, weight: .medium))
-                    .foregroundColor(isSelected ? .white.opacity(0.9) : .white.opacity(0.6))
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 2.5)
-                    .background(Capsule().fill(Color.white.opacity(isSelected ? 0.22 : 0.10)))
+                    .background(Capsule().fill(isSelected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.06)))
                 if let screenName {
                     Text(screenName)
                         .font(.system(size: 9.5, weight: .medium))
-                        .foregroundColor(isSelected ? .white.opacity(0.9) : .white.opacity(0.6))
+                        .foregroundStyle(.secondary)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 2.5)
-                        .background(Capsule().fill(Color.white.opacity(isSelected ? 0.22 : 0.10)))
+                        .background(Capsule().fill(Color.primary.opacity(0.06)))
                 }
             }
             Spacer(minLength: 10)
@@ -369,7 +380,12 @@ private struct RoomRowView: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(isSelected ? Color.accentColor.opacity(0.55) : Color.white.opacity(0.05))
+                .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.045))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(isSelected ? Color.accentColor : Color.primary.opacity(0.08),
+                              lineWidth: isSelected ? 2 : 1)
         )
     }
 }
@@ -383,7 +399,7 @@ private func screenPicker(model: RoomsSwitcherModel) -> some View {
     HStack(spacing: 6) {
         Text(localizedString("Screen"))
             .font(.system(size: 11))
-            .foregroundColor(.white.opacity(0.55))
+            .foregroundStyle(.secondary)
         chip(title: localizedString("Pointer's screen"), isSelected: model.newDisplayUUID == nil) {
             model.newDisplayUUID = nil
         }
@@ -400,11 +416,11 @@ private func chip(title: String, isSelected: Bool, action: @escaping () -> Void)
     Button(action: action) {
         Text(title)
             .font(.system(size: 10.5, weight: isSelected ? .semibold : .regular))
-            .foregroundColor(.white.opacity(isSelected ? 1 : 0.6))
+            .foregroundStyle(isSelected ? Color.white : Color.primary.opacity(0.7))
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
             .background(
-                Capsule().fill(isSelected ? Color.accentColor.opacity(0.75) : Color.white.opacity(0.08))
+                Capsule().fill(isSelected ? Color.accentColor.opacity(0.85) : Color.primary.opacity(0.06))
             )
     }
     .buttonStyle(.plain)
@@ -419,10 +435,10 @@ private struct EmptyStateView: View {
         VStack(spacing: 14) {
             Image(systemName: "square.grid.3x3.square")
                 .font(.system(size: 36, weight: .light))
-                .foregroundColor(.white.opacity(0.4))
+                .foregroundStyle(.secondary)
             Text(localizedString("No rooms yet. Create your first room from your open windows."))
                 .font(.system(size: 13))
-                .foregroundColor(.white.opacity(0.6))
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
             Button(action: onCreate) {
@@ -430,7 +446,8 @@ private struct EmptyStateView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
-                    .background(Capsule().fill(Color.accentColor.opacity(0.8)))
+                    .background(Capsule().fill(Color.accentColor.opacity(0.9)))
+                    .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
         }
@@ -449,11 +466,11 @@ private struct CreationView: View {
             HStack(spacing: 10) {
                 Image(systemName: "plus")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(.white.opacity(0.55))
+                    .foregroundStyle(.secondary)
                 TextField(localizedString("Room name"), text: $model.newName)
                     .textFieldStyle(.plain)
                     .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.primary)
                     .focused($nameFocused)
                     .onSubmit { if model.canCreateRoom { model.createRoom() } }
                 Button {
@@ -461,28 +478,27 @@ private struct CreationView: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundStyle(.secondary)
                         .frame(width: 24, height: 24)
-                        .background(Circle().fill(Color.white.opacity(0.10)))
+                        .background(Circle().fill(.primary.opacity(0.06)))
                 }
                 .buttonStyle(.plain)
                 .help(localizedString("Cancel"))
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(0.09))
-            )
+            .background(.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(.primary.opacity(0.07), lineWidth: 1))
 
             HStack {
                 Text(localizedString("Click windows in order — 1 is the main spot"))
                     .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.55))
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Text(String(format: localizedString("%d window(s) selected"), model.picked.count))
                     .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.45))
+                    .foregroundStyle(.secondary)
             }
 
             screenPicker(model: model)
@@ -494,8 +510,10 @@ private struct CreationView: View {
             } else if model.offers.isEmpty {
                 Spacer()
                 Text(localizedString("No compatible windows found. Open your project apps, then refresh."))
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundStyle(.secondary)
                 Button(localizedString("Refresh")) { model.refreshOffers() }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.accentColor)
                 Spacer()
             } else {
                 ScrollView {
@@ -530,10 +548,10 @@ private struct CreationView: View {
                         .padding(.vertical, 8)
                         .background(
                             Capsule().fill(model.canCreateRoom
-                                ? Color.accentColor.opacity(0.85)
-                                : Color.white.opacity(0.08))
+                                ? Color.accentColor.opacity(0.9)
+                                : Color.primary.opacity(0.06))
                         )
-                        .foregroundColor(model.canCreateRoom ? .white : .white.opacity(0.4))
+                        .foregroundStyle(model.canCreateRoom ? .white : Color.primary.opacity(0.4))
                 }
                 .buttonStyle(.plain)
                 .disabled(!model.canCreateRoom)
@@ -555,11 +573,12 @@ private struct WindowOfferRow: View {
             ZStack {
                 Circle()
                     .fill(pickIndex != nil ? Color.accentColor : Color.clear)
+                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.15), lineWidth: 1))
                     .frame(width: 22, height: 22)
                 if let pickIndex {
                     Text("\(pickIndex)")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                 }
             }
             Image(nsImage: RoomIconCache.icon(bundleID: offer.bundleID, name: offer.appName))
@@ -569,12 +588,12 @@ private struct WindowOfferRow: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(offer.title.isEmpty ? offer.appName : offer.title)
                     .font(.system(size: 12.5))
-                    .foregroundColor(.white.opacity(0.88))
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
                 if !offer.title.isEmpty {
                     Text(offer.appName)
                         .font(.system(size: 9.5))
-                        .foregroundColor(.white.opacity(0.4))
+                        .foregroundStyle(.secondary)
                 }
             }
             Spacer()
@@ -583,7 +602,7 @@ private struct WindowOfferRow: View {
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(pickIndex != nil ? Color.accentColor.opacity(0.18) : Color.clear)
+                .fill(pickIndex != nil ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.04))
         )
         .contentShape(Rectangle())
         .onTapGesture(perform: onToggle)
