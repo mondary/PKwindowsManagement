@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.95] - 2026-10-26
+### Added
+- **Raccourcis de création de room** : `⌘N` ouvre le mode **Nouvelle room** depuis les aperçus. `⌥Espace` ajoute ou retire la fenêtre sélectionnée dans l'ordre, `↵` crée la room, `Échap` annule.
+### Fixed
+- **Légende alignée sur l'aperçu** : le nom de l'app, l'icône et le titre commencent désormais sur le bord gauche réel du thumbnail, y compris quand la fenêtre est étroite et laisse des bandes sur les côtés.
+
 ## [2026.10.94] - 2026-10-26
 ### Added
 - **Créer une room depuis les aperçus ⌘Tab** : bouton **Nouvelle room**, sélection des fenêtres dans l'ordre (1 = place principale), nom éditable puis création directe dans le fichier `rooms.json`. La croix de fermeture est masquée pendant la sélection pour éviter les fermetures accidentelles.

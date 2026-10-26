@@ -186,6 +186,11 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
 
     private func handleKey(_ event: NSEvent) -> NSEvent? {
         let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+        if !model.isCreatingRoom, modifiers == .command,
+           event.charactersIgnoringModifiers?.lowercased() == "n" {
+            model.beginRoomCreation()
+            return nil
+        }
         if model.isCreatingRoom {
             if modifiers.isEmpty, event.keyCode == 53 {
                 model.cancelRoomCreation()
@@ -193,6 +198,10 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             }
             if modifiers.isEmpty, (event.keyCode == 36 || event.keyCode == 76) {
                 if !event.isARepeat { model.createRoom() }
+                return nil
+            }
+            if modifiers == [.option], event.keyCode == 49, let id = model.selectedID {
+                model.toggleRoomPick(id)
                 return nil
             }
             // Keep window activation and close/quit commands out of room mode.

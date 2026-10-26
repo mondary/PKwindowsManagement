@@ -316,6 +316,7 @@ struct WindowSwitcherView: View {
                     Text(localizedString("Click windows in order — 1 is the main spot"))
                         .font(.caption2)
                     Spacer(minLength: 0)
+                    hint("⌥Space", "Add")
                     hint("↵", "Create Room")
                     hint("esc", "Cancel")
                 }
@@ -325,7 +326,10 @@ struct WindowSwitcherView: View {
                     hint("↵", "Open")
                     hint("⌘W", "Close")
                     hint("⌘Q", "Quit app")
-                    if model.columns >= 3 { hint("⌘1–9", "Quick select") }
+                    if model.columns >= 3 {
+                        hint("⌘1–9", "Quick select")
+                        hint("⌘N", "New Room")
+                    }
                     Spacer(minLength: 0)
                     hint("esc", "Dismiss picker")
                 }
@@ -401,7 +405,7 @@ struct WindowSwitcherCard: View {
         VStack(spacing: 0) {
             imageArea(insets: insets)
                 .frame(height: imageHeight)
-            captionBar
+            captionBar(insets: insets)
                 .frame(height: WindowSwitcherState.cardCaptionHeight)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -506,7 +510,7 @@ struct WindowSwitcherCard: View {
             .background(Color.black.opacity(0.56), in: Capsule())
     }
 
-    private var captionBar: some View {
+    private func captionBar(insets: CGSize) -> some View {
         HStack(spacing: 8) {
             appIcon.frame(width: 20, height: 20)
             VStack(alignment: .leading, spacing: 0) {
@@ -526,7 +530,8 @@ struct WindowSwitcherCard: View {
             }
             Spacer(minLength: 4)
         }
-        .padding(.horizontal, 2)
+        .padding(.leading, insets.width + 2)
+        .padding(.trailing, 2)
     }
 
     private var imageBorder: some View {
