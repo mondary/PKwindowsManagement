@@ -55,8 +55,10 @@ final class WindowSwitcherModel: ObservableObject {
         let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let apps = NSWorkspace.shared.runningApplications.filter {
             $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
-                && ($0.activationPolicy == .regular || $0.activationPolicy == .accessory)
                 && !$0.isTerminated
+                && WindowSwitcherState.includesApplication(
+                    activationPolicy: $0.activationPolicy.rawValue,
+                    bundleIdentifier: $0.bundleIdentifier)
         }
         icons = Dictionary(uniqueKeysWithValues: apps.compactMap { app in
             app.icon.map { (app.processIdentifier, $0) }

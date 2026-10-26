@@ -32,8 +32,11 @@ enum WindowSwitcherInventory {
             guard let id = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
                   let pid = (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value else { continue }
             ranks[id] = rank
-            if info[kCGWindowIsOnscreen as String] as? Bool == true { onScreen.insert(id) }
+            let isOnScreen = info[kCGWindowIsOnscreen as String] as? Bool == true
+            if isOnScreen { onScreen.insert(id) }
+            let alpha = info[kCGWindowAlpha as String] as? Double ?? 1
             if info[kCGWindowLayer as String] as? Int == 0,
+               alpha > 0.01,
                let raw = info[kCGWindowBounds as String] as? [String: Any],
                let frame = CGRect(dictionaryRepresentation: raw as CFDictionary),
                frame.width > 80, frame.height > 60 {

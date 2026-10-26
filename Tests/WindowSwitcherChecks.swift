@@ -4,6 +4,16 @@ import CoreGraphics
 @main
 enum WindowSwitcherChecks {
     static func main() {
+        // Only regular apps own the windows the picker should show. Menu-bar
+        // apps, widget hosts and system chrome are accessory/prohibited apps,
+        // even when they expose HUD or desktop windows.
+        precondition(WindowSwitcherState.includesApplication(activationPolicy: 0, bundleIdentifier: "com.apple.finder"))
+        precondition(WindowSwitcherState.includesApplication(activationPolicy: 0, bundleIdentifier: nil))
+        precondition(!WindowSwitcherState.includesApplication(activationPolicy: 1, bundleIdentifier: "com.foo.menu-bar"))
+        precondition(!WindowSwitcherState.includesApplication(activationPolicy: 2, bundleIdentifier: "com.foo.background"))
+        precondition(!WindowSwitcherState.includesApplication(activationPolicy: 0, bundleIdentifier: "com.apple.notificationcenterui"))
+        precondition(!WindowSwitcherState.includesApplication(activationPolicy: 0, bundleIdentifier: "com.apple.controlcenter"))
+
         let items: [WindowSwitcherItem] = (0..<64).map { (index: Int) -> WindowSwitcherItem in
             let id = WindowSwitcherID(pid: Int32(index / 16 + 100), windowID: UInt32(index + 1))
             let appName = index < 32 ? "Éditeur" : "Safari"

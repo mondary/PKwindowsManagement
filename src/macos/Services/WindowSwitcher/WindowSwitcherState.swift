@@ -20,6 +20,34 @@ struct WindowSwitcherItem: Identifiable, Equatable, Sendable {
 
 /// Pure selection rules shared by the keyboard, search field and grid.
 enum WindowSwitcherState {
+    /// The picker only lists apps that own user-facing windows. Menu-bar-only
+    /// apps (system monitors, launchers, clipboard managers…) and widget hosts
+    /// are accessory/prohibited apps: they expose HUD, popover or desktop
+    /// windows, never normal app windows. `NSApplication.ActivationPolicy`
+    /// raw values are stable: 0 = regular, 1 = accessory, 2 = prohibited.
+    static func includesApplication(activationPolicy: Int, bundleIdentifier: String?) -> Bool {
+        guard activationPolicy == 0 else { return false }
+        guard let bundleIdentifier else { return true }
+        return !excludedBundleIdentifiers.contains(bundleIdentifier)
+    }
+
+    /// Defense in depth: these system agents are accessory today, but a
+    /// transient policy change must never put widgets or desktop chrome back
+    /// into the picker.
+    private static let excludedBundleIdentifiers: Set<String> = [
+        "com.apple.notificationcenterui",
+        "com.apple.controlcenter",
+        "com.apple.systemuiserver",
+        "com.apple.dock",
+        "com.apple.WindowManager",
+        "com.apple.wallpaper.agent",
+        "com.apple.MenuBarAgent",
+        "com.apple.loginwindow",
+        "com.apple.coreservices.uiagent",
+        "com.apple.Spotlight",
+        "com.apple.OSDUIHelper"
+    ]
+
     static func filtered(_ items: [WindowSwitcherItem], query: String) -> [WindowSwitcherItem] {
         let words = query.split(whereSeparator: \.isWhitespace).map(String.init)
         return items.filter { item in

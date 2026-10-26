@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.10.89] - 2026-10-26
+### Fixed
+- **⌘Tab / ⇧⌘Tab : plus d'apps de barre de menus ni de widgets** : le sélecteur n'interroge plus que les applications normales (politique d'activation `regular`). Les apps de barre de menus, widgets du Bureau et du Centre de notifications, agents système et panneaux HUD sont écartés à la source, même lorsqu'ils exposent une fenêtre WindowServer réelle. Une liste de bundles système sert de garde-fou si macOS leur attribue transitoirement une politique normale.
+- **Plus de tuiles fantômes** : les fenêtres invisibles (`alpha` nulle) ou hors du layer 0 ne sont plus proposées comme fenêtres d'application.
+
 ## [2026.10.88] - 2026-10-23
 ### Fixed
 - **« Rechercher les mises à jour » ne faisait rien depuis le menu de l'icône** : l'entrée déclenchait le rafraîchissement silencieux des numéros de version (`checkForUpdates`), sans aucune interface — un clic semblait mort. Elle déclenche désormais le flux complet : ouverture de Réglages → À propos, proposition « Installer x.y.z » quand une version plus récente existe, sinon passage à Sparkle. Les mises à jour 2026.10.87-dev déjà publiées sont accessibles via Réglages → À propos en attendant cette build.
