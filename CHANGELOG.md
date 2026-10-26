@@ -1,5 +1,17 @@
 # Changelog
 
+## [2026.10.100] - 2026-10-26
+### Added
+- **Bascule clavier des rooms** : `⌥⇥` passe à la room suivante, `⌥⇧⇥` à la précédente — la room s'active immédiatement avec sa disposition, sans clic.
+- **Menu ⌘K des rooms** : ouvre le menu d'actions de la room sélectionnée — Ouvrir, Minimiser, Renommer, Changer la disposition, Dupliquer, Supprimer. Navigation `↑`/`↓`, validation `↵`, fermeture `Échap`.
+- **Créer une room depuis la recherche** : quand rien ne correspond, la liste de repli propose toujours « Créer la room « requête » » — `↵` ouvre le mode création avec le nom prérempli.
+### Fixed
+- **Safari manquant dans le repli** : le catalogue inclut désormais les apps du cryptex système (`/System/Volumes/Preboot/Cryptexes/...`) et les apps régulières actives — taper « safari » propose bien Safari.
+
+## [2026.10.99] - 2026-10-26
+### Added
+- **Actions par URL `pkwm://`** : `pkwm://tile` (pave le bureau actuel), `pkwm://tile-all` (tous les bureaux), `pkwm://restore` (restaure les positions). Permet l'automatisation (Shortcuts, agents, tests) sans passer par le raccourci clavier global — indispensable pour piloter l'app depuis une session macOS d'arrière-plan.
+
 ## [2026.10.98] - 2026-10-26
 ### Added
 - **Rooms dans les aperçus ⌘Tab** : une bande de rooms (nom, fenêtres, disposition) s'affiche au-dessus des fenêtres. Chaque carte propose **Ouvrir la room** (mise en page enregistrée), **Minimiser la room**, un menu de disposition (Auto/Focus/Colonnes/Grille/Pile) et **Supprimer la room** au clic droit. La recherche filtre aussi les rooms.

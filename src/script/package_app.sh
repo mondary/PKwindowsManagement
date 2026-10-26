@@ -124,6 +124,15 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
   <string>AppIcon</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>com.mondary.PKwindowsManagement.actions</string>
+      <key>CFBundleURLSchemes</key>
+      <array><string>pkwm</string></array>
+    </dict>
+  </array>
   <key>CFBundleShortVersionString</key>
   <string>$SHORT_VERSION</string>
   <key>CFBundleVersion</key>

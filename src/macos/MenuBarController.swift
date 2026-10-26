@@ -1,4 +1,5 @@
 import AppKit
+import Carbon
 import Carbon.HIToolbox
 
 final class MenuBarController: NSObject, NSApplicationDelegate {
@@ -23,6 +24,12 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private let roomsHotKeySignature = fourCharCode("PKRM")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSAppleEventManager.shared().setEventHandler(
+            self,
+            andSelector: #selector(handleGetURL(_:withReply:)),
+            forEventClass: AEEventClass(kInternetEventClass),
+            andEventID: AEEventID(kAEGetURL)
+        )
         SettingsWindowController.shared.startArtifactCleanup()
         automaticTerminationActivity = ProcessInfo.processInfo.beginActivity(
             options: .automaticTerminationDisabled,
@@ -104,6 +111,24 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         }
         if let updateAvailabilityObserver {
             NotificationCenter.default.removeObserver(updateAvailabilityObserver)
+        }
+    }
+
+    /// Actions pilotables par URL (agent, Shortcuts, tests) :
+    /// pkwm://tile, pkwm://tile-all, pkwm://restore.
+    @objc private func handleGetURL(_ event: NSAppleEventDescriptor, withReply reply: NSAppleEventDescriptor) {
+        guard let raw = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue,
+              let url = URL(string: raw), url.scheme?.lowercased() == "pkwm" else { return }
+        let action: ShortcutAction
+        switch (url.host ?? "").lowercased() {
+        case "tile": action = .windowTileAll
+        case "tile-all": action = .windowTileAllDesktops
+        case "restore": action = .windowRestore
+        default: return
+        }
+        guard let settings = AppRuntime.shared.settings else { return }
+        HorizontalCanvasService.shared.release {
+            WindowSnapService().perform(action, preset: settings.windowMarginPreset)
         }
     }
 

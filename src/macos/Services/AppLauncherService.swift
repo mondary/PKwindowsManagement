@@ -254,6 +254,9 @@ final class AppLauncherService {
             URL(fileURLWithPath: "/Applications/Utilities"),
             URL(fileURLWithPath: "/System/Applications"),
             URL(fileURLWithPath: "/System/Applications/Utilities"),
+            // Safari and friends live in the OS cryptex on modern macOS.
+            URL(fileURLWithPath: "/System/Volumes/Preboot/Cryptexes/App/System/Applications"),
+            URL(fileURLWithPath: "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Utilities"),
             FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications")
         ]
 

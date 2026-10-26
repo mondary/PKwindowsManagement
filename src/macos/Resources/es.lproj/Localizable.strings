@@ -283,6 +283,11 @@
 "No rooms yet. Create your first room from your running apps." = "Aún no hay salas. Crea tu primera sala a partir de tus apps activas.";
 "↵ open · ⇥ change layout · ⌘⌫ delete" = "↵ abrir · ⇥ disposición · ⌘⌫ eliminar";
 "Create Room" = "Crear sala";
+"Rename" = "Renombrar";
+"Duplicate" = "Duplicar";
+"Room actions" = "Acciones de room";
+"Switch room" = "Cambiar de room";
+"Create room with name “%@”" = "Crear la room «%@»";
 "Click windows in order — 1 is the main spot" = "Haz clic en las ventanas en orden — 1 es el lugar principal";
 "%d window(s) selected" = "%d ventana(s) seleccionada(s)";
 "Room “%@” created" = "Sala «%@» creada";

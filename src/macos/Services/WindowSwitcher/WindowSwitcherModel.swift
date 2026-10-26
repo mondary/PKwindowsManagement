@@ -9,6 +9,38 @@ enum MessageKind {
     case error
 }
 
+/// Actions offered by the ⌘K room menu in the picker.
+enum RoomAction: CaseIterable {
+    case open
+    case minimize
+    case rename
+    case cycleLayout
+    case duplicate
+    case delete
+
+    var title: String {
+        switch self {
+        case .open: localizedString("Open Room")
+        case .minimize: localizedString("Minimize Room")
+        case .rename: localizedString("Rename")
+        case .cycleLayout: localizedString("Change layout")
+        case .duplicate: localizedString("Duplicate")
+        case .delete: localizedString("Delete Room")
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .open: return "arrow.up.forward"
+        case .minimize: return "arrow.down.to.line"
+        case .rename: return "pencil"
+        case .cycleLayout: return "rectangle.grid.2x2"
+        case .duplicate: return "plus.square.on.square"
+        case .delete: return "trash"
+        }
+    }
+}
+
 /// UI state lives on main, AX inventory and capture run off the event tap.
 final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var items: [WindowSwitcherItem] = []
@@ -17,6 +49,7 @@ final class WindowSwitcherModel: ObservableObject {
             selectedID = WindowSwitcherState.selection(in: filteredItems, keeping: selectedID)
             roomSelection = 0
             launcherSelection = 0
+            fallbackSelection = 0
             loadLauncherAppsIfNeeded()
         }
     }
@@ -42,6 +75,12 @@ final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var isLoadingLauncherApps = false
     @Published private(set) var roomSelection = 0
     @Published private(set) var launcherSelection = 0
+    @Published private(set) var fallbackSelection = 0
+    /// ⌘K room menu state.
+    @Published private(set) var roomActionTargetID: String?
+    @Published private(set) var roomActionSelection = 0
+    @Published var renamingRoomID: String?
+    @Published var renameText = ""
     var onReady: (() -> Void)?
     var columns = 3
     var cardHeight: CGFloat = 210
@@ -63,6 +102,7 @@ final class WindowSwitcherModel: ObservableObject {
     private var imageOrder: [WindowSwitcherID] = []
     private var isOpen = false
     private var didLoadLauncherApps = false
+    private(set) var roomCycleIndex = 0
 
     var filteredItems: [WindowSwitcherItem] { WindowSwitcherState.filtered(items, query: query) }
 
@@ -154,6 +194,12 @@ final class WindowSwitcherModel: ObservableObject {
         messageKind = .info
         roomSelection = 0
         launcherSelection = 0
+        fallbackSelection = 0
+        roomActionTargetID = nil
+        roomActionSelection = 0
+        renamingRoomID = nil
+        renameText = ""
+        roomCycleIndex = 0
         launcherApps.removeAll()
         isLoadingLauncherApps = false
         didLoadLauncherApps = false
@@ -181,12 +227,17 @@ final class WindowSwitcherModel: ObservableObject {
     }
 
     func beginRoomCreation() {
+        beginRoomCreation(named: String(format: "%@ %d", localizedString("New Room"), roomStore.rooms.count + 1))
+    }
+
+    /// Enters creation mode with a prefilled name (fallback "create room" row).
+    func beginRoomCreation(named name: String) {
         precondition(Thread.isMainThread)
         guard isOpen else { return }
         isCreatingRoom = true
         roomPicks = []
         creationLayout = .auto
-        roomName = String(format: "%@ %d", localizedString("New Room"), roomStore.rooms.count + 1)
+        roomName = name
         message = ""
         messageKind = .info
     }
@@ -239,6 +290,132 @@ final class WindowSwitcherModel: ObservableObject {
         message = String(format: localizedString("Room “%@” created"), name)
         messageKind = .success
         return true
+    }
+
+    // MARK: - Room switching & actions (keyboard-first)
+
+    /// Next/previous room for the ⌥⇥ room-switch cycle.
+    func roomForCycle(forward: Bool) -> Room? {
+        let rooms = roomStore.rooms
+        guard !rooms.isEmpty else { return nil }
+        roomCycleIndex = forward
+            ? (roomCycleIndex + 1) % rooms.count
+            : ((roomCycleIndex - 1) % rooms.count + rooms.count) % rooms.count
+        return rooms[roomCycleIndex]
+    }
+
+    private var roomActionTarget: Room? {
+        guard let id = roomActionTargetID else { return nil }
+        return roomStore.rooms.first { $0.id == id }
+    }
+
+    func openRoomActions() {
+        precondition(Thread.isMainThread)
+        let rows = rooms(matching: query)
+        guard !rows.isEmpty else { return }
+        let target = rows.indices.contains(roomSelection) ? rows[roomSelection] : rows[0]
+        roomActionTargetID = target.id
+        roomActionSelection = 0
+        renamingRoomID = nil
+        renameText = ""
+    }
+
+    func closeRoomActions() {
+        roomActionTargetID = nil
+        roomActionSelection = 0
+        renamingRoomID = nil
+        renameText = ""
+    }
+
+    func moveRoomActionSelection(_ delta: Int) {
+        let count = RoomAction.allCases.count
+        roomActionSelection = ((roomActionSelection + delta) % count + count) % count
+    }
+
+    func performRoomAction() {
+        guard let room = roomActionTarget,
+              RoomAction.allCases.indices.contains(roomActionSelection) else { return }
+        performRoomAction(RoomAction.allCases[roomActionSelection], for: room)
+    }
+
+    func performRoomAction(_ action: RoomAction, for room: Room) {
+        switch action {
+        case .open:
+            activateRoom(room)
+            closeRoomActions()
+        case .minimize:
+            minimizeRoom(room)
+            closeRoomActions()
+        case .rename:
+            renamingRoomID = room.id
+            renameText = room.name
+        case .cycleLayout:
+            cycleRoomLayout(room, forward: true)
+        case .duplicate:
+            let copy = Room(name: localizedString("Duplicate") + " — " + room.name,
+                            windows: room.windows, layout: room.layout, displayUUID: room.displayUUID)
+            roomStore.upsert(copy)
+            closeRoomActions()
+        case .delete:
+            roomStore.delete(id: room.id)
+            closeRoomActions()
+        }
+    }
+
+    func commitRename() {
+        guard let id = renamingRoomID,
+              var room = roomStore.rooms.first(where: { $0.id == id }) else {
+            renamingRoomID = nil
+            return
+        }
+        let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        room.name = name
+        roomStore.upsert(room)
+        renamingRoomID = nil
+        roomActionTargetID = nil
+        renameText = ""
+    }
+
+    // MARK: - Fallback (rooms, apps, create)
+
+    enum FallbackAction {
+        case room(Room)
+        case app(LaunchableApp)
+        case createRoom(String)
+    }
+
+    func fallbackActions(query: String) -> [FallbackAction] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        var actions: [FallbackAction] = rooms(matching: query).map { .room($0) }
+        actions.append(contentsOf: launcherMatches.map { .app($0) })
+        if !trimmed.isEmpty { actions.append(.createRoom(trimmed)) }
+        return actions
+    }
+
+    func moveFallbackSelection(_ delta: Int) {
+        let count = fallbackActions(query: query).count
+        guard count > 0 else { return }
+        fallbackSelection = ((fallbackSelection + delta) % count + count) % count
+    }
+
+    /// Performs the selected fallback action. Returns whether the picker
+    /// should close (creating a room keeps it open, prefilled).
+    @discardableResult
+    func performSelectedFallback() -> Bool {
+        let actions = fallbackActions(query: query)
+        guard actions.indices.contains(fallbackSelection) else { return false }
+        switch actions[fallbackSelection] {
+        case .room(let room):
+            activateRoom(room)
+            return true
+        case .app(let app):
+            launch(app)
+            return true
+        case .createRoom(let name):
+            beginRoomCreation(named: name)
+            return false
+        }
     }
 
     // MARK: - Rooms in the picker
@@ -300,7 +477,26 @@ final class WindowSwitcherModel: ObservableObject {
             self.isLoadingLauncherApps = false
             guard self.isOpen else { return }
             let ownBundleID = Bundle.main.bundleIdentifier
-            self.launcherApps = apps.filter { $0.bundleID != ownBundleID }
+            var merged = apps.filter { $0.bundleID != ownBundleID }
+            // Running regular apps are always launchable, even when the
+            // installed-app catalog misses them (Safari's cryptex, dev builds).
+            for running in NSWorkspace.shared.runningApplications
+            where running.activationPolicy == .regular && running != NSRunningApplication.current {
+                guard let bundleID = running.bundleIdentifier,
+                      bundleID != ownBundleID,
+                      !merged.contains(where: { $0.bundleID == bundleID })
+                else { continue }
+                merged.append(LaunchableApp(
+                    id: bundleID,
+                    name: running.localizedName ?? bundleID,
+                    bundleID: bundleID,
+                    url: running.bundleURL ?? URL(fileURLWithPath: "/"),
+                    icon: running.icon ?? NSImage(),
+                    shortcut: nil,
+                    snippet: nil
+                ))
+            }
+            self.launcherApps = merged
         }
     }
 

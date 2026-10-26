@@ -206,10 +206,58 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     }
 
     private func handleKey(_ event: NSEvent) -> NSEvent? {
-        let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
-        if !model.isCreatingRoom, modifiers == .command,
-           event.charactersIgnoringModifiers?.lowercased() == "n" {
+        let key = event.charactersIgnoringModifiers?.lowercased()
+
+        // ⌘K room actions overlay has priority over everything else.
+        if model.roomActionTargetID != nil || model.renamingRoomID != nil {
+            if modifiers == .command {
+                if handleTextShortcut(event, modifiers: modifiers) { return nil }
+                if key == "k" { model.closeRoomActions() }
+                return nil
+            }
+            if model.renamingRoomID != nil {
+                if modifiers.isEmpty, event.keyCode == 53 {
+                    model.renamingRoomID = nil
+                    return nil
+                }
+                if modifiers.isEmpty, event.keyCode == 36 || event.keyCode == 76 {
+                    if !event.isARepeat { model.commitRename() }
+                    return nil
+                }
+                return event
+            }
+            if modifiers.isEmpty {
+                switch event.keyCode {
+                case 53: model.closeRoomActions(); return nil
+                case 125: model.moveRoomActionSelection(1); return nil
+                case 126: model.moveRoomActionSelection(-1); return nil
+                case 36, 76:
+                    if !event.isARepeat { model.performRoomAction() }
+                    return nil
+                default: break
+                }
+            }
+            // ⌥⇥ room cycling waits until the menu is closed.
+            if modifiers == [.option] || modifiers == [.option, .shift], event.keyCode == 48 { return nil }
+            return event
+        }
+
+        if !model.isCreatingRoom, modifiers == .command, key == "n" {
             model.beginRoomCreation()
+            return nil
+        }
+        if !model.isCreatingRoom, modifiers == .command, key == "k",
+           !model.roomStore.rooms.isEmpty {
+            model.openRoomActions()
+            return nil
+        }
+        // ⌥⇥ next room, ⌥⇧⇥ previous room — activates immediately.
+        if !model.isCreatingRoom,
+           modifiers == [.option] || modifiers == [.option, .shift], event.keyCode == 48 {
+            if let room = model.roomForCycle(forward: modifiers == [.option]) {
+                model.activateRoom(room)
+                hide()
+            }
             return nil
         }
         if model.isCreatingRoom {
@@ -217,7 +265,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
                 model.cancelRoomCreation()
                 return nil
             }
-            if modifiers.isEmpty, (event.keyCode == 36 || event.keyCode == 76) {
+            if modifiers.isEmpty, event.keyCode == 36 || event.keyCode == 76 {
                 if !event.isARepeat { model.createRoom() }
                 return nil
             }
@@ -227,37 +275,18 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             }
             // Keep window activation and close/quit commands out of room mode.
             if modifiers == .command {
-                let key = event.charactersIgnoringModifiers?.lowercased()
                 if key == "w" || key == "q" || Self.digitRanks[event.keyCode] != nil { return nil }
             }
         }
         if modifiers == .command, handleTextShortcut(event, modifiers: modifiers) { return nil }
         if modifiers.isEmpty, model.filteredItems.isEmpty, !model.query.isEmpty {
-            let roomRows = model.rooms(matching: model.query)
-            if !roomRows.isEmpty {
-                switch event.keyCode {
-                case 125: model.moveRoomSelection(1); return nil
-                case 126: model.moveRoomSelection(-1); return nil
-                case 36, 76:
-                    if !event.isARepeat, let room = model.selectedRoom(matching: model.query) {
-                        model.activateRoom(room)
-                        hide()
-                    }
-                    return nil
-                default: break
-                }
-            } else if !model.launcherMatches.isEmpty {
-                switch event.keyCode {
-                case 125: model.moveLauncherSelection(1); return nil
-                case 126: model.moveLauncherSelection(-1); return nil
-                case 36, 76:
-                    if !event.isARepeat, let app = model.selectedLauncherApp() {
-                        model.launch(app)
-                        hide()
-                    }
-                    return nil
-                default: break
-                }
+            switch event.keyCode {
+            case 125: model.moveFallbackSelection(1); return nil
+            case 126: model.moveFallbackSelection(-1); return nil
+            case 36, 76:
+                if !event.isARepeat, model.performSelectedFallback() { hide() }
+                return nil
+            default: break
             }
         }
         if modifiers == .command {

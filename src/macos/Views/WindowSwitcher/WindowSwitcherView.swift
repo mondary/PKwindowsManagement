@@ -7,6 +7,7 @@ struct WindowSwitcherView: View {
     let onClose: () -> Void
     @FocusState private var searchFocused: Bool
     @FocusState private var roomNameFocused: Bool
+    @FocusState private var roomRenameFieldFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -42,6 +43,11 @@ struct WindowSwitcherView: View {
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .onAppear { searchFocused = true }
         .onChange(of: model.query) { _ in model.loadLauncherAppsIfNeeded() }
+        .overlay {
+            if model.roomActionTargetID != nil || model.renamingRoomID != nil {
+                roomActionsOverlay
+            }
+        }
     }
 
     // MARK: - Header
@@ -162,6 +168,103 @@ struct WindowSwitcherView: View {
 
     private var roomMatches: [Room] {
         model.rooms(matching: model.query)
+    }
+
+    private var roomActionsOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.15)
+            if model.renamingRoomID != nil {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(localizedString("Rename"), systemImage: "pencil")
+                        .font(.headline)
+                    TextField(localizedString("Room name"), text: $model.renameText)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 14, weight: .medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(.primary.opacity(0.05),
+                                    in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .focused($roomRenameFieldFocused)
+                        .onSubmit { model.commitRename() }
+                    HStack {
+                        Spacer(minLength: 0)
+                        Button(localizedString("Cancel")) { model.renamingRoomID = nil }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.secondary)
+                        Button {
+                            model.commitRename()
+                        } label: {
+                            Label(localizedString("Save"), systemImage: "checkmark")
+                                .font(.caption.weight(.semibold))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.accentColor.opacity(0.9), in: Capsule())
+                                .foregroundStyle(.white)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(16)
+                .frame(width: 320)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(.primary.opacity(0.12), lineWidth: 1))
+                .onAppear { roomRenameFieldFocused = true }
+            } else if let room = model.roomActionTarget {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Text(room.name)
+                            .font(.headline)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        Text("\(room.windows.count)")
+                            .font(.caption.monospacedDigit().weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(Array(RoomAction.allCases.enumerated()), id: \.element) { index, action in
+                        Button {
+                            model.performRoomAction(action, for: room)
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: action.symbolName)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .frame(width: 18)
+                                Text(action.title)
+                                    .font(.system(size: 13, weight: .medium))
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .background(index == model.roomActionSelection
+                                    ? Color.accentColor.opacity(0.16)
+                                    : Color.primary.opacity(0.04),
+                                in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.primary)
+                    }
+                    HStack(spacing: 10) {
+                        Text("↑ ↓  ·  ↵")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.secondary)
+                        Spacer(minLength: 0)
+                        Text("⌘K")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 2)
+                }
+                .padding(14)
+                .frame(width: 300)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(.primary.opacity(0.12), lineWidth: 1))
+            }
+        }
     }
 
     private var roomsStrip: some View {
@@ -299,52 +402,22 @@ struct WindowSwitcherView: View {
                 Image(systemName: "macwindow").font(.system(size: 34, weight: .light)).foregroundStyle(.secondary)
                 Text(localizedString(model.query.isEmpty ? "No windows available" : "No matching windows"))
                 if !model.query.isEmpty {
-                    let matches = model.launcherMatches
-                    if !matches.isEmpty {
+                    let rows = model.fallbackActions(query: model.query).enumerated().map {
+                        FallbackRow(id: $0.offset, action: $0.element)
+                    }
+                    if model.isLoadingLauncherApps && model.launcherMatches.isEmpty && rows.count <= 1 {
+                        ProgressView().controlSize(.small)
+                    } else {
                         VStack(alignment: .leading, spacing: 7) {
-                            Text(localizedString("Applications"))
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            ForEach(Array(matches.enumerated()), id: \.element.id) { index, app in
-                                Button {
-                                    model.launch(app)
-                                    onClose()
-                                } label: {
-                                    HStack(spacing: 10) {
-                                        Image(nsImage: app.icon)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 26, height: 26)
-                                        Text(app.name)
-                                            .font(.system(size: 13, weight: .medium))
-                                            .lineLimit(1)
-                                        Spacer(minLength: 8)
-                                        Text(localizedString("Open"))
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .padding(.horizontal, 11)
-                                    .padding(.vertical, 8)
-                                    .background(index == model.launcherSelection
-                                            ? Color.accentColor.opacity(0.16)
-                                            : Color.primary.opacity(0.045),
-                                        in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                                    .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                        .strokeBorder(index == model.launcherSelection
-                                                ? Color.accentColor.opacity(0.5)
-                                                : Color.clear, lineWidth: 1))
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                .frame(maxWidth: 380)
+                            ForEach(rows) { row in
+                                fallbackRow(index: row.id, action: row.action)
                             }
                         }
                         .frame(maxWidth: 380)
-                    } else if model.isLoadingLauncherApps {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Button(localizedString("Refresh")) { model.prepare(resetSearch: false) }
                     }
+                    Text("↑ ↓  ·  ↵")
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.secondary)
                 } else {
                     Button(localizedString("Refresh")) { model.prepare(resetSearch: false) }
                 }
@@ -353,6 +426,68 @@ struct WindowSwitcherView: View {
             .padding(24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private func fallbackRow(index: Int, action: WindowSwitcherModel.FallbackAction) -> some View {
+        let isSelected = index == model.fallbackSelection
+        Button {
+            switch action {
+            case .room(let room):
+                model.activateRoom(room)
+                onClose()
+            case .app(let app):
+                model.launch(app)
+                onClose()
+            case .createRoom(let name):
+                model.beginRoomCreation(named: name)
+            }
+        } label: {
+            HStack(spacing: 10) {
+                switch action {
+                case .room(let room):
+                    Image(systemName: "square.grid.2x2")
+                        .font(.system(size: 13, weight: .semibold))
+                        .frame(width: 26, height: 26)
+                        .background(Color.accentColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(room.name).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                        Text(room.layout.title).font(.caption2).foregroundStyle(.secondary)
+                    }
+                case .app(let app):
+                    Image(nsImage: app.icon)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 26, height: 26)
+                    Text(app.name)
+                        .font(.system(size: 13, weight: .medium))
+                        .lineLimit(1)
+                case .createRoom(let name):
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .bold))
+                        .frame(width: 26, height: 26)
+                        .background(Color.accentColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
+                    Text(String(format: localizedString("Create room with name “%@”"), name))
+                        .font(.system(size: 13, weight: .medium))
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                switch action {
+                case .room: Text(localizedString("Open Room")).font(.caption).foregroundStyle(.secondary)
+                case .app: Text(localizedString("Open")).font(.caption).foregroundStyle(.secondary)
+                case .createRoom: Text(localizedString("New Room")).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 8)
+            .background(isSelected ? Color.accentColor.opacity(0.16) : Color.primary.opacity(0.045),
+                        in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(isSelected ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: 380)
     }
 
     private func quittingBanner(_ name: String) -> some View {
@@ -410,6 +545,10 @@ struct WindowSwitcherView: View {
                     if model.columns >= 3 {
                         hint("⌘1–9", "Quick select")
                         hint("⌘N", "New Room")
+                    }
+                    if !model.roomStore.rooms.isEmpty {
+                        hint("⌘K", "Room actions")
+                        hint("⌥⇥", "Switch room")
                     }
                     Spacer(minLength: 0)
                     hint("esc", "Dismiss picker")
@@ -760,4 +899,9 @@ private struct RoomPickerCard: View {
         case .stack: return "rectangle.stack"
         }
     }
+}
+
+private struct FallbackRow: Identifiable {
+    let id: Int
+    let action: WindowSwitcherModel.FallbackAction
 }
