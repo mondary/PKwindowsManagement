@@ -90,7 +90,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.delegate = self
-        let hosting = NSHostingView(rootView: WindowSwitcherView(model: model, onActivate: { [weak self] id in
+        let hosting = NSHostingView(rootView: WindowSwitcherView(model: model, roomStore: model.roomStore, onActivate: { [weak self] id in
             self?.activate(id)
         }, onClose: { [weak self] in self?.hide() }))
         // A wrapping permission banner must not enlarge the borderless panel
@@ -231,6 +231,35 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
                 if key == "w" || key == "q" || Self.digitRanks[event.keyCode] != nil { return nil }
             }
         }
+        if modifiers == .command, handleTextShortcut(event, modifiers: modifiers) { return nil }
+        if modifiers.isEmpty, model.filteredItems.isEmpty, !model.query.isEmpty {
+            let roomRows = model.rooms(matching: model.query)
+            if !roomRows.isEmpty {
+                switch event.keyCode {
+                case 125: model.moveRoomSelection(1); return nil
+                case 126: model.moveRoomSelection(-1); return nil
+                case 36, 76:
+                    if !event.isARepeat, let room = model.selectedRoom(matching: model.query) {
+                        model.activateRoom(room)
+                        hide()
+                    }
+                    return nil
+                default: break
+                }
+            } else if !model.launcherMatches.isEmpty {
+                switch event.keyCode {
+                case 125: model.moveLauncherSelection(1); return nil
+                case 126: model.moveLauncherSelection(-1); return nil
+                case 36, 76:
+                    if !event.isARepeat, let app = model.selectedLauncherApp() {
+                        model.launch(app)
+                        hide()
+                    }
+                    return nil
+                default: break
+                }
+            }
+        }
         if modifiers == .command {
             switch event.charactersIgnoringModifiers?.lowercased() {
             case "w":
@@ -274,6 +303,22 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         default: return event
         }
         return nil
+    }
+
+    /// The picker is a borderless panel without a menu bar: standard text
+    /// shortcuts (⌘A/⌘C/⌘X/⌘V/⌘Z) must be forwarded to the field editor.
+    private func handleTextShortcut(_ event: NSEvent, modifiers: NSEvent.ModifierFlags) -> Bool {
+        guard modifiers == .command,
+              let key = event.charactersIgnoringModifiers?.lowercased(),
+              let editor = panel?.firstResponder as? NSTextView else { return false }
+        switch key {
+        case "a": editor.selectAll(nil); return true
+        case "c": editor.copy(nil); return true
+        case "x": editor.cut(nil); return true
+        case "v": editor.paste(nil); return true
+        case "z": editor.undoManager?.undo(); return true
+        default: return false
+        }
     }
 
     private static let digitRanks: [UInt16: Int] = [

@@ -78,7 +78,7 @@ struct WindowPreviewCapture {
                               styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         let hosting = NSHostingView(rootView:
-            WindowSwitcherView(model: model, onActivate: { _ in }, onClose: {})
+            WindowSwitcherView(model: model, roomStore: model.roomStore, onActivate: { _ in }, onClose: {})
                 .environment(\.locale, Locale(identifier: language))
                 .environment(\.colorScheme, dark ? .dark : .light))
         hosting.sizingOptions = []

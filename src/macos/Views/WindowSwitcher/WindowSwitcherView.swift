@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WindowSwitcherView: View {
     @ObservedObject var model: WindowSwitcherModel
+    @ObservedObject var roomStore: RoomStore
     let onActivate: (WindowSwitcherID) -> Void
     let onClose: () -> Void
     @FocusState private var searchFocused: Bool
@@ -18,11 +19,11 @@ struct WindowSwitcherView: View {
             if !model.accessibilityGranted {
                 permissionView
             } else {
+                if !model.isCreatingRoom { roomsStrip }
                 if !model.previewsGranted { previewPermissionBanner }
                 if let name = model.quittingName { quittingBanner(name) }
                 if !model.message.isEmpty {
-                    Text(model.message).font(.callout).foregroundStyle(.orange)
-                        .frame(maxWidth: .infinity, alignment: .leading).padding(16)
+                    messageBanner
                 }
                 if model.isLoading {
                     ProgressView(localizedString("Loading windows…"))
@@ -137,6 +138,68 @@ struct WindowSwitcherView: View {
         .frame(height: 26)
     }
 
+    private var messageBanner: some View {
+        let tone = model.messageKind
+        return HStack(spacing: 8) {
+            Image(systemName: tone == .success ? "checkmark.circle.fill"
+                    : (tone == .error ? "exclamationmark.triangle.fill" : "info.circle.fill"))
+                .foregroundStyle(tone == .success ? Color.green
+                        : (tone == .error ? Color.orange : Color.secondary))
+            Text(model.message)
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(tone == .success ? Color.green.opacity(0.15)
+                : (tone == .error ? Color.orange.opacity(0.15) : Color.gray.opacity(0.12)),
+            in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    private var roomMatches: [Room] {
+        model.rooms(matching: model.query)
+    }
+
+    private var roomsStrip: some View {
+        let rows = roomMatches
+        return Group {
+            if !rows.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Text(localizedString("Rooms"))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Spacer(minLength: 0)
+                        Text("\(rows.count)")
+                            .font(.caption.monospacedDigit().weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2)
+                            .background(.primary.opacity(0.06), in: Capsule())
+                    }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(rows) { room in
+                                RoomPickerCard(room: room, model: model, onClose: onClose)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 2)
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.bottom, 12)
+            }
+        }
+    }
+
     // MARK: - Room creation
 
     private var roomCreationBar: some View {
@@ -157,6 +220,18 @@ struct WindowSwitcherView: View {
             Text(String(format: localizedString("%d window(s) selected"), model.roomPicks.count))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Menu {
+                ForEach(RoomLayoutKind.allCases) { kind in
+                    Button(kind.title) { model.creationLayout = kind }
+                }
+            } label: {
+                Label(model.creationLayout.title, systemImage: "rectangle.grid.2x2")
+                    .font(.caption.weight(.medium))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(.primary.opacity(0.05), in: Capsule())
+            }
+            .fixedSize()
             Spacer(minLength: 8)
             Button(localizedString("Cancel")) { model.cancelRoomCreation() }
                 .buttonStyle(.plain)
@@ -230,7 +305,7 @@ struct WindowSwitcherView: View {
                             Text(localizedString("Applications"))
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
-                            ForEach(matches) { app in
+                            ForEach(Array(matches.enumerated()), id: \.element.id) { index, app in
                                 Button {
                                     model.launch(app)
                                     onClose()
@@ -250,8 +325,14 @@ struct WindowSwitcherView: View {
                                     }
                                     .padding(.horizontal, 11)
                                     .padding(.vertical, 8)
-                                    .background(.primary.opacity(0.045),
-                                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                    .background(index == model.launcherSelection
+                                            ? Color.accentColor.opacity(0.16)
+                                            : Color.primary.opacity(0.045),
+                                        in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                        .strokeBorder(index == model.launcherSelection
+                                                ? Color.accentColor.opacity(0.5)
+                                                : Color.clear, lineWidth: 1))
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
@@ -586,5 +667,97 @@ struct WindowSwitcherCard: View {
         if item.isHidden { return "eye.slash" }
         if item.isFullScreen { return "arrow.up.left.and.arrow.down.right" }
         return "rectangle.dashed"
+    }
+}
+
+private struct RoomPickerCard: View {
+    let room: Room
+    @ObservedObject var model: WindowSwitcherModel
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 6) {
+                Text(room.name)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                layoutMenu
+            }
+            Text(windowSummary)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+            HStack(spacing: 8) {
+                Button {
+                    model.activateRoom(room)
+                    onClose()
+                } label: {
+                    Label(localizedString("Open Room"), systemImage: "arrow.up.forward")
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.accentColor.opacity(0.9), in: Capsule())
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+                Button {
+                    model.minimizeRoom(room)
+                } label: {
+                    Label(localizedString("Minimize Room"), systemImage: "arrow.down.to.line")
+                        .font(.caption2.weight(.medium))
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(.primary.opacity(0.06), in: Capsule())
+                        .foregroundStyle(.primary.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+                Spacer(minLength: 0)
+                Text("\(room.windows.count)")
+                    .font(.caption2.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(12)
+        .frame(width: 250, alignment: .leading)
+        .background(.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .strokeBorder(.primary.opacity(0.08), lineWidth: 1))
+        .contextMenu {
+            Button(localizedString("Delete Room")) { model.roomStore.delete(id: room.id) }
+        }
+    }
+
+    private var windowSummary: String {
+        let names = room.windows.map(\.appName)
+        guard !names.isEmpty else { return localizedString("No windows available") }
+        let head = names.prefix(3).joined(separator: " · ")
+        return names.count > 3 ? head + " …" : head
+    }
+
+    private var layoutMenu: some View {
+        Menu {
+            ForEach(RoomLayoutKind.allCases) { kind in
+                Button(kind.title) { model.setRoomLayout(kind, for: room) }
+            }
+        } label: {
+            Label(room.layout.title, systemImage: layoutSymbol(room.layout))
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(.primary.opacity(0.06), in: Capsule())
+        }
+        .fixedSize()
+    }
+
+    private func layoutSymbol(_ kind: RoomLayoutKind) -> String {
+        switch kind {
+        case .auto: return "rectangle.split.2x2"
+        case .focus: return "target"
+        case .columns: return "rectangle.split.3x1"
+        case .grid: return "square.grid.3x3"
+        case .stack: return "rectangle.stack"
+        }
     }
 }

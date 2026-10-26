@@ -2,12 +2,21 @@ import AppKit
 import ApplicationServices
 import Combine
 
+/// Tone of the picker's status message.
+enum MessageKind {
+    case info
+    case success
+    case error
+}
+
 /// UI state lives on main, AX inventory and capture run off the event tap.
 final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var items: [WindowSwitcherItem] = []
     @Published var query = "" {
         didSet {
             selectedID = WindowSwitcherState.selection(in: filteredItems, keeping: selectedID)
+            roomSelection = 0
+            launcherSelection = 0
             loadLauncherAppsIfNeeded()
         }
     }
@@ -19,22 +28,26 @@ final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var completedPreviews = Set<WindowSwitcherID>()
     @Published private(set) var generation = UUID()
     @Published var message = ""
+    @Published var messageKind: MessageKind = .info
     @Published private(set) var closingID: WindowSwitcherID?
     @Published private(set) var quittingPID: pid_t?
     @Published private(set) var quittingName: String?
     /// Room creation: pick windows in order; index 0 is the main spot.
     @Published var isCreatingRoom = false
     @Published var roomName = ""
+    @Published var creationLayout: RoomLayoutKind = .auto
     @Published private(set) var roomPicks: [WindowSwitcherID] = []
     /// Installed applications shown when the query matches no window.
     @Published private(set) var launcherApps: [LaunchableApp] = []
     @Published private(set) var isLoadingLauncherApps = false
+    @Published private(set) var roomSelection = 0
+    @Published private(set) var launcherSelection = 0
     var onReady: (() -> Void)?
     var columns = 3
     var cardHeight: CGFloat = 210
     var isBusy: Bool { closingID != nil || quittingPID != nil }
     private(set) var icons: [pid_t: NSImage] = [:]
-    private let roomStore: RoomStore
+    let roomStore: RoomStore
     private var candidates: [WindowSwitcherID: WindowSwitcherInventory.Candidate] = [:]
     private var focusedID: WindowSwitcherID?
     private var inventoryTask: Task<WindowSwitcherInventory.Snapshot, Never>?
@@ -135,7 +148,12 @@ final class WindowSwitcherModel: ObservableObject {
         isLoading = false
         isCreatingRoom = false
         roomName = ""
+        creationLayout = .auto
         roomPicks.removeAll()
+        message = ""
+        messageKind = .info
+        roomSelection = 0
+        launcherSelection = 0
         launcherApps.removeAll()
         isLoadingLauncherApps = false
         didLoadLauncherApps = false
@@ -167,15 +185,19 @@ final class WindowSwitcherModel: ObservableObject {
         guard isOpen else { return }
         isCreatingRoom = true
         roomPicks = []
+        creationLayout = .auto
         roomName = String(format: "%@ %d", localizedString("New Room"), roomStore.rooms.count + 1)
         message = ""
+        messageKind = .info
     }
 
     func cancelRoomCreation() {
         isCreatingRoom = false
         roomPicks = []
         roomName = ""
+        creationLayout = .auto
         message = ""
+        messageKind = .info
     }
 
     func toggleRoomPick(_ id: WindowSwitcherID) {
@@ -204,15 +226,65 @@ final class WindowSwitcherModel: ObservableObject {
         }
         guard !windows.isEmpty else {
             message = localizedString("No compatible windows found. Open your project apps, then refresh.")
+            messageKind = .error
             return false
         }
         let name = roomName.trimmingCharacters(in: .whitespacesAndNewlines)
-        roomStore.upsert(Room(name: name, windows: windows))
+        let room = Room(name: name, windows: windows, layout: creationLayout)
+        roomStore.upsert(room)
         isCreatingRoom = false
         roomPicks = []
         roomName = ""
+        creationLayout = .auto
         message = String(format: localizedString("Room “%@” created"), name)
+        messageKind = .success
         return true
+    }
+
+    // MARK: - Rooms in the picker
+
+    func rooms(matching query: String) -> [Room] {
+        roomStore.rooms.filter { $0.matches(query) }
+    }
+
+    func moveRoomSelection(_ delta: Int) {
+        let rows = rooms(matching: query)
+        guard !rows.isEmpty else { return }
+        roomSelection = ((roomSelection + delta) % rows.count + rows.count) % rows.count
+    }
+
+    func selectedRoom(matching query: String) -> Room? {
+        let rows = rooms(matching: query)
+        guard rows.indices.contains(roomSelection) else { return nil }
+        return rows[roomSelection]
+    }
+
+    func setRoomLayout(_ kind: RoomLayoutKind, for room: Room) {
+        var updated = room
+        updated.layout = kind
+        roomStore.upsert(updated)
+    }
+
+    func cycleRoomLayout(_ room: Room, forward: Bool) {
+        var updated = room
+        updated.layout = forward ? room.layout.next : room.layout.previous
+        roomStore.upsert(updated)
+    }
+
+    func activateRoom(_ room: Room) {
+        let engine = RoomEngine()
+        let claimed = roomStore.claimedWindowIDs(excluding: room.id)
+        HorizontalCanvasService.shared.release {
+            Task { _ = await engine.activate(room, claimed: claimed) }
+        }
+    }
+
+    func minimizeRoom(_ room: Room) {
+        let engine = RoomEngine()
+        let claimed = roomStore.claimedWindowIDs(excluding: room.id)
+        HorizontalCanvasService.shared.release {
+            Task { await engine.close(room, claimed: claimed) }
+        }
     }
 
     // MARK: - Launcher fallback
@@ -240,6 +312,18 @@ final class WindowSwitcherModel: ObservableObject {
         }.prefix(5).map { $0 }
     }
 
+    func moveLauncherSelection(_ delta: Int) {
+        let rows = launcherMatches
+        guard !rows.isEmpty else { return }
+        launcherSelection = ((launcherSelection + delta) % rows.count + rows.count) % rows.count
+    }
+
+    func selectedLauncherApp() -> LaunchableApp? {
+        let rows = launcherMatches
+        guard rows.indices.contains(launcherSelection) else { return nil }
+        return rows[launcherSelection]
+    }
+
     func launch(_ app: LaunchableApp) {
         guard let settings = AppRuntime.shared.settings else { return }
         _ = AppLauncherService().launch(app, settings: settings)
@@ -250,6 +334,7 @@ final class WindowSwitcherModel: ObservableObject {
         guard isOpen, closingID == nil, quittingPID == nil, let candidate = candidates[id] else { return }
         closingID = id
         message = ""
+        messageKind = .info
         let token = generation
         let work = Task.detached(priority: .userInitiated) { WindowSwitcherInventory.close(candidate) }
         closeTask = work
@@ -272,8 +357,10 @@ final class WindowSwitcherModel: ObservableObject {
                 self.selectedID = next
             case .pending:
                 self.message = localizedString("The window has not closed yet. Open it to check for a save dialog, or refresh the list.")
+                self.messageKind = .error
             case .unavailable, .failed:
                 self.message = localizedString("This window cannot be closed right now. Open it or refresh the list.")
+                self.messageKind = .error
             case .cancelled: break
             }
         }
@@ -290,6 +377,7 @@ final class WindowSwitcherModel: ObservableObject {
         quittingPID = pid
         quittingName = appName
         message = ""
+        messageKind = .info
         let token = generation
         let work = Task.detached(priority: .userInitiated) {
             WindowSwitcherInventory.quit(pid: pid, launchedAt: launchedAt)
@@ -321,8 +409,10 @@ final class WindowSwitcherModel: ObservableObject {
                 self.selectedID = next
             case .pending:
                 self.message = localizedString("The app has not quit yet. A save dialog may be waiting, or it refused to quit.")
+                self.messageKind = .error
             case .failed:
                 self.message = localizedString("This app cannot be quit right now. Try again or quit it from the app.")
+                self.messageKind = .error
             case .cancelled: break
             }
         }

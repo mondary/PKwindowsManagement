@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026.10.98] - 2026-10-26
+### Added
+- **Rooms dans les aperçus ⌘Tab** : une bande de rooms (nom, fenêtres, disposition) s'affiche au-dessus des fenêtres. Chaque carte propose **Ouvrir la room** (mise en page enregistrée), **Minimiser la room**, un menu de disposition (Auto/Focus/Colonnes/Grille/Pile) et **Supprimer la room** au clic droit. La recherche filtre aussi les rooms.
+- **Navigation clavier du repli** : quand la recherche ne correspond à aucune fenêtre, `↑`/`↓` naviguent dans les rooms puis dans les apps suggérées, et `↵` ouvre la room ou lance l'app sélectionnée.
+- **Barre de création** : choix de la disposition (Auto/Focus/Colonnes/Grille/Pile) avant de créer la room.
+### Fixed
+- **Message du sélecteur lisible** : le retour de création ou d'erreur s'affiche dans un bandeau contrasté (vert/orange) au lieu d'orange sur gris.
+- **Raccourcis texte dans la recherche** : `⌘A`, `⌘C`, `⌘X`, `⌘V` et `⌘Z` fonctionnent dans le champ de recherche et le nom de room.
+
 ## [2026.10.97] - 2026-10-26
 ### Fixed
 - **Clics dans les aperçus ⌘Tab, correctif complet** : le panneau reprend le focus après un clic sur **Nouvelle room**, une carte, une croix ou **Créer la room**, même quand Réglages est derrière. Il ne se ferme plus sur ces interactions ; la fermeture reste déclenchée par un clic réellement extérieur, `Échap`, un changement d'espace ou l'activation d'une autre application.
