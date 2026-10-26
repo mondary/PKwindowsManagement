@@ -126,9 +126,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         case "restore": action = .windowRestore
         default: return
         }
-        guard let settings = AppRuntime.shared.settings else { return }
+        guard let settings = AppRuntime.shared.settings,
+              let snapAction = action.windowSnapAction else { return }
         HorizontalCanvasService.shared.release {
-            WindowSnapService().perform(action, preset: settings.windowMarginPreset)
+            WindowSnapService().perform(snapAction, preset: settings.windowMarginPreset)
         }
     }
 

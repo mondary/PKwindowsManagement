@@ -206,6 +206,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     }
 
     private func handleKey(_ event: NSEvent) -> NSEvent? {
+        let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
         let key = event.charactersIgnoringModifiers?.lowercased()
 
         // ⌘K room actions overlay has priority over everything else.
