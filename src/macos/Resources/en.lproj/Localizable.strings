@@ -27,6 +27,7 @@
 "Create Room" = "Create Room";
 "Click windows in order — 1 is the main spot" = "Click windows in order — 1 is the main spot";
 "%d window(s) selected" = "%d window(s) selected";
+"Room “%@” created" = "Room “%@” created";
 "No rooms yet. Create your first room from your open windows." = "No rooms yet. Create your first room from your open windows.";
 "Support" = "Support";
 "Updates" = "Updates";

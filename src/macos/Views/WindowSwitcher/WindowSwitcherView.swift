@@ -5,11 +5,16 @@ struct WindowSwitcherView: View {
     let onActivate: (WindowSwitcherID) -> Void
     let onClose: () -> Void
     @FocusState private var searchFocused: Bool
+    @FocusState private var roomNameFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider().opacity(0.55)
+            if model.isCreatingRoom {
+                roomCreationBar
+                Divider().opacity(0.55)
+            }
             if !model.accessibilityGranted {
                 permissionView
             } else {
@@ -35,6 +40,7 @@ struct WindowSwitcherView: View {
         .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(.primary.opacity(0.12), lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .onAppear { searchFocused = true }
+        .onChange(of: model.query) { _ in model.loadLauncherAppsIfNeeded() }
     }
 
     // MARK: - Header
@@ -104,7 +110,20 @@ struct WindowSwitcherView: View {
     }
 
     private var headerButtons: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 6) {
+            if !model.isCreatingRoom {
+                Button { model.beginRoomCreation() } label: {
+                    Label(localizedString("New Room"), systemImage: "plus")
+                        .font(.system(size: 11, weight: .semibold))
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(.primary.opacity(0.06), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.primary.opacity(0.75))
+                .help(localizedString("New Room"))
+                .accessibilityLabel(localizedString("New Room"))
+            }
             Button { model.prepare(resetSearch: false) } label: { Image(systemName: "arrow.clockwise") }
                 .help(localizedString("Refresh") + " (⌘R)")
                 .accessibilityLabel(localizedString("Refresh"))
@@ -118,6 +137,48 @@ struct WindowSwitcherView: View {
         .frame(height: 26)
     }
 
+    // MARK: - Room creation
+
+    private var roomCreationBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "square.grid.2x2")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+            TextField(localizedString("Room name"), text: $model.roomName)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13, weight: .medium))
+                .frame(maxWidth: 260)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.primary.opacity(0.05),
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .focused($roomNameFocused)
+                .onSubmit { if model.canCreateRoom { model.createRoom() } }
+            Text(String(format: localizedString("%d window(s) selected"), model.roomPicks.count))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 8)
+            Button(localizedString("Cancel")) { model.cancelRoomCreation() }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+            Button { model.createRoom() } label: {
+                Label(localizedString("Create Room"), systemImage: "checkmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(model.canCreateRoom ? Color.accentColor.opacity(0.9) : Color.primary.opacity(0.06),
+                                in: Capsule())
+                    .foregroundStyle(model.canCreateRoom ? Color.white : Color(nsColor: .secondaryLabelColor))
+            }
+            .buttonStyle(.plain)
+            .disabled(!model.canCreateRoom)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 9)
+        .background(.primary.opacity(0.03))
+        .onAppear { roomNameFocused = true }
+    }
+
     // MARK: - Content
 
     private var windowGrid: some View {
@@ -127,12 +188,21 @@ struct WindowSwitcherView: View {
                                         count: model.columns),
                           spacing: WindowSwitcherState.gridSpacing) {
                     ForEach(Array(model.filteredItems.enumerated()), id: \.element.id) { rank, item in
+                        let pickIndex = model.roomPickIndex(for: item.id)
                         WindowSwitcherCard(item: item, icon: model.icons[item.id.pid], image: model.images[item.id],
                             isSelected: model.selectedID == item.id, rank: rank, cardHeight: model.cardHeight,
+                            isRoomPicking: model.isCreatingRoom, pickIndex: pickIndex,
                             isLoadingPreview: model.previewsGranted && !model.completedPreviews.contains(item.id),
                             isClosing: model.closingID == item.id, isQuitting: model.quittingPID == item.id.pid,
                             closeInProgress: model.isBusy,
-                            onActivate: { onActivate(item.id) }, onCloseWindow: { model.closeWindow(item.id) },
+                            onActivate: {
+                                if model.isCreatingRoom {
+                                    model.selectedID = item.id
+                                    model.toggleRoomPick(item.id)
+                                } else {
+                                    onActivate(item.id)
+                                }
+                            }, onCloseWindow: { model.closeWindow(item.id) },
                             onQuitApp: { model.quitApp(item.id) })
                             .frame(height: model.cardHeight)
                             .id(item.id)
@@ -149,10 +219,57 @@ struct WindowSwitcherView: View {
     }
 
     private var emptyView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "macwindow").font(.system(size: 34, weight: .light)).foregroundStyle(.secondary)
-            Text(localizedString(model.query.isEmpty ? "No windows available" : "No matching windows"))
-            Button(localizedString("Refresh")) { model.prepare(resetSearch: false) }
+        ScrollView {
+            VStack(spacing: 14) {
+                Image(systemName: "macwindow").font(.system(size: 34, weight: .light)).foregroundStyle(.secondary)
+                Text(localizedString(model.query.isEmpty ? "No windows available" : "No matching windows"))
+                if !model.query.isEmpty {
+                    let matches = model.launcherMatches
+                    if !matches.isEmpty {
+                        VStack(alignment: .leading, spacing: 7) {
+                            Text(localizedString("Applications"))
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            ForEach(matches) { app in
+                                Button {
+                                    model.launch(app)
+                                    onClose()
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Image(nsImage: app.icon)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 26, height: 26)
+                                        Text(app.name)
+                                            .font(.system(size: 13, weight: .medium))
+                                            .lineLimit(1)
+                                        Spacer(minLength: 8)
+                                        Text(localizedString("Open"))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .padding(.horizontal, 11)
+                                    .padding(.vertical, 8)
+                                    .background(.primary.opacity(0.045),
+                                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .frame(maxWidth: 380)
+                            }
+                        }
+                        .frame(maxWidth: 380)
+                    } else if model.isLoadingLauncherApps {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Button(localizedString("Refresh")) { model.prepare(resetSearch: false) }
+                    }
+                } else {
+                    Button(localizedString("Refresh")) { model.prepare(resetSearch: false) }
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 280)
+            .padding(24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -193,14 +310,26 @@ struct WindowSwitcherView: View {
     // MARK: - Footer
 
     private var footer: some View {
-        HStack(spacing: 14) {
-            hint("⇥", "Browse")
-            hint("↵", "Open")
-            hint("⌘W", "Close")
-            hint("⌘Q", "Quit app")
-            if model.columns >= 3 { hint("⌘1–9", "Quick select") }
-            Spacer(minLength: 0)
-            hint("esc", "Dismiss picker")
+        Group {
+            if model.isCreatingRoom {
+                HStack(spacing: 14) {
+                    Text(localizedString("Click windows in order — 1 is the main spot"))
+                        .font(.caption2)
+                    Spacer(minLength: 0)
+                    hint("↵", "Create Room")
+                    hint("esc", "Cancel")
+                }
+            } else {
+                HStack(spacing: 14) {
+                    hint("⇥", "Browse")
+                    hint("↵", "Open")
+                    hint("⌘W", "Close")
+                    hint("⌘Q", "Quit app")
+                    if model.columns >= 3 { hint("⌘1–9", "Quick select") }
+                    Spacer(minLength: 0)
+                    hint("esc", "Dismiss picker")
+                }
+            }
         }
         .font(.caption2).foregroundStyle(.secondary)
         .padding(.horizontal, 18).padding(.vertical, 10)
@@ -225,6 +354,8 @@ struct WindowSwitcherCard: View {
     let isSelected: Bool
     let rank: Int
     let cardHeight: CGFloat
+    let isRoomPicking: Bool
+    let pickIndex: Int?
     var isLoadingPreview = false
     var isClosing = false
     var isQuitting = false
@@ -235,30 +366,40 @@ struct WindowSwitcherCard: View {
     @State private var isHovering = false
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Button(action: onActivate) {
-                cardSurface
+        GeometryReader { geometry in
+            let insets = imageInsets(for: geometry.size.width)
+            ZStack(alignment: .topTrailing) {
+                Button(action: onActivate) {
+                    cardSurface(insets: insets)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                }
+                .buttonStyle(.plain)
+                .disabled(closeInProgress)
+                .help(item.appName + " — " + item.displayTitle)
+                .accessibilityLabel(item.appName + ", " + item.displayTitle)
+                .accessibilityValue(isSelected ? localizedString("Selected") : "")
+                .accessibilityHint(localizedString("Activate this window"))
+                if !isRoomPicking {
+                    closeButton
+                        .padding(.top, insets.height + 9)
+                        .padding(.trailing, insets.width + 9)
+                }
             }
-            .buttonStyle(.plain)
-            .disabled(closeInProgress)
-            .help(item.appName + " — " + item.displayTitle)
-            .accessibilityLabel(item.appName + ", " + item.displayTitle)
-            .accessibilityValue(isSelected ? localizedString("Selected") : "")
-            .accessibilityHint(localizedString("Activate this window"))
-            closeButton.padding(9)
-        }
-        .onHover { hovering in isHovering = hovering }
-        .contextMenu {
-            Button(localizedString("Close window")) { onCloseWindow() }
-                .disabled(closeInProgress)
-            Button(String(format: localizedString("Quit %@"), item.appName)) { onQuitApp() }
-                .disabled(closeInProgress)
+            .onHover { hovering in isHovering = hovering }
+            .contextMenu {
+                if !isRoomPicking {
+                    Button(localizedString("Close window")) { onCloseWindow() }
+                        .disabled(closeInProgress)
+                    Button(String(format: localizedString("Quit %@"), item.appName)) { onQuitApp() }
+                        .disabled(closeInProgress)
+                }
+            }
         }
     }
 
-    private var cardSurface: some View {
+    private func cardSurface(insets: CGSize) -> some View {
         VStack(spacing: 0) {
-            imageArea
+            imageArea(insets: insets)
                 .frame(height: imageHeight)
             captionBar
                 .frame(height: WindowSwitcherState.cardCaptionHeight)
@@ -270,9 +411,19 @@ struct WindowSwitcherCard: View {
         max(120, cardHeight - WindowSwitcherState.cardCaptionHeight)
     }
 
+    /// Insets of the fitted image inside its area. The close button and the
+    /// badges follow the thumbnail, never the wider card frame.
+    private func imageInsets(for width: CGFloat) -> CGSize {
+        guard let image, image.size.width > 0, image.size.height > 0 else { return .zero }
+        let area = CGSize(width: max(1, width), height: imageHeight)
+        let scale = min(area.width / image.size.width, area.height / image.size.height)
+        return CGSize(width: max(0, (area.width - image.size.width * scale) / 2),
+                      height: max(0, (area.height - image.size.height * scale) / 2))
+    }
+
     // MARK: - Image
 
-    private var imageArea: some View {
+    private func imageArea(insets: CGSize) -> some View {
         ZStack {
             if let image {
                 Image(nsImage: image)
@@ -281,7 +432,8 @@ struct WindowSwitcherCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(imageBorder)
                     .shadow(color: .black.opacity(0.10), radius: 4, y: 0)
-                    .shadow(color: isSelected ? Color.accentColor.opacity(0.18) : .clear, radius: 6)
+                    .shadow(color: isSelected || pickIndex != nil ? Color.accentColor.opacity(0.18) : .clear,
+                            radius: 6)
             } else {
                 fallbackThumbnail
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -297,10 +449,11 @@ struct WindowSwitcherCard: View {
         }
         .overlay(alignment: .topLeading) {
             VStack(alignment: .leading, spacing: 6) {
-                rankBadge
+                if isRoomPicking { roomPickBadge } else { rankBadge }
                 if let status { statusBadge(status) }
             }
-            .padding(9)
+            .padding(.leading, insets.width + 9)
+            .padding(.top, insets.height + 9)
         }
         .frame(maxWidth: .infinity)
     }
@@ -326,6 +479,23 @@ struct WindowSwitcherCard: View {
                 .padding(.horizontal, 8).padding(.vertical, 4)
                 .background(Color.black.opacity(0.56), in: Capsule())
         }
+    }
+
+    private var roomPickBadge: some View {
+        ZStack {
+            Circle().fill(pickIndex == nil ? Color.black.opacity(0.36) : Color.accentColor)
+            if let pickIndex {
+                Text("\(pickIndex)")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+            } else {
+                Image(systemName: "plus")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.85))
+            }
+        }
+        .frame(width: 24, height: 24)
+        .overlay(Circle().strokeBorder(.white.opacity(0.55), lineWidth: 1))
     }
 
     private func statusBadge(_ key: String) -> some View {
@@ -361,8 +531,10 @@ struct WindowSwitcherCard: View {
 
     private var imageBorder: some View {
         RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(isSelected ? Color.accentColor : Color.primary.opacity(isHovering ? 0.16 : 0),
-                          lineWidth: isSelected ? 2.5 : 1)
+            .strokeBorder(isSelected || pickIndex != nil
+                            ? Color.accentColor
+                            : Color.primary.opacity(isHovering ? 0.16 : 0),
+                          lineWidth: isSelected || pickIndex != nil ? 2.5 : 1)
     }
 
     private var closeButton: some View {

@@ -6,7 +6,10 @@ import Combine
 final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var items: [WindowSwitcherItem] = []
     @Published var query = "" {
-        didSet { selectedID = WindowSwitcherState.selection(in: filteredItems, keeping: selectedID) }
+        didSet {
+            selectedID = WindowSwitcherState.selection(in: filteredItems, keeping: selectedID)
+            loadLauncherAppsIfNeeded()
+        }
     }
     @Published var selectedID: WindowSwitcherID?
     @Published private(set) var isLoading = false
@@ -19,11 +22,19 @@ final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var closingID: WindowSwitcherID?
     @Published private(set) var quittingPID: pid_t?
     @Published private(set) var quittingName: String?
+    /// Room creation: pick windows in order; index 0 is the main spot.
+    @Published var isCreatingRoom = false
+    @Published var roomName = ""
+    @Published private(set) var roomPicks: [WindowSwitcherID] = []
+    /// Installed applications shown when the query matches no window.
+    @Published private(set) var launcherApps: [LaunchableApp] = []
+    @Published private(set) var isLoadingLauncherApps = false
     var onReady: (() -> Void)?
     var columns = 3
     var cardHeight: CGFloat = 210
     var isBusy: Bool { closingID != nil || quittingPID != nil }
     private(set) var icons: [pid_t: NSImage] = [:]
+    private let roomStore: RoomStore
     private var candidates: [WindowSwitcherID: WindowSwitcherInventory.Candidate] = [:]
     private var focusedID: WindowSwitcherID?
     private var inventoryTask: Task<WindowSwitcherInventory.Snapshot, Never>?
@@ -38,8 +49,13 @@ final class WindowSwitcherModel: ObservableObject {
     private var attemptedPreviews = Set<WindowSwitcherID>()
     private var imageOrder: [WindowSwitcherID] = []
     private var isOpen = false
+    private var didLoadLauncherApps = false
 
     var filteredItems: [WindowSwitcherItem] { WindowSwitcherState.filtered(items, query: query) }
+
+    init(roomStore: RoomStore = .shared) {
+        self.roomStore = roomStore
+    }
 
     func prepare(resetSearch: Bool = true) {
         precondition(Thread.isMainThread)
@@ -82,6 +98,7 @@ final class WindowSwitcherModel: ObservableObject {
                 ? WindowSwitcherState.initialSelection(in: self.items, focused: result.focused)
                 : WindowSwitcherState.selection(in: self.filteredItems, keeping: previousSelection)
             self.isLoading = false
+            self.loadLauncherAppsIfNeeded()
             self.onReady?()
         }
     }
@@ -116,6 +133,12 @@ final class WindowSwitcherModel: ObservableObject {
         focusedID = nil
         selectedID = nil
         isLoading = false
+        isCreatingRoom = false
+        roomName = ""
+        roomPicks.removeAll()
+        launcherApps.removeAll()
+        isLoadingLauncherApps = false
+        didLoadLauncherApps = false
         capture = WindowThumbnailCapture()
     }
 
@@ -132,6 +155,95 @@ final class WindowSwitcherModel: ObservableObject {
     }
 
     func candidate(for id: WindowSwitcherID) -> WindowSwitcherInventory.Candidate? { candidates[id] }
+
+    // MARK: - Room creation from the picker
+
+    func roomPickIndex(for id: WindowSwitcherID) -> Int? {
+        roomPicks.firstIndex(of: id).map { $0 + 1 }
+    }
+
+    func beginRoomCreation() {
+        precondition(Thread.isMainThread)
+        guard isOpen else { return }
+        isCreatingRoom = true
+        roomPicks = []
+        roomName = String(format: "%@ %d", localizedString("New Room"), roomStore.rooms.count + 1)
+        message = ""
+    }
+
+    func cancelRoomCreation() {
+        isCreatingRoom = false
+        roomPicks = []
+        roomName = ""
+        message = ""
+    }
+
+    func toggleRoomPick(_ id: WindowSwitcherID) {
+        guard isCreatingRoom else { return }
+        if let index = roomPicks.firstIndex(of: id) {
+            roomPicks.remove(at: index)
+        } else {
+            roomPicks.append(id)
+        }
+    }
+
+    var canCreateRoom: Bool {
+        isCreatingRoom && !roomPicks.isEmpty
+            && !roomName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    @discardableResult
+    func createRoom() -> Bool {
+        guard canCreateRoom else { return false }
+        let windows: [RoomWindow] = roomPicks.compactMap { id in
+            guard let candidate = candidates[id],
+                  let app = NSRunningApplication(processIdentifier: id.pid),
+                  let bundleID = app.bundleIdentifier else { return nil }
+            return RoomWindow(bundleID: bundleID, appName: candidate.item.appName,
+                              title: candidate.item.title, windowID: id.windowID)
+        }
+        guard !windows.isEmpty else {
+            message = localizedString("No compatible windows found. Open your project apps, then refresh.")
+            return false
+        }
+        let name = roomName.trimmingCharacters(in: .whitespacesAndNewlines)
+        roomStore.upsert(Room(name: name, windows: windows))
+        isCreatingRoom = false
+        roomPicks = []
+        roomName = ""
+        message = String(format: localizedString("Room “%@” created"), name)
+        return true
+    }
+
+    // MARK: - Launcher fallback
+
+    func loadLauncherAppsIfNeeded() {
+        guard isOpen, !isLoading, !query.isEmpty, filteredItems.isEmpty,
+              !didLoadLauncherApps, !isLoadingLauncherApps,
+              let settings = AppRuntime.shared.settings else { return }
+        didLoadLauncherApps = true
+        isLoadingLauncherApps = true
+        AppLauncherService().loadAppsAsync(settings: settings) { [weak self] apps in
+            guard let self else { return }
+            self.isLoadingLauncherApps = false
+            guard self.isOpen else { return }
+            let ownBundleID = Bundle.main.bundleIdentifier
+            self.launcherApps = apps.filter { $0.bundleID != ownBundleID }
+        }
+    }
+
+    var launcherMatches: [LaunchableApp] {
+        let needle = RoomText.fold(query).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !needle.isEmpty else { return [] }
+        return launcherApps.filter {
+            RoomText.fold($0.name).contains(needle) || RoomText.fold($0.bundleID).contains(needle)
+        }.prefix(5).map { $0 }
+    }
+
+    func launch(_ app: LaunchableApp) {
+        guard let settings = AppRuntime.shared.settings else { return }
+        _ = AppLauncherService().launch(app, settings: settings)
+    }
 
     func closeWindow(_ id: WindowSwitcherID) {
         precondition(Thread.isMainThread)

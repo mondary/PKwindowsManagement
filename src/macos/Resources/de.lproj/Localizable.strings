@@ -285,6 +285,7 @@
 "Create Room" = "Room erstellen";
 "Click windows in order — 1 is the main spot" = "Klicke die Fenster in Reihenfolge — 1 ist der Hauptplatz";
 "%d window(s) selected" = "%d Fenster ausgewählt";
+"Room “%@” created" = "Room „%@“ erstellt";
 "No rooms yet. Create your first room from your open windows." = "Noch keine Rooms. Erstelle deine erste Room aus deinen offenen Fenstern.";
 "Support" = "Unterstützen";
 "Updates" = "Aktualisierungen";

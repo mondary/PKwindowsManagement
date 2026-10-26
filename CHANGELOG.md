@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026.10.94] - 2026-10-26
+### Added
+- **Créer une room depuis les aperçus ⌘Tab** : bouton **Nouvelle room**, sélection des fenêtres dans l'ordre (1 = place principale), nom éditable puis création directe dans le fichier `rooms.json`. La croix de fermeture est masquée pendant la sélection pour éviter les fermetures accidentelles.
+- **Repli lanceur dans la recherche** : quand aucun titre de fenêtre ne correspond, le sélecteur propose les applications installées qui correspondent à la requête (icône, nom, **Ouvrir**) au lieu de seulement « Aucune fenêtre correspondante ». L'app choisie est lancée et le sélecteur se ferme.
+
+### Fixed
+- **Croix et badges sur le thumbnail** : la croix, le badge de sélection et les badges d'état suivent désormais le cadre réel de l'image calculé par ses proportions, au lieu du cadre plus large de la carte. Plus de croix flottant sur le panneau à côté d'une fenêtre étroite.
+
 ## [2026.10.93] - 2026-10-26
 ### Changed
 - **Bandeau de version dans les README** : les deux README affichent désormais `Version **2026.10.93**`, alignée sur la source de vérité `CHANGELOG.md`.

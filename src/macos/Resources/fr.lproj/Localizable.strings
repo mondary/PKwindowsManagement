@@ -303,6 +303,7 @@
 "Create Room" = "Créer la room";
 "Click windows in order — 1 is the main spot" = "Clique les fenêtres dans l'ordre — 1 est la place principale";
 "%d window(s) selected" = "%d fenêtre(s) sélectionnée(s)";
+"Room “%@” created" = "Room « %@ » créée";
 "No rooms yet. Create your first room from your open windows." = "Aucune room pour l'instant. Crée ta première room à partir de tes fenêtres ouvertes.";
 "Support" = "Soutenir";
 "Updates" = "Mises à jour";

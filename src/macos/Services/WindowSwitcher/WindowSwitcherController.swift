@@ -186,6 +186,21 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
 
     private func handleKey(_ event: NSEvent) -> NSEvent? {
         let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+        if model.isCreatingRoom {
+            if modifiers.isEmpty, event.keyCode == 53 {
+                model.cancelRoomCreation()
+                return nil
+            }
+            if modifiers.isEmpty, (event.keyCode == 36 || event.keyCode == 76) {
+                if !event.isARepeat { model.createRoom() }
+                return nil
+            }
+            // Keep window activation and close/quit commands out of room mode.
+            if modifiers == .command {
+                let key = event.charactersIgnoringModifiers?.lowercased()
+                if key == "w" || key == "q" || Self.digitRanks[event.keyCode] != nil { return nil }
+            }
+        }
         if modifiers == .command {
             switch event.charactersIgnoringModifiers?.lowercased() {
             case "w":
