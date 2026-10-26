@@ -264,11 +264,6 @@ struct WindowSwitcherCard: View {
                 .frame(height: WindowSwitcherState.cardCaptionHeight)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.72))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(cardBorder)
-        .shadow(color: .black.opacity(isSelected ? 0.16 : 0.09), radius: isSelected ? 9 : 5, y: 3)
-        .shadow(color: isSelected ? Color.accentColor.opacity(0.20) : .clear, radius: 7)
     }
 
     private var imageHeight: CGFloat {
@@ -279,17 +274,23 @@ struct WindowSwitcherCard: View {
 
     private var imageArea: some View {
         ZStack {
-            Color.primary.opacity(0.045)
             if let image {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(imageBorder)
+                    .shadow(color: .black.opacity(0.10), radius: 4, y: 0)
+                    .shadow(color: isSelected ? Color.accentColor.opacity(0.18) : .clear, radius: 6)
             } else {
                 fallbackThumbnail
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.primary.opacity(0.05),
+                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(imageBorder)
             }
             if isQuitting {
-                Color.black.opacity(0.36)
+                Color.black.opacity(0.32)
                 ProgressView().controlSize(.small).tint(.white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -301,7 +302,7 @@ struct WindowSwitcherCard: View {
             }
             .padding(9)
         }
-        .clipped()
+        .frame(maxWidth: .infinity)
     }
 
     private var fallbackThumbnail: some View {
@@ -355,14 +356,12 @@ struct WindowSwitcherCard: View {
             }
             Spacer(minLength: 4)
         }
-        .padding(.horizontal, 10)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.82))
-        .overlay(alignment: .top) { Divider().opacity(0.55) }
+        .padding(.horizontal, 2)
     }
 
-    private var cardBorder: some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .strokeBorder(isSelected ? Color.accentColor : Color.primary.opacity(isHovering ? 0.22 : 0.10),
+    private var imageBorder: some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .strokeBorder(isSelected ? Color.accentColor : Color.primary.opacity(isHovering ? 0.16 : 0),
                           lineWidth: isSelected ? 2.5 : 1)
     }
 

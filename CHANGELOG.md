@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.10.92] - 2026-10-26
+### Fixed
+- **Aperçus sans bordure basse ni fond blanc** : le séparateur sous chaque capture et la barre blanche du titre sont supprimés. La légende (icône, app, titre) flotte désormais directement sur le matériau du panneau, dans le même gris que le fond.
+- Les captures sont posées sur le panneau avec coins arrondis et une ombre douce et symétrique, sans cadre de carte. La sélection encadre uniquement l'image en accent, sans ligne permanente sous la fenêtre.
+
 ## [2026.10.91] - 2026-10-26
 ### Fixed
 - **Format des aperçus ⌘Tab stabilisé** : toutes les tuiles ont désormais la même hauteur, quel que soit le format de la fenêtre capturée. L'aperçu est cadré sans déformation (`scaledToFit`) sur un fond neutre, avec des bandes discrètes si nécessaire au lieu d'un recadrage plein cadre.
