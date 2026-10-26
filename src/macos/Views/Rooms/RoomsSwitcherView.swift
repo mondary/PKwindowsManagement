@@ -513,7 +513,7 @@ private struct CreationView: View {
                     .foregroundStyle(.secondary)
                 Button(localizedString("Refresh")) { model.refreshOffers() }
                     .buttonStyle(.plain)
-                    .foregroundStyle(.accentColor)
+                    .foregroundStyle(Color.accentColor)
                 Spacer()
             } else {
                 ScrollView {
