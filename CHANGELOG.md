@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.93] - 2026-10-26
+### Changed
+- **Bandeau de version dans les README** : les deux README affichent désormais `Version **2026.10.93**`, alignée sur la source de vérité `CHANGELOG.md`.
+
 ## [2026.10.92] - 2026-10-26
 ### Fixed
 - **Aperçus sans bordure basse ni fond blanc** : le séparateur sous chaque capture et la barre blanche du titre sont supprimés. La légende (icône, app, titre) flotte désormais directement sur le matériau du panneau, dans le même gris que le fond.
