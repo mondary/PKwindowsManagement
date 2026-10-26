@@ -99,6 +99,12 @@ enum WindowSwitcherChecks {
         }
         let portrait = WindowSwitcherState.thumbnailSize(for: CGSize(width: 1000, height: 2000))
         precondition(portrait == CGSize(width: 200, height: 400))
-        print("Window switcher checks passed: search/accents, identity, 1–64 windows, filtering/closure selection, grid navigation and bounded thumbnails")
+        // Every card has the same height inside one layout; only the column
+        // count changes it.
+        precondition(WindowSwitcherState.cardHeight(forWidth: 1120, columns: 4) == 210)
+        precondition(WindowSwitcherState.cardHeight(forWidth: 740, columns: 3) == 190)
+        precondition(WindowSwitcherState.cardHeight(forWidth: 500, columns: 2) == 190)
+        precondition(WindowSwitcherState.cardHeight(forWidth: 400, columns: 1) == 210)
+        print("Window switcher checks passed: search/accents, identity, 1–64 windows, filtering/closure selection, grid navigation, equal card heights and bounded thumbnails")
     }
 }

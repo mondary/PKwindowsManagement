@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.91] - 2026-10-26
+### Fixed
+- **Format des aperçus ⌘Tab stabilisé** : toutes les tuiles ont désormais la même hauteur, quel que soit le format de la fenêtre capturée. L'aperçu est cadré sans déformation (`scaledToFit`) sur un fond neutre, avec des bandes discrètes si nécessaire au lieu d'un recadrage plein cadre.
+- **Fin du rendu métallique** : suppression du dégradé pleine carte et des reflets. Le titre, le nom de l'app et l'icône vivent dans une barre compacte de 40 px sous l'aperçu ; le badge `⌘1–9`, l'état et la croix restent en surimpression sur l'image avec des capsules noires opaques.
+- **Plus de chevauchement** : la sélection ne change plus l'échelle de la tuile. Elle se marque par une bordure accent et une ombre douce, sans déborder sur les voisines.
+
 ## [2026.10.90] - 2026-10-26
 ### Changed
 - **Aperçus ⌘Tab pleine tuile** : la vignette occupe désormais toute la carte, sans bloc nom/icône séparé. Le nom de l'app, le titre de la fenêtre, le badge `⌘1–9`, la croix de fermeture et l'état (réduite, masquée, plein écran, hors écran) sont posés en surimpression sur des dégradés sombres. En-tête compacté avec recherche intégrée et pied de page en touches de clavier.

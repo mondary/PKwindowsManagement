@@ -127,4 +127,19 @@ enum WindowSwitcherState {
         return CGSize(width: max(1, (size.width * scale).rounded()),
                       height: max(1, (size.height * scale).rounded()))
     }
+
+    /// Grid geometry is shared by the picker layout and the controller so every
+    /// card has the same height regardless of the captured window's aspect.
+    static let gridSpacing: CGFloat = 12
+    static let gridPadding: CGFloat = 16
+    static let cardCaptionHeight: CGFloat = 40
+    static let cardImageAspectRatio: CGFloat = 1.55
+
+    static func cardHeight(forWidth width: CGFloat, columns: Int) -> CGFloat {
+        let columns = max(1, columns)
+        let available = max(0, width - gridPadding * 2)
+        let cardWidth = (available - CGFloat(columns - 1) * gridSpacing) / CGFloat(columns)
+        let imageHeight = min(170, max(150, (cardWidth / cardImageAspectRatio).rounded()))
+        return imageHeight + cardCaptionHeight
+    }
 }

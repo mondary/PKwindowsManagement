@@ -21,6 +21,7 @@ final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var quittingName: String?
     var onReady: (() -> Void)?
     var columns = 3
+    var cardHeight: CGFloat = 210
     var isBusy: Bool { closingID != nil || quittingPID != nil }
     private(set) var icons: [pid_t: NSImage] = [:]
     private var candidates: [WindowSwitcherID: WindowSwitcherInventory.Candidate] = [:]

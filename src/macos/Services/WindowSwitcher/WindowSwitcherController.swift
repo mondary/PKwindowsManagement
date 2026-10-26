@@ -73,8 +73,9 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         let pointer = NSEvent.mouseLocation
         guard let screen = NSScreen.screens.first(where: { $0.frame.contains(pointer) }) ?? NSScreen.main else { return }
         let visible = screen.visibleFrame
-        let size = NSSize(width: min(1120, visible.width - 32), height: min(760, visible.height - 32))
+        let size = NSSize(width: min(1120, visible.width - 32), height: min(800, visible.height - 32))
         model.columns = size.width >= 1000 ? 4 : (size.width >= 740 ? 3 : (size.width >= 500 ? 2 : 1))
+        model.cardHeight = WindowSwitcherState.cardHeight(forWidth: size.width, columns: model.columns)
         model.message = message
         let panel = WindowSwitcherPanel(
             contentRect: NSRect(x: visible.midX - size.width / 2, y: visible.midY - size.height / 2,

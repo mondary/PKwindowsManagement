@@ -123,21 +123,23 @@ struct WindowSwitcherView: View {
     private var windowGrid: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: model.columns),
-                          spacing: 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: WindowSwitcherState.gridSpacing),
+                                        count: model.columns),
+                          spacing: WindowSwitcherState.gridSpacing) {
                     ForEach(Array(model.filteredItems.enumerated()), id: \.element.id) { rank, item in
                         WindowSwitcherCard(item: item, icon: model.icons[item.id.pid], image: model.images[item.id],
-                            isSelected: model.selectedID == item.id, rank: rank,
+                            isSelected: model.selectedID == item.id, rank: rank, cardHeight: model.cardHeight,
                             isLoadingPreview: model.previewsGranted && !model.completedPreviews.contains(item.id),
                             isClosing: model.closingID == item.id, isQuitting: model.quittingPID == item.id.pid,
                             closeInProgress: model.isBusy,
                             onActivate: { onActivate(item.id) }, onCloseWindow: { model.closeWindow(item.id) },
                             onQuitApp: { model.quitApp(item.id) })
+                            .frame(height: model.cardHeight)
                             .id(item.id)
                             .onAppear { model.requestPreview(item.id) }
                     }
                 }
-                .padding(16)
+                .padding(WindowSwitcherState.gridPadding)
             }
             .id(model.generation)
             .onChange(of: model.selectedID) { id in
@@ -222,6 +224,7 @@ struct WindowSwitcherCard: View {
     let image: NSImage?
     let isSelected: Bool
     let rank: Int
+    let cardHeight: CGFloat
     var isLoadingPreview = false
     var isClosing = false
     var isQuitting = false
@@ -242,11 +245,8 @@ struct WindowSwitcherCard: View {
             .accessibilityLabel(item.appName + ", " + item.displayTitle)
             .accessibilityValue(isSelected ? localizedString("Selected") : "")
             .accessibilityHint(localizedString("Activate this window"))
-            closeButton.padding(10)
+            closeButton.padding(9)
         }
-        .scaleEffect(isSelected ? 1.012 : (isHovering ? 1.005 : 1))
-        .animation(.easeOut(duration: 0.16), value: isSelected)
-        .animation(.easeOut(duration: 0.14), value: isHovering)
         .onHover { hovering in isHovering = hovering }
         .contextMenu {
             Button(localizedString("Close window")) { onCloseWindow() }
@@ -257,91 +257,64 @@ struct WindowSwitcherCard: View {
     }
 
     private var cardSurface: some View {
-        ZStack {
-            thumbnail
-            overlayGradient
-            if isQuitting {
-                Color.black.opacity(0.42)
-                ProgressView().controlSize(.small).tint(.white)
-            }
-            cardContent
+        VStack(spacing: 0) {
+            imageArea
+                .frame(height: imageHeight)
+            captionBar
+                .frame(height: WindowSwitcherState.cardCaptionHeight)
         }
-        .aspectRatio(1.45, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.72))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(cardBorder)
-        .shadow(color: .black.opacity(isSelected ? 0.26 : 0.16),
-                radius: isSelected ? 14 : 8, y: 6)
-        .shadow(color: isSelected ? Color.accentColor.opacity(0.26) : .clear, radius: 12)
+        .shadow(color: .black.opacity(isSelected ? 0.16 : 0.09), radius: isSelected ? 9 : 5, y: 3)
+        .shadow(color: isSelected ? Color.accentColor.opacity(0.20) : .clear, radius: 7)
     }
 
-    // MARK: - Full-bleed preview
+    private var imageHeight: CGFloat {
+        max(120, cardHeight - WindowSwitcherState.cardCaptionHeight)
+    }
 
-    private var thumbnail: some View {
+    // MARK: - Image
+
+    private var imageArea: some View {
         ZStack {
-            Color.black.opacity(0.88)
+            Color.primary.opacity(0.045)
             if let image {
                 Image(nsImage: image)
                     .resizable()
-                    .scaledToFill()
+                    .scaledToFit()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
             } else {
                 fallbackThumbnail
             }
+            if isQuitting {
+                Color.black.opacity(0.36)
+                ProgressView().controlSize(.small).tint(.white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .topLeading) {
+            VStack(alignment: .leading, spacing: 6) {
+                rankBadge
+                if let status { statusBadge(status) }
+            }
+            .padding(9)
+        }
+        .clipped()
     }
 
     private var fallbackThumbnail: some View {
-        ZStack {
-            LinearGradient(colors: [Color.accentColor.opacity(0.42), .black.opacity(0.86)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-            Circle()
-                .fill(Color.accentColor.opacity(0.28))
-                .frame(width: 220, height: 220)
-                .blur(radius: 46)
-                .offset(x: -70, y: -52)
-            VStack(spacing: 10) {
-                appIcon
-                    .frame(width: 54, height: 54)
-                    .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
-                if isLoadingPreview {
-                    ProgressView().controlSize(.small).tint(.white)
-                } else {
-                    Text(localizedString("Preview unavailable"))
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.62))
-                }
+        VStack(spacing: 8) {
+            appIcon.frame(width: 48, height: 48)
+            if isLoadingPreview {
+                ProgressView().controlSize(.small)
+            } else {
+                Text(localizedString("Preview unavailable"))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
-    }
-
-    private var overlayGradient: some View {
-        LinearGradient(stops: [
-            .init(color: .black.opacity(0.42), location: 0),
-            .init(color: .black.opacity(0.05), location: 0.28),
-            .init(color: .clear, location: 0.52),
-            .init(color: .black.opacity(0.84), location: 1)
-        ], startPoint: .top, endPoint: .bottom)
-        .allowsHitTesting(false)
-    }
-
-    // MARK: - Overlay chrome
-
-    private var cardContent: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                rankBadge
-                Spacer(minLength: 0)
-            }
-            if let status {
-                statusBadge(status)
-            }
-            Spacer(minLength: 0)
-            caption
-        }
-        .padding(11)
-        .allowsHitTesting(false)
     }
 
     @ViewBuilder private var rankBadge: some View {
@@ -350,48 +323,46 @@ struct WindowSwitcherCard: View {
                 .font(.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit())
                 .foregroundStyle(.white)
                 .padding(.horizontal, 8).padding(.vertical, 4)
-                .background(.black.opacity(0.4), in: Capsule())
-                .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
-                .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
+                .background(Color.black.opacity(0.56), in: Capsule())
         }
     }
 
     private func statusBadge(_ key: String) -> some View {
         Label(localizedString(key), systemImage: statusIcon)
             .font(.system(size: 9.5, weight: .semibold))
-            .foregroundStyle(.white.opacity(0.92))
+            .foregroundStyle(.white)
             .padding(.horizontal, 7).padding(.vertical, 3)
-            .background(.black.opacity(0.42), in: Capsule())
-            .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 1))
+            .background(Color.black.opacity(0.56), in: Capsule())
     }
 
-    private var caption: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            appIcon
-                .frame(width: 22, height: 22)
-                .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
-            VStack(alignment: .leading, spacing: 1) {
+    private var captionBar: some View {
+        HStack(spacing: 8) {
+            appIcon.frame(width: 20, height: 20)
+            VStack(alignment: .leading, spacing: 0) {
                 if item.title.isEmpty {
-                    Text(item.appName).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                    Text(item.appName)
+                        .font(.system(size: 12, weight: .semibold))
+                        .lineLimit(1)
                 } else {
                     Text(item.appName)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.72))
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                     Text(item.title)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .lineLimit(1)
                 }
             }
-            .foregroundStyle(.white)
-            .shadow(color: .black.opacity(0.45), radius: 2, y: 1)
-            Spacer(minLength: 0)
+            Spacer(minLength: 4)
         }
+        .padding(.horizontal, 10)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.82))
+        .overlay(alignment: .top) { Divider().opacity(0.55) }
     }
 
     private var cardBorder: some View {
-        RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .strokeBorder(isSelected ? Color.accentColor : Color.white.opacity(isHovering ? 0.26 : 0.14),
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .strokeBorder(isSelected ? Color.accentColor : Color.primary.opacity(isHovering ? 0.22 : 0.10),
                           lineWidth: isSelected ? 2.5 : 1)
     }
 
@@ -410,16 +381,15 @@ struct WindowSwitcherCard: View {
 
     private var closeGlyph: some View {
         ZStack {
-            Circle().fill(Color.black.opacity(0.38))
+            Circle().fill(Color.black.opacity(0.46))
             if isClosing {
                 ProgressView().controlSize(.small).tint(.white)
             } else {
-                Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(.white)
             }
         }
-        .frame(width: 28, height: 28)
-        .overlay(Circle().strokeBorder(.white.opacity(0.2), lineWidth: 1))
-        .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+        .frame(width: 26, height: 26)
+        .shadow(color: .black.opacity(0.18), radius: 3, y: 1)
     }
 
     @ViewBuilder private var appIcon: some View {
