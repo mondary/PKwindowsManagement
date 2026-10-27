@@ -20,6 +20,12 @@ struct WindowSwitcherItem: Identifiable, Equatable, Sendable {
 
 /// Pure selection rules shared by the keyboard, search field and grid.
 enum WindowSwitcherState {
+    /// Return/keypad Enter confirms with or without Command/Shift held.
+    /// Control/Option combinations remain available to other picker actions.
+    static func confirmsWindowSelection(keyCode: UInt16, control: Bool, option: Bool) -> Bool {
+        (keyCode == 36 || keyCode == 76) && !control && !option
+    }
+
     /// The picker only lists apps that own user-facing windows. Menu-bar-only
     /// apps (system monitors, launchers, clipboard managers…) and widget hosts
     /// are accessory/prohibited apps: they expose HUD, popover or desktop

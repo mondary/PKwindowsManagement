@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.106] - 2026-10-27
+### Fixed
+- Entrée et Entrée pavé numérique activent la fenêtre sélectionnée même lorsque Commande est encore maintenue dans les aperçus. Une validation pendant le chargement attend la fin de l'inventaire ; ⌘Tab depuis un panneau déjà ouvert valide aussi au relâchement de Commande.
+
 ## [2026.10.105] - 2026-10-27
 ### Fixed
 - Relâcher ⌘ dans les aperçus de fenêtres bascule maintenant sur la fenêtre sélectionnée, même quand « Garder le sélecteur ouvert » est activé. Cette option ne retarde plus l'activation que si un filtre est saisi : sans filtre, il n'y a rien à affiner, donc ⌘⇥ se comporte comme le sélecteur du système. Le libellé et les textes d'aide FR/EN/ES/DE sont alignés sur ce comportement.

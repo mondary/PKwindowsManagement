@@ -4,6 +4,16 @@ import CoreGraphics
 @main
 enum WindowSwitcherChecks {
     static func main() {
+        // Command/Shift do not change Return's meaning: the controller checks
+        // confirmation before its held-Command text/shortcut branch.
+        for keyCode: UInt16 in [36, 76] {
+            precondition(WindowSwitcherState.confirmsWindowSelection(keyCode: keyCode, control: false, option: false))
+            precondition(!WindowSwitcherState.confirmsWindowSelection(keyCode: keyCode, control: true, option: false))
+            precondition(!WindowSwitcherState.confirmsWindowSelection(keyCode: keyCode, control: false, option: true))
+        }
+        for keyCode: UInt16 in [48, 53, 49, 0, 125] {
+            precondition(!WindowSwitcherState.confirmsWindowSelection(keyCode: keyCode, control: false, option: false))
+        }
         // Only regular apps own the windows the picker should show. Menu-bar
         // apps, widget hosts and system chrome are accessory/prohibited apps,
         // even when they expose HUD or desktop windows.

@@ -36,6 +36,13 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     /// Further presses accumulate while the inventory loads, then move live.
     func handleCommandTab(backwards: Bool) {
         if isVisible {
+            // A picker opened from the menu/hotkey becomes a hold-Command
+            // session too, otherwise its release would be ignored.
+            if presentation != .commandTab {
+                presentation = .commandTab
+                commandTabApplied = !model.isLoading
+                commandTabOffset = 0
+            }
             if presentation == .commandTab, !commandTabApplied {
                 commandTabOffset += backwards ? -1 : 1
             } else {
@@ -55,10 +62,17 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         if WindowSwitcherState.defersCommandTabCommit(
             sticky: AppRuntime.shared.settings?.windowSwitcherStickyCommandTab == true,
             query: model.query) { return }
-        if let id = model.selectedID {
-            activate(id)
-        } else if model.isLoading {
+        activateSelectionWhenReady()
+    }
+
+    private func activateSelectionWhenReady() {
+        // Refresh may still expose the previous selection. Wait for the new
+        // inventory before resolving the target rather than silently losing
+        // an early Return/release against an empty candidate dictionary.
+        if model.isLoading {
             commitWhenReady = true
+        } else if let id = model.selectedID {
+            activate(id)
         } else {
             hide()
         }
@@ -146,7 +160,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         }
         if commitWhenReady {
             commitWhenReady = false
-            if let id = model.selectedID { activate(id) } else { hide() }
+            activateSelectionWhenReady()
         }
     }
 
@@ -282,6 +296,17 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             if modifiers == .command {
                 if key == "w" || key == "q" || Self.digitRanks[event.keyCode] != nil { return nil }
             }
+        }
+        // Return is an explicit confirmation even while Command is held.
+        // Handle it before the Command text/shortcut branch, but leave room
+        // forms, menus and IME composition in control of their own Return.
+        if !model.isCreatingRoom,
+           WindowSwitcherState.confirmsWindowSelection(
+            keyCode: event.keyCode, control: modifiers.contains(.control), option: modifiers.contains(.option)),
+           (panel?.firstResponder as? NSTextView)?.hasMarkedText() != true,
+           model.selectedID != nil || model.isLoading {
+            if !event.isARepeat { activateSelectionWhenReady() }
+            return nil
         }
         if modifiers == .command, handleTextShortcut(event, modifiers: modifiers) { return nil }
         if modifiers.isEmpty, model.filteredItems.isEmpty, !model.query.isEmpty {
