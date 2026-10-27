@@ -316,13 +316,13 @@ final class AppLauncherService {
     private func launch(snippet: SnippetDefinition) {
         switch snippet.kind {
         case .script:
-            executeSnippet(snippet.body)
+            executeSnippet(snippet.body, id: snippet.id)
         case .url:
             openURL(snippet.urlString, inBrowserBundleID: snippet.browserBundleID)
         }
     }
 
-    private func executeSnippet(_ script: String) {
+    private func executeSnippet(_ script: String, id: String) {
         let ext = script.hasPrefix("#!/bin/bash") ? "bash" : "sh"
         let tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("pk_snippet_\(UUID().uuidString).\(ext)")
@@ -337,12 +337,14 @@ final class AppLauncherService {
             process.standardOutput = FileHandle.nullDevice
             process.standardError = FileHandle.nullDevice
             process.terminationHandler = { proc in
+                if proc.terminationStatus != 0 {
+                    NSLog("PKwindowsManagement: snippet %@ exited with status %d", id, proc.terminationStatus)
+                }
                 try? FileManager.default.removeItem(at: tempURL)
-                proc.waitUntilExit()
             }
             try process.run()
         } catch {
-            NSLog("PKwindowsManagement: snippet execution failed: \(error)")
+            NSLog("PKwindowsManagement: snippet %@ execution failed: %@", id, String(describing: error))
             try? FileManager.default.removeItem(at: tempURL)
         }
     }

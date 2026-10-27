@@ -266,7 +266,29 @@ final class LaunchShortcutMonitor {
             shortcut.key.lowercased() == eventKey && modifierState.matches(shortcut.modifier, flags: flags)
         })?.key else { return nil }
 
-        return appsByBundleID[bundleID]
+        // Snippets can be edited while Settings is closed. The cached app
+        // catalog is useful for installed apps, but its snippet objects (and
+        // even its set of snippet IDs) can become stale until the next refresh.
+        // Resolve these directly from the live settings, after the exact
+        // modifier/key match; do not broaden right-Command to plain Command.
+        if let snippet = settings.snippet(for: bundleID) {
+            guard snippet.isEnabled else { return nil }
+            return LaunchableApp(
+                id: snippet.id,
+                name: snippet.title,
+                bundleID: snippet.id,
+                url: URL(fileURLWithPath: "/"),
+                icon: NSImage(size: NSSize(width: 1, height: 1)),
+                shortcut: settings.launchShortcut(for: snippet.id),
+                snippet: snippet
+            )
+        }
+
+        // A deleted snippet must not launch from an old cached snapshot.
+        if let cached = appsByBundleID[bundleID], cached.snippet != nil { return nil }
+        if let cached = appsByBundleID[bundleID] { return cached }
+        NSLog("PKwindowsManagement: shortcut target unavailable: %@", bundleID)
+        return nil
     }
 
     private func matchWindowShortcut(event: CGEvent) -> WindowSnapAction? {

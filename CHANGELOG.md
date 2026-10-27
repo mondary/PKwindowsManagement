@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.104] - 2026-10-27
+### Fixed
+- Les raccourcis de snippets, notamment Commande droite+D/H, retrouvent leur cible dans les réglages courants même si le cache du launcher n'a pas été rafraîchi depuis la fermeture des Réglages. La distinction Commande gauche/droite reste inchangée ; les erreurs d'exécution des snippets sont désormais consignées dans les logs.
+
 ## [2026.10.103] - 2026-10-26
 ### Changed
 - Le panneau Rooms (`⌃⌥R` et `⌘⇧R`) place le curseur dans la recherche : saisir un nom filtre les rooms et propose toujours « Créer la room ». `↑`/`↓` choisissent le résultat, `↵` ouvre ou démarre la création.
