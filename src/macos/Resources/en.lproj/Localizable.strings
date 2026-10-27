@@ -324,6 +324,7 @@
 "Quit app" = "Quit app";
 "Quit" = "Quit";
 "Windowless apps" = "Windowless apps";
+"Activate the app" = "Activate the app";
 "Menu bar" = "Menu bar";
 
 "Quit %@" = "Quit %@";

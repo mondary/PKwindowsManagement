@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.108] - 2026-10-27
+### Changed
+- Les processus sans fenêtre et les apps de barre de menus ne forment plus deux listes pleine largeur sous la grille : ce sont désormais deux bandes compactes de pastilles, alignées sur la bande Rooms. Chaque pastille montre l'icône et le nom ; une croix apparaît au survol ou à la sélection pour arrêter l'app, `⌘Q` restant disponible. Moins de hauteur, même navigation clavier.
+
 ## [2026.10.107] - 2026-10-27
 ### Added
 - Les aperçus de fenêtres ajoutent deux sections dédiées après la grille : **Apps sans fenêtre** (apps régulières actives sans fenêtre listée, donc présentes au Dock) et **Barre de menus** (apps accessoires). Elles partagent la sélection clavier : `↑`/`↓` et `⇥` y descendent depuis la grille, `↵` active l'app, `⌘Q` ou le bouton **Quitter** l'arrête proprement. Les démons système, le Dock, le Centre de contrôle et les autres agents protégés de macOS restent exclus.

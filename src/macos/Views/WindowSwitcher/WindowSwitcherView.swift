@@ -402,22 +402,26 @@ struct WindowSwitcherView: View {
     }
 
     /// Running apps without windows stay reachable from the keyboard so they
-    /// can be quit without hunting through the Dock or menu bar.
+    /// can be quit without hunting through the Dock or menu bar. Compact pill
+    /// strips keep them secondary to the window grid.
     @ViewBuilder private var processSections: some View {
         let dock = model.filteredProcessItems.filter { $0.kind == .dockApp }
         let menuBar = model.filteredProcessItems.filter { $0.kind == .menuBarApp }
-        if !dock.isEmpty {
-            processSection(localizedString("Windowless apps"), items: dock)
+        VStack(alignment: .leading, spacing: 10) {
+            if !dock.isEmpty {
+                processStrip(localizedString("Windowless apps"), symbol: "dock.rectangle", items: dock)
+            }
+            if !menuBar.isEmpty {
+                processStrip(localizedString("Menu bar"), symbol: "menubar.rectangle", items: menuBar)
+            }
         }
-        if !menuBar.isEmpty {
-            processSection(localizedString("Menu bar"), items: menuBar)
-        }
+        .padding(.bottom, 10)
     }
 
-    private func processSection(_ title: String, items: [WindowSwitcherItem]) -> some View {
+    private func processStrip(_ title: String, symbol: String, items: [WindowSwitcherItem]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemName: "power")
+                Image(systemName: symbol)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
                 Text(title)
@@ -431,63 +435,32 @@ struct WindowSwitcherView: View {
                     .padding(.vertical, 2)
                     .background(.primary.opacity(0.06), in: Capsule())
             }
-            VStack(spacing: 4) {
-                ForEach(items) { item in
-                    processRow(item)
+            .padding(.horizontal, WindowSwitcherState.gridPadding)
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(items) { item in
+                            ProcessPill(item: item, icon: model.icons[item.id.pid],
+                                        isSelected: model.selectedID == item.id,
+                                        isQuitting: model.quittingPID == item.id.pid,
+                                        isBusy: model.isBusy,
+                                        onActivate: {
+                                            model.selectedID = item.id
+                                            model.activateProcess(item.id)
+                                        },
+                                        onQuit: { model.quitProcess(item.id) })
+                                .id(item.id)
+                        }
+                    }
+                    .padding(.horizontal, WindowSwitcherState.gridPadding)
+                    .padding(.vertical, 2)
+                }
+                .onChange(of: model.selectedID) { id in
+                    guard let id, items.contains(where: { $0.id == id }) else { return }
+                    withAnimation { proxy.scrollTo(id, anchor: .center) }
                 }
             }
         }
-        .padding(.horizontal, WindowSwitcherState.gridPadding)
-        .padding(.bottom, 12)
-    }
-
-    private func processRow(_ item: WindowSwitcherItem) -> some View {
-        let isSelected = model.selectedID == item.id
-        return HStack(spacing: 10) {
-            Image(nsImage: model.icons[item.id.pid] ?? NSImage())
-                .resizable()
-                .scaledToFit()
-                .frame(width: 22, height: 22)
-            Text(item.appName)
-                .font(.system(size: 12.5, weight: .medium))
-                .lineLimit(1)
-            Spacer(minLength: 6)
-            if model.quittingPID == item.id.pid {
-                ProgressView().controlSize(.small)
-            } else {
-                Button { model.quitProcess(item.id) } label: {
-                    Label(localizedString("Quit"), systemImage: "power")
-                        .font(.caption2.weight(.semibold))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.primary.opacity(0.06), in: Capsule())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.primary.opacity(0.75))
-                .help(String(format: localizedString("Quit %@"), item.appName))
-                .accessibilityLabel(String(format: localizedString("Quit %@"), item.appName))
-                .disabled(model.isBusy)
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(isSelected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.04),
-                    in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
-            .strokeBorder(isSelected ? Color.accentColor.opacity(0.55) : .clear, lineWidth: 1))
-        .contentShape(Rectangle())
-        .onTapGesture {
-            model.selectedID = item.id
-            model.activateProcess(item.id)
-        }
-        .contextMenu {
-            Button(String(format: localizedString("Quit %@"), item.appName)) { model.quitProcess(item.id) }
-                .disabled(model.isBusy)
-        }
-        .id(item.id)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(item.appName)
-        .accessibilityValue(isSelected ? localizedString("Selected") : "")
     }
 
     private var emptyView: some View {
@@ -994,6 +967,63 @@ private struct RoomPickerCard: View {
         case .dwindle: return "rectangle.split.2x2"
         case .monocle: return "rectangle.on.rectangle"
         }
+    }
+}
+
+private struct ProcessPill: View {
+    let item: WindowSwitcherItem
+    let icon: NSImage?
+    let isSelected: Bool
+    let isQuitting: Bool
+    let isBusy: Bool
+    let onActivate: () -> Void
+    let onQuit: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        HStack(spacing: 7) {
+            if let icon {
+                Image(nsImage: icon).resizable().scaledToFit().frame(width: 18, height: 18)
+            } else {
+                Image(systemName: "app.dashed").font(.system(size: 13)).foregroundStyle(.secondary)
+            }
+            Text(item.appName)
+                .font(.system(size: 11.5, weight: .medium))
+                .lineLimit(1)
+            if isQuitting {
+                ProgressView().controlSize(.mini)
+            } else {
+                Button(action: onQuit) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 7.5, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 14, height: 14)
+                        .background(.primary.opacity(0.08), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .opacity(isHovering || isSelected ? 1 : 0)
+                .allowsHitTesting(isHovering || isSelected)
+                .help(String(format: localizedString("Quit %@"), item.appName))
+                .accessibilityLabel(String(format: localizedString("Quit %@"), item.appName))
+                .disabled(isBusy)
+            }
+        }
+        .padding(.leading, 9)
+        .padding(.trailing, 7)
+        .padding(.vertical, 5)
+        .background(isSelected ? Color.accentColor.opacity(0.16) : Color.primary.opacity(0.05), in: Capsule())
+        .overlay(Capsule().strokeBorder(isSelected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1))
+        .contentShape(Capsule())
+        .onTapGesture(perform: onActivate)
+        .onHover { isHovering = $0 }
+        .contextMenu {
+            Button(String(format: localizedString("Quit %@"), item.appName), action: onQuit)
+                .disabled(isBusy)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(item.appName)
+        .accessibilityValue(isSelected ? localizedString("Selected") : "")
+        .accessibilityHint(localizedString("Activate the app"))
     }
 }
 
