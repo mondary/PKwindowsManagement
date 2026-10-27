@@ -7,6 +7,14 @@ struct WindowSwitcherID: Hashable, Sendable {
 }
 
 struct WindowSwitcherItem: Identifiable, Equatable, Sendable {
+    enum ItemKind: Equatable, Sendable {
+        case window
+        /// Regular app running without any listed window (Dock indicator).
+        case dockApp
+        /// Accessory app living in the menu bar.
+        case menuBarApp
+    }
+
     let id: WindowSwitcherID
     let appName: String
     let title: String
@@ -14,8 +22,10 @@ struct WindowSwitcherItem: Identifiable, Equatable, Sendable {
     let isHidden: Bool
     let isFullScreen: Bool
     let isOnScreen: Bool
+    var kind: ItemKind = .window
 
     var displayTitle: String { title.isEmpty ? appName : title }
+    var isProcess: Bool { kind != .window }
 }
 
 /// Pure selection rules shared by the keyboard, search field and grid.
@@ -60,6 +70,31 @@ enum WindowSwitcherState {
     static func defersCommandTabCommit(sticky: Bool, query: String) -> Bool {
         guard sticky else { return false }
         return !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Processes shown in the dedicated picker sections: running regular apps
+    /// without windows (Dock) and user-facing accessory apps (menu bar).
+    /// Prohibited background daemons and the excluded system agents never
+    /// appear, so quitting from the picker cannot take down macOS chrome.
+    static func isListedProcess(activationPolicy: Int, bundleIdentifier: String?) -> Bool {
+        guard activationPolicy == 0 || activationPolicy == 1 else { return false }
+        guard let bundleIdentifier else { return true }
+        return !excludedBundleIdentifiers.contains(bundleIdentifier)
+    }
+
+    /// The picker section a listed process belongs to.
+    static func processKind(activationPolicy: Int) -> WindowSwitcherItem.ItemKind? {
+        switch activationPolicy {
+        case 0: return .dockApp
+        case 1: return .menuBarApp
+        default: return nil
+        }
+    }
+
+    /// Single keyboard stream: filtered windows first, then the filtered
+    /// process sections, so arrows/Tab walk from the grid into the lists.
+    static func navigationItems(windows: [WindowSwitcherItem], processes: [WindowSwitcherItem]) -> [WindowSwitcherItem] {
+        windows + processes
     }
 
     static func filtered(_ items: [WindowSwitcherItem], query: String) -> [WindowSwitcherItem] {

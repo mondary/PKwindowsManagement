@@ -29,7 +29,7 @@ struct WindowSwitcherView: View {
                 if model.isLoading {
                     ProgressView(localizedString("Loading windows…"))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if model.filteredItems.isEmpty {
+                } else if model.navItems.isEmpty {
                     emptyView
                 } else {
                     windowGrid
@@ -362,38 +362,132 @@ struct WindowSwitcherView: View {
     private var windowGrid: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: WindowSwitcherState.gridSpacing),
-                                        count: model.columns),
-                          spacing: WindowSwitcherState.gridSpacing) {
-                    ForEach(Array(model.filteredItems.enumerated()), id: \.element.id) { rank, item in
-                        let pickIndex = model.roomPickIndex(for: item.id)
-                        WindowSwitcherCard(item: item, icon: model.icons[item.id.pid], image: model.images[item.id],
-                            isSelected: model.selectedID == item.id, rank: rank, cardHeight: model.cardHeight,
-                            isRoomPicking: model.isCreatingRoom, pickIndex: pickIndex,
-                            isLoadingPreview: model.previewsGranted && !model.completedPreviews.contains(item.id),
-                            isClosing: model.closingID == item.id, isQuitting: model.quittingPID == item.id.pid,
-                            closeInProgress: model.isBusy,
-                            onActivate: {
-                                if model.isCreatingRoom {
-                                    model.selectedID = item.id
-                                    model.toggleRoomPick(item.id)
-                                } else {
-                                    onActivate(item.id)
-                                }
-                            }, onCloseWindow: { model.closeWindow(item.id) },
-                            onQuitApp: { model.quitApp(item.id) })
-                            .frame(height: model.cardHeight)
-                            .id(item.id)
-                            .onAppear { model.requestPreview(item.id) }
+                LazyVStack(spacing: 0) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: WindowSwitcherState.gridSpacing),
+                                            count: model.columns),
+                              spacing: WindowSwitcherState.gridSpacing) {
+                        ForEach(Array(model.filteredItems.enumerated()), id: \.element.id) { rank, item in
+                            let pickIndex = model.roomPickIndex(for: item.id)
+                            WindowSwitcherCard(item: item, icon: model.icons[item.id.pid], image: model.images[item.id],
+                                isSelected: model.selectedID == item.id, rank: rank, cardHeight: model.cardHeight,
+                                isRoomPicking: model.isCreatingRoom, pickIndex: pickIndex,
+                                isLoadingPreview: model.previewsGranted && !model.completedPreviews.contains(item.id),
+                                isClosing: model.closingID == item.id, isQuitting: model.quittingPID == item.id.pid,
+                                closeInProgress: model.isBusy,
+                                onActivate: {
+                                    if model.isCreatingRoom {
+                                        model.selectedID = item.id
+                                        model.toggleRoomPick(item.id)
+                                    } else {
+                                        onActivate(item.id)
+                                    }
+                                }, onCloseWindow: { model.closeWindow(item.id) },
+                                onQuitApp: { model.quitApp(item.id) })
+                                .frame(height: model.cardHeight)
+                                .id(item.id)
+                                .onAppear { model.requestPreview(item.id) }
+                        }
+                    }
+                    .padding(WindowSwitcherState.gridPadding)
+                    if !model.isCreatingRoom {
+                        processSections
                     }
                 }
-                .padding(WindowSwitcherState.gridPadding)
             }
             .id(model.generation)
             .onChange(of: model.selectedID) { id in
                 if let id { proxy.scrollTo(id, anchor: .center) }
             }
         }
+    }
+
+    /// Running apps without windows stay reachable from the keyboard so they
+    /// can be quit without hunting through the Dock or menu bar.
+    @ViewBuilder private var processSections: some View {
+        let dock = model.filteredProcessItems.filter { $0.kind == .dockApp }
+        let menuBar = model.filteredProcessItems.filter { $0.kind == .menuBarApp }
+        if !dock.isEmpty {
+            processSection(localizedString("Windowless apps"), items: dock)
+        }
+        if !menuBar.isEmpty {
+            processSection(localizedString("Menu bar"), items: menuBar)
+        }
+    }
+
+    private func processSection(_ title: String, items: [WindowSwitcherItem]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "power")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                Text("\(items.count)")
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(.primary.opacity(0.06), in: Capsule())
+            }
+            VStack(spacing: 4) {
+                ForEach(items) { item in
+                    processRow(item)
+                }
+            }
+        }
+        .padding(.horizontal, WindowSwitcherState.gridPadding)
+        .padding(.bottom, 12)
+    }
+
+    private func processRow(_ item: WindowSwitcherItem) -> some View {
+        let isSelected = model.selectedID == item.id
+        return HStack(spacing: 10) {
+            Image(nsImage: model.icons[item.id.pid] ?? NSImage())
+                .resizable()
+                .scaledToFit()
+                .frame(width: 22, height: 22)
+            Text(item.appName)
+                .font(.system(size: 12.5, weight: .medium))
+                .lineLimit(1)
+            Spacer(minLength: 6)
+            if model.quittingPID == item.id.pid {
+                ProgressView().controlSize(.small)
+            } else {
+                Button { model.quitProcess(item.id) } label: {
+                    Label(localizedString("Quit"), systemImage: "power")
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.primary.opacity(0.06), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.primary.opacity(0.75))
+                .help(String(format: localizedString("Quit %@"), item.appName))
+                .accessibilityLabel(String(format: localizedString("Quit %@"), item.appName))
+                .disabled(model.isBusy)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(isSelected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.04),
+                    in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+            .strokeBorder(isSelected ? Color.accentColor.opacity(0.55) : .clear, lineWidth: 1))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            model.selectedID = item.id
+            model.activateProcess(item.id)
+        }
+        .contextMenu {
+            Button(String(format: localizedString("Quit %@"), item.appName)) { model.quitProcess(item.id) }
+                .disabled(model.isBusy)
+        }
+        .id(item.id)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(item.appName)
+        .accessibilityValue(isSelected ? localizedString("Selected") : "")
     }
 
     private var emptyView: some View {

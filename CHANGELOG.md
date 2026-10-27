@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.107] - 2026-10-27
+### Added
+- Les aperçus de fenêtres ajoutent deux sections dédiées après la grille : **Apps sans fenêtre** (apps régulières actives sans fenêtre listée, donc présentes au Dock) et **Barre de menus** (apps accessoires). Elles partagent la sélection clavier : `↑`/`↓` et `⇥` y descendent depuis la grille, `↵` active l'app, `⌘Q` ou le bouton **Quitter** l'arrête proprement. Les démons système, le Dock, le Centre de contrôle et les autres agents protégés de macOS restent exclus.
+
 ## [2026.10.106] - 2026-10-27
 ### Fixed
 - Entrée et Entrée pavé numérique activent la fenêtre sélectionnée même lorsque Commande est encore maintenue dans les aperçus. Une validation pendant le chargement attend la fin de l'inventaire ; ⌘Tab depuis un panneau déjà ouvert valide aussi au relâchement de Commande.

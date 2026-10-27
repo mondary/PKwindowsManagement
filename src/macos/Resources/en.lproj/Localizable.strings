@@ -322,6 +322,9 @@
 "This window cannot be closed right now. Open it or refresh the list." = "This window cannot be closed right now. Open it or refresh the list.";
 
 "Quit app" = "Quit app";
+"Quit" = "Quit";
+"Windowless apps" = "Windowless apps";
+"Menu bar" = "Menu bar";
 
 "Quit %@" = "Quit %@";
 

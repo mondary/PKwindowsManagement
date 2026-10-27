@@ -72,9 +72,19 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         if model.isLoading {
             commitWhenReady = true
         } else if let id = model.selectedID {
-            activate(id)
+            performActivation(id)
         } else {
             hide()
+        }
+    }
+
+    /// Window cards focus their window; process rows (Dock/menu bar sections)
+    /// activate their app instead, since they own no listed window.
+    private func performActivation(_ id: WindowSwitcherID) {
+        if model.candidate(for: id) != nil {
+            activate(id)
+        } else {
+            model.activateProcess(id)
         }
     }
 
@@ -309,7 +319,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             return nil
         }
         if modifiers == .command, handleTextShortcut(event, modifiers: modifiers) { return nil }
-        if modifiers.isEmpty, model.filteredItems.isEmpty, !model.query.isEmpty {
+        if modifiers.isEmpty, model.navItems.isEmpty, !model.query.isEmpty {
             switch event.keyCode {
             case 125: model.moveFallbackSelection(1); return nil
             case 126: model.moveFallbackSelection(-1); return nil
@@ -322,10 +332,18 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         if modifiers == .command {
             switch event.charactersIgnoringModifiers?.lowercased() {
             case "w":
-                if !event.isARepeat, let id = model.selectedID { model.closeWindow(id) }
+                if !event.isARepeat, let id = model.selectedID, model.candidate(for: id) != nil {
+                    model.closeWindow(id)
+                }
                 return nil
             case "q":
-                if !event.isARepeat, let id = model.selectedID { model.quitApp(id) }
+                if !event.isARepeat, let id = model.selectedID {
+                    if model.candidate(for: id) != nil {
+                        model.quitApp(id)
+                    } else {
+                        model.quitProcess(id)
+                    }
+                }
                 return nil
             default: break
             }
@@ -351,7 +369,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         switch event.keyCode {
         case 53: hide()
         case 36, 76:
-            if let id = model.selectedID { activate(id) }
+            if let id = model.selectedID { performActivation(id) }
         case 48: model.moveSelection(modifiers.contains(.shift) ? -1 : 1)
         case 123, 124:
             // Preserve caret navigation in a nonempty search query.

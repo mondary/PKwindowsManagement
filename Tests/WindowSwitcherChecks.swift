@@ -14,6 +14,19 @@ enum WindowSwitcherChecks {
         for keyCode: UInt16 in [48, 53, 49, 0, 125] {
             precondition(!WindowSwitcherState.confirmsWindowSelection(keyCode: keyCode, control: false, option: false))
         }
+
+        // Dedicated process sections: windowless regular apps (Dock) and
+        // menu-bar apps are listed; prohibited daemons and protected system
+        // agents never are, so the picker cannot quit macOS chrome.
+        precondition(WindowSwitcherState.isListedProcess(activationPolicy: 0, bundleIdentifier: "com.example.editor"))
+        precondition(WindowSwitcherState.isListedProcess(activationPolicy: 1, bundleIdentifier: "com.example.agent"))
+        precondition(WindowSwitcherState.isListedProcess(activationPolicy: 1, bundleIdentifier: nil))
+        precondition(!WindowSwitcherState.isListedProcess(activationPolicy: 2, bundleIdentifier: "com.example.daemon"))
+        precondition(!WindowSwitcherState.isListedProcess(activationPolicy: 1, bundleIdentifier: "com.apple.controlcenter"))
+        precondition(!WindowSwitcherState.isListedProcess(activationPolicy: 0, bundleIdentifier: "com.apple.dock"))
+        precondition(WindowSwitcherState.processKind(activationPolicy: 0) == .dockApp)
+        precondition(WindowSwitcherState.processKind(activationPolicy: 1) == .menuBarApp)
+        precondition(WindowSwitcherState.processKind(activationPolicy: 2) == nil)
         // Only regular apps own the windows the picker should show. Menu-bar
         // apps, widget hosts and system chrome are accessory/prohibited apps,
         // even when they expose HUD or desktop windows.
@@ -46,6 +59,17 @@ enum WindowSwitcherChecks {
         precondition(WindowSwitcherState.initialSelection(in: [items[0]], focused: items[0].id) == items[0].id)
         precondition(WindowSwitcherState.initialSelection(in: [], focused: nil) == nil)
         precondition(WindowSwitcherState.initialSelection(in: items, focused: nil) == items[0].id)
+
+        // Process rows follow the window grid in the single keyboard stream,
+        // and the shared filter still matches their app name.
+        let process = WindowSwitcherItem(id: .init(pid: 777, windowID: 0), appName: "Agent",
+            title: "", isMinimized: false, isHidden: false, isFullScreen: false, isOnScreen: false,
+            kind: .menuBarApp)
+        precondition(process.isProcess)
+        precondition(!items[0].isProcess)
+        precondition(WindowSwitcherState.navigationItems(windows: [items[0]], processes: [process]) == [items[0], process])
+        precondition(WindowSwitcherState.navigationItems(windows: [], processes: [process]) == [process])
+        precondition(WindowSwitcherState.filtered([process], query: "agent").map(\.id) == [process.id])
         // Sticky ⌘Tab keeps the picker only while a filter is typed; a plain
         // release must still switch windows.
         precondition(!WindowSwitcherState.defersCommandTabCommit(sticky: false, query: "safari"))
