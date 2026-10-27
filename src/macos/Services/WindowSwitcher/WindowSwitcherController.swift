@@ -47,10 +47,14 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     }
 
     /// Releasing ⌘ commits the current selection, like the system switcher.
-    /// Sticky mode leaves the picker open so the search field stays usable.
+    /// Sticky mode only defers that commit while a filter is being refined:
+    /// without a query there is nothing left to type, so a plain ⌘⇥ release
+    /// must still switch windows instead of leaving the picker on screen.
     func commitCommandTab() {
         guard isVisible, presentation == .commandTab else { return }
-        if AppRuntime.shared.settings?.windowSwitcherStickyCommandTab == true { return }
+        if WindowSwitcherState.defersCommandTabCommit(
+            sticky: AppRuntime.shared.settings?.windowSwitcherStickyCommandTab == true,
+            query: model.query) { return }
         if let id = model.selectedID {
             activate(id)
         } else if model.isLoading {

@@ -48,6 +48,14 @@ enum WindowSwitcherState {
         "com.apple.OSDUIHelper"
     ]
 
+    /// Sticky ⌘Tab only defers the release commit while a filter is being
+    /// refined. An empty query leaves nothing to type, so releasing ⌘ must
+    /// still activate the selected window, like the system switcher.
+    static func defersCommandTabCommit(sticky: Bool, query: String) -> Bool {
+        guard sticky else { return false }
+        return !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     static func filtered(_ items: [WindowSwitcherItem], query: String) -> [WindowSwitcherItem] {
         let words = query.split(whereSeparator: \.isWhitespace).map(String.init)
         return items.filter { item in

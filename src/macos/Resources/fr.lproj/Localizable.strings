@@ -583,9 +583,9 @@
 
 "Type directly while ⌘ is held to filter windows." = "Tapez directement pendant que ⌘ est maintenu pour filtrer les fenêtres.";
 
-"Keep the picker open when ⌘ is released" = "Garder le sélecteur ouvert au relâchement de ⌘";
+"Keep the picker open when a filter is typed" = "Garder le sélecteur ouvert quand un filtre est saisi";
 
-"Releasing ⌘ keeps the picker open. Return activates the selected window; Escape cancels." = "Relâcher ⌘ garde le sélecteur ouvert. Entrée active la fenêtre sélectionnée ; Échap annule.";
+"Without a filter, releasing ⌘ activates the selected window. With a filter typed, the picker stays open so you can refine it; Return activates the window and Escape cancels." = "Sans filtre, relâcher ⌘ active la fenêtre sélectionnée. Avec un filtre saisi, le sélecteur reste ouvert pour l’affiner ; Entrée active la fenêtre, Échap annule.";
 
 "The app has not quit yet. A save dialog may be waiting, or it refused to quit." = "L’app ne s’est pas encore arrêtée. Une demande d’enregistrement est peut-être en attente, ou elle a refusé de quitter.";
 

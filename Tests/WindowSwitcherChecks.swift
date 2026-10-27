@@ -36,6 +36,12 @@ enum WindowSwitcherChecks {
         precondition(WindowSwitcherState.initialSelection(in: [items[0]], focused: items[0].id) == items[0].id)
         precondition(WindowSwitcherState.initialSelection(in: [], focused: nil) == nil)
         precondition(WindowSwitcherState.initialSelection(in: items, focused: nil) == items[0].id)
+        // Sticky ⌘Tab keeps the picker only while a filter is typed; a plain
+        // release must still switch windows.
+        precondition(!WindowSwitcherState.defersCommandTabCommit(sticky: false, query: "safari"))
+        precondition(!WindowSwitcherState.defersCommandTabCommit(sticky: true, query: ""))
+        precondition(!WindowSwitcherState.defersCommandTabCommit(sticky: true, query: "   \n"))
+        precondition(WindowSwitcherState.defersCommandTabCommit(sticky: true, query: "safari"))
         // Hold-⌘ starts on the previous window, ⇧⌘⇥ on the least recent one,
         // and offsets keep accumulating while the inventory is loading.
         precondition(WindowSwitcherState.commandTabSelection(in: items, focused: items[0].id, offset: 0) == items[1].id)

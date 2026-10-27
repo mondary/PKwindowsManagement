@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.105] - 2026-10-27
+### Fixed
+- Relâcher ⌘ dans les aperçus de fenêtres bascule maintenant sur la fenêtre sélectionnée, même quand « Garder le sélecteur ouvert » est activé. Cette option ne retarde plus l'activation que si un filtre est saisi : sans filtre, il n'y a rien à affiner, donc ⌘⇥ se comporte comme le sélecteur du système. Le libellé et les textes d'aide FR/EN/ES/DE sont alignés sur ce comportement.
+
 ## [2026.10.104] - 2026-10-27
 ### Fixed
 - Les raccourcis de snippets, notamment Commande droite+D/H, retrouvent leur cible dans les réglages courants même si le cache du launcher n'a pas été rafraîchi depuis la fermeture des Réglages. La distinction Commande gauche/droite reste inchangée ; les erreurs d'exécution des snippets sont désormais consignées dans les logs.

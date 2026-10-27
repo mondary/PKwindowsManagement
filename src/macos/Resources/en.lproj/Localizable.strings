@@ -333,9 +333,9 @@
 
 "Type directly while ⌘ is held to filter windows." = "Type directly while ⌘ is held to filter windows.";
 
-"Keep the picker open when ⌘ is released" = "Keep the picker open when ⌘ is released";
+"Keep the picker open when a filter is typed" = "Keep the picker open when a filter is typed";
 
-"Releasing ⌘ keeps the picker open. Return activates the selected window; Escape cancels." = "Releasing ⌘ keeps the picker open. Return activates the selected window; Escape cancels.";
+"Without a filter, releasing ⌘ activates the selected window. With a filter typed, the picker stays open so you can refine it; Return activates the window and Escape cancels." = "Without a filter, releasing ⌘ activates the selected window. With a filter typed, the picker stays open so you can refine it; Return activates the window and Escape cancels.";
 
 "The app has not quit yet. A save dialog may be waiting, or it refused to quit." = "The app has not quit yet. A save dialog may be waiting, or it refused to quit.";
 
