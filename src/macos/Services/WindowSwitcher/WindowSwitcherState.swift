@@ -162,6 +162,77 @@ enum WindowSwitcherState {
         }
     }
 
+    /// Visual grid shape of one picker section (windows, applications, rooms).
+    struct GridShape {
+        let count: Int
+        let columns: Int
+    }
+
+    /// Vertical movement in the visible grids: ↓ goes to the same column on
+    /// the next row instead of the next item. Leaving a section enters the
+    /// neighbour section (its nearest row), and the ends clamp.
+    static func movedVertically(in targets: [WindowSwitcherTarget], sections: [GridShape],
+                                from selected: WindowSwitcherTarget?, by delta: Int) -> WindowSwitcherTarget? {
+        guard !targets.isEmpty, delta != 0 else { return selected }
+        let ranges = sectionRanges(sections)
+        guard let current = index(of: selected, in: targets) else {
+            return targets.first
+        }
+        guard var section = ranges.first(where: { current >= $0.start && current < $0.start + $0.count }) else {
+            return selected
+        }
+        var column = (current - section.start) % max(1, section.columns)
+        var row = (current - section.start) / max(1, section.columns)
+        var remaining = delta
+        let step = delta > 0 ? 1 : -1
+        while remaining != 0 {
+            let rows = max(1, Int(ceil(Double(section.count) / Double(max(1, section.columns)))))
+            let nextRow = row + step
+            if nextRow >= 0 && nextRow < rows {
+                row = nextRow
+                remaining -= step
+                continue
+            }
+            let sectionIndex = ranges.firstIndex(where: { $0.start == section.start })!
+            let neighbourIndex = sectionIndex + step
+            guard ranges.indices.contains(neighbourIndex) else {
+                // Clamp at the very top/bottom of the picker.
+                return targets[current]
+            }
+            section = ranges[neighbourIndex]
+            let neighbourColumns = max(1, section.columns)
+            let neighbourRows = max(1, Int(ceil(Double(section.count) / Double(neighbourColumns))))
+            row = step > 0 ? 0 : neighbourRows - 1
+            column = min(column, rowLength(rows: neighbourRows, columns: neighbourColumns,
+                                          count: section.count, row: row) - 1)
+            remaining -= step
+        }
+        let columns = max(1, section.columns)
+        let index = section.start + row * columns + min(column, rowLength(
+            rows: max(1, Int(ceil(Double(section.count) / Double(columns)))),
+            columns: columns, count: section.count, row: row) - 1)
+        guard targets.indices.contains(index) else { return selected }
+        return targets[index]
+    }
+
+    private static func sectionRanges(_ sections: [GridShape]) -> [(start: Int, count: Int, columns: Int)] {
+        var start = 0
+        return sections.map { shape in
+            defer { start += shape.count }
+            return (start: start, count: shape.count, columns: shape.columns)
+        }
+    }
+
+    private static func rowLength(rows: Int, columns: Int, count: Int, row: Int) -> Int {
+        if row < rows - 1 { return columns }
+        return count - row * columns
+    }
+
+    private static func index(of target: WindowSwitcherTarget?, in targets: [WindowSwitcherTarget]) -> Int? {
+        guard let target else { return nil }
+        return targets.firstIndex(of: target)
+    }
+
     /// Single keyboard stream: filtered windows first, then the filtered
     /// process sections, so arrows/Tab walk from the grid into the lists.
     static func navigationItems(windows: [WindowSwitcherItem], processes: [WindowSwitcherItem]) -> [WindowSwitcherItem] {

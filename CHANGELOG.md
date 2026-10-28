@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.113] - 2026-10-28
+### Changed
+- **Navigation en grille** : `↓`/`↑` descendent ou remontent d'une vraie ligne dans Fenêtres, Applications et Rooms, en conservant la colonne — 19 apps sur deux lignes ne sautent plus vers la droite. Le passage d'une section à l'autre vise la ligne la plus proche, une dernière ligne partielle borne la colonne, et les extrémités du sélecteur ne débordent plus. `←`/`→` et `⇥` restent séquentiels ; les colonnes Applications/Rooms sont calculées à partir de la largeur du panneau, comme à l'affichage.
+
 ## [2026.10.112] - 2026-10-28
 ### Fixed
 - **Steam disparaissait d'Applications** : NSWorkspace le rapporte avec pid -1 et un bundle `Steam.AppBundle` sans suffixe `.app`, deux formes que le filtre de la 110 rejetait. Ces bundles « spéciaux » restent listés ; les apps sans pid reçoivent un pid interne et leurs actions (activer, Quitter, Forcer à quitter) passent par l'identifiant de bundle, avec repli d'activation par ouverture du bundle. Steam Helper reste masqué.

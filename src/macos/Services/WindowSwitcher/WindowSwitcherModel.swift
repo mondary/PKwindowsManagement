@@ -102,6 +102,10 @@ final class WindowSwitcherModel: ObservableObject {
     @Published var renameText = ""
     var onReady: (() -> Void)?
     var columns = 3
+    /// Column counts of the Applications and Rooms grids, computed from the
+    /// panel width by `present()` so vertical arrows land on real rows.
+    var appColumns = 9
+    var roomColumns = 3
     var cardHeight: CGFloat = 210
     var isBusy: Bool { closingID != nil || quittingPID != nil }
     private(set) var icons: [pid_t: NSImage] = [:]
@@ -336,19 +340,42 @@ final class WindowSwitcherModel: ObservableObject {
     func moveSelection(_ delta: Int, wrapping: Bool = true) {
         selectedTarget = WindowSwitcherState.moved(
             in: navigationTargets, from: selectedTarget, by: delta, wrapping: wrapping)
+        syncRoomSelection()
+    }
+
+    /// Arrow-up/down in the visible grids: same column, previous/next row,
+    /// crossing sections instead of walking the flat list.
+    func moveSelectionVertically(_ delta: Int) {
+        let sections = [
+            WindowSwitcherState.GridShape(count: filteredItems.count, columns: max(1, columns)),
+            WindowSwitcherState.GridShape(count: filteredProcessItems.count, columns: max(1, appColumns)),
+            WindowSwitcherState.GridShape(count: rooms(matching: query).count, columns: max(1, roomColumns)),
+        ]
+        selectedTarget = WindowSwitcherState.movedVertically(
+            in: navigationTargets, sections: sections, from: selectedTarget, by: delta)
+        syncRoomSelection()
+    }
+
+    /// Keep the Rooms strip selection aligned when the keyboard lands on a room.
+    private func syncRoomSelection() {
         if case .room(let id) = selectedTarget,
            let index = rooms(matching: query).firstIndex(where: { $0.id == id }) {
             roomSelection = index
         }
     }
 
+    /// Applications/Rooms column counts for the current panel width. The
+    /// spacing mirrors the view: 88pt per app tile (80 + 8), 234 per room
+    /// card (224 + 10), minus the section paddings.
+    func updateAuxiliaryColumns(forContentWidth width: CGFloat) {
+        appColumns = max(1, Int((max(0, width - 4) + 8) / 88))
+        roomColumns = max(1, Int((width + 10) / 234))
+    }
+
     func applyCommandTabOffset(_ offset: Int) {
         selectedTarget = WindowSwitcherState.commandTabSelection(
             in: navigationTargets, focused: focusedID, offset: offset)
-        if case .room(let id) = selectedTarget,
-           let index = rooms(matching: query).firstIndex(where: { $0.id == id }) {
-            roomSelection = index
-        }
+        syncRoomSelection()
     }
 
     func candidate(for id: WindowSwitcherID) -> WindowSwitcherInventory.Candidate? { candidates[id] }

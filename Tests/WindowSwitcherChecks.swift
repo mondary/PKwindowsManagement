@@ -152,6 +152,37 @@ enum WindowSwitcherChecks {
         precondition(WindowSwitcherState.selectionAfterClosing(items[0].id, in: targets, selected: .room("work")) == .room("work"))
         precondition(WindowSwitcherState.selectionAfterQuitting(pid: process.id.pid, in: targets,
             selected: .item(process.id)) == .room("work"))
+
+        // Arrow up/down walks real grid rows: same column, previous/next row,
+        // crossing into the neighbouring section, clamped at the ends.
+        let windowTargets = (0..<6).map { WindowSwitcherTarget.item(WindowSwitcherID(pid: 500, windowID: UInt32($0 + 1))) }
+        let appTargets = (0..<19).map { WindowSwitcherTarget.item(WindowSwitcherID(pid: 600, windowID: UInt32($0 + 1))) }
+        let roomTargets = [WindowSwitcherTarget.room("a"), .room("b")]
+        let gridTargets = windowTargets + appTargets + roomTargets
+        let sections = [
+            WindowSwitcherState.GridShape(count: 6, columns: 3),
+            WindowSwitcherState.GridShape(count: 19, columns: 10),
+            WindowSwitcherState.GridShape(count: 2, columns: 2),
+        ]
+        func gridDown(_ index: Int) -> WindowSwitcherTarget? {
+            WindowSwitcherState.movedVertically(in: gridTargets, sections: sections,
+                                                from: gridTargets[index], by: 1)
+        }
+        func gridUp(_ index: Int) -> WindowSwitcherTarget? {
+            WindowSwitcherState.movedVertically(in: gridTargets, sections: sections,
+                                                from: gridTargets[index], by: -1)
+        }
+        precondition(gridDown(1) == gridTargets[4])       // même colonne, ligne suivante
+        precondition(gridUp(4) == gridTargets[1])
+        precondition(gridDown(4) == gridTargets[7])       // quitte Fenêtres, entre dans Applications
+        precondition(gridUp(7) == gridTargets[4])         // et remonte dans la dernière ligne Fenêtres
+        precondition(gridDown(9) == gridTargets[19])      // même colonne (3), ligne suivante
+        precondition(gridDown(15) == gridTargets[24])     // dernière ligne partielle : colonne bornée
+        precondition(gridDown(18) == gridTargets[26])     // entre dans Rooms (colonne bornée)
+        precondition(gridDown(26) == gridTargets[26])     // bas du sélecteur : borne
+        precondition(gridUp(0) == gridTargets[0])         // haut du sélecteur : borne
+        precondition(WindowSwitcherState.movedVertically(in: gridTargets, sections: sections,
+                                                          from: nil, by: 1) == gridTargets[0])
         // The regular-app window list and the Dock-app list intentionally
         // overlap. Icon cache construction must safely keep the first entry.
         precondition(WindowSwitcherState.uniqueValuesByPID([

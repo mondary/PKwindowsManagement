@@ -104,6 +104,7 @@ struct WindowPreviewCapture {
 
     @MainActor private static func render(_ model: WindowSwitcherModel, width: CGFloat, language: String,
                                           dark: Bool, name: String, output: URL) throws {
+        model.updateAuxiliaryColumns(forContentWidth: width - 36)
         let height: CGFloat = 1000
         let window = NSWindow(contentRect: NSRect(x: -20000, y: -20000, width: width, height: height),
                               styleMask: [.borderless], backing: .buffered, defer: false)

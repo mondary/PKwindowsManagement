@@ -112,6 +112,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         let size = NSSize(width: min(1160, visible.width - 32), height: min(860, visible.height - 32))
         model.columns = size.width >= 1000 ? 4 : (size.width >= 740 ? 3 : (size.width >= 500 ? 2 : 1))
         model.cardHeight = WindowSwitcherState.cardHeight(forWidth: size.width, columns: model.columns)
+        model.updateAuxiliaryColumns(forContentWidth: size.width - 36)
         model.message = message
         let panel = WindowSwitcherPanel(
             contentRect: NSRect(x: visible.midX - size.width / 2, y: visible.midY - size.height / 2,
@@ -409,8 +410,8 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             // Preserve caret navigation in a nonempty search query.
             guard model.query.isEmpty, modifiers.isEmpty else { return event }
             model.moveSelection(event.keyCode == 123 ? -1 : 1)
-        case 125: model.moveSelection(1)
-        case 126: model.moveSelection(-1)
+        case 125: model.moveSelectionVertically(1)
+        case 126: model.moveSelectionVertically(-1)
         default: return event
         }
         return nil

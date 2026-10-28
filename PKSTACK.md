@@ -2,6 +2,8 @@
 
 Skills used for this project:
 
+- Dev 113 — navigation verticale 2D du sélecteur : lignes réelles par section (fenêtres 4/3/2/1 colonnes, apps et rooms à colonnes calculées depuis la largeur), colonne conservée, passage de section au voisin le plus proche, bornage des lignes partielles et des extrémités ; ←/→ et ⇥ restent séquentiels. Tests purs (grille 3/10/2), build SDK 26.5, captures FR/EN et Dev installée.
+
 - Dev 112 — fix Steam absent d'Applications : identité accepte pid -1 et les bundles `.AppBundle` ; pid synthétiques négatifs par app, activation/quit résolus par identifiant de bundle (repli ouverture du bundle), Steam Helper toujours exclu. Régressions pures + audit NSWorkspace live (Steam retenu, 21 apps / 49 exclues). Dev 112 installée avec sauvegarde et relancée.
 
 - Dev 111 — sélecteur en page unique, plus d'interception de ⌘⇧R (hotkey Carbon du mode clavier Rooms supprimée : conflit avec le rechargement forcé des navigateurs ; Rooms reste sur ⌃⌥R) : un seul ScrollView vertical pour Fenêtres → Applications → Rooms, tuiles et cartes en grilles multi-lignes, auto-défilement global sur sélection et retour en haut à chaque régénération, panneau élargi à 1160×860. Captures fictives FR/EN régénérées à hauteur 1000 et inspectées ; build SDK 26.5, Dev 111 installée avec sauvegarde et relancée. README FR/EN synchronisés ; hub intact, FTP absent.

@@ -343,7 +343,7 @@ struct WindowSwitcherView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .frame(height: 44)
             } else {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 228), spacing: 10)], spacing: 10) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: max(1, model.roomColumns)), spacing: 10) {
                     ForEach(rows) { room in
                         RoomPickerCard(room: room, model: model,
                                        isSelected: model.selectedRoomID == room.id,
@@ -386,7 +386,7 @@ struct WindowSwitcherView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .frame(height: 34)
             } else {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 80), spacing: 8)], spacing: 10) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: max(1, model.appColumns)), spacing: 10) {
                     ForEach(apps) { item in
                         ProcessIconTile(item: item, icon: model.icons[item.id.pid],
                                         isSelected: model.isSelected(item.id),
