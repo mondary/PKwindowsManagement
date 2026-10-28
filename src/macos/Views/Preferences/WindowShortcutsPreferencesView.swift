@@ -296,6 +296,10 @@ struct WindowShortcutsPreferencesView: View {
                 .font(.caption).foregroundStyle(.secondary)
             Text(localizedString("Canvas scrolls horizontally with the trackpad, or vertically while holding Option. Ordinary vertical scrolling stays in apps. Previous/next shortcuts move between columns. Exiting restores original positions and sizes."))
                 .font(.caption).foregroundStyle(.secondary)
+            Toggle(localizedString("Canvas minimap"), isOn: $settings.canvasMinimap)
+                .onChange(of: settings.canvasMinimap) { _ in CanvasMinimapController.shared.refresh() }
+            Text(localizedString("A thin bar floats at the top of each screen during a Canvas session: every column of the strip at a glance, half-height pairs stacked, the visible zone outlined. Click a column to travel there."))
+                .font(.caption).foregroundStyle(.secondary)
             if !canvas.message.isEmpty {
                 Text(canvas.message).font(.caption).foregroundStyle(.orange)
             }

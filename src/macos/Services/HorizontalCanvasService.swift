@@ -13,6 +13,9 @@ final class HorizontalCanvasService: ObservableObject {
     @Published private(set) var activeDisplayIDs: Set<CGDirectDisplayID> = []
     @Published private(set) var message = ""
     @Published private(set) var inventoryMessage = ""
+    /// Main-thread snapshots for the minimap bars; rebuilt by publish() on
+    /// the worker after every layout, scroll or selection change.
+    @Published private(set) var minimaps: [CGDirectDisplayID: CanvasMinimap.Model] = [:]
 
     private struct Display {
         let id: CGDirectDisplayID
@@ -225,6 +228,30 @@ final class HorizontalCanvasService: ObservableObject {
         }
     }
 
+    /// Minimap click: travel to a column on the display that owns the bar.
+    /// Same guards and placement pass as keyboard navigation; the publish()
+    /// inside teleport() refreshes the bar.
+    func focusColumn(_ column: Int, on displayID: CGDirectDisplayID) {
+        precondition(Thread.isMainThread)
+        guard !shuttingDown else { return }
+        message = ""
+        let context = Context.capture()
+        queue.async {
+            guard AXIsProcessTrusted() else { self.report("Canvas needs Accessibility permission."); return }
+            guard self.loadRecovery(context) else { return }
+            guard let workspace = self.strips.keys.first(where: { $0.displayID == displayID }),
+                  let strip = self.strips[workspace], self.isCurrent(strip),
+                  !strip.entries.isEmpty, !strip.widths.isEmpty else { return }
+            let clamped = min(max(0, column), strip.widths.count - 1)
+            guard let index = CanvasLayout.index(column: clamped, row: 0, columns: strip.columns) else { return }
+            strip.selected = strip.entries[index].saved.id
+            strip.lastNavigation = ProcessInfo.processInfo.systemUptime
+            self.fitViewport(strip)
+            self.teleport(strip, context: context)
+            self.focusSelected(strip)
+        }
+    }
+
     /// Continuous horizontal/Option scroll. Never read the worker-owned strips on
     /// the event-tap thread; knownWorkspaces is the main-thread snapshot.
     func scroll(rawDelta: CGFloat, location: CGPoint) -> Bool {
@@ -406,6 +433,9 @@ final class HorizontalCanvasService: ObservableObject {
                 teleport(strip, context: context, negotiationPass: negotiationPass + 1)
             }
         }
+        // The minimap bar follows every placement pass: keyboard navigation,
+        // continuous scroll and retiles all end here.
+        publish()
     }
 
     private func focusSelected(_ strip: Strip) {
@@ -716,8 +746,24 @@ final class HorizontalCanvasService: ObservableObject {
     private func publish() {
         let workspaces = Set(strips.keys)
         let ids = Set(strips.values.filter { isCurrent($0) }.map { $0.display.id })
+        var snapshots: [CGDirectDisplayID: CanvasMinimap.Model] = [:]
+        for strip in strips.values where isCurrent(strip) && !strip.widths.isEmpty {
+            let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
+            if let model = CanvasMinimap.model(
+                displayID: strip.display.id,
+                widths: strip.widths,
+                columns: strip.columns,
+                windowIDs: strip.entries.map { $0.saved.id },
+                selected: strip.selected,
+                viewport: strip.viewport,
+                contentWidth: geometry.contentWidth
+            ) {
+                snapshots[strip.display.id] = model
+            }
+        }
         DispatchQueue.main.async {
             self.knownWorkspaces = workspaces
+            if self.minimaps != snapshots { self.minimaps = snapshots }
             guard self.activeDisplayIDs != ids else { return }
             self.activeDisplayIDs = ids
             NotificationCenter.default.post(name: Self.stateDidChange, object: nil)

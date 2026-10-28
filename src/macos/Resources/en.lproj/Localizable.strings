@@ -191,6 +191,8 @@
 "Enter 1 for a full-height column and 2 for a split column, separated by commas. The last value repeats for additional windows. Leave empty to use the uniform setting above. Applies on the next activation." = "Enter 1 for a full-height column and 2 for a split column, separated by commas. The last value repeats for additional windows. Leave empty to use the uniform setting above. Applies on the next activation.";
 "Use only 1 and 2, separated by commas." = "Use only 1 and 2, separated by commas.";
 "Canvas scrolls horizontally with the trackpad, or vertically while holding Option. Ordinary vertical scrolling stays in apps. Previous/next shortcuts move between columns. Exiting restores original positions and sizes." = "Canvas scrolls horizontally with the trackpad, or vertically while holding Option. Ordinary vertical scrolling stays in apps. Previous/next shortcuts move between columns. Exiting restores original positions and sizes.";
+"Canvas minimap" = "Canvas minimap";
+"A thin bar floats at the top of each screen during a Canvas session: every column of the strip at a glance, half-height pairs stacked, the visible zone outlined. Click a column to travel there." = "A thin bar floats at the top of each screen during a Canvas session: every column of the strip at a glance, half-height pairs stacked, the visible zone outlined. Click a column to travel there.";
 "Web Links" = "Web Links";
 "Top" = "Top";
 "Bottom" = "Bottom";

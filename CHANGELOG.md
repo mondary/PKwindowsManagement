@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.114] - 2026-10-28
+### Added
+- **Minimap du Canvas** : pendant une session Canvas, une fine barre flotte en haut de chaque écran, façon OmniWM — toutes les colonnes du strip à l'échelle (paires de demi-hauteurs empilées), la colonne sélectionnée accentuée et la zone visible encadrée. Un clic sur une colonne y déplace le viewport et focus sa première fenêtre, sans voler le focus à la session (panneau non activant). La barre suit chaque déplacement : navigation clavier, défilement au trackpad et retiles ; elle disparaît quand le Canvas est libéré, suspendu ou sur un autre bureau. Réglages → Fenêtres → **Minimap du Canvas** pour l'éteindre (activée par défaut, incluse dans les sauvegardes). Géométrie pure isolée dans `CanvasMinimap` avec tests standalone : proportions des segments, clamp du viewport, paires demi-hauteur, mapping clic → colonne et garde-fous (strip vide, arrangement périmé). Vérifications CI : `canvas-minimap-checks`.
+
 ## [2026.10.113] - 2026-10-28
 ### Changed
 - **Navigation en grille** : `↓`/`↑` descendent ou remontent d'une vraie ligne dans Fenêtres, Applications et Rooms, en conservant la colonne — 19 apps sur deux lignes ne sautent plus vers la droite. Le passage d'une section à l'autre vise la ligne la plus proche, une dernière ligne partielle borne la colonne, et les extrémités du sélecteur ne débordent plus. `←`/`→` et `⇥` restent séquentiels ; les colonnes Applications/Rooms sont calculées à partir de la largeur du panneau, comme à l'affichage.

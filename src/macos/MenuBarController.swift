@@ -67,6 +67,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             self?.rebuildStatusMenu()
         }
         HorizontalCanvasService.shared.start()
+        CanvasMinimapController.shared.start(isEnabled: { AppRuntime.shared.settings?.canvasMinimap ?? true })
         registerRoomsHotKey()
         UpdaterManager.shared.start()
         SettingsWindowController.shared.showSettings()

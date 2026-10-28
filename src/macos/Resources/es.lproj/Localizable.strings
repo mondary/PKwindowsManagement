@@ -444,6 +444,8 @@
 "Enter 1 for a full-height column and 2 for a split column, separated by commas. The last value repeats for additional windows. Leave empty to use the uniform setting above. Applies on the next activation." = "Escribe 1 para una columna de altura completa y 2 para dos filas, separados por comas. El último valor se repite para las ventanas adicionales. Déjalo vacío para usar el ajuste uniforme de arriba. Se aplica en la próxima activación.";
 "Use only 1 and 2, separated by commas." = "Usa solo 1 y 2, separados por comas.";
 "Canvas scrolls horizontally with the trackpad, or vertically while holding Option. Ordinary vertical scrolling stays in apps. Previous/next shortcuts move between columns. Exiting restores original positions and sizes." = "Desplaza Canvas horizontalmente con el trackpad o verticalmente mientras mantienes Opción. El desplazamiento vertical normal sigue en las apps. Los atajos anterior/siguiente cambian de columna. Al salir se restauran posiciones y tamaños originales.";
+"Canvas minimap" = "Minimapa del Canvas";
+"A thin bar floats at the top of each screen during a Canvas session: every column of the strip at a glance, half-height pairs stacked, the visible zone outlined. Click a column to travel there." = "Una barra fina flota en la parte superior de cada pantalla durante una sesión de Canvas: todas las columnas del strip de un vistazo, pares de media altura apiladas, zona visible enmarcada. Haz clic en una columna para desplazarte hasta ella.";
 "Web Links" = "Enlaces web";
 "Top" = "Arriba";
 "Bottom" = "Abajo";

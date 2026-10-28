@@ -49,6 +49,8 @@ jobs:
           "$RUNNER_TEMP/canvas-state-checks"
           swiftc src/macos/Services/CanvasFrameApplication.swift Tests/CanvasFrameApplicationChecks.swift -o "$RUNNER_TEMP/canvas-frame-checks"
           "$RUNNER_TEMP/canvas-frame-checks"
+          swiftc src/macos/Services/CanvasLayout.swift src/macos/Services/CanvasMinimap.swift Tests/CanvasMinimapChecks.swift -o "$RUNNER_TEMP/canvas-minimap-checks"
+          "$RUNNER_TEMP/canvas-minimap-checks"
 
       - name: Check shortcut conflicts
         run: |

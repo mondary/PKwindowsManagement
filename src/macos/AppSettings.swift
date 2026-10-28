@@ -52,6 +52,7 @@ final class AppSettings: ObservableObject {
         static let windowSwitcherUsesCommandTab = "window-switcher-uses-command-tab"
         static let windowSwitcherStickyCommandTab = "window-switcher-sticky-command-tab"
         static let canvasRowsPerColumn = "canvas-rows-per-column"
+        static let canvasMinimap = "canvas-minimap"
     }
 
     private let defaults: UserDefaults
@@ -276,6 +277,14 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    /// OmniWM-style minimap bar on top of each screen running a Canvas.
+    @Published var canvasMinimap: Bool {
+        didSet {
+            defaults.set(canvasMinimap, forKey: Keys.canvasMinimap)
+            scheduleAutoBackup()
+        }
+    }
+
     var bigYearColors: BigYearColors {
         bigYearTheme.colors.applying(overrides: bigYearColorOverrides)
     }
@@ -379,6 +388,7 @@ final class AppSettings: ObservableObject {
         windowSwitcherStickyCommandTab = defaults.object(forKey: Keys.windowSwitcherStickyCommandTab) as? Bool ?? false
         let storedRows = defaults.integer(forKey: Keys.canvasRowsPerColumn)
         canvasRowsPerColumn = storedRows == 1 ? 1 : 2
+        canvasMinimap = defaults.object(forKey: Keys.canvasMinimap) as? Bool ?? true
 
         if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()
@@ -717,7 +727,8 @@ final class AppSettings: ObservableObject {
             spaceFollowMovedWindow: spaceFollowMovedWindow,
             windowSwitcherUsesCommandTab: windowSwitcherUsesCommandTab,
             windowSwitcherStickyCommandTab: windowSwitcherStickyCommandTab,
-            canvasRowsPerColumn: canvasRowsPerColumn
+            canvasRowsPerColumn: canvasRowsPerColumn,
+            canvasMinimap: canvasMinimap
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -791,6 +802,7 @@ final class AppSettings: ObservableObject {
         windowSwitcherUsesCommandTab = backup.windowSwitcherUsesCommandTab ?? windowSwitcherUsesCommandTab
         windowSwitcherStickyCommandTab = backup.windowSwitcherStickyCommandTab ?? windowSwitcherStickyCommandTab
         if let rows = backup.canvasRowsPerColumn { canvasRowsPerColumn = max(1, min(2, rows)) }
+        if let minimap = backup.canvasMinimap { canvasMinimap = minimap }
 
         saveShortcuts()
         clearedWindowShortcuts = []
@@ -1161,6 +1173,7 @@ private struct SettingsBackup: Codable {
     let windowSwitcherUsesCommandTab: Bool?
     let windowSwitcherStickyCommandTab: Bool?
     let canvasRowsPerColumn: Int?
+    let canvasMinimap: Bool?
 }
 
 enum SettingsBackupError: LocalizedError {
