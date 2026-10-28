@@ -38,7 +38,6 @@
 "Windows in columns" = "Windows in columns";
 "Windows in a grid" = "Windows in a grid";
 "Main window and overlapping side cards" = "Main window and overlapping side cards";
-"Alternate vertical and horizontal splits" = "Alternate vertical and horizontal splits";
 "One window visible, others minimized" = "One window visible, others minimized";
 "Switch room" = "Switch room";
 "Create room with name “%@”" = "Create room “%@”";
@@ -347,6 +346,42 @@
 
 "Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Close individual windows with ⌘W or the × button, or quit the selected app with ⌘Q. The picker stays open; save dialogs remain under your control.";
 
+/* Unified window, app, and Room picker */
+"Search windows, apps, or rooms" = "Search windows, apps, or rooms";
+"Force Quit %@?" = "Force Quit %@?";
+"Unsaved changes in %@ may be lost." = "Unsaved changes in %@ may be lost.";
+"Force Quit" = "Force Quit";
+"Force Quit…" = "Force Quit…";
+"App actions" = "App actions";
+"No rooms yet" = "No rooms yet";
+"No matching rooms" = "No matching rooms";
+"Automatic layout" = "Automatic layout";
+"Focus layout" = "Focus layout";
+"Columns layout" = "Columns layout";
+"Grid layout" = "Grid layout";
+"Stack layout" = "Stack layout";
+"Dwindle layout" = "Dwindle layout";
+"Monocle layout" = "Monocle layout";
+"Choose a comfortable layout automatically" = "Choose a comfortable layout automatically";
+"One large window, the others beside it" = "One large window, the others beside it";
+"Windows arranged in columns" = "Windows arranged in columns";
+"Windows arranged in a grid" = "Windows arranged in a grid";
+"Overlapping cards with title bars visible" = "Overlapping cards with title bars visible";
+"Alternate vertical and horizontal splits" = "Alternate vertical and horizontal splits";
+"Show one window at a time" = "Show one window at a time";
+"Window %d" = "Window %d";
+"Dock" = "Dock";
+"Menu bar apps" = "Menu bar apps";
+"No running applications" = "No running applications";
+"No matching applications" = "No matching applications";
+"Matching applications and Rooms are shown below" = "Matching applications and Rooms are shown below";
+"Force quitting %@…" = "Force quitting %@…";
+"Cycle windows, apps, and Rooms" = "Cycle windows, apps, and Rooms";
+"Cycle" = "Cycle";
+"Dismiss" = "Dismiss";
+"Open selected" = "Open selected";
+"Next Room" = "Next Room";
+
 /* Shortcut conflicts */
 "Shortcut conflicts" = "Shortcut conflicts";
 
@@ -363,4 +398,6 @@
 /* Desktop tiling scopes */
 "Tile Current Desktop" = "Tile Current Desktop";
 "Tile All Desktops" = "Tile All Desktops";
+"Maximize All Windows (Current Display)" = "Maximize All Windows (Current Display)";
+"Maximize All Windows (All Displays)" = "Maximize All Windows (All Displays)";
 "Bento tiling fills each desktop separately, up to 12 windows per display. Windows shared across desktops are excluded." = "Bento tiling fills each desktop separately, up to 12 windows per display. Windows shared across desktops are excluded.";

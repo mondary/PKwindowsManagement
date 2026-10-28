@@ -224,7 +224,8 @@
 "Finder returned error %d." = "Finder meldete Fehler %d.";
 "Trash could not be emptied: %@" = "Der Papierkorb konnte nicht geleert werden: %@";
 "macOS blocked Finder automation. Relaunch this packaged app and allow PKwindowsManagement to control Finder when prompted." = "macOS hat die Finder-Automatisierung blockiert. Starte diese App neu und erlaube PKwindowsManagement die Steuerung von Finder.";
-"Maximize All Windows" = "Alle maximieren";
+"Maximize All Windows (Current Display)" = "Alle maximieren (aktueller Bildschirm)";
+"Maximize All Windows (All Displays)" = "Alle maximieren (alle Bildschirme)";
 "Maximize All Windows (Current App)" = "Alle maximieren (aktive App)";
 "Tile All Windows" = "Alle Fenster kacheln";
 "Grid & Sizing" = "Raster \& Größen";
@@ -594,6 +595,41 @@
 "This app cannot be quit right now. Try again or quit it from the app." = "Diese App kann gerade nicht beendet werden. Versuche es erneut oder beende sie in der App.";
 
 "Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Schließe einzelne Fenster mit ⌘W oder der ×-Taste oder beende die ausgewählte App mit ⌘Q. Die Auswahl bleibt offen; Speicherdialoge bleiben unter deiner Kontrolle.";
+
+/* Vereinheitlichte Fenster-, App- und Room-Auswahl */
+"Search windows, apps, or rooms" = "Nach Fenstern, Apps oder Rooms suchen";
+"Force Quit %@?" = "%@ sofort beenden?";
+"Unsaved changes in %@ may be lost." = "Nicht gespeicherte Änderungen in %@ können verloren gehen.";
+"Force Quit" = "Sofort beenden";
+"Force Quit…" = "Sofort beenden…";
+"App actions" = "App-Aktionen";
+"No rooms yet" = "Noch keine Rooms";
+"No matching rooms" = "Keine passenden Rooms";
+"Automatic layout" = "Automatisches Layout";
+"Focus layout" = "Fokus-Layout";
+"Columns layout" = "Spalten-Layout";
+"Grid layout" = "Raster-Layout";
+"Stack layout" = "Stapel-Layout";
+"Dwindle layout" = "Dwindle-Layout";
+"Monocle layout" = "Monocle-Layout";
+"Choose a comfortable layout automatically" = "Automatisch ein passendes Layout wählen";
+"One large window, the others beside it" = "Ein großes Fenster, die anderen daneben";
+"Windows arranged in columns" = "Fenster in Spalten angeordnet";
+"Windows arranged in a grid" = "Fenster als Raster angeordnet";
+"Overlapping cards with title bars visible" = "Überlappende Karten mit sichtbaren Titelleisten";
+"Show one window at a time" = "Jeweils ein Fenster anzeigen";
+"Window %d" = "Fenster %d";
+"Dock" = "Dock";
+"Menu bar apps" = "Menüleisten-Apps";
+"No running applications" = "Keine laufenden Apps";
+"No matching applications" = "Keine passenden Apps";
+"Matching applications and Rooms are shown below" = "Passende Apps und Rooms werden unten angezeigt";
+"Force quitting %@…" = "%@ wird sofort beendet…";
+"Cycle windows, apps, and Rooms" = "Fenster, Apps und Rooms durchblättern";
+"Cycle" = "Wechseln";
+"Dismiss" = "Ausblenden";
+"Open selected" = "Ausgewähltes öffnen";
+"Next Room" = "Nächste Room";
 
 /* Shortcut conflicts */
 "Shortcut conflicts" = "Konflikte bei Tastenkürzeln";

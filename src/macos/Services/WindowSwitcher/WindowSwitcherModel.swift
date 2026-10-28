@@ -41,6 +41,12 @@ enum RoomAction: CaseIterable {
     }
 }
 
+struct ForceQuitConfirmation: Identifiable, Equatable {
+    let id: WindowSwitcherID
+    let appName: String
+    let launchedAt: Date?
+}
+
 /// UI state lives on main, AX inventory and capture run off the event tap.
 final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var items: [WindowSwitcherItem] = []
@@ -48,14 +54,23 @@ final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var processItems: [WindowSwitcherItem] = []
     @Published var query = "" {
         didSet {
-            selectedID = WindowSwitcherState.selection(in: navItems, keeping: selectedID)
+            selectedTarget = WindowSwitcherState.selection(in: navigationTargets, keeping: selectedTarget)
             roomSelection = 0
             launcherSelection = 0
             fallbackSelection = 0
             loadLauncherAppsIfNeeded()
         }
     }
-    @Published var selectedID: WindowSwitcherID?
+    @Published private(set) var selectedTarget: WindowSwitcherTarget?
+    /// Compatibility accessors for window/app controls that do not act on Rooms.
+    var selectedID: WindowSwitcherID? {
+        get { if case .item(let id) = selectedTarget { return id }; return nil }
+        set { selectedTarget = newValue.map(WindowSwitcherTarget.item) }
+    }
+    var selectedRoomID: String? {
+        guard case .room(let id) = selectedTarget else { return nil }
+        return id
+    }
     @Published private(set) var isLoading = false
     @Published private(set) var accessibilityGranted = false
     @Published private(set) var previewsGranted = false
@@ -67,6 +82,8 @@ final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var closingID: WindowSwitcherID?
     @Published private(set) var quittingPID: pid_t?
     @Published private(set) var quittingName: String?
+    @Published private(set) var isForceQuitting = false
+    @Published private(set) var forceQuitConfirmation: ForceQuitConfirmation?
     /// Room creation: pick windows in order; index 0 is the main spot.
     @Published var isCreatingRoom = false
     @Published var roomName = ""
@@ -92,6 +109,9 @@ final class WindowSwitcherModel: ObservableObject {
     private var candidates: [WindowSwitcherID: WindowSwitcherInventory.Candidate] = [:]
     private var focusedID: WindowSwitcherID?
     private var processLaunchedAt: [Int32: Date] = [:]
+    /// Synthetic pid → bundle identifier, for apps NSWorkspace reports without
+    /// a usable pid (Steam reports -1): actions resolve the live instance.
+    private var processBundleIDs: [Int32: String] = [:]
     private var inventoryTask: Task<WindowSwitcherInventory.Snapshot, Never>?
     private var loadingTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
@@ -111,9 +131,27 @@ final class WindowSwitcherModel: ObservableObject {
 
     var filteredProcessItems: [WindowSwitcherItem] { WindowSwitcherState.filtered(processItems, query: query) }
 
-    /// The single keyboard stream: windows first, then the process sections.
+    /// Windows, Dock/menu-bar apps, and Rooms in the order shown in the picker.
     var navItems: [WindowSwitcherItem] {
         WindowSwitcherState.navigationItems(windows: filteredItems, processes: filteredProcessItems)
+    }
+
+    var navigationTargets: [WindowSwitcherTarget] {
+        guard !isCreatingRoom else { return filteredItems.map { .item($0.id) } }
+        return WindowSwitcherState.navigationTargets(
+            windows: filteredItems,
+            apps: filteredProcessItems,
+            roomIDs: rooms(matching: query).map(\.id)
+        )
+    }
+
+    func isSelected(_ id: WindowSwitcherID) -> Bool { selectedTarget == .item(id) }
+
+    func selectItem(_ id: WindowSwitcherID) { selectedTarget = .item(id) }
+
+    func selectRoom(_ id: String) {
+        selectedTarget = .room(id)
+        if let index = rooms(matching: query).firstIndex(where: { $0.id == id }) { roomSelection = index }
     }
 
     init(roomStore: RoomStore = .shared) {
@@ -122,17 +160,13 @@ final class WindowSwitcherModel: ObservableObject {
 
     func prepare(resetSearch: Bool = true) {
         precondition(Thread.isMainThread)
-        let previousSelection = resetSearch ? nil : selectedID
+        let previousSelection = resetSearch ? nil : selectedTarget
         stop()
         isOpen = true
         generation = UUID()
         if resetSearch { query = "" }
         accessibilityGranted = AXIsProcessTrusted()
         previewsGranted = CGPreflightScreenCaptureAccess()
-        guard accessibilityGranted else { return }
-        isLoading = true
-        let token = generation
-        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let apps = NSWorkspace.shared.runningApplications.filter {
             $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
                 && !$0.isTerminated
@@ -140,24 +174,73 @@ final class WindowSwitcherModel: ObservableObject {
                     activationPolicy: $0.activationPolicy.rawValue,
                     bundleIdentifier: $0.bundleIdentifier)
         }
-        // Broader list for the process sections: windowless Dock apps and
-        // menu-bar apps stay quittable from the picker even without windows.
-        let listedProcesses = NSWorkspace.shared.runningApplications.filter {
+        // Keep real standalone apps, not every accessory process advertised
+        // by NSWorkspace (Siri, Wi-Fi, WebKit/XPC, LoginItem helpers…). This is
+        // deliberately separate from the window-owning inventory above.
+        // Steam reports pid -1: pid-less apps get a synthetic negative pid and
+        // are addressed through their bundle identifier at action time.
+        let runningApps = NSWorkspace.shared.runningApplications.filter {
             $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
+                && $0.bundleIdentifier != Bundle.main.bundleIdentifier
                 && !$0.isTerminated
-                && WindowSwitcherState.isListedProcess(
-                    activationPolicy: $0.activationPolicy.rawValue,
-                    bundleIdentifier: $0.bundleIdentifier)
         }
-        let processSnapshots = listedProcesses.map { app in
-            (pid: app.processIdentifier,
-             name: app.localizedName ?? app.bundleIdentifier ?? String(app.processIdentifier),
-             launchedAt: app.launchDate,
-             kind: WindowSwitcherState.processKind(activationPolicy: app.activationPolicy.rawValue) ?? .dockApp)
-        }
-        icons = Dictionary(uniqueKeysWithValues: (apps + listedProcesses).compactMap { app in
-            app.icon.map { (app.processIdentifier, $0) }
+        let appsByPID = WindowSwitcherState.uniqueValuesByPID(runningApps.map {
+            (pid: $0.processIdentifier, value: $0)
         })
+        var appsByBundle: [String: NSRunningApplication] = [:]
+        for app in runningApps {
+            if let bundleID = app.bundleIdentifier, appsByBundle[bundleID] == nil {
+                appsByBundle[bundleID] = app
+            }
+        }
+        let listed = WindowSwitcherState.listedApplications(runningApps.map {
+            .init(pid: $0.processIdentifier, activationPolicy: $0.activationPolicy.rawValue,
+                  bundleIdentifier: $0.bundleIdentifier, bundlePath: $0.bundleURL?.path)
+        })
+        var syntheticPID: Int32 = -1
+        let processSnapshots: [(pid: Int32, name: String, launchedAt: Date?, kind: WindowSwitcherItem.ItemKind, bundleID: String?)] = listed.map { identity in
+            let app = identity.pid > 0 ? appsByPID[identity.pid]
+                : appsByBundle[identity.bundleIdentifier ?? ""]
+            let pid: Int32
+            if identity.pid > 0 {
+                pid = identity.pid
+            } else {
+                pid = syntheticPID
+                syntheticPID -= 1
+            }
+            return (pid: pid,
+                    name: app?.localizedName ?? identity.bundleIdentifier ?? "?",
+                    launchedAt: app?.launchDate,
+                    kind: WindowSwitcherState.processKind(activationPolicy: identity.activationPolicy) ?? .dockApp,
+                    bundleID: identity.pid > 0 ? nil : identity.bundleIdentifier)
+        }
+        var iconsByPID: [Int32: NSImage] = [:]
+        var launchedAtByPID: [Int32: Date] = [:]
+        var bundleByPID: [Int32: String] = [:]
+        for (app, snapshot) in zip(listed, processSnapshots) {
+            let resolved = app.pid > 0 ? appsByPID[app.pid] : appsByBundle[app.bundleIdentifier ?? ""]
+            if let icon = resolved?.icon { iconsByPID[snapshot.pid] = icon }
+            launchedAtByPID[snapshot.pid] = snapshot.launchedAt
+            if let bundleID = snapshot.bundleID { bundleByPID[snapshot.pid] = bundleID }
+        }
+        icons = iconsByPID
+        processBundleIDs = bundleByPID
+        processItems = processSnapshots.map { process in
+            WindowSwitcherItem(
+                id: WindowSwitcherID(pid: process.pid, windowID: 0),
+                appName: process.name, title: "",
+                isMinimized: false, isHidden: false, isFullScreen: false, isOnScreen: false,
+                kind: process.kind)
+        }
+        processLaunchedAt = launchedAtByPID
+        if !accessibilityGranted {
+            selectedTarget = WindowSwitcherState.selection(in: navigationTargets, keeping: previousSelection)
+            onReady?()
+            return
+        }
+        isLoading = true
+        let token = generation
+        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let snapshot = apps.map { app in
             WindowSwitcherInventory.Application(pid: app.processIdentifier,
                 name: app.localizedName ?? app.bundleIdentifier ?? "", launchedAt: app.launchDate, isHidden: app.isHidden)
@@ -169,28 +252,25 @@ final class WindowSwitcherModel: ObservableObject {
         loadingTask = Task { @MainActor [weak self] in
             let result = await work.value
             guard let self, !Task.isCancelled, self.isOpen, self.generation == token else { return }
-            self.candidates = Dictionary(uniqueKeysWithValues: result.candidates.map { ($0.item.id, $0) })
+            // The AX inventory may report one window twice (role + subrole
+            // fallbacks); duplicate window IDs must never trap the picker.
+            self.candidates = Dictionary(result.candidates.map { ($0.item.id, $0) },
+                                         uniquingKeysWith: { first, _ in first })
             self.items = result.candidates.map(\.item)
             self.focusedID = result.focused
-            // Apps that own listed windows already appear in the grid.
-            let windowPIDs = Set(self.items.map(\.id.pid))
-            var launchedAtByPID: [Int32: Date] = [:]
             self.processItems = processSnapshots
-                .filter { !windowPIDs.contains($0.pid) }
                 .map { process in
-                    launchedAtByPID[process.pid] = process.launchedAt
                     return WindowSwitcherItem(
                         id: WindowSwitcherID(pid: process.pid, windowID: 0),
                         appName: process.name, title: "",
                         isMinimized: false, isHidden: false, isFullScreen: false, isOnScreen: false,
                         kind: process.kind)
                 }
-            self.processLaunchedAt = launchedAtByPID
             if previousSelection == nil && self.query.isEmpty {
-                self.selectedID = WindowSwitcherState.initialSelection(in: self.items, focused: result.focused)
-                    ?? self.processItems.first?.id
+                self.selectedTarget = WindowSwitcherState.initialSelection(
+                    in: self.navigationTargets, focused: result.focused)
             } else {
-                self.selectedID = WindowSwitcherState.selection(in: self.navItems, keeping: previousSelection)
+                self.selectedTarget = WindowSwitcherState.selection(in: self.navigationTargets, keeping: previousSelection)
             }
             self.isLoading = false
             self.loadLauncherAppsIfNeeded()
@@ -214,6 +294,8 @@ final class WindowSwitcherModel: ObservableObject {
         closingID = nil
         quittingPID = nil
         quittingName = nil
+        isForceQuitting = false
+        forceQuitConfirmation = nil
         inventoryTask = nil
         loadingTask = nil
         previewTask = nil
@@ -226,9 +308,10 @@ final class WindowSwitcherModel: ObservableObject {
         items.removeAll()
         processItems.removeAll()
         processLaunchedAt.removeAll()
+        processBundleIDs.removeAll()
         icons.removeAll()
         focusedID = nil
-        selectedID = nil
+        selectedTarget = nil
         isLoading = false
         isCreatingRoom = false
         roomName = ""
@@ -251,17 +334,20 @@ final class WindowSwitcherModel: ObservableObject {
     }
 
     func moveSelection(_ delta: Int, wrapping: Bool = true) {
-        // Process rows are hidden while picking windows for a room; never let
-        // the keyboard land on an invisible row there.
-        let rows = isCreatingRoom ? filteredItems : navItems
-        selectedID = WindowSwitcherState.moved(in: rows, from: selectedID, by: delta, wrapping: wrapping)
+        selectedTarget = WindowSwitcherState.moved(
+            in: navigationTargets, from: selectedTarget, by: delta, wrapping: wrapping)
+        if case .room(let id) = selectedTarget,
+           let index = rooms(matching: query).firstIndex(where: { $0.id == id }) {
+            roomSelection = index
+        }
     }
 
     func applyCommandTabOffset(_ offset: Int) {
-        if !query.isEmpty {
-            selectedID = filteredItems.first?.id
-        } else {
-            selectedID = WindowSwitcherState.commandTabSelection(in: filteredItems, focused: focusedID, offset: offset)
+        selectedTarget = WindowSwitcherState.commandTabSelection(
+            in: navigationTargets, focused: focusedID, offset: offset)
+        if case .room(let id) = selectedTarget,
+           let index = rooms(matching: query).firstIndex(where: { $0.id == id }) {
+            roomSelection = index
         }
     }
 
@@ -282,6 +368,9 @@ final class WindowSwitcherModel: ObservableObject {
         precondition(Thread.isMainThread)
         guard isOpen else { return }
         isCreatingRoom = true
+        if selectedID.flatMap({ candidates[$0] }) == nil, let first = filteredItems.first {
+            selectItem(first.id)
+        }
         roomPicks = []
         creationLayout = .auto
         roomName = name
@@ -360,7 +449,10 @@ final class WindowSwitcherModel: ObservableObject {
         precondition(Thread.isMainThread)
         let rows = rooms(matching: query)
         guard !rows.isEmpty else { return }
-        let target = rows.indices.contains(roomSelection) ? rows[roomSelection] : rows[0]
+        let selected = selectedRoomID.flatMap { id in rows.first { $0.id == id } }
+        let index = selected.flatMap { room in rows.firstIndex(of: room) }
+        let target = selected ?? (rows.indices.contains(roomSelection) ? rows[roomSelection] : rows[0])
+        if let index { roomSelection = index }
         roomActionTargetID = target.id
         roomActionSelection = 0
         renamingRoomID = nil
@@ -475,10 +567,12 @@ final class WindowSwitcherModel: ObservableObject {
         let rows = rooms(matching: query)
         guard !rows.isEmpty else { return }
         roomSelection = ((roomSelection + delta) % rows.count + rows.count) % rows.count
+        selectRoom(rows[roomSelection].id)
     }
 
     func selectedRoom(matching query: String) -> Room? {
         let rows = rooms(matching: query)
+        if let id = selectedRoomID, let selected = rows.first(where: { $0.id == id }) { return selected }
         guard rows.indices.contains(roomSelection) else { return nil }
         return rows[roomSelection]
     }
@@ -589,7 +683,8 @@ final class WindowSwitcherModel: ObservableObject {
             self.closeResultTask = nil
             switch result {
             case .closed:
-                let next = WindowSwitcherState.selectionAfterClosing(id, in: self.filteredItems, selected: self.selectedID)
+                let next = WindowSwitcherState.selectionAfterClosing(
+                    id, in: self.navigationTargets, selected: self.selectedTarget)
                 self.items.removeAll { $0.id == id }
                 self.candidates.removeValue(forKey: id)
                 self.images.removeValue(forKey: id)
@@ -597,7 +692,7 @@ final class WindowSwitcherModel: ObservableObject {
                 self.attemptedPreviews.remove(id)
                 self.pendingPreviews.removeAll { $0 == id }
                 self.imageOrder.removeAll { $0 == id }
-                self.selectedID = next
+                self.selectedTarget = next
             case .pending:
                 self.message = localizedString("The window has not closed yet. Open it to check for a save dialog, or refresh the list.")
                 self.messageKind = .error
@@ -626,24 +721,64 @@ final class WindowSwitcherModel: ObservableObject {
         beginQuit(pid: id.pid, name: item.appName, launchedAt: launchedAt)
     }
 
-    /// Brings a windowless process forward: regular apps activate like a Dock
-    /// click, menu-bar apps reveal their panel when they support it.
-    func activateProcess(_ id: WindowSwitcherID) {
+    func requestForceQuit(_ id: WindowSwitcherID) {
         precondition(Thread.isMainThread)
-        guard isOpen, processItems.contains(where: { $0.id == id }),
-              let app = NSRunningApplication(processIdentifier: id.pid), !app.isTerminated else { return }
-        _ = app.unhide()
-        _ = app.activate(options: [])
+        guard isOpen, closingID == nil, quittingPID == nil else { return }
+        if let candidate = candidates[id] {
+            forceQuitConfirmation = ForceQuitConfirmation(
+                id: id, appName: candidate.item.appName, launchedAt: candidate.launchedAt)
+        } else if let item = processItems.first(where: { $0.id == id }),
+                  let launchedAt = processLaunchedAt[id.pid] {
+            forceQuitConfirmation = ForceQuitConfirmation(id: id, appName: item.appName, launchedAt: launchedAt)
+        }
     }
 
-    private func beginQuit(pid: Int32, name: String, launchedAt: Date?) {
+    func cancelForceQuit() { forceQuitConfirmation = nil }
+
+    func confirmForceQuit() {
+        guard let confirmation = forceQuitConfirmation else { return }
+        forceQuitConfirmation = nil
+        beginQuit(pid: confirmation.id.pid, name: confirmation.appName,
+                  launchedAt: confirmation.launchedAt, force: true)
+    }
+
+    /// Brings a windowless process forward: regular apps activate like a Dock
+    /// click, menu-bar apps reveal their panel when they support it. Pid-less
+    /// apps (Steam) resolve through their bundle identifier.
+    func activateProcess(_ id: WindowSwitcherID) {
+        precondition(Thread.isMainThread)
+        guard isOpen, processItems.contains(where: { $0.id == id }) else { return }
+        if id.pid > 0 {
+            guard let app = NSRunningApplication(processIdentifier: id.pid), !app.isTerminated else { return }
+            _ = app.unhide()
+            _ = app.activate(options: [])
+            return
+        }
+        guard let bundleID = processBundleIDs[id.pid],
+              let app = NSWorkspace.shared.runningApplications.first(where: {
+                  $0.bundleIdentifier == bundleID && !$0.isTerminated
+              }) else { return }
+        _ = app.unhide()
+        if !app.activate(options: []), let url = app.bundleURL {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func beginQuit(pid: Int32, name: String, launchedAt: Date?, force: Bool = false) {
         quittingPID = pid
         quittingName = name
+        isForceQuitting = force
         message = ""
         messageKind = .info
         let token = generation
+        // Pid-less apps (Steam reports -1) are addressed by bundle identity.
+        let bundleID = pid < 0 ? processBundleIDs[pid] : nil
         let work = Task.detached(priority: .userInitiated) {
-            WindowSwitcherInventory.quit(pid: pid, launchedAt: launchedAt)
+            if let bundleID {
+                return WindowSwitcherInventory.quitInstance(
+                    bundleIdentifier: bundleID, launchedAt: launchedAt, force: force)
+            }
+            return WindowSwitcherInventory.quit(pid: pid, launchedAt: launchedAt, force: force)
         }
         quitTask = work
         quitResultTask = Task { @MainActor [weak self] in
@@ -651,13 +786,14 @@ final class WindowSwitcherModel: ObservableObject {
             guard let self, !Task.isCancelled, self.isOpen, self.generation == token else { return }
             self.quittingPID = nil
             self.quittingName = nil
+            self.isForceQuitting = false
             self.quitTask = nil
             self.quitResultTask = nil
             switch result {
             case .quit:
                 let removed = self.items.filter { $0.id.pid == pid }.map(\.id)
                 let next = WindowSwitcherState.selectionAfterQuitting(
-                    pid: pid, in: self.navItems, selected: self.selectedID)
+                    pid: pid, in: self.navigationTargets, selected: self.selectedTarget)
                 self.items.removeAll { $0.id.pid == pid }
                 self.processItems.removeAll { $0.id.pid == pid }
                 self.processLaunchedAt.removeValue(forKey: pid)
@@ -671,7 +807,7 @@ final class WindowSwitcherModel: ObservableObject {
                 }
                 self.icons.removeValue(forKey: pid)
                 if self.focusedID?.pid == pid { self.focusedID = nil }
-                self.selectedID = next
+                self.selectedTarget = next
             case .pending:
                 self.message = localizedString("The app has not quit yet. A save dialog may be waiting, or it refused to quit.")
                 self.messageKind = .error

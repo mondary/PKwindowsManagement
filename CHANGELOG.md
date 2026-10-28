@@ -1,5 +1,29 @@
 # Changelog
 
+## [2026.10.112] - 2026-10-28
+### Fixed
+- **Steam disparaissait d'Applications** : NSWorkspace le rapporte avec pid -1 et un bundle `Steam.AppBundle` sans suffixe `.app`, deux formes que le filtre de la 110 rejetait. Ces bundles « spéciaux » restent listés ; les apps sans pid reçoivent un pid interne et leurs actions (activer, Quitter, Forcer à quitter) passent par l'identifiant de bundle, avec repli d'activation par ouverture du bundle. Steam Helper reste masqué.
+
+## [2026.10.111] - 2026-10-28
+### Changed
+- **⌘⇧R n'est plus intercepté** : le mode clavier Rooms était enregistré en raccourci global Carbon et volait « Recharger en ignorant le cache » à Chrome et aux navigateurs. Cet enregistrement disparaît ; le panneau Rooms reste sur `⌃⌥R`.
+- **Une seule zone de défilement dans le sélecteur** : Fenêtres, Applications et Rooms s'enchaînent dans une unique page verticale. Les tuiles d'applications et les cartes Rooms se répartissent sur plusieurs lignes ; plus de bandes à scroll horizontal ni de scrolls imbriqués. Le panneau s'agrandit (jusqu'à 1160×860 selon l'écran) et la sélection clavier fait défiler la page entière, y compris entre sections.
+
+## [2026.10.110] - 2026-10-28
+### Fixed
+- **Applications n’est plus une liste de processus** : les services macOS (Siri, Wi-Fi, Accessibilité, Centre de contrôle…), composants WebKit/XPC et helpers embarqués sont exclus. Une seule tuile est conservée par identifiant d’app ; Little Snitch Mini reste visible sans son Helper. Les vraies apps de barre des menus (MonitorControl, Itsycal, PKMonitor…) et les apps Apple comme Finder/Aperçu restent disponibles. Aucun changement dans la section Fenêtres ; aucun processus exclu n’est arrêté.
+
+## [2026.10.109] - 2026-10-28
+### Changed
+- Le sélecteur suit maintenant un ordre unique **Fenêtres → Applications → Rooms**. Recherche et navigation clavier traversent les trois sections ; les apps du Dock et de la barre des menus restent visibles dans **Applications**, même si elles ont aussi des fenêtres. Les cartes Rooms montrent leur disposition. Les Applications passent en tuiles façon Launchpad (icône + nom, sélection en anneau, badge discret pour la barre des menus) : plus de pastilles à menus ni de croix permanentes, Quitter / Forcer à quitter restant au clic droit ou `⌘Q`.
+- **`Tout maximiser` reste sur l'écran actuel** : la commande cible l'écran de la fenêtre active (repli : pointeur) au lieu de toutes les fenêtres de tous les écrans. `Tout maximiser (tous les écrans)` devient une commande distincte, sans raccourci par défaut ; libellés FR/EN/DE/ES et carte clavier synchronisés.
+### Added
+- `⌘N` crée une Room depuis le sélecteur : nom modifiable, choix des fenêtres et sept dispositions présentées avec miniatures et descriptions.
+- Les menus d’app proposent **Quitter** normalement ou **Forcer à quitter…** avec confirmation et avertissement sur les modifications non enregistrées.
+### Fixed
+- **Crash à l'ouverture du sélecteur (Dev 108)** : la table d'icônes fusionnait l'inventaire des fenêtres et celui des processus avec `Dictionary(uniqueKeysWithValues:)`. Une app régulière active sans fenêtre listée apparaît dans les deux avec le même PID et déclenchait l'arrêt immédiat de l'app dès ⌘Tab. Les tables par PID sont désormais dédoublonnées silencieusement (première valeur conservée), et la table des fenêtres tolère aussi un identifiant AX rapporté deux fois.
+- Le sélecteur ne se masque après l'activation d'une fenêtre que si macOS confirme l'activation ; en cas d'échec, il reste ouvert et affiche une erreur au lieu de faire disparaître puis réapparaître la cible.
+
 ## [2026.10.108] - 2026-10-27
 ### Changed
 - Les processus sans fenêtre et les apps de barre de menus ne forment plus deux listes pleine largeur sous la grille : ce sont désormais deux bandes compactes de pastilles, alignées sur la bande Rooms. Chaque pastille montre l'icône et le nom ; une croix apparaît au survol ou à la sélection pour arrêter l'app, `⌘Q` restant disponible. Moins de hauteur, même navigation clavier.

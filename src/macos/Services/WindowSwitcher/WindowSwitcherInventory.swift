@@ -135,16 +135,37 @@ enum WindowSwitcherInventory {
     /// Ask the app that owns the selected window to quit. Graceful by design:
     /// the owning app keeps control of its save dialogs and unsaved documents.
     /// Worker only: launching a quit request and observing it can wait.
-    static func quit(pid: pid_t, launchedAt: Date?) -> WindowQuitRequest.Result {
+    static func quit(pid: pid_t, launchedAt: Date?, force: Bool = false) -> WindowQuitRequest.Result {
         WindowQuitRequest.run(isCancelled: { Task.isCancelled }, validate: {
             guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated,
                   app.launchDate == launchedAt else { return false }
             return true
         }, terminate: {
             guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated else { return false }
-            return app.terminate()
+            return force ? app.forceTerminate() : app.terminate()
         }, isTerminated: {
             NSRunningApplication(processIdentifier: pid)?.isTerminated ?? true
+        }, pause: { Thread.sleep(forTimeInterval: 0.05) })
+    }
+
+    /// Quit an app that NSWorkspace reports without a usable pid (Steam:
+    /// pid -1 behind a Steam.AppBundle launcher). Same graceful semantics as
+    /// the pid-based quit; the instance is resolved by bundle identifier.
+    /// Worker only: observing the quit can wait.
+    static func quitInstance(bundleIdentifier: String, launchedAt: Date?, force: Bool = false) -> WindowQuitRequest.Result {
+        func current() -> NSRunningApplication? {
+            NSWorkspace.shared.runningApplications.first {
+                $0.bundleIdentifier == bundleIdentifier && !$0.isTerminated
+            }
+        }
+        return WindowQuitRequest.run(isCancelled: { Task.isCancelled }, validate: {
+            guard let app = current(), app.launchDate == launchedAt else { return false }
+            return true
+        }, terminate: {
+            guard let app = current() else { return false }
+            return force ? app.forceTerminate() : app.terminate()
+        }, isTerminated: {
+            current()?.isTerminated ?? true
         }, pause: { Thread.sleep(forTimeInterval: 0.05) })
     }
 

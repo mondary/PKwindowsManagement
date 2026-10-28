@@ -38,7 +38,7 @@ enum WindowCommandFamily: String, CaseIterable, Identifiable {
              .windowFirstFourth, .windowSecondFourth, .windowThirdFourth, .windowLastFourth,
              .windowFirstThreeFourths, .windowCenterThreeFourths, .windowLastThreeFourths:
             self = .placement
-        case .windowMaximize, .windowMaximizeAll, .windowMaximizeAllInApp, .windowCenter,
+        case .windowMaximize, .windowMaximizeAll, .windowMaximizeAllDisplays, .windowMaximizeAllInApp, .windowCenter,
              .windowFullScreen, .windowToggleFullScreen, .windowMaximizeHeight, .windowMaximizeWidth,
              .windowMakeLarger, .windowMakeSmaller, .windowReasonableSize, .windowRestore,
              .windowMoveLeft, .windowMoveRight, .windowMoveUp, .windowMoveDown, .windowTileAll, .windowTileAllDesktops:
@@ -176,7 +176,8 @@ enum WindowCommandCatalog {
         static let fullScreen = WindowCommandSpec.bound("Fullscreen", "arrow.up.left.and.arrow.down.right", .windowFullScreen)
         static let toggleFullScreen = WindowCommandSpec.bound("Toggle Fullscreen", "rectangle.inset.fill", .windowToggleFullScreen)
         static let almostMaximize = WindowCommandSpec.bound("Almost Maximize", nil, .windowMaximize, fraction: CGRect(x: 0.045, y: 0.045, width: 0.91, height: 0.91))
-        static let maximizeAll = WindowCommandSpec.bound("Maximize All Windows", "rectangle.on.rectangle", .windowMaximizeAll)
+        static let maximizeAll = WindowCommandSpec.bound("Maximize All Windows (Current Display)", "rectangle.on.rectangle", .windowMaximizeAll)
+        static let maximizeAllDisplays = WindowCommandSpec.bound("Maximize All Windows (All Displays)", "rectangle.on.rectangle", .windowMaximizeAllDisplays)
         static let maximizeAllInApp = WindowCommandSpec.bound("Maximize All Windows (Current App)", "rectangle.stack", .windowMaximizeAllInApp)
         static let tileAll = WindowCommandSpec.bound("Tile Current Desktop", nil, .windowTileAll, fraction: CGRect(x: 0, y: 0, width: 0.5, height: 0.5))
         static let tileAllDesktops = WindowCommandSpec.bound("Tile All Desktops", "square.grid.2x2", .windowTileAllDesktops)
@@ -189,7 +190,7 @@ enum WindowCommandCatalog {
         static let center = WindowCommandSpec.bound("Center", "circle.grid.cross", .windowCenter)
 
         static let all: [WindowCommandSpec] = [
-            fullScreen, toggleFullScreen, almostMaximize, maximizeAll, maximizeAllInApp, tileAll, tileAllDesktops,
+            fullScreen, toggleFullScreen, almostMaximize, maximizeAll, maximizeAllDisplays, maximizeAllInApp, tileAll, tileAllDesktops,
             maximizeHeight, maximizeWidth, reasonableSize, restore, makeLarger, makeSmaller, center,
         ]
     }

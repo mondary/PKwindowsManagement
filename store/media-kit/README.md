@@ -52,18 +52,23 @@ Sources de production inchangées ; aucun accès au dossier archivé `store/arch
 
 ## Régénérer
 
-### Aperçus de fenêtres — Dev locale 2026.10.75
+### Sélecteur unifié — Dev locale 2026.10.110
 
 `python3 store/media-kit/capture-window-previews.py` compile les vues du sélecteur
-et produit `build/window-preview-qa/` : FR/EN, clair/sombre, largeur réduite et
-absence d’autorisation de capture. Le setter des propriétés du modèle est rendu
+et produit `build/window-preview-qa/` : FR/EN, clair/sombre, version étroite,
+absence d’autorisation de capture et mode de création d’une Room. Le setter des propriétés du modèle est rendu
 accessible dans une copie temporaire pour injecter six fenêtres fictives ; les
 vues et la logique restent celles de production. Aucun inventaire AX, raccourci
 global ou appel de capture d’écran n’est lancé. Les miniatures sont des documents
 de démonstration dessinés localement, pas des captures de fenêtres utilisateur.
 Les images retenues dans `sources/screenshots/window-previews-{fr,en}.png`
-documentent le rendu ; elles ne valident pas l’activation d’apps externes, les
-changements de Space ou l’autorisation TCC sur la build installée.
+documentent les trois sections Fenêtres → Applications (tuiles façon Launchpad) → Rooms ;
+`room-picker-creation-{fr,en}.png` montre le champ de nom et les sept dispositions
+illustrées. Ces fixtures valident le rendu natif, pas l’activation d’apps externes,
+les changements de Space ou l’autorisation TCC sur la build installée.
+Depuis la Dev 111, le sélecteur est une page unique : hauteur de capture portée à 1000 points pour montrer les trois sections dans le même flux. Le filtre Applications est couvert par `WindowSwitcherChecks` : apps autonomes,
+helpers imbriqués, services macOS et dédoublonnage par bundle ; aucune fenêtre
+utilisateur n’est interrogée par ces tests.
 
 ### Carte clavier Dev 2026.10.66
 

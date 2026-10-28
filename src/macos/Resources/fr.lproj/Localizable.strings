@@ -225,7 +225,8 @@
 "Finder returned error %d." = "Finder a renvoyé l’erreur %d.";
 "Trash could not be emptied: %@" = "Impossible de vider la Corbeille : %@";
 "macOS blocked Finder automation. Relaunch this packaged app and allow PKwindowsManagement to control Finder when prompted." = "macOS a bloqué l’automatisation de Finder. Relancez cette app puis autorisez PKwindowsManagement à contrôler Finder.";
-"Maximize All Windows" = "Tout maximiser";
+"Maximize All Windows (Current Display)" = "Tout maximiser (écran actuel)";
+"Maximize All Windows (All Displays)" = "Tout maximiser (tous les écrans)";
 "Maximize All Windows (Current App)" = "Tout maximiser (app active)";
 "Tile All Windows" = "Carreler toutes les fenêtres";
 "Grid & Sizing" = "Grille et tailles";
@@ -595,6 +596,41 @@
 "This app cannot be quit right now. Try again or quit it from the app." = "Impossible de quitter cette app pour le moment. Réessayez ou quittez-la depuis l’app.";
 
 "Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Fermez les fenêtres une par une avec ⌘W ou le bouton ×, ou quittez l’app sélectionnée avec ⌘Q. Le sélecteur reste ouvert ; vous gardez la main sur les demandes d’enregistrement.";
+
+/* Sélecteur unifié de fenêtres, apps et Rooms */
+"Search windows, apps, or rooms" = "Rechercher des fenêtres, apps ou rooms";
+"Force Quit %@?" = "Forcer à quitter %@ ?";
+"Unsaved changes in %@ may be lost." = "Les modifications non enregistrées dans %@ pourraient être perdues.";
+"Force Quit" = "Forcer à quitter";
+"Force Quit…" = "Forcer à quitter…";
+"App actions" = "Actions de l’app";
+"No rooms yet" = "Aucune room pour l’instant";
+"No matching rooms" = "Aucune room correspondante";
+"Automatic layout" = "Disposition automatique";
+"Focus layout" = "Disposition focus";
+"Columns layout" = "Disposition en colonnes";
+"Grid layout" = "Disposition en grille";
+"Stack layout" = "Disposition empilée";
+"Dwindle layout" = "Disposition Dwindle";
+"Monocle layout" = "Disposition Monocle";
+"Choose a comfortable layout automatically" = "Choisir automatiquement une disposition adaptée";
+"One large window, the others beside it" = "Une grande fenêtre, les autres à côté";
+"Windows arranged in columns" = "Fenêtres disposées en colonnes";
+"Windows arranged in a grid" = "Fenêtres disposées en grille";
+"Overlapping cards with title bars visible" = "Fenêtres superposées avec leurs barres de titre visibles";
+"Show one window at a time" = "Afficher une fenêtre à la fois";
+"Window %d" = "Fenêtre %d";
+"Dock" = "Dock";
+"Menu bar apps" = "Apps de la barre des menus";
+"No running applications" = "Aucune application en cours";
+"No matching applications" = "Aucune application correspondante";
+"Matching applications and Rooms are shown below" = "Les applications et Rooms correspondantes sont affichées ci-dessous";
+"Force quitting %@…" = "Forçage de l’arrêt de %@…";
+"Cycle windows, apps, and Rooms" = "Parcourir les fenêtres, apps et Rooms";
+"Cycle" = "Basculer";
+"Dismiss" = "Masquer";
+"Open selected" = "Ouvrir la cible sélectionnée";
+"Next Room" = "Room suivante";
 
 /* Shortcut conflicts */
 "Shortcut conflicts" = "Conflits de raccourcis";

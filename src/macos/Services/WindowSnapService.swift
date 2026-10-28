@@ -8,6 +8,7 @@ enum WindowSnapAction: CaseIterable {
     case bottomHalf
     case maximize
     case maximizeAll
+    case maximizeAllDisplays
     case maximizeAllInApp
     case center
     case topLeft
@@ -98,15 +99,18 @@ final class WindowSnapService {
         Self.snapGeneration += 1
         let generation = Self.snapGeneration
 
-        if action == .maximizeAll || action == .maximizeAllInApp {
+        if action == .maximizeAll || action == .maximizeAllDisplays || action == .maximizeAllInApp {
             let apps: [NSRunningApplication]
             if action == .maximizeAllInApp {
                 apps = NSWorkspace.shared.frontmostApplication.map { [$0] } ?? []
             } else {
                 apps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
             }
+            // "Maximize All" stays on the display the user is working on. The
+            // separate all-displays command keeps the previous global scope.
+            let scope = action == .maximizeAll ? currentScreen() : nil
             for app in apps {
-                maximizeAllWindows(of: app, preset: preset, generation: generation)
+                maximizeAllWindows(of: app, preset: preset, generation: generation, on: scope)
             }
             return
         }
@@ -287,7 +291,7 @@ final class WindowSnapService {
         case .bottomLastSixth:
             let w = floor(baseAX.width / 3.0)
             targetFrame = CGRect(x: baseAX.maxX - w, y: baseAX.midY, width: w, height: floor(baseAX.height / 2.0))
-        case .restore, .toggleFullscreen, .maximizeAll, .maximizeAllInApp, .tileAll, .tileAllDesktops:
+        case .restore, .toggleFullscreen, .maximizeAll, .maximizeAllDisplays, .maximizeAllInApp, .tileAll, .tileAllDesktops:
             targetFrame = currentFrame
         case .nextDisplay, .previousDisplay:
             guard let moved = moveToAnotherDisplay(
@@ -309,7 +313,27 @@ final class WindowSnapService {
     /// changes. Leaving fullscreen is an animated Space transition, so their
     /// almost-maximized frame is applied only once the window is back on its
     /// desktop and its frame has settled.
-    private func maximizeAllWindows(of app: NSRunningApplication, preset: WindowMarginPreset, generation: Int) {
+    /// The display the user is working on: the focused window's screen, then
+    /// the pointer's, then the main screen.
+    private func currentScreen() -> NSScreen? {
+        if let (window, _) = focusedAXWindow(),
+           let windowFrame = frame(of: window),
+           let screen = screen(for: windowFrame) {
+            return screen
+        }
+        let pointer = NSEvent.mouseLocation
+        return NSScreen.screens.first(where: { $0.frame.contains(pointer) }) ?? NSScreen.main
+    }
+
+    /// Membership follows the same center-first rule used to pick a window's
+    /// target screen, so a scoped command never touches a neighbour display.
+    private func isOn(_ screen: NSScreen, _ window: AXUIElement) -> Bool {
+        guard let windowFrame = frame(of: window) else { return false }
+        return self.screen(for: windowFrame)?.frame == screen.frame
+    }
+
+    private func maximizeAllWindows(of app: NSRunningApplication, preset: WindowMarginPreset,
+                                    generation: Int, on screen: NSScreen? = nil) {
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
         AXUIElementSetMessagingTimeout(appElement, 0.5)
         var windowsRef: AnyObject?
@@ -331,6 +355,7 @@ final class WindowSnapService {
         for window in windows {
             AXUIElementSetMessagingTimeout(window, 1.0)
             if isMinimized(window) { continue }
+            if let screen, !isOn(screen, window) { continue }
             if isFullScreen(window) {
                 if leaveFullScreen(window) { fullScreenWindows.append(window) }
                 continue
@@ -870,6 +895,7 @@ extension ShortcutAction {
         case .windowBottomHalf: .bottomHalf
         case .windowMaximize: .maximize
         case .windowMaximizeAll: .maximizeAll
+        case .windowMaximizeAllDisplays: .maximizeAllDisplays
         case .windowMaximizeAllInApp: .maximizeAllInApp
         case .windowCenter: .center
         case .windowTopLeft: .topLeft

@@ -149,6 +149,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case windowBottomHalf
     case windowMaximize
     case windowMaximizeAll
+    case windowMaximizeAllDisplays
     case windowMaximizeAllInApp
     case windowCenter
     case windowTopLeft
@@ -221,7 +222,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .windowTopHalf: localizedString("Top Half")
         case .windowBottomHalf: localizedString("Bottom Half")
         case .windowMaximize: localizedString("Maximize")
-        case .windowMaximizeAll: localizedString("Maximize All Windows")
+        case .windowMaximizeAll: localizedString("Maximize All Windows (Current Display)")
+        case .windowMaximizeAllDisplays: localizedString("Maximize All Windows (All Displays)")
         case .windowMaximizeAllInApp: localizedString("Maximize All Windows (Current App)")
         case .windowCenter: localizedString("Center")
         case .windowTopLeft: localizedString("Top Left")
@@ -338,6 +340,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
              .windowFirstFourth, .windowSecondFourth, .windowThirdFourth, .windowLastFourth,
              .windowFirstThreeFourths, .windowCenterThreeFourths, .windowLastThreeFourths,
              .desktopMoveLeft, .desktopMoveRight, .canvasRestore, .windowTileAllDesktops,
+             .windowMaximizeAllDisplays,
              .canvasMoveColumnLeft, .canvasMoveColumnRight:
             nil
         }

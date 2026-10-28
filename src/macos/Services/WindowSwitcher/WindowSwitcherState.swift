@@ -6,10 +6,15 @@ struct WindowSwitcherID: Hashable, Sendable {
     let windowID: UInt32
 }
 
+enum WindowSwitcherTarget: Hashable {
+    case item(WindowSwitcherID)
+    case room(String)
+}
+
 struct WindowSwitcherItem: Identifiable, Equatable, Sendable {
     enum ItemKind: Equatable, Sendable {
         case window
-        /// Regular app running without any listed window (Dock indicator).
+        /// Running Dock app, whether or not it also has listed windows.
         case dockApp
         /// Accessory app living in the menu bar.
         case menuBarApp
@@ -72,14 +77,80 @@ enum WindowSwitcherState {
         return !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    /// Processes shown in the dedicated picker sections: running regular apps
-    /// without windows (Dock) and user-facing accessory apps (menu bar).
-    /// Prohibited background daemons and the excluded system agents never
-    /// appear, so quitting from the picker cannot take down macOS chrome.
+    /// Coarse eligibility; an accessory activation policy alone is NOT proof
+    /// that a process is a menu-bar app. Bundle structure is checked below.
     static func isListedProcess(activationPolicy: Int, bundleIdentifier: String?) -> Bool {
         guard activationPolicy == 0 || activationPolicy == 1 else { return false }
-        guard let bundleIdentifier else { return true }
-        return !excludedBundleIdentifiers.contains(bundleIdentifier)
+        guard let bundleIdentifier else { return activationPolicy == 0 }
+        let identifier = bundleIdentifier.lowercased()
+        if activationPolicy == 1 && identifier.hasPrefix("com.apple.") { return false }
+        return !excludedBundleIdentifiers.contains(where: { $0.lowercased() == identifier })
+    }
+
+    struct ApplicationIdentity {
+        let pid: Int32
+        let activationPolicy: Int
+        let bundleIdentifier: String?
+        let bundlePath: String?
+    }
+
+    /// Only standalone app bundles are targets. Never promote a nested helper
+    /// to its owner: activation/quit must address the actual visible app PID.
+    /// Steam reports pid -1 and a `Steam.AppBundle/Steam` launcher path: both
+    /// a non-zero pid (including -1) and an .AppBundle wrapper mean "real app".
+    static func applicationIdentityKey(_ app: ApplicationIdentity) -> String? {
+        guard app.pid != 0,
+              isListedProcess(activationPolicy: app.activationPolicy, bundleIdentifier: app.bundleIdentifier),
+              let path = app.bundlePath, !path.isEmpty else { return nil }
+        let url = URL(fileURLWithPath: path).standardizedFileURL
+        let components = url.pathComponents.map { $0.lowercased() }
+        let last = components.last ?? ""
+        let parent = components.count >= 2 ? components[components.count - 2] : ""
+        let standaloneBundle = last.hasSuffix(".app") || parent.hasSuffix(".appbundle")
+        guard standaloneBundle else { return nil }
+        // LoginItems, Frameworks, XPCServices and embedded apps belong to the
+        // enclosing product, not to a second Applications tile.
+        guard !components.dropLast().contains(where: {
+            $0.hasSuffix(".app") || $0.hasSuffix(".framework") || $0.hasSuffix(".xpc")
+                || $0 == "contents" || $0 == "loginitems" || $0 == "xpcservices"
+                || $0 == "helpers"
+        }) else { return nil }
+        let lowerPath = url.path.lowercased()
+        let identifier = app.bundleIdentifier?.lowercased()
+        if lowerPath.hasPrefix("/system/library/") {
+            // Finder is a genuine user application installed in CoreServices.
+            guard identifier == "com.apple.finder", app.activationPolicy == 0,
+                  lowerPath == "/system/library/coreservices/finder.app" else { return nil }
+        }
+        if let identifier {
+            let parts = identifier.split(separator: ".")
+            let internalRoles: Set<Substring> = ["helper", "helpers", "xpc", "renderer", "gpu", "crashpad", "updater"]
+            guard !parts.contains(where: { internalRoles.contains($0) }) else { return nil }
+            return "bundle:" + identifier
+        }
+        return "path:" + url.path
+    }
+
+    /// One entry per exact bundle identity, not per vendor/name prefix. Prefer
+    /// the regular (Dock) process if multiple instances share the same bundle.
+    /// Preserve the inventory order and therefore the visible keyboard order.
+    /// Returns identities: pid-less apps (Steam reports -1) must NOT collapse
+    /// into a single PID key.
+    static func listedApplications(_ apps: [ApplicationIdentity]) -> [ApplicationIdentity] {
+        var keys: [String] = []
+        var representatives: [String: ApplicationIdentity] = [:]
+        for app in apps {
+            guard let key = applicationIdentityKey(app) else { continue }
+            if let previous = representatives[key] {
+                if previous.activationPolicy != 0 && app.activationPolicy == 0 {
+                    representatives[key] = app
+                }
+            } else {
+                keys.append(key)
+                representatives[key] = app
+            }
+        }
+        return keys.compactMap { representatives[$0] }
     }
 
     /// The picker section a listed process belongs to.
@@ -95,6 +166,91 @@ enum WindowSwitcherState {
     /// process sections, so arrows/Tab walk from the grid into the lists.
     static func navigationItems(windows: [WindowSwitcherItem], processes: [WindowSwitcherItem]) -> [WindowSwitcherItem] {
         windows + processes
+    }
+
+    /// The picker is one keyboard stream, ordered exactly like its visible
+    /// sections: windows, running Dock/menu-bar apps, then Rooms.
+    static func navigationTargets(windows: [WindowSwitcherItem], apps: [WindowSwitcherItem],
+                                  roomIDs: [String]) -> [WindowSwitcherTarget] {
+        windows.map { .item($0.id) }
+            + apps.map { .item($0.id) }
+            + roomIDs.map { .room($0) }
+    }
+
+    static func selection(in targets: [WindowSwitcherTarget], keeping target: WindowSwitcherTarget?) -> WindowSwitcherTarget? {
+        if let target, targets.contains(target) { return target }
+        return targets.first
+    }
+
+    static func initialSelection(in targets: [WindowSwitcherTarget], focused: WindowSwitcherID?) -> WindowSwitcherTarget? {
+        guard !targets.isEmpty else { return nil }
+        if targets.count > 1, targets.first == focused.map(WindowSwitcherTarget.item) { return targets[1] }
+        return targets.first
+    }
+
+    /// Mirrors the system switcher's first/next/backward behavior, but keeps
+    /// the ordered target list broad enough to include app and Room sections.
+    static func commandTabSelection(in targets: [WindowSwitcherTarget], focused: WindowSwitcherID?,
+                                    offset: Int) -> WindowSwitcherTarget? {
+        guard !targets.isEmpty else { return nil }
+        let initial = (targets.count > 1 && targets.first == focused.map(WindowSwitcherTarget.item)) ? 1 : 0
+        let index: Int
+        if offset == 0 {
+            index = initial
+        } else if offset > 0 {
+            index = (initial + offset) % targets.count
+        } else {
+            index = ((targets.count + offset) % targets.count + targets.count) % targets.count
+        }
+        return targets[index]
+    }
+
+    static func moved(in targets: [WindowSwitcherTarget], from target: WindowSwitcherTarget?, by offset: Int,
+                      wrapping: Bool) -> WindowSwitcherTarget? {
+        guard !targets.isEmpty else { return nil }
+        guard let index = targets.firstIndex(of: target ?? targets[0]) else { return targets.first }
+        let next = wrapping
+            ? ((index + offset) % targets.count + targets.count) % targets.count
+            : min(max(index + offset, 0), targets.count - 1)
+        return targets[next]
+    }
+
+    static func selectionAfterClosing(_ removed: WindowSwitcherID, in targets: [WindowSwitcherTarget],
+                                      selected: WindowSwitcherTarget?) -> WindowSwitcherTarget? {
+        let remaining = targets.filter { $0 != .item(removed) }
+        guard !remaining.isEmpty else { return nil }
+        if selected != .item(removed) { return selection(in: remaining, keeping: selected) }
+        let index = targets.firstIndex(of: .item(removed)) ?? 0
+        return remaining[min(index, remaining.count - 1)]
+    }
+
+    static func selectionAfterQuitting(pid: Int32, in targets: [WindowSwitcherTarget],
+                                       selected: WindowSwitcherTarget?) -> WindowSwitcherTarget? {
+        let remaining = targets.filter { target in
+            guard case .item(let id) = target else { return true }
+            return id.pid != pid
+        }
+        guard !remaining.isEmpty else { return nil }
+        guard let selected, case .item(let selectedID) = selected, selectedID.pid == pid else {
+            return selection(in: remaining, keeping: selected)
+        }
+        let index = targets.firstIndex(of: selected) ?? 0
+        if let next = targets[index...].first(where: { target in
+            guard case .item(let id) = target else { return true }
+            return id.pid != pid
+        }), remaining.contains(next) { return next }
+        return remaining[min(index, remaining.count - 1)]
+    }
+
+    /// The regular-app inventory and the broader Dock/menu-bar inventory
+    /// overlap by design. Build icon lookup maps without Dictionary's
+    /// duplicate-key trap when the same running app appears in both lists.
+    static func uniqueValuesByPID<Value>(_ entries: [(pid: Int32, value: Value)]) -> [Int32: Value] {
+        var result: [Int32: Value] = [:]
+        for entry in entries where result[entry.pid] == nil {
+            result[entry.pid] = entry.value
+        }
+        return result
     }
 
     static func filtered(_ items: [WindowSwitcherItem], query: String) -> [WindowSwitcherItem] {

@@ -224,7 +224,8 @@
 "Finder returned error %d." = "Finder devolvió el error %d.";
 "Trash could not be emptied: %@" = "No se pudo vaciar la papelera: %@";
 "macOS blocked Finder automation. Relaunch this packaged app and allow PKwindowsManagement to control Finder when prompted." = "macOS bloqueó la automatización de Finder. Reinicia esta app y permite que PKwindowsManagement controle Finder.";
-"Maximize All Windows" = "Maximizar todo";
+"Maximize All Windows (Current Display)" = "Maximizar todo (pantalla actual)";
+"Maximize All Windows (All Displays)" = "Maximizar todo (todas las pantallas)";
 "Maximize All Windows (Current App)" = "Maximizar todo (app activa)";
 "Tile All Windows" = "Colocar todas las ventanas en mosaico";
 "Grid & Sizing" = "Cuadrícula y tamaños";
@@ -299,7 +300,6 @@
 "Windows in columns" = "Ventanas en columnas";
 "Windows in a grid" = "Ventanas en cuadrícula";
 "Main window and overlapping side cards" = "Ventana principal y tarjetas laterales superpuestas";
-"Alternate vertical and horizontal splits" = "Divisiones verticales y horizontales alternas";
 "One window visible, others minimized" = "Una ventana visible, las demás minimizadas";
 "Switch room" = "Cambiar de room";
 "Create room with name “%@”" = "Crear la room «%@»";
@@ -594,6 +594,42 @@
 "This app cannot be quit right now. Try again or quit it from the app." = "No se puede salir de esta app ahora. Inténtalo de nuevo o sal desde la app.";
 
 "Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control." = "Cierra ventanas individuales con ⌘W o el botón ×, o sale de la app seleccionada con ⌘Q. El selector permanece abierto; los diálogos para guardar siguen bajo tu control.";
+
+/* Selector unificado de ventanas, apps y Rooms */
+"Search windows, apps, or rooms" = "Buscar ventanas, apps o rooms";
+"Force Quit %@?" = "¿Forzar salida de %@?";
+"Unsaved changes in %@ may be lost." = "Los cambios sin guardar en %@ podrían perderse.";
+"Force Quit" = "Forzar salida";
+"Force Quit…" = "Forzar salida…";
+"App actions" = "Acciones de la app";
+"No rooms yet" = "Aún no hay rooms";
+"No matching rooms" = "No hay rooms coincidentes";
+"Automatic layout" = "Disposición automática";
+"Focus layout" = "Disposición de enfoque";
+"Columns layout" = "Disposición en columnas";
+"Grid layout" = "Disposición en cuadrícula";
+"Stack layout" = "Disposición apilada";
+"Dwindle layout" = "Disposición Dwindle";
+"Monocle layout" = "Disposición Monocle";
+"Choose a comfortable layout automatically" = "Elegir automáticamente una disposición adecuada";
+"One large window, the others beside it" = "Una ventana grande y las demás a su lado";
+"Windows arranged in columns" = "Ventanas distribuidas en columnas";
+"Windows arranged in a grid" = "Ventanas distribuidas en cuadrícula";
+"Overlapping cards with title bars visible" = "Tarjetas superpuestas con barras de título visibles";
+"Alternate vertical and horizontal splits" = "Divisiones verticales y horizontales alternas";
+"Show one window at a time" = "Mostrar una ventana a la vez";
+"Window %d" = "Ventana %d";
+"Dock" = "Dock";
+"Menu bar apps" = "Apps de la barra de menús";
+"No running applications" = "No hay apps en ejecución";
+"No matching applications" = "No hay apps coincidentes";
+"Matching applications and Rooms are shown below" = "Las apps y Rooms coincidentes aparecen abajo";
+"Force quitting %@…" = "Forzando salida de %@…";
+"Cycle windows, apps, and Rooms" = "Recorrer ventanas, apps y Rooms";
+"Cycle" = "Alternar";
+"Dismiss" = "Ocultar";
+"Open selected" = "Abrir selección";
+"Next Room" = "Siguiente Room";
 
 /* Shortcut conflicts */
 "Shortcut conflicts" = "Conflictos de atajos";

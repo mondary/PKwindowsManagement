@@ -17,6 +17,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     private var spaceObserver: NSObjectProtocol?
     private var appActivationObserver: NSObjectProtocol?
     private var activationTask: Task<Void, Never>?
+    private var committingActivation = false
     private var interactionID = UUID()
     private var presentation = Presentation.standard
     private var commandTabOffset = 0
@@ -71,20 +72,26 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         // an early Return/release against an empty candidate dictionary.
         if model.isLoading {
             commitWhenReady = true
-        } else if let id = model.selectedID {
-            performActivation(id)
+        } else if let target = model.selectedTarget {
+            performActivation(target)
         } else {
             hide()
         }
     }
 
-    /// Window cards focus their window; process rows (Dock/menu bar sections)
-    /// activate their app instead, since they own no listed window.
-    private func performActivation(_ id: WindowSwitcherID) {
-        if model.candidate(for: id) != nil {
-            activate(id)
-        } else {
-            model.activateProcess(id)
+    /// Commit the selected target from any of the three visible sections.
+    private func performActivation(_ target: WindowSwitcherTarget) {
+        switch target {
+        case .item(let id):
+            if model.candidate(for: id) != nil {
+                activate(id)
+            } else {
+                model.activateProcess(id)
+            }
+        case .room(let id):
+            guard let room = model.roomStore.rooms.first(where: { $0.id == id }) else { hide(); return }
+            model.activateRoom(room)
+            hide()
         }
     }
 
@@ -102,7 +109,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         let pointer = NSEvent.mouseLocation
         guard let screen = NSScreen.screens.first(where: { $0.frame.contains(pointer) }) ?? NSScreen.main else { return }
         let visible = screen.visibleFrame
-        let size = NSSize(width: min(1120, visible.width - 32), height: min(800, visible.height - 32))
+        let size = NSSize(width: min(1160, visible.width - 32), height: min(860, visible.height - 32))
         model.columns = size.width >= 1000 ? 4 : (size.width >= 740 ? 3 : (size.width >= 500 ? 2 : 1))
         model.cardHeight = WindowSwitcherState.cardHeight(forWidth: size.width, columns: model.columns)
         model.message = message
@@ -137,7 +144,13 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     }
 
     func hide() {
+        if activationTask != nil {
+            // Invalidate any in-flight focus request if the user dismisses the
+            // picker or changes apps before the selected window is confirmed.
+            SpaceManagementService.shared.userChangedWindowSelection()
+        }
         interactionID = UUID()
+        committingActivation = false
         presentation = .standard
         commandTabOffset = 0
         commandTabApplied = false
@@ -152,7 +165,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     }
 
     func windowDidResignKey(_ notification: Notification) {
-        guard isVisible, let panel else { return }
+        guard isVisible, let panel, !committingActivation else { return }
         // A picker control can hand key status to the Settings window behind
         // the panel. Keep the picker interactive by taking key status back;
         // switching to another app is handled by the activation observer.
@@ -178,17 +191,23 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         guard activationTask == nil, !model.isBusy, let candidate = model.candidate(for: id) else { return }
         SpaceManagementService.shared.userChangedWindowSelection()
         let ticket = SpaceManagementService.shared.windowSelectionTicket()
-        hide()
         let interaction = interactionID
+        committingActivation = true
         activationTask = Task { @MainActor [weak self] in
             let succeeded = await Task.detached(priority: .userInitiated) {
                 WindowSwitcherInventory.activate(candidate, selectionTicket: ticket)
             }.value
             guard let self else { return }
             self.activationTask = nil
-            if !succeeded, !self.isVisible, self.interactionID == interaction,
-               SpaceManagementService.shared.windowSelectionTicket() == ticket {
-                self.show(message: localizedString("This window is no longer available or could not be activated. Try refreshing the list."))
+            guard self.interactionID == interaction else { return }
+            self.committingActivation = false
+            if succeeded {
+                self.hide()
+            } else if self.isVisible,
+                      SpaceManagementService.shared.windowSelectionTicket() == ticket {
+                self.panel?.makeKey()
+                self.model.message = localizedString("This window is no longer available or could not be activated. Try refreshing the list.")
+                self.model.messageKind = .error
             }
         }
     }
@@ -214,7 +233,8 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         ) { [weak self] note in
             guard let self, self.isVisible else { return }
             let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-            if app?.processIdentifier != ProcessInfo.processInfo.processIdentifier {
+            if app?.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+               !self.committingActivation {
                 self.hide()
             }
         }
@@ -236,6 +256,20 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     private func handleKey(_ event: NSEvent) -> NSEvent? {
         let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
         let key = event.charactersIgnoringModifiers?.lowercased()
+
+        if model.forceQuitConfirmation != nil {
+            if modifiers.isEmpty {
+                switch event.keyCode {
+                case 53: model.cancelForceQuit(); return nil
+                case 36, 76:
+                    if !event.isARepeat { model.confirmForceQuit() }
+                    return nil
+                case 48: return event
+                default: return nil
+                }
+            }
+            return nil
+        }
 
         // ⌘K room actions overlay has priority over everything else.
         if model.roomActionTargetID != nil || model.renamingRoomID != nil {
@@ -314,12 +348,12 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
            WindowSwitcherState.confirmsWindowSelection(
             keyCode: event.keyCode, control: modifiers.contains(.control), option: modifiers.contains(.option)),
            (panel?.firstResponder as? NSTextView)?.hasMarkedText() != true,
-           model.selectedID != nil || model.isLoading {
+            model.selectedTarget != nil || model.isLoading {
             if !event.isARepeat { activateSelectionWhenReady() }
             return nil
         }
         if modifiers == .command, handleTextShortcut(event, modifiers: modifiers) { return nil }
-        if modifiers.isEmpty, model.navItems.isEmpty, !model.query.isEmpty {
+        if modifiers.isEmpty, model.navigationTargets.isEmpty, !model.query.isEmpty {
             switch event.keyCode {
             case 125: model.moveFallbackSelection(1); return nil
             case 126: model.moveFallbackSelection(-1); return nil
@@ -369,14 +403,14 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         switch event.keyCode {
         case 53: hide()
         case 36, 76:
-            if let id = model.selectedID { performActivation(id) }
+            if let target = model.selectedTarget { performActivation(target) }
         case 48: model.moveSelection(modifiers.contains(.shift) ? -1 : 1)
         case 123, 124:
             // Preserve caret navigation in a nonempty search query.
             guard model.query.isEmpty, modifiers.isEmpty else { return event }
             model.moveSelection(event.keyCode == 123 ? -1 : 1)
-        case 125: model.moveSelection(model.columns, wrapping: false)
-        case 126: model.moveSelection(-model.columns, wrapping: false)
+        case 125: model.moveSelection(1)
+        case 126: model.moveSelection(-1)
         default: return event
         }
         return nil

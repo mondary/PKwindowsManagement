@@ -17,22 +17,46 @@ struct WindowSwitcherView: View {
                 roomCreationBar
                 Divider().opacity(0.55)
             }
-            if !model.accessibilityGranted {
-                permissionView
-            } else {
-                if !model.isCreatingRoom { roomsStrip }
-                if !model.previewsGranted { previewPermissionBanner }
-                if let name = model.quittingName { quittingBanner(name) }
-                if !model.message.isEmpty {
-                    messageBanner
+            if !model.previewsGranted { previewPermissionBanner }
+            if let name = model.quittingName { quittingBanner(name) }
+            if !model.message.isEmpty { messageBanner }
+            // One single scrolling page: windows, applications, then rooms.
+            // No nested scroll views — sections are just sections.
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        Color.clear.frame(height: 1).id("picker-top")
+                        if !model.accessibilityGranted {
+                            permissionView
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 24)
+                        } else if model.isLoading {
+                            ProgressView(localizedString("Loading windows…"))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 48)
+                        } else if model.filteredItems.isEmpty {
+                            emptyView
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            windowGrid
+                                .frame(maxWidth: .infinity)
+                        }
+                        applicationsSection
+                        roomsStrip
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                if model.isLoading {
-                    ProgressView(localizedString("Loading windows…"))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if model.navItems.isEmpty {
-                    emptyView
-                } else {
-                    windowGrid
+                .onChange(of: model.selectedTarget) { target in
+                    guard let target else { return }
+                    withAnimation {
+                        switch target {
+                        case .item(let id): proxy.scrollTo(id, anchor: .center)
+                        case .room(let id): proxy.scrollTo(id, anchor: .center)
+                        }
+                    }
+                }
+                .onChange(of: model.generation) { _ in
+                    withAnimation { proxy.scrollTo("picker-top", anchor: .top) }
                 }
             }
             Divider().opacity(0.55)
@@ -44,7 +68,9 @@ struct WindowSwitcherView: View {
         .onAppear { searchFocused = true }
         .onChange(of: model.query) { _ in model.loadLauncherAppsIfNeeded() }
         .overlay {
-            if model.roomActionTargetID != nil || model.renamingRoomID != nil {
+            if model.forceQuitConfirmation != nil {
+                forceQuitOverlay
+            } else if model.roomActionTargetID != nil || model.renamingRoomID != nil {
                 roomActionsOverlay
             }
         }
@@ -75,7 +101,7 @@ struct WindowSwitcherView: View {
 
     private var title: some View {
         HStack(spacing: 9) {
-            Label(localizedString("Window previews"), systemImage: "rectangle.on.rectangle")
+            Label(localizedString("Windows"), systemImage: "rectangle.on.rectangle")
                 .font(.headline)
             if !model.isLoading, model.accessibilityGranted {
                 Text("\(model.filteredItems.count)")
@@ -93,11 +119,11 @@ struct WindowSwitcherView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.secondary)
-            TextField(localizedString("Search by app or window title"), text: $model.query)
+            TextField(localizedString("Search windows, apps, or rooms"), text: $model.query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 14))
                 .focused($searchFocused)
-                .accessibilityLabel(localizedString("Search by app or window title"))
+                .accessibilityLabel(localizedString("Search windows, apps, or rooms"))
             if !model.query.isEmpty {
                 Button { model.query = ""; searchFocused = true } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -118,19 +144,6 @@ struct WindowSwitcherView: View {
 
     private var headerButtons: some View {
         HStack(spacing: 6) {
-            if !model.isCreatingRoom {
-                Button { model.beginRoomCreation() } label: {
-                    Label(localizedString("New Room"), systemImage: "plus")
-                        .font(.system(size: 11, weight: .semibold))
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 4)
-                        .background(.primary.opacity(0.06), in: Capsule())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.primary.opacity(0.75))
-                .help(localizedString("New Room"))
-                .accessibilityLabel(localizedString("New Room"))
-            }
             Button { model.prepare(resetSearch: false) } label: { Image(systemName: "arrow.clockwise") }
                 .help(localizedString("Refresh") + " (⌘R)")
                 .accessibilityLabel(localizedString("Refresh"))
@@ -168,6 +181,36 @@ struct WindowSwitcherView: View {
 
     private var roomMatches: [Room] {
         model.rooms(matching: model.query)
+    }
+
+    private var forceQuitOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.2)
+            if let confirmation = model.forceQuitConfirmation {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label(String(format: localizedString("Force Quit %@?"), confirmation.appName),
+                          systemImage: "exclamationmark.triangle.fill")
+                        .font(.headline)
+                        .foregroundStyle(.orange)
+                    Text(String(format: localizedString("Unsaved changes in %@ may be lost."), confirmation.appName))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack {
+                        Spacer()
+                        Button(localizedString("Cancel")) { model.cancelForceQuit() }
+                            .keyboardShortcut(.cancelAction)
+                        Button(localizedString("Force Quit"), role: .destructive) { model.confirmForceQuit() }
+                            .keyboardShortcut(.defaultAction)
+                    }
+                }
+                .padding(18)
+                .frame(width: 360)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(.primary.opacity(0.12), lineWidth: 1))
+            }
+        }
     }
 
     private var roomActionsOverlay: some View {
@@ -269,230 +312,299 @@ struct WindowSwitcherView: View {
 
     private var roomsStrip: some View {
         let rows = roomMatches
-        return Group {
-            if !rows.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "square.grid.2x2")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                        Text(localizedString("Rooms"))
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        Spacer(minLength: 0)
-                        Text("\(rows.count)")
-                            .font(.caption.monospacedDigit().weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 2)
-                            .background(.primary.opacity(0.06), in: Capsule())
-                    }
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(rows) { room in
-                                RoomPickerCard(room: room, model: model, onClose: onClose)
-                            }
-                        }
-                        .padding(.vertical, 2)
-                        .padding(.horizontal, 2)
-                    }
-                }
-                .padding(.horizontal, 18)
-                .padding(.bottom, 12)
-            }
-        }
-    }
-
-    // MARK: - Room creation
-
-    private var roomCreationBar: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "square.grid.2x2")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.secondary)
-            TextField(localizedString("Room name"), text: $model.roomName)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13, weight: .medium))
-                .frame(maxWidth: 260)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(.primary.opacity(0.05),
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .focused($roomNameFocused)
-                .onSubmit { if model.canCreateRoom { model.createRoom() } }
-            Text(String(format: localizedString("%d window(s) selected"), model.roomPicks.count))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Menu {
-                ForEach(RoomLayoutKind.allCases) { kind in
-                    Button(kind.title) { model.creationLayout = kind }
-                }
-            } label: {
-                Label(model.creationLayout.title, systemImage: "rectangle.grid.2x2")
-                    .font(.caption.weight(.medium))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(.primary.opacity(0.05), in: Capsule())
-            }
-            .fixedSize()
-            Spacer(minLength: 8)
-            Button(localizedString("Cancel")) { model.cancelRoomCreation() }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-            Button { model.createRoom() } label: {
-                Label(localizedString("Create Room"), systemImage: "checkmark")
+        return VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 6) {
+                Image(systemName: "square.grid.2x2")
                     .font(.system(size: 12, weight: .semibold))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(model.canCreateRoom ? Color.accentColor.opacity(0.9) : Color.primary.opacity(0.06),
-                                in: Capsule())
-                    .foregroundStyle(model.canCreateRoom ? Color.white : Color(nsColor: .secondaryLabelColor))
+                    .foregroundStyle(.secondary)
+                Text(localizedString("Rooms"))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text("\(rows.count)")
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(.primary.opacity(0.06), in: Capsule())
+                Spacer(minLength: 0)
+                Button { model.beginRoomCreation() } label: {
+                    Label(localizedString("New Room"), systemImage: "plus")
+                        .font(.caption.weight(.semibold))
+                }
+                .buttonStyle(.plain)
+                .disabled(model.isCreatingRoom)
+                .help(localizedString("New Room"))
+                .accessibilityLabel(localizedString("New Room"))
             }
-            .buttonStyle(.plain)
-            .disabled(!model.canCreateRoom)
+            if rows.isEmpty {
+                Text(localizedString(model.query.isEmpty ? "No rooms yet" : "No matching rooms"))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 44)
+            } else {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 228), spacing: 10)], spacing: 10) {
+                    ForEach(rows) { room in
+                        RoomPickerCard(room: room, model: model,
+                                       isSelected: model.selectedRoomID == room.id,
+                                       isDisabled: model.isCreatingRoom,
+                                       onActivate: onClose)
+                            .id(room.id)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 9)
-        .background(.primary.opacity(0.03))
-        .onAppear { roomNameFocused = true }
-    }
-
-    // MARK: - Content
-
-    private var windowGrid: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: WindowSwitcherState.gridSpacing),
-                                            count: model.columns),
-                              spacing: WindowSwitcherState.gridSpacing) {
-                        ForEach(Array(model.filteredItems.enumerated()), id: \.element.id) { rank, item in
-                            let pickIndex = model.roomPickIndex(for: item.id)
-                            WindowSwitcherCard(item: item, icon: model.icons[item.id.pid], image: model.images[item.id],
-                                isSelected: model.selectedID == item.id, rank: rank, cardHeight: model.cardHeight,
-                                isRoomPicking: model.isCreatingRoom, pickIndex: pickIndex,
-                                isLoadingPreview: model.previewsGranted && !model.completedPreviews.contains(item.id),
-                                isClosing: model.closingID == item.id, isQuitting: model.quittingPID == item.id.pid,
-                                closeInProgress: model.isBusy,
-                                onActivate: {
-                                    if model.isCreatingRoom {
-                                        model.selectedID = item.id
-                                        model.toggleRoomPick(item.id)
-                                    } else {
-                                        onActivate(item.id)
-                                    }
-                                }, onCloseWindow: { model.closeWindow(item.id) },
-                                onQuitApp: { model.quitApp(item.id) })
-                                .frame(height: model.cardHeight)
-                                .id(item.id)
-                                .onAppear { model.requestPreview(item.id) }
-                        }
-                    }
-                    .padding(WindowSwitcherState.gridPadding)
-                    if !model.isCreatingRoom {
-                        processSections
-                    }
-                }
-            }
-            .id(model.generation)
-            .onChange(of: model.selectedID) { id in
-                if let id { proxy.scrollTo(id, anchor: .center) }
-            }
-        }
-    }
-
-    /// Running apps without windows stay reachable from the keyboard so they
-    /// can be quit without hunting through the Dock or menu bar. Compact pill
-    /// strips keep them secondary to the window grid.
-    @ViewBuilder private var processSections: some View {
-        let dock = model.filteredProcessItems.filter { $0.kind == .dockApp }
-        let menuBar = model.filteredProcessItems.filter { $0.kind == .menuBarApp }
-        VStack(alignment: .leading, spacing: 10) {
-            if !dock.isEmpty {
-                processStrip(localizedString("Windowless apps"), symbol: "dock.rectangle", items: dock)
-            }
-            if !menuBar.isEmpty {
-                processStrip(localizedString("Menu bar"), symbol: "menubar.rectangle", items: menuBar)
-            }
-        }
+        .padding(.top, 8)
         .padding(.bottom, 10)
     }
 
-    private func processStrip(_ title: String, symbol: String, items: [WindowSwitcherItem]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+    /// Launchpad-style section: one quiet strip of app tiles (icon + name).
+    /// Quit lives in the context menu and ⌘Q, never as visible chrome.
+    @ViewBuilder private var applicationsSection: some View {
+        let apps = model.filteredProcessItems
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: symbol)
+                Image(systemName: "square.grid.3x3")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
-                Text(title)
+                Text(localizedString("Applications"))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-                Text("\(items.count)")
+                Text("\(apps.count)")
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 2)
                     .background(.primary.opacity(0.06), in: Capsule())
             }
-            .padding(.horizontal, WindowSwitcherState.gridPadding)
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(items) { item in
-                            ProcessPill(item: item, icon: model.icons[item.id.pid],
-                                        isSelected: model.selectedID == item.id,
+            if apps.isEmpty {
+                Text(localizedString(model.query.isEmpty ? "No running applications" : "No matching applications"))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 34)
+            } else {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 80), spacing: 8)], spacing: 10) {
+                    ForEach(apps) { item in
+                        ProcessIconTile(item: item, icon: model.icons[item.id.pid],
+                                        isSelected: model.isSelected(item.id),
                                         isQuitting: model.quittingPID == item.id.pid,
                                         isBusy: model.isBusy,
+                                        isDisabled: model.isCreatingRoom,
                                         onActivate: {
-                                            model.selectedID = item.id
+                                            model.selectItem(item.id)
                                             model.activateProcess(item.id)
                                         },
-                                        onQuit: { model.quitProcess(item.id) })
-                                .id(item.id)
+                                        onQuit: { model.quitProcess(item.id) },
+                                        onForceQuit: { model.requestForceQuit(item.id) })
+                            .id(item.id)
+                    }
+                }
+                .padding(.horizontal, 2)
+                .padding(.vertical, 2)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+    }
+
+    // MARK: - Room creation
+
+    private var roomCreationBar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: "square.grid.2x2")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                TextField(localizedString("Room name"), text: $model.roomName)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13, weight: .medium))
+                    .frame(maxWidth: 260)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.primary.opacity(0.05),
+                                in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .focused($roomNameFocused)
+                    .onSubmit { if model.canCreateRoom { model.createRoom() } }
+                    .onAppear {
+                        DispatchQueue.main.async {
+                            roomNameFocused = true
+                            DispatchQueue.main.async {
+                                (NSApp.keyWindow?.firstResponder as? NSTextView)?.selectAll(nil)
+                            }
                         }
                     }
-                    .padding(.horizontal, WindowSwitcherState.gridPadding)
-                    .padding(.vertical, 2)
+                Text(String(format: localizedString("%d window(s) selected"), model.roomPicks.count))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 8)
+                Button(localizedString("Cancel")) { model.cancelRoomCreation() }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                Button { model.createRoom() } label: {
+                    Label(localizedString("Create Room"), systemImage: "checkmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(model.canCreateRoom ? Color.accentColor.opacity(0.9) : Color.primary.opacity(0.06),
+                                    in: Capsule())
+                        .foregroundStyle(model.canCreateRoom ? Color.white : Color(nsColor: .secondaryLabelColor))
                 }
-                .onChange(of: model.selectedID) { id in
-                    guard let id, items.contains(where: { $0.id == id }) else { return }
-                    withAnimation { proxy.scrollTo(id, anchor: .center) }
-                }
+                .buttonStyle(.plain)
+                .disabled(!model.canCreateRoom)
             }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 7) {
+                    ForEach(RoomLayoutKind.allCases) { kind in
+                        Button { model.creationLayout = kind } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                RoomLayoutDiagram(windows: layoutPreviewWindows, kind: kind)
+                                    .frame(width: 102, height: 52)
+                                Text(layoutDisplayName(kind))
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .lineLimit(1)
+                                Text(layoutDescription(kind))
+                                    .font(.system(size: 8.5))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                            .padding(6)
+                            .frame(width: 116, alignment: .leading)
+                            .background(model.creationLayout == kind ? Color.accentColor.opacity(0.15) : Color.primary.opacity(0.04),
+                                        in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .strokeBorder(model.creationLayout == kind ? Color.accentColor.opacity(0.65) : Color.primary.opacity(0.08),
+                                              lineWidth: model.creationLayout == kind ? 1.5 : 1))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(layoutDisplayName(kind)). \(layoutDescription(kind))")
+                        .accessibilityAddTraits(model.creationLayout == kind ? [.isSelected] : [])
+                    }
+                }
+                .padding(.horizontal, 2)
+                .padding(.vertical, 2)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 10)
+        .background(.primary.opacity(0.03))
+    }
+
+    private var pickedRoomWindows: [RoomWindow] {
+        model.roomPicks.compactMap { id in
+            guard let candidate = model.candidate(for: id),
+                  let app = NSRunningApplication(processIdentifier: id.pid),
+                  let bundleID = app.bundleIdentifier else { return nil }
+            return RoomWindow(bundleID: bundleID, appName: candidate.item.appName,
+                              title: candidate.item.title, windowID: id.windowID)
         }
     }
 
-    private var emptyView: some View {
-        ScrollView {
-            VStack(spacing: 14) {
-                Image(systemName: "macwindow").font(.system(size: 34, weight: .light)).foregroundStyle(.secondary)
-                Text(localizedString(model.query.isEmpty ? "No windows available" : "No matching windows"))
-                if !model.query.isEmpty {
-                    let rows = model.fallbackActions(query: model.query).enumerated().map {
-                        FallbackRow(id: $0.offset, action: $0.element)
-                    }
-                    if model.isLoadingLauncherApps && model.launcherMatches.isEmpty && rows.count <= 1 {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        VStack(alignment: .leading, spacing: 7) {
-                            ForEach(rows) { row in
-                                fallbackRow(index: row.id, action: row.action)
-                            }
-                        }
-                        .frame(maxWidth: 380)
-                    }
-                    Text("↑ ↓  ·  ↵")
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(.secondary)
-                } else {
-                    Button(localizedString("Refresh")) { model.prepare(resetSearch: false) }
-                }
-            }
-            .frame(maxWidth: .infinity, minHeight: 280)
-            .padding(24)
+    private var layoutPreviewWindows: [RoomWindow] {
+        var windows = pickedRoomWindows
+        let previewCount = max(4, windows.count)
+        for index in windows.count..<previewCount {
+            windows.append(RoomWindow(
+                bundleID: "com.pk.room-layout-preview.\(index)",
+                appName: String(format: localizedString("Window %d"), index + 1),
+                title: "", windowID: UInt32(index)))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        return windows
+    }
+
+    private func layoutDisplayName(_ kind: RoomLayoutKind) -> String {
+        switch kind {
+        case .auto: return localizedString("Automatic layout")
+        case .focus: return localizedString("Focus layout")
+        case .columns: return localizedString("Columns layout")
+        case .grid: return localizedString("Grid layout")
+        case .stack: return localizedString("Stack layout")
+        case .dwindle: return localizedString("Dwindle layout")
+        case .monocle: return localizedString("Monocle layout")
+        }
+    }
+
+    private func layoutDescription(_ kind: RoomLayoutKind) -> String {
+        switch kind {
+        case .auto: return localizedString("Choose a comfortable layout automatically")
+        case .focus: return localizedString("One large window, the others beside it")
+        case .columns: return localizedString("Windows arranged in columns")
+        case .grid: return localizedString("Windows arranged in a grid")
+        case .stack: return localizedString("Overlapping cards with title bars visible")
+        case .dwindle: return localizedString("Alternate vertical and horizontal splits")
+        case .monocle: return localizedString("Show one window at a time")
+        }
+    }
+
+    // MARK: - Content
+
+    private var windowGrid: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: WindowSwitcherState.gridSpacing),
+                                 count: model.columns),
+                  spacing: WindowSwitcherState.gridSpacing) {
+            ForEach(Array(model.filteredItems.enumerated()), id: \.element.id) { rank, item in
+                let pickIndex = model.roomPickIndex(for: item.id)
+                WindowSwitcherCard(item: item, icon: model.icons[item.id.pid], image: model.images[item.id],
+                    isSelected: model.isSelected(item.id), rank: rank, cardHeight: model.cardHeight,
+                    isRoomPicking: model.isCreatingRoom, pickIndex: pickIndex,
+                    isLoadingPreview: model.previewsGranted && !model.completedPreviews.contains(item.id),
+                    isClosing: model.closingID == item.id, isQuitting: model.quittingPID == item.id.pid,
+                    closeInProgress: model.isBusy,
+                    onActivate: {
+                        if model.isCreatingRoom {
+                            model.selectedID = item.id
+                            model.toggleRoomPick(item.id)
+                        } else {
+                            model.selectItem(item.id)
+                            onActivate(item.id)
+                        }
+                    }, onCloseWindow: { model.closeWindow(item.id) },
+                    onQuitApp: { model.quitApp(item.id) },
+                    onForceQuitApp: { model.requestForceQuit(item.id) })
+                    .frame(height: model.cardHeight)
+                    .id(item.id)
+                    .onAppear { model.requestPreview(item.id) }
+            }
+        }
+        .padding(WindowSwitcherState.gridPadding)
+    }
+
+    private var emptyView: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "macwindow").font(.system(size: 34, weight: .light)).foregroundStyle(.secondary)
+            Text(localizedString(model.query.isEmpty ? "No windows available" : "No matching windows"))
+            if !model.query.isEmpty && model.filteredProcessItems.isEmpty && roomMatches.isEmpty {
+                let actions = model.fallbackActions(query: model.query).filter { action in
+                    if case .room = action { return false }
+                    return true
+                }
+                let rows = actions.enumerated().map { FallbackRow(id: $0.offset, action: $0.element) }
+                if model.isLoadingLauncherApps && model.launcherMatches.isEmpty && rows.count <= 1 {
+                    ProgressView().controlSize(.small)
+                } else {
+                    VStack(alignment: .leading, spacing: 7) {
+                        ForEach(rows) { row in
+                            fallbackRow(index: row.id, action: row.action)
+                        }
+                    }
+                    .frame(maxWidth: 380)
+                }
+                Text("↑ ↓  ·  ↵")
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+            } else if !model.query.isEmpty {
+                Text(localizedString("Matching applications and Rooms are shown below"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Button(localizedString("Refresh")) { model.prepare(resetSearch: false) }
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 200)
+        .padding(24)
     }
 
     @ViewBuilder
@@ -560,7 +672,7 @@ struct WindowSwitcherView: View {
     private func quittingBanner(_ name: String) -> some View {
         HStack(spacing: 10) {
             ProgressView().controlSize(.small)
-            Text(String(format: localizedString("Quitting %@…"), name))
+            Text(String(format: localizedString(model.isForceQuitting ? "Force quitting %@…" : "Quitting %@…"), name))
                 .font(.caption).foregroundStyle(.secondary)
             Spacer(minLength: 0)
         }
@@ -595,30 +707,53 @@ struct WindowSwitcherView: View {
     private var footer: some View {
         Group {
             if model.isCreatingRoom {
-                HStack(spacing: 14) {
-                    Text(localizedString("Click windows in order — 1 is the main spot"))
-                        .font(.caption2)
-                    Spacer(minLength: 0)
-                    hint("⌥Space", "Add")
-                    hint("↵", "Create Room")
-                    hint("esc", "Cancel")
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 14) {
+                        Text(localizedString("Click windows in order — 1 is the main spot"))
+                            .font(.caption2)
+                        Spacer(minLength: 0)
+                        hint("⌥Space", "Add")
+                        hint("↵", "Create Room")
+                        hint("esc", "Cancel")
+                    }
+                    .fixedSize(horizontal: true, vertical: false)
+                    HStack(spacing: 18) {
+                        hint("⌥Space", "Add")
+                        hint("↵", "Create Room")
+                        hint("esc", "Cancel")
+                    }
                 }
             } else {
-                HStack(spacing: 14) {
-                    hint("⇥", "Browse")
-                    hint("↵", "Open")
-                    hint("⌘W", "Close")
-                    hint("⌘Q", "Quit app")
-                    if model.columns >= 3 {
-                        hint("⌘1–9", "Quick select")
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 14) {
+                        hint("⌘⇥", "Cycle windows, apps, and Rooms")
+                        hint("⇥ / ↑↓", "Browse")
+                        hint("↵", "Open selected")
+                        hint("⌘W", "Close")
+                        hint("⌘Q", "Quit app")
                         hint("⌘N", "New Room")
+                        if !model.roomStore.rooms.isEmpty {
+                            hint("⌘K", "Room actions")
+                            hint("⌥⇥", "Next Room")
+                        }
+                        Spacer(minLength: 0)
+                        hint("esc", "Dismiss picker")
                     }
-                    if !model.roomStore.rooms.isEmpty {
-                        hint("⌘K", "Room actions")
-                        hint("⌥⇥", "Switch room")
+                    .fixedSize(horizontal: true, vertical: false)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 0), alignment: .leading), count: 3),
+                              alignment: .leading, spacing: 8) {
+                        compactHint("⌘⇥", "Cycle")
+                        compactHint("⇥ / ↑↓", "Browse")
+                        compactHint("↵", "Open")
+                        compactHint("⌘W", "Close")
+                        compactHint("⌘Q", "Quit app")
+                        compactHint("⌘N", "New Room")
+                        if !model.roomStore.rooms.isEmpty {
+                            compactHint("⌘K", "Room actions")
+                            compactHint("⌥⇥", "Next Room")
+                        }
+                        compactHint("esc", "Dismiss")
                     }
-                    Spacer(minLength: 0)
-                    hint("esc", "Dismiss picker")
                 }
             }
         }
@@ -634,6 +769,19 @@ struct WindowSwitcherView: View {
                 .padding(.horizontal, 5).padding(.vertical, 2)
                 .background(.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
             Text(localizedString(title))
+        }
+    }
+
+    private func compactHint(_ key: String, _ title: String) -> some View {
+        HStack(spacing: 5) {
+            Text(key)
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(.primary.opacity(0.8))
+                .padding(.horizontal, 5).padding(.vertical, 2)
+                .background(.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+            Text(localizedString(title))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
         }
     }
 }
@@ -654,6 +802,7 @@ struct WindowSwitcherCard: View {
     let onActivate: () -> Void
     let onCloseWindow: () -> Void
     let onQuitApp: () -> Void
+    let onForceQuitApp: () -> Void
     @State private var isHovering = false
 
     var body: some View {
@@ -682,6 +831,8 @@ struct WindowSwitcherCard: View {
                     Button(localizedString("Close window")) { onCloseWindow() }
                         .disabled(closeInProgress)
                     Button(String(format: localizedString("Quit %@"), item.appName)) { onQuitApp() }
+                        .disabled(closeInProgress)
+                    Button(localizedString("Force Quit…"), action: onForceQuitApp)
                         .disabled(closeInProgress)
                 }
             }
@@ -879,7 +1030,9 @@ struct WindowSwitcherCard: View {
 private struct RoomPickerCard: View {
     let room: Room
     @ObservedObject var model: WindowSwitcherModel
-    let onClose: () -> Void
+    let isSelected: Bool
+    let isDisabled: Bool
+    let onActivate: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -890,16 +1043,14 @@ private struct RoomPickerCard: View {
                 Spacer(minLength: 4)
                 layoutMenu
             }
-            Text(windowSummary)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            RoomLayoutDiagram(windows: room.windows, kind: room.layout, focusedWindowIndex: room.focusedWindowIndex)
+                .frame(height: 74)
             HStack(spacing: 8) {
                 Button {
                     model.activateRoom(room)
-                    onClose()
+                    onActivate()
                 } label: {
-                    Label(localizedString("Open Room"), systemImage: "arrow.up.forward")
+                    Label(localizedString("Open"), systemImage: "arrow.up.forward")
                         .font(.caption.weight(.semibold))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
@@ -907,38 +1058,39 @@ private struct RoomPickerCard: View {
                         .foregroundStyle(.white)
                 }
                 .buttonStyle(.plain)
+                .disabled(isDisabled)
                 Button {
                     model.minimizeRoom(room)
                 } label: {
-                    Label(localizedString("Minimize Room"), systemImage: "arrow.down.to.line")
-                        .font(.caption2.weight(.medium))
-                        .padding(.horizontal, 9)
+                    Image(systemName: "arrow.down.to.line")
+                        .font(.caption.weight(.medium))
+                        .frame(width: 24, height: 22)
+                        .help(localizedString("Minimize Room"))
+                        .accessibilityLabel(localizedString("Minimize Room"))
+                        .padding(.horizontal, 5)
                         .padding(.vertical, 5)
                         .background(.primary.opacity(0.06), in: Capsule())
                         .foregroundStyle(.primary.opacity(0.7))
                 }
                 .buttonStyle(.plain)
+                .disabled(isDisabled)
                 Spacer(minLength: 0)
-                Text("\(room.windows.count)")
-                    .font(.caption2.monospacedDigit().weight(.semibold))
-                    .foregroundStyle(.secondary)
             }
         }
         .padding(12)
-        .frame(width: 250, alignment: .leading)
+        .frame(width: 224, alignment: .leading)
         .background(.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(.primary.opacity(0.08), lineWidth: 1))
+            .strokeBorder(isSelected ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: isSelected ? 1.8 : 1))
+        .onTapGesture { if !isDisabled { model.selectRoom(room.id) } }
         .contextMenu {
+            Button(localizedString("Open Room")) { model.activateRoom(room); onActivate() }
+                .disabled(isDisabled)
+            Button(localizedString("Minimize Room")) { model.minimizeRoom(room) }
+                .disabled(isDisabled)
             Button(localizedString("Delete Room")) { model.roomStore.delete(id: room.id) }
+                .disabled(isDisabled)
         }
-    }
-
-    private var windowSummary: String {
-        let names = room.windows.map(\.appName)
-        guard !names.isEmpty else { return localizedString("No windows available") }
-        let head = names.prefix(3).joined(separator: " · ")
-        return names.count > 3 ? head + " …" : head
     }
 
     private var layoutMenu: some View {
@@ -955,6 +1107,7 @@ private struct RoomPickerCard: View {
                 .background(.primary.opacity(0.06), in: Capsule())
         }
         .fixedSize()
+        .disabled(isDisabled)
     }
 
     private func layoutSymbol(_ kind: RoomLayoutKind) -> String {
@@ -970,60 +1123,84 @@ private struct RoomPickerCard: View {
     }
 }
 
-private struct ProcessPill: View {
+/// A Launchpad-like tile: rounded icon well, name below, selection ring.
+/// No visible buttons — activation on click, quit through the context menu
+/// or ⌘Q, so the strip stays visually quiet next to the window grid.
+private struct ProcessIconTile: View {
     let item: WindowSwitcherItem
     let icon: NSImage?
     let isSelected: Bool
     let isQuitting: Bool
     let isBusy: Bool
+    let isDisabled: Bool
     let onActivate: () -> Void
     let onQuit: () -> Void
-    @State private var isHovering = false
+    let onForceQuit: () -> Void
 
     var body: some View {
-        HStack(spacing: 7) {
-            if let icon {
-                Image(nsImage: icon).resizable().scaledToFit().frame(width: 18, height: 18)
-            } else {
-                Image(systemName: "app.dashed").font(.system(size: 13)).foregroundStyle(.secondary)
-            }
+        VStack(spacing: 6) {
+            iconArea
             Text(item.appName)
-                .font(.system(size: 11.5, weight: .medium))
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(.primary.opacity(isSelected ? 1 : 0.78))
                 .lineLimit(1)
-            if isQuitting {
-                ProgressView().controlSize(.mini)
-            } else {
-                Button(action: onQuit) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 7.5, weight: .bold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 14, height: 14)
-                        .background(.primary.opacity(0.08), in: Circle())
-                }
-                .buttonStyle(.plain)
-                .opacity(isHovering || isSelected ? 1 : 0)
-                .allowsHitTesting(isHovering || isSelected)
-                .help(String(format: localizedString("Quit %@"), item.appName))
-                .accessibilityLabel(String(format: localizedString("Quit %@"), item.appName))
-                .disabled(isBusy)
-            }
+                .truncationMode(.middle)
+                .frame(maxWidth: .infinity)
         }
-        .padding(.leading, 9)
-        .padding(.trailing, 7)
-        .padding(.vertical, 5)
-        .background(isSelected ? Color.accentColor.opacity(0.16) : Color.primary.opacity(0.05), in: Capsule())
-        .overlay(Capsule().strokeBorder(isSelected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1))
-        .contentShape(Capsule())
-        .onTapGesture(perform: onActivate)
-        .onHover { isHovering = $0 }
+        .frame(width: 84)
+        .padding(.vertical, 7)
+        .padding(.horizontal, 2)
+        .background(isSelected ? Color.accentColor.opacity(0.13) : Color.primary.opacity(0.035),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .strokeBorder(isSelected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1.4))
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .onTapGesture { if !isDisabled { onActivate() } }
         .contextMenu {
             Button(String(format: localizedString("Quit %@"), item.appName), action: onQuit)
-                .disabled(isBusy)
+                .disabled(isBusy || isDisabled)
+            Button(localizedString("Force Quit…"), action: onForceQuit)
+                .disabled(isBusy || isDisabled)
         }
+        .help(item.appName)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(item.appName)
         .accessibilityValue(isSelected ? localizedString("Selected") : "")
         .accessibilityHint(localizedString("Activate the app"))
+    }
+
+    private var iconArea: some View {
+        ZStack {
+            if let icon {
+                Image(nsImage: icon).resizable().scaledToFit()
+            } else {
+                Image(systemName: "app.dashed")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            if isQuitting {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.regularMaterial)
+                ProgressView().controlSize(.small)
+            }
+        }
+        .frame(width: 36, height: 36)
+        .padding(9)
+        .background(Color(NSColor.controlBackgroundColor),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(alignment: .bottomTrailing) {
+            // Menu-bar apps activate differently (they reveal their panel);
+            // a tiny badge explains the behavior without adding chrome.
+            if item.kind == .menuBarApp {
+                Image(systemName: "menubar.rectangle")
+                    .font(.system(size: 7.5, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(3)
+                    .background(.regularMaterial, in: Circle())
+                    .overlay(Circle().strokeBorder(.primary.opacity(0.08), lineWidth: 1))
+                    .offset(x: 5, y: 5)
+            }
+        }
     }
 }
 

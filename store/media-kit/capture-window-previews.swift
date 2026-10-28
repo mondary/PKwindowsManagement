@@ -8,29 +8,38 @@ struct WindowPreviewCapture {
         _ = NSApplication.shared
         NSApp.setActivationPolicy(.prohibited)
         let output = URL(fileURLWithPath: CommandLine.arguments[1])
+        let roomsURL = URL(fileURLWithPath: CommandLine.arguments[2])
         try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         for language in ["fr", "en"] {
             UserDefaults.standard.setVolatileDomain(["app-language": language], forName: UserDefaults.argumentDomain)
             for dark in [false, true] {
                 NSApp.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-                let model = fixtureModel()
+                let model = fixtureModel(roomsURL: roomsURL)
                 try render(model, width: 880, language: language, dark: dark,
                            name: "window-previews", output: output)
             }
             NSApp.appearance = NSAppearance(named: .aqua)
-            let narrow = fixtureModel()
+            let narrow = fixtureModel(roomsURL: roomsURL)
             narrow.columns = 2
             try render(narrow, width: 520, language: language, dark: false, name: "window-previews-narrow", output: output)
-            let denied = fixtureModel()
+            let creation = fixtureModel(roomsURL: roomsURL)
+            creation.isCreatingRoom = true
+            creation.roomName = "Studio"
+            creation.creationLayout = .grid
+            creation.roomPicks = Array(creation.items.prefix(3).map(\.id))
+            creation.selectedID = creation.roomPicks.first
+            try render(creation, width: 880, language: language, dark: false, name: "room-creation", output: output)
+            let denied = fixtureModel(roomsURL: roomsURL)
             denied.previewsGranted = false
             denied.images = [:]
             try render(denied, width: 880, language: language, dark: false, name: "window-previews-permission", output: output)
         }
-        print("Rendered picker fixtures in FR/EN, light/dark, narrow and permission states; no user windows accessed")
+        print("Rendered picker fixtures in FR/EN, light/dark, narrow, room creation and permission states; no user windows accessed")
     }
 
-    @MainActor private static func fixtureModel() -> WindowSwitcherModel {
-        let model = WindowSwitcherModel()
+    @MainActor private static func fixtureModel(roomsURL: URL) -> WindowSwitcherModel {
+        let roomStore = RoomStore(url: roomsURL)
+        let model = WindowSwitcherModel(roomStore: roomStore)
         model.accessibilityGranted = true
         model.previewsGranted = true
         let names = ["Éditeur", "Safari", "Finder", "Terminal", "Notes", "Safari"]
@@ -49,6 +58,27 @@ struct WindowPreviewCapture {
         model.items = items
         model.completedPreviews = Set(items.map(\.id))
         model.selectedID = items[1].id
+        let runningApps = [
+            WindowSwitcherItem(id: .init(pid: 201, windowID: 0), appName: "Calendar", title: "",
+                isMinimized: false, isHidden: false, isFullScreen: false, isOnScreen: false, kind: .dockApp),
+            WindowSwitcherItem(id: .init(pid: 202, windowID: 0), appName: "Music", title: "",
+                isMinimized: false, isHidden: false, isFullScreen: false, isOnScreen: false, kind: .dockApp),
+            WindowSwitcherItem(id: .init(pid: 203, windowID: 0), appName: "PKmonitor", title: "",
+                isMinimized: false, isHidden: false, isFullScreen: false, isOnScreen: false, kind: .menuBarApp)
+        ]
+        model.processItems = runningApps
+        model.icons[201] = NSImage(systemSymbolName: "calendar", accessibilityDescription: nil)
+        model.icons[202] = NSImage(systemSymbolName: "music.note", accessibilityDescription: nil)
+        model.icons[203] = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: nil)
+        roomStore.upsert(Room(id: "studio", name: "Studio", windows: [
+            RoomWindow(bundleID: "com.apple.finder", appName: "Finder", title: "Project files", windowID: 1),
+            RoomWindow(bundleID: "com.apple.Safari", appName: "Safari", title: "Research", windowID: 2),
+            RoomWindow(bundleID: "com.apple.Terminal", appName: "Terminal", title: "Build", windowID: 3)
+        ], layout: .columns))
+        roomStore.upsert(Room(id: "review", name: "Review", windows: [
+            RoomWindow(bundleID: "com.apple.Notes", appName: "Notes", title: "Review notes", windowID: 4),
+            RoomWindow(bundleID: "com.apple.mail", appName: "Mail", title: "Feedback", windowID: 5)
+        ], layout: .grid))
         return model
     }
 
@@ -60,7 +90,7 @@ struct WindowPreviewCapture {
         (dark ? NSColor(calibratedWhite: 0.12, alpha: 1) : NSColor(calibratedWhite: 0.97, alpha: 1)).setFill()
         NSBezierPath(rect: NSRect(x: 0, y: 0, width: 480, height: 300)).fill()
         let color = NSColor(calibratedWhite: dark ? 1 : 0, alpha: 1)
-        (title as NSString).draw(at: NSPoint(x: 24, y: 254), withAttributes: [
+        (title as NSString).draw(at: NSPoint(x: 24, y: 205), withAttributes: [
             .font: NSFont.systemFont(ofSize: 17, weight: .semibold), .foregroundColor: color
         ])
         for line in 0..<7 {
@@ -74,7 +104,8 @@ struct WindowPreviewCapture {
 
     @MainActor private static func render(_ model: WindowSwitcherModel, width: CGFloat, language: String,
                                           dark: Bool, name: String, output: URL) throws {
-        let window = NSWindow(contentRect: NSRect(x: -20000, y: -20000, width: width, height: 640),
+        let height: CGFloat = 1000
+        let window = NSWindow(contentRect: NSRect(x: -20000, y: -20000, width: width, height: height),
                               styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         let hosting = NSHostingView(rootView:
@@ -82,10 +113,10 @@ struct WindowPreviewCapture {
                 .environment(\.locale, Locale(identifier: language))
                 .environment(\.colorScheme, dark ? .dark : .light))
         hosting.sizingOptions = []
-        hosting.frame = NSRect(x: 0, y: 0, width: width, height: 640)
+        hosting.frame = NSRect(x: 0, y: 0, width: width, height: height)
         hosting.autoresizingMask = [.width, .height]
         window.contentView = hosting
-        window.setContentSize(NSSize(width: width, height: 640))
+        window.setContentSize(NSSize(width: width, height: height))
         window.orderBack(nil)
         RunLoop.current.run(until: Date().addingTimeInterval(0.25))
         let content = window.contentView!

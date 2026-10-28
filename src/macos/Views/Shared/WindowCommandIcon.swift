@@ -79,6 +79,8 @@ struct WindowCommandIcon: View {
         if let fraction = spec.fraction {
             WindowPlacementGlyph(fraction: fraction, tint: tint)
         } else if spec.action == .windowMaximizeAll {
+            currentScreenGlyph
+        } else if spec.action == .windowMaximizeAllDisplays {
             allScreens
         } else if spec.action == .windowMaximizeAllInApp {
             appStack
@@ -96,6 +98,12 @@ struct WindowCommandIcon: View {
             miniScreen
         }
         .frame(width: 15, height: 12)
+    }
+
+    // Un seul écran : la commande reste sur l'écran où l'utilisateur travaille
+    private var currentScreenGlyph: some View {
+        miniScreen
+            .frame(width: 11, height: 12)
     }
 
     private var miniScreen: some View {

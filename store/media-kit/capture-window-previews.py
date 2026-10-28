@@ -26,5 +26,5 @@ with tempfile.TemporaryDirectory(prefix="pk-window-preview-qa-") as directory:
         "-framework", "Sparkle", "-Xlinker", "-rpath", "-Xlinker", str(FRAMEWORKS),
         *sources, str(fixture_model), str(Path(__file__).with_suffix(".swift")), "-o", str(executable),
     ], check=True)
-    subprocess.run([str(executable), str(OUTPUT)], check=True)
+    subprocess.run([str(executable), str(OUTPUT), str(temporary / "rooms.json")], check=True)
     print(OUTPUT)
