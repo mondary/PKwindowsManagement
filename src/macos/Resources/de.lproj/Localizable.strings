@@ -650,3 +650,34 @@
 "Tile Current Desktop" = "Aktuellen Schreibtisch kacheln";
 "Tile All Desktops" = "Alle Schreibtische kacheln";
 "Bento tiling fills each desktop separately, up to 12 windows per display. Windows shared across desktops are excluded." = "Das Bento-Layout füllt jeden Schreibtisch separat mit bis zu 12 Fenstern pro Bildschirm. Fenster auf mehreren Schreibtischen werden ausgeschlossen.";
+
+/* Kontinuierliches Kacheln */
+"Automatic" = "Automatisch";
+"Automatic resolves to %@" = "Automatisch wählt %@";
+"Dwindle" = "Dwindle";
+"Monocle" = "Monocle";
+"Continuous tiling" = "Kontinuierliches Kacheln";
+"Switch to Free mode" = "Zum freien Modus wechseln";
+"Enable continuous tiling" = "Kontinuierliches Kacheln aktivieren";
+"Layout for this desktop" = "Layout für diesen Schreibtisch";
+"Enable tiling on this desktop" = "Kacheln auf diesem Schreibtisch aktivieren";
+"Choose Free mode to position windows yourself, or keep a layout active as new windows arrive on this desktop." = "Im freien Modus platzierst du Fenster selbst; alternativ ordnet das aktive Layout neue Fenster auf diesem Schreibtisch automatisch an.";
+"Automatically choose a comfortable arrangement as windows arrive." = "Wählt beim Eintreffen neuer Fenster automatisch eine passende Anordnung.";
+"Keep one large main window and arrange the others beside it." = "Hält ein großes Hauptfenster und ordnet die übrigen daneben an.";
+"Give each window a column; new windows extend the row." = "Weist jedem Fenster eine Spalte zu; neue Fenster verlängern die Reihe.";
+"Rebalance windows into equal cells as the grid grows." = "Verteilt Fenster beim Wachsen des Rasters gleichmäßig auf Zellen.";
+"Keep a main window beside overlapping cards with accessible title bars." = "Hält ein Hauptfenster neben überlappenden Karten mit zugänglichen Titelleisten.";
+"Split the remaining area recursively as each window arrives." = "Teilt den verbleibenden Bereich mit jedem neuen Fenster rekursiv auf.";
+"Show the selected window full-size; cycle through the others." = "Zeigt das ausgewählte Fenster bildschirmfüllend; wechsle zwischen den übrigen.";
+"Scroll a two-row window strip horizontally, with a minimap." = "Verschiebt eine zweireihige Fensterleiste horizontal, mit Minikarte.";
+"Pause preview" = "Vorschau anhalten";
+"Play preview" = "Vorschau abspielen";
+"Replay preview" = "Vorschau wiederholen";
+"%@ layout preview, %d windows" = "Vorschau für %@-Layout, %d Fenster";
+"Window %d" = "Fenster %d";
+"%d of 6 windows" = "%d von 6 Fenstern";
+"Horizontal Canvas minimap" = "Minikarte des horizontalen Canvas";
+"Tiling needs Accessibility permission." = "Zum Kacheln ist die Bedienungshilfen-Berechtigung erforderlich.";
+"Room activation needs Accessibility permission." = "Zum Aktivieren eines Rooms ist die Bedienungshilfen-Berechtigung erforderlich.";
+"No active desktop is available for tiling." = "Kein aktiver Schreibtisch zum Kacheln verfügbar.";
+"Tiling preferences could not be saved." = "Kachel-Einstellungen konnten nicht gespeichert werden.";

@@ -129,7 +129,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         }
         guard let settings = AppRuntime.shared.settings,
               let snapAction = action.windowSnapAction else { return }
-        HorizontalCanvasService.shared.release {
+        HorizontalCanvasService.shared.releaseForManualPlacement {
             WindowSnapService().perform(snapAction, preset: settings.windowMarginPreset)
         }
     }
@@ -187,6 +187,18 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         HorizontalCanvasService.shared.perform(action)
     }
 
+    @objc private func toggleTilingMode() {
+        HorizontalCanvasService.shared.toggleCurrentTilingMode()
+        rebuildStatusMenu()
+    }
+
+    @objc private func selectTilingLayout(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+              let layout = TilingLayoutKind(rawValue: raw) else { return }
+        HorizontalCanvasService.shared.setCurrentLayout(layout)
+        rebuildStatusMenu()
+    }
+
     @objc private func checkForUpdates() {
         // Le menu doit produire un résultat visible : rafraîchir les libellés
         // en arrière-plan (checkForUpdates) ne montre rien depuis la barre de
@@ -218,6 +230,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     }
 
     private func rebuildStatusMenu() {
+        HorizontalCanvasService.shared.refreshCurrentWorkspace()
         let menu = NSMenu()
         let installedVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
         menu.addItem(NSMenuItem(title: "PKwindowsManagement  ·  v\(installedVersion)", action: nil, keyEquivalent: ""))
@@ -250,6 +263,33 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         let manageRoomsItem = NSMenuItem(title: localizedString("Manage Rooms…"), action: #selector(manageRooms), keyEquivalent: "")
         manageRoomsItem.target = self
         menu.addItem(manageRoomsItem)
+
+        let workspaceProfile = HorizontalCanvasService.shared.currentWorkspace?.profile
+        let tilingMenu = NSMenu()
+        let modeItem = NSMenuItem(
+            title: localizedString(workspaceProfile?.mode == .tiling ? "Switch to Free mode" : "Enable continuous tiling"),
+            action: #selector(toggleTilingMode), keyEquivalent: "")
+        modeItem.target = self
+        modeItem.isEnabled = HorizontalCanvasService.shared.currentWorkspace != nil
+        modeItem.state = workspaceProfile?.mode == .tiling ? .on : .off
+        tilingMenu.addItem(modeItem)
+        tilingMenu.addItem(.separator())
+        let layoutHeader = NSMenuItem(title: localizedString("Layout for this desktop"), action: nil, keyEquivalent: "")
+        layoutHeader.isEnabled = false
+        tilingMenu.addItem(layoutHeader)
+        for layout in TilingLayoutKind.allCases {
+            let item = NSMenuItem(title: layout.title, action: #selector(selectTilingLayout(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = layout.rawValue
+            item.state = workspaceProfile?.layout == layout ? .on : .off
+            item.isEnabled = HorizontalCanvasService.shared.currentWorkspace != nil
+            tilingMenu.addItem(item)
+        }
+        let tilingItem = NSMenuItem(title: localizedString("Continuous tiling"), action: nil, keyEquivalent: "")
+        tilingItem.submenu = tilingMenu
+        tilingItem.state = workspaceProfile?.mode == .tiling ? .on : .off
+        menu.addItem(tilingItem)
+
         let canvasMenu = NSMenu()
         for action in [ShortcutAction.canvasToggle, .canvasPrevious, .canvasNext, .canvasAbove, .canvasBelow,
                        .canvasMoveColumnLeft, .canvasMoveColumnRight,
@@ -263,7 +303,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         }
         let canvasItem = NSMenuItem(title: localizedString("Horizontal Canvas"), action: nil, keyEquivalent: "")
         canvasItem.submenu = canvasMenu
-        canvasItem.state = HorizontalCanvasService.shared.activeDisplayIDs.isEmpty ? .off : .on
+        canvasItem.state = workspaceProfile?.mode == .tiling && workspaceProfile?.layout == .canvas ? .on : .off
         menu.addItem(canvasItem)
         menu.addItem(.separator())
 

@@ -21,7 +21,7 @@ struct PKwindowsManagementApp: App {
             apps: launcher.loadShortcutTargets(settings: settings),
             launchHandler: { app in _ = launcher.launch(app, settings: settings) },
             windowHandler: { action in
-                HorizontalCanvasService.shared.release {
+                HorizontalCanvasService.shared.releaseForManualPlacement {
                     WindowSnapService().perform(action, preset: settings.windowMarginPreset)
                 }
             },

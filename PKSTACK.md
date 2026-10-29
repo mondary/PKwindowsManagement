@@ -2,6 +2,8 @@
 
 Skills used for this project:
 
+- Dev 115 — modes Libre/Tiling persistés par écran + Space, huit layouts dont Canvas intégré au moteur continu, adoption des nouvelles fenêtres et relais Room après placement initial. Réglages/menu, preview 1→6 fenêtres avec viewport/minimap Canvas, sauvegarde v14, géométrie et localisations FR/EN/ES/DE. Tests géométriques et analyse syntaxique Swift passent; build natif et QA visuelle bloqués (Xcode absent, plugin SwiftUI manquant des Command Line Tools). Aucune installation, capture ou publication; validation interactive encore requise.
+
 - Dev 113 — navigation verticale 2D du sélecteur : lignes réelles par section (fenêtres 4/3/2/1 colonnes, apps et rooms à colonnes calculées depuis la largeur), colonne conservée, passage de section au voisin le plus proche, bornage des lignes partielles et des extrémités ; ←/→ et ⇥ restent séquentiels. Tests purs (grille 3/10/2), build SDK 26.5, captures FR/EN et Dev installée.
 
 - Dev 112 — fix Steam absent d'Applications : identité accepte pid -1 et les bundles `.AppBundle` ; pid synthétiques négatifs par app, activation/quit résolus par identifiant de bundle (repli ouverture du bundle), Steam Helper toujours exclu. Régressions pures + audit NSWorkspace live (Steam retenu, 21 apps / 49 exclues). Dev 112 installée avec sauvegarde et relancée.

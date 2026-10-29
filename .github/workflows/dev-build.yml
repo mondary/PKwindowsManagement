@@ -35,6 +35,8 @@ jobs:
 
       - name: Check Canvas and update regressions
         run: |
+          swiftc src/macos/Localization.swift src/macos/Services/CanvasLayout.swift src/macos/Services/Rooms/RoomModels.swift src/macos/Services/Rooms/RoomTiler.swift src/macos/Services/TilingLayout.swift Tests/TilingLayoutChecks.swift -o "$RUNNER_TEMP/tiling-layout-checks"
+          "$RUNNER_TEMP/tiling-layout-checks"
           swiftc src/macos/Services/CanvasLayout.swift Tests/CanvasLayoutChecks.swift -o "$RUNNER_TEMP/canvas-layout-checks"
           "$RUNNER_TEMP/canvas-layout-checks"
           swiftc src/macos/Services/CanvasLayout.swift src/macos/Services/BentoTiling.swift Tests/BentoTilingChecks.swift -o "$RUNNER_TEMP/bento-checks"

@@ -13,6 +13,7 @@ final class HorizontalCanvasService: ObservableObject {
     @Published private(set) var activeDisplayIDs: Set<CGDirectDisplayID> = []
     @Published private(set) var message = ""
     @Published private(set) var inventoryMessage = ""
+    @Published private(set) var currentWorkspace: TilingWorkspaceSnapshot?
     /// Main-thread snapshots for the minimap bars; rebuilt by publish() on
     /// the worker after every layout, scroll or selection change.
     @Published private(set) var minimaps: [CGDirectDisplayID: CanvasMinimap.Model] = [:]
@@ -92,12 +93,14 @@ final class HorizontalCanvasService: ObservableObject {
         var widths: [CGFloat] = []
         var selected: CGWindowID?
         var viewport: CGFloat = 0
+        var layout: TilingLayoutKind = .canvas
         var lastNavigation: TimeInterval = 0
         var suspended = false
-        init(display: Display, space: UInt64, defaultWidth: CGFloat) {
+        init(display: Display, space: UInt64, defaultWidth: CGFloat, layout: TilingLayoutKind = .canvas) {
             self.display = display
             self.space = space
             self.defaultWidth = defaultWidth
+            self.layout = layout
         }
     }
 
@@ -115,6 +118,10 @@ final class HorizontalCanvasService: ObservableObject {
     private var timer: Timer?
     private var tickPending = false // main thread only
     private var shuttingDown = false // main thread only
+    /// Room activation temporarily releases managed frames while RoomEngine
+    /// performs its one-shot placement. The persistent Space profile remains
+    /// enabled and is reapplied once the room handoff completes.
+    private var roomHandoffs: [String: CanvasWorkspace] = [:] // worker queue only
     private var spaceObserver: NSObjectProtocol?
     private let restoreURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("PKwindowsManagement/CanvasRestore.json")
@@ -128,12 +135,171 @@ final class HorizontalCanvasService: ObservableObject {
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in self?.tick() }
+        refreshCurrentWorkspace()
         tick()
+    }
+
+    /// Refreshes the profile shown in settings/menu for the pointer's current
+    /// display and native Space. Selection is deliberately separate from the
+    /// worker-owned strip dictionary.
+    func refreshCurrentWorkspace() {
+        precondition(Thread.isMainThread)
+        let context = Context.capture()
+        guard let display = context.displays.first(where: { $0.bounds.contains(context.pointer) })
+                ?? context.displays.first,
+              let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else {
+            currentWorkspace = nil
+            return
+        }
+        let key = TilingWorkspaceKey(displayUUID: display.uuid, spaceID: space)
+        let profile = TilingWorkspaceProfiles.profile(for: key, in: TilingWorkspaceProfiles.load())
+        let index = NSScreen.screens.firstIndex {
+            ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID) == display.id
+        } ?? 0
+        let snapshot = TilingWorkspaceSnapshot(key: key, displayID: display.id,
+            displayName: String(format: localizedString("Screen %d"), index + 1), profile: profile)
+        if currentWorkspace != snapshot { currentWorkspace = snapshot }
+    }
+
+    func toggleCurrentTilingMode() {
+        let profile = currentProfileForPointer()
+        setCurrentTilingMode(profile.mode == .tiling ? .free : .tiling)
+    }
+
+    func setCurrentTilingMode(_ mode: TilingMode) {
+        updateCurrentProfile { $0.mode = mode }
+    }
+
+    func setCurrentLayout(_ layout: TilingLayoutKind) {
+        updateCurrentProfile { $0.layout = layout }
+    }
+
+    /// One-shot snap commands leave continuous ownership on the current Space;
+    /// otherwise the periodic tiler would immediately undo the user's manual
+    /// placement after the legacy Canvas release path.
+    func releaseForManualPlacement(completion: @escaping () -> Void) {
+        precondition(Thread.isMainThread)
+        setCurrentTilingMode(.free)
+        release(completion: completion)
+    }
+
+    private func currentProfileForPointer() -> TilingWorkspaceProfile {
+        precondition(Thread.isMainThread)
+        let context = Context.capture()
+        guard let display = context.displays.first(where: { $0.bounds.contains(context.pointer) })
+                ?? context.displays.first,
+              let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else {
+            return TilingWorkspaceProfile()
+        }
+        let key = TilingWorkspaceKey(displayUUID: display.uuid, spaceID: space)
+        return TilingWorkspaceProfiles.profile(for: key, in: TilingWorkspaceProfiles.load())
+    }
+
+    private func updateCurrentProfile(_ update: (inout TilingWorkspaceProfile) -> Void) {
+        precondition(Thread.isMainThread)
+        let context = Context.capture()
+        guard let display = context.displays.first(where: { $0.bounds.contains(context.pointer) })
+                ?? context.displays.first,
+              let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else {
+            message = localizedString("No active desktop is available for tiling.")
+            return
+        }
+        let key = TilingWorkspaceKey(displayUUID: display.uuid, spaceID: space)
+        var profile = TilingWorkspaceProfiles.profile(for: key, in: TilingWorkspaceProfiles.load())
+        update(&profile)
+        guard TilingWorkspaceProfiles.update(profile, for: key) else {
+            message = localizedString("Tiling preferences could not be saved.")
+            return
+        }
+        AppRuntime.shared.settings?.scheduleAutoBackup()
+        refreshCurrentWorkspace()
+        let workspace = CanvasWorkspace(displayID: display.id, spaceID: space)
+        queue.async {
+            if profile.mode == .tiling {
+                guard AXIsProcessTrusted() else {
+                    self.report("Tiling needs Accessibility permission.")
+                    return
+                }
+                if let strip = self.strips[workspace], self.isCurrent(strip) {
+                    strip.layout = profile.layout
+                    strip.entries.forEach { $0.lastFrame = nil }
+                    strip.viewport = 0
+                    self.retile(strip)
+                    if strip.layout == .canvas { self.fitViewport(strip) }
+                    self.teleport(strip, context: context)
+                } else {
+                    self.activate(workspace: workspace, display: display, space: space,
+                                  profile: profile, context: context)
+                }
+            } else if let strip = self.strips.removeValue(forKey: workspace) {
+                self.arrangements[workspace] = strip.arrangement
+                self.restore(strip.entries.map(\.saved), context: context)
+                self.publish()
+            } else {
+                self.publish()
+            }
+        }
+    }
+
+    /// Establish ownership only after the profile is durable and the recovery
+    /// journal can be written. The periodic inventory pass calls this again if
+    /// no compatible windows exist yet, so future windows still join.
+    private func activate(workspace: CanvasWorkspace, display: Display, space: UInt64,
+                          profile: TilingWorkspaceProfile, context: Context) {
+        guard profile.mode == .tiling, strips[workspace] == nil,
+              !roomHandoffs.values.contains(workspace), isDesktopCurrent(space, display: display) else { return }
+        guard loadRecovery(context) else { return }
+        let entries = discover(context, on: display, space: space, diagnose: false, reconcile: true)
+        guard !entries.isEmpty else { return }
+
+        let previous = arrangements[workspace]
+        let geometry = CanvasLayout.Geometry(area: display.area, rows: 2)
+        let strip = Strip(
+            display: display,
+            space: space,
+            defaultWidth: geometry.defaultColumnWidth(
+                columns: CanvasLayout.preferredColumns(forAreaWidth: display.area.width)
+            ),
+            layout: profile.layout
+        )
+        strip.entries = entries
+        if let previous { strip.arrangement = previous }
+        let focused = CanvasWindowAccess.focusedID(pid: context.frontmostPID)
+        strip.selected = entries.first(where: { $0.saved.id == focused })?.saved.id ?? entries.first?.saved.id
+        for entry in entries { saved[entry.saved.id] = entry.saved }
+        guard persist() else {
+            for entry in entries { saved.removeValue(forKey: entry.saved.id) }
+            return
+        }
+        strips[workspace] = strip
+        retile(strip)
+        if strip.layout == .canvas { fitViewport(strip) }
+        teleport(strip, context: context)
+        if strip.layout == .canvas { focusSelected(strip) }
+    }
+
+    private func isDesktopCurrent(_ space: UInt64, display: Display) -> Bool {
+        SpaceManagementService.userDesktop(onDisplay: display.uuid) == space
     }
 
     func perform(_ action: CanvasAction) {
         precondition(Thread.isMainThread)
         guard !shuttingDown else { return }
+        if action == .toggle {
+            updateCurrentProfile {
+                if $0.mode == .tiling && $0.layout == .canvas {
+                    $0.mode = .free
+                } else {
+                    $0.layout = .canvas
+                    $0.mode = .tiling
+                }
+            }
+            return
+        }
+        if action == .restore {
+            setCurrentTilingMode(.free)
+            return
+        }
         message = ""
         let context = Context.capture()
         queue.async {
@@ -145,7 +311,6 @@ final class HorizontalCanvasService: ObservableObject {
                 return
             }
             guard self.loadRecovery(context) else { return }
-            if action == .restore { self.releaseAll(context); return }
             let focused = CanvasWindowAccess.focusedID(pid: context.frontmostPID)
             let display = self.targetDisplay(context, focused: focused)
             guard let display else { self.report("No display available for Canvas."); return }
@@ -153,40 +318,8 @@ final class HorizontalCanvasService: ObservableObject {
                 self.report("Canvas requires a normal desktop."); return
             }
             let workspace = CanvasWorkspace(displayID: display.id, spaceID: space)
-            if action == .toggle {
-                if let strip = self.strips.removeValue(forKey: workspace) {
-                    self.arrangements[workspace] = strip.arrangement
-                    self.restore(strip.entries.map(\.saved), context: context)
-                    self.publish()
-                    return
-                }
-                let entries = self.discover(context, on: display, space: space, diagnose: true, reconcile: true)
-                guard !entries.isEmpty else { self.report("No compatible windows on this desktop."); return }
-                // Journal before moving even the first window.
-                for entry in entries { self.saved[entry.saved.id] = entry.saved }
-                guard self.persist() else { return }
-                let geometry = CanvasLayout.Geometry(area: display.area, rows: 2)
-                let strip = Strip(
-                    display: display,
-                    space: space,
-                    defaultWidth: geometry.defaultColumnWidth(
-                        columns: CanvasLayout.preferredColumns(forAreaWidth: display.area.width)
-                    )
-                )
-                strip.entries = entries
-                if let previous = self.arrangements[workspace] {
-                    // Keep the user's half-height cuts across deactivation.
-                    strip.arrangement = previous
-                }
-                self.retile(strip)
-                strip.selected = entries.first(where: { $0.saved.id == focused })?.saved.id ?? entries.first?.saved.id
-                self.strips[workspace] = strip
-                self.fitViewport(strip)
-                self.teleport(strip, context: context)
-                self.focusSelected(strip)
-                self.publish()
-            } else if let strip = self.strips[workspace], self.isCurrent(strip) {
-                guard !strip.entries.isEmpty, !strip.widths.isEmpty else { return }
+            if let strip = self.strips[workspace], self.isCurrent(strip) {
+                guard strip.layout == .canvas, !strip.entries.isEmpty, !strip.widths.isEmpty else { return }
                 if action == .fullHeight || action == .halfHeight {
                     // Read actual focus now, rather than waiting for the periodic
                     // observer: a click followed by a shortcut must affect that window.
@@ -241,6 +374,7 @@ final class HorizontalCanvasService: ObservableObject {
             guard self.loadRecovery(context) else { return }
             guard let workspace = self.strips.keys.first(where: { $0.displayID == displayID }),
                   let strip = self.strips[workspace], self.isCurrent(strip),
+                  strip.layout == .canvas,
                   !strip.entries.isEmpty, !strip.widths.isEmpty else { return }
             let clamped = min(max(0, column), strip.widths.count - 1)
             guard let index = CanvasLayout.index(column: clamped, row: 0, columns: strip.columns) else { return }
@@ -302,6 +436,77 @@ final class HorizontalCanvasService: ObservableObject {
         }
     }
 
+    /// RoomEngine applies the room's saved geometry once. If continuous tiling
+    /// is enabled on the target Space, hold that workspace while the room is
+    /// laid out, then adopt the resulting frames as the tiler's new baseline.
+    func releaseForRoomActivation(_ room: Room, completion: @escaping (Bool) -> Void) {
+        precondition(Thread.isMainThread)
+        let context = Context.capture()
+        let target = roomWorkspace(room, context: context)
+        queue.async {
+            guard AXIsProcessTrusted() else {
+                self.report("Room activation needs Accessibility permission.")
+                DispatchQueue.main.async { completion(false) }
+                return
+            }
+            guard self.loadRecovery(context) else {
+                DispatchQueue.main.async { completion(false) }
+                return
+            }
+            if let target {
+                let profile = TilingWorkspaceProfiles.profile(for: target.key,
+                    in: TilingWorkspaceProfiles.load())
+                if profile.mode == .tiling { self.roomHandoffs[room.id] = target.workspace }
+            }
+            for (key, strip) in Array(self.strips) where self.isCurrent(strip) {
+                self.strips.removeValue(forKey: key)
+                self.arrangements[key] = strip.arrangement
+                self.restore(strip.entries.map(\.saved), context: context)
+            }
+            self.publish()
+            DispatchQueue.main.async { completion(true) }
+        }
+    }
+
+    func willTile(_ room: Room) -> Bool {
+        precondition(Thread.isMainThread)
+        let context = Context.capture()
+        guard let target = roomWorkspace(room, context: context) else { return false }
+        return TilingWorkspaceProfiles.profile(for: target.key,
+            in: TilingWorkspaceProfiles.load()).mode == .tiling
+    }
+
+    func resumeAfterRoomActivation(_ room: Room) {
+        precondition(Thread.isMainThread)
+        let context = Context.capture()
+        guard let target = roomWorkspace(room, context: context) else {
+            queue.async { self.roomHandoffs.removeValue(forKey: room.id) }
+            return
+        }
+        let profile = TilingWorkspaceProfiles.profile(for: target.key, in: TilingWorkspaceProfiles.load())
+        queue.async {
+            let handoff = self.roomHandoffs.removeValue(forKey: room.id)
+            guard profile.mode == .tiling, handoff == target.workspace,
+                  self.isDesktopCurrent(target.key.spaceID, display: target.display) else { return }
+            self.activate(workspace: target.workspace, display: target.display,
+                          space: target.key.spaceID, profile: profile, context: context)
+        }
+    }
+
+    private func roomWorkspace(_ room: Room, context: Context) -> (key: TilingWorkspaceKey, workspace: CanvasWorkspace, display: Display)? {
+        let display: Display?
+        if let uuid = room.displayUUID {
+            display = context.displays.first(where: { $0.uuid == uuid })
+                ?? context.displays.first(where: { $0.bounds.contains(context.pointer) })
+                ?? context.displays.first
+        } else {
+            display = context.displays.first(where: { $0.bounds.contains(context.pointer) }) ?? context.displays.first
+        }
+        guard let display, let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else { return nil }
+        return (TilingWorkspaceKey(displayUUID: display.uuid, spaceID: space),
+                CanvasWorkspace(displayID: display.id, spaceID: space), display)
+    }
+
     func shutdown(completion: @escaping () -> Void) {
         shuttingDown = true
         timer?.invalidate()
@@ -323,6 +528,7 @@ final class HorizontalCanvasService: ObservableObject {
     }
 
     private func fitViewport(_ strip: Strip) {
+        guard strip.layout == .canvas else { return }
         guard let index = strip.entries.firstIndex(where: { $0.saved.id == strip.selected }) else { return }
         let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
         guard let slot = CanvasLayout.slot(index: index, columns: strip.columns) else { return }
@@ -335,6 +541,14 @@ final class HorizontalCanvasService: ObservableObject {
     }
 
     private func retile(_ strip: Strip) {
+        if strip.layout != .canvas {
+            strip.columns = []
+            strip.widths = []
+            if !strip.entries.contains(where: { $0.saved.id == strip.selected }) {
+                strip.selected = strip.entries.first?.saved.id
+            }
+            return
+        }
         strip.arrangement.synchronize(strip.entries.map { $0.saved.id })
         let indices = Dictionary(uniqueKeysWithValues: strip.entries.enumerated().map { ($0.element.saved.id, $0.offset) })
         strip.columns = strip.arrangement.columns.map { column in
@@ -353,7 +567,12 @@ final class HorizontalCanvasService: ObservableObject {
     /// origins skip their AX round-trip entirely (ScrollWM measurement: an AX
     /// move costs ~0.4ms cross-process, so skips dominate on large strips).
     private func teleport(_ strip: Strip, context: Context, negotiationPass: Int = 0) {
-        guard isCurrent(strip), !strip.widths.isEmpty else { return }
+        guard isCurrent(strip) else { return }
+        guard strip.layout == .canvas else {
+            teleportRegular(strip, context: context)
+            return
+        }
+        guard !strip.widths.isEmpty else { return }
         let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
         strip.viewport = CanvasLayout.clampViewport(strip.viewport, widths: strip.widths, viewport: geometry.contentWidth)
         let others = context.displays.filter { $0.id != strip.display.id }.map(\.bounds)
@@ -435,6 +654,61 @@ final class HorizontalCanvasService: ObservableObject {
         }
         // The minimap bar follows every placement pass: keyboard navigation,
         // continuous scroll and retiles all end here.
+        publish()
+    }
+
+    /// Apply one of the RoomTiler algorithms to the live desktop. The same pure
+    /// geometry is used by the settings preview, so future-window behavior is
+    /// visible before the layout is enabled.
+    private func teleportRegular(_ strip: Strip, context: Context) {
+        guard isCurrent(strip), let roomLayout = strip.layout.roomLayout else { return }
+        let selectedIndex = strip.entries.firstIndex(where: { $0.saved.id == strip.selected })
+        let frames = TilingLayoutGeometry.frames(kind: strip.layout, count: strip.entries.count,
+            in: strip.display.area, selectedIndex: selectedIndex)
+        guard frames.count == strip.entries.count else { return }
+
+        var order = Array(strip.entries.indices)
+        if roomLayout == .monocle {
+            // All monocle frames overlap; raise the selected one last so it is
+            // the visible card without minimizing windows or losing state.
+            if let selected = strip.entries.firstIndex(where: { $0.saved.id == strip.selected }) {
+                order.removeAll { $0 == selected }
+                order.append(selected)
+            }
+        } else if let selected = strip.entries.firstIndex(where: { $0.saved.id == strip.selected }) {
+            order.removeAll { $0 == selected }
+            order.insert(selected, at: 0)
+        }
+
+        for index in order {
+            guard isCurrent(strip) else { strip.suspended = true; return }
+            let entry = strip.entries[index]
+            guard CanvasWindowAccess.id(entry.window) == entry.saved.id,
+                  CanvasWindowAccess.eligible(entry.window),
+                  SpaceManagementService.desktops(forWindow: entry.saved.id) == [strip.space]
+            else { continue }
+            let target = frames[index]
+            if let last = entry.lastFrame,
+               abs(last.minX - target.minX) < 0.5, abs(last.minY - target.minY) < 0.5,
+               abs(last.width - target.width) < 0.5, abs(last.height - target.height) < 0.5 {
+                continue
+            }
+            let result = CanvasWindowAccess.applyCanvasFrame(target, window: entry.window) { self.isCurrent(strip) }
+            if let actual = result.actual,
+               result.accepted, CanvasFrameApplication.fitsSize(actual.size, target.size),
+               abs(actual.minX - target.minX) < 3, abs(actual.minY - target.minY) < 3 {
+                entry.lastFrame = target
+            } else {
+                entry.lastFrame = nil
+                if !result.accepted {
+                    logger.notice("Tiling window \(entry.saved.id) rejected its frame")
+                }
+            }
+        }
+        if roomLayout == .monocle, let selectedIndex,
+           strip.entries.indices.contains(selectedIndex) {
+            CanvasWindowAccess.raise(strip.entries[selectedIndex].window)
+        }
         publish()
     }
 
@@ -575,6 +849,7 @@ final class HorizontalCanvasService: ObservableObject {
     private func tick() {
         guard !tickPending, !shuttingDown else { return }
         tickPending = true
+        refreshCurrentWorkspace()
         let context = Context.capture()
         queue.async {
             defer { DispatchQueue.main.async { self.tickPending = false } }
@@ -596,8 +871,21 @@ final class HorizontalCanvasService: ObservableObject {
                 case .active: break
                 }
                 guard let display = currentDisplay else { continue }
+                let workspaceKey = TilingWorkspaceKey(displayUUID: display.uuid, spaceID: strip.space)
+                let profile = TilingWorkspaceProfiles.profile(for: workspaceKey,
+                    in: TilingWorkspaceProfiles.load())
+                guard profile.mode == .tiling else {
+                    self.strips.removeValue(forKey: workspace)
+                    self.arrangements[workspace] = strip.arrangement
+                    self.restore(strip.entries.map(\.saved), context: context)
+                    continue
+                }
                 let resumed = strip.suspended
-                var changed = resumed || display.area != strip.display.area
+                var changed = resumed || display.area != strip.display.area || strip.layout != profile.layout
+                if strip.layout != profile.layout {
+                    strip.layout = profile.layout
+                    strip.viewport = 0
+                }
                 strip.display = display
                 strip.suspended = false
                 if changed {
@@ -639,6 +927,19 @@ final class HorizontalCanvasService: ObservableObject {
                 }
                 if strip.entries.isEmpty { self.strips.removeValue(forKey: workspace) }
                 else if changed { self.teleport(strip, context: context) }
+            }
+            // A profile can be enabled on a Space before it has windows. Keep
+            // polling every connected screen and adopt newly-created windows.
+            for display in context.displays {
+                guard let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else { continue }
+                let workspace = CanvasWorkspace(displayID: display.id, spaceID: space)
+                guard self.strips[workspace] == nil,
+                      !self.roomHandoffs.values.contains(workspace) else { continue }
+                let key = TilingWorkspaceKey(displayUUID: display.uuid, spaceID: space)
+                let profile = TilingWorkspaceProfiles.profile(for: key, in: TilingWorkspaceProfiles.load())
+                guard profile.mode == .tiling else { continue }
+                self.activate(workspace: workspace, display: display, space: space,
+                              profile: profile, context: context)
             }
             // Retry orphaned records on visible desktops, never records still
             // owned by an active or suspended strip.
@@ -744,10 +1045,11 @@ final class HorizontalCanvasService: ObservableObject {
     }
 
     private func publish() {
-        let workspaces = Set(strips.keys)
-        let ids = Set(strips.values.filter { isCurrent($0) }.map { $0.display.id })
+        let canvasStrips = strips.values.filter { $0.layout == .canvas }
+        let workspaces = Set(canvasStrips.map { CanvasWorkspace(displayID: $0.display.id, spaceID: $0.space) })
+        let ids = Set(canvasStrips.filter { isCurrent($0) }.map { $0.display.id })
         var snapshots: [CGDirectDisplayID: CanvasMinimap.Model] = [:]
-        for strip in strips.values where isCurrent(strip) && !strip.widths.isEmpty {
+        for strip in canvasStrips where isCurrent(strip) && !strip.widths.isEmpty {
             let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
             if let model = CanvasMinimap.model(
                 displayID: strip.display.id,
@@ -764,9 +1066,11 @@ final class HorizontalCanvasService: ObservableObject {
         DispatchQueue.main.async {
             self.knownWorkspaces = workspaces
             if self.minimaps != snapshots { self.minimaps = snapshots }
-            guard self.activeDisplayIDs != ids else { return }
-            self.activeDisplayIDs = ids
-            NotificationCenter.default.post(name: Self.stateDidChange, object: nil)
+            if self.activeDisplayIDs != ids {
+                self.activeDisplayIDs = ids
+                NotificationCenter.default.post(name: Self.stateDidChange, object: nil)
+            }
+            self.refreshCurrentWorkspace()
         }
     }
 

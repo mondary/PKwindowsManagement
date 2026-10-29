@@ -151,8 +151,14 @@ final class RoomsSwitcherModel: ObservableObject {
     func activate(room: Room) {
         let engine = engine
         let claimed = store.claimedWindowIDs(excluding: room.id)
-        HorizontalCanvasService.shared.release {
-            Task { _ = await engine.activate(room, claimed: claimed) }
+        let keepMonocleWindowsVisible = HorizontalCanvasService.shared.willTile(room)
+        HorizontalCanvasService.shared.releaseForRoomActivation(room) { released in
+            guard released else { return }
+            Task {
+                _ = await engine.activate(room, claimed: claimed,
+                                          keepMonocleWindowsVisible: keepMonocleWindowsVisible)
+                await MainActor.run { HorizontalCanvasService.shared.resumeAfterRoomActivation(room) }
+            }
         }
     }
 

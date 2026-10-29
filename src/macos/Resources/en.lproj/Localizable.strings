@@ -403,3 +403,34 @@
 "Maximize All Windows (Current Display)" = "Maximize All Windows (Current Display)";
 "Maximize All Windows (All Displays)" = "Maximize All Windows (All Displays)";
 "Bento tiling fills each desktop separately, up to 12 windows per display. Windows shared across desktops are excluded." = "Bento tiling fills each desktop separately, up to 12 windows per display. Windows shared across desktops are excluded.";
+
+/* Continuous tiling */
+"Automatic" = "Automatic";
+"Automatic resolves to %@" = "Automatic resolves to %@";
+"Dwindle" = "Dwindle";
+"Monocle" = "Monocle";
+"Continuous tiling" = "Continuous tiling";
+"Switch to Free mode" = "Switch to Free mode";
+"Enable continuous tiling" = "Enable continuous tiling";
+"Layout for this desktop" = "Layout for this desktop";
+"Enable tiling on this desktop" = "Enable tiling on this desktop";
+"Choose Free mode to position windows yourself, or keep a layout active as new windows arrive on this desktop." = "Choose Free mode to position windows yourself, or keep a layout active as new windows arrive on this desktop.";
+"Automatically choose a comfortable arrangement as windows arrive." = "Automatically choose a comfortable arrangement as windows arrive.";
+"Keep one large main window and arrange the others beside it." = "Keep one large main window and arrange the others beside it.";
+"Give each window a column; new windows extend the row." = "Give each window a column; new windows extend the row.";
+"Rebalance windows into equal cells as the grid grows." = "Rebalance windows into equal cells as the grid grows.";
+"Keep a main window beside overlapping cards with accessible title bars." = "Keep a main window beside overlapping cards with accessible title bars.";
+"Split the remaining area recursively as each window arrives." = "Split the remaining area recursively as each window arrives.";
+"Show the selected window full-size; cycle through the others." = "Show the selected window full-size; cycle through the others.";
+"Scroll a two-row window strip horizontally, with a minimap." = "Scroll a two-row window strip horizontally, with a minimap.";
+"Pause preview" = "Pause preview";
+"Play preview" = "Play preview";
+"Replay preview" = "Replay preview";
+"%@ layout preview, %d windows" = "%@ layout preview, %d windows";
+"Window %d" = "Window %d";
+"%d of 6 windows" = "%d of 6 windows";
+"Horizontal Canvas minimap" = "Horizontal Canvas minimap";
+"Tiling needs Accessibility permission." = "Tiling needs Accessibility permission.";
+"Room activation needs Accessibility permission." = "Room activation needs Accessibility permission.";
+"No active desktop is available for tiling." = "No active desktop is available for tiling.";
+"Tiling preferences could not be saved." = "Tiling preferences could not be saved.";

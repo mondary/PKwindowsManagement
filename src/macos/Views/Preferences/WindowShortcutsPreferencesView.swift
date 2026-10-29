@@ -36,6 +36,8 @@ struct WindowShortcutsPreferencesView: View {
 
                     conflictsCard
 
+                    tilingSection
+
                     windowSwitcherSection
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -65,6 +67,7 @@ struct WindowShortcutsPreferencesView: View {
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         }
+        .onAppear { canvas.refreshCurrentWorkspace() }
     }
 
     // MARK: - Conflits de raccourcis
@@ -224,6 +227,56 @@ struct WindowShortcutsPreferencesView: View {
         }
         .padding(12)
         .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var tilingSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Label(localizedString("Continuous tiling"), systemImage: "rectangle.split.3x1")
+                    .font(.headline)
+                Spacer()
+                if let workspace = canvas.currentWorkspace {
+                    Text(workspace.displayName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Text(localizedString("Choose Free mode to position windows yourself, or keep a layout active as new windows arrive on this desktop."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Toggle(localizedString("Enable tiling on this desktop"), isOn: Binding(
+                get: { canvas.currentWorkspace?.profile.mode == .tiling },
+                set: { canvas.setCurrentTilingMode($0 ? .tiling : .free) }
+            ))
+            .disabled(canvas.currentWorkspace == nil)
+
+            Picker(localizedString("Layout"), selection: Binding(
+                get: { canvas.currentWorkspace?.profile.layout ?? .automatic },
+                set: { canvas.setCurrentLayout($0) }
+            )) {
+                ForEach(TilingLayoutKind.allCases) { layout in
+                    Text(layout.title).tag(layout)
+                }
+            }
+            .pickerStyle(.menu)
+            .disabled(canvas.currentWorkspace == nil)
+
+            if let layout = canvas.currentWorkspace?.profile.layout {
+                Divider()
+                TilingLayoutPreview(layout: layout,
+                                   isSelected: canvas.currentWorkspace?.profile.layout == layout)
+            }
+            if !canvas.message.isEmpty {
+                Text(localizedString(canvas.message))
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     @ViewBuilder

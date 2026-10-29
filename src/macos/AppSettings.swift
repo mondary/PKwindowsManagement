@@ -692,7 +692,7 @@ final class AppSettings: ObservableObject {
 
     func exportBackup() throws -> Data {
         let backup = SettingsBackup(
-            version: 13,
+            version: 14,
             windowShortcuts: Dictionary(uniqueKeysWithValues: shortcuts.map { ($0.key.rawValue, $0.value) }),
             launchShortcuts: launchShortcuts,
             snippets: snippets,
@@ -728,7 +728,8 @@ final class AppSettings: ObservableObject {
             windowSwitcherUsesCommandTab: windowSwitcherUsesCommandTab,
             windowSwitcherStickyCommandTab: windowSwitcherStickyCommandTab,
             canvasRowsPerColumn: canvasRowsPerColumn,
-            canvasMinimap: canvasMinimap
+            canvasMinimap: canvasMinimap,
+            tilingWorkspaceProfiles: TilingWorkspaceProfiles.load()
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -758,7 +759,7 @@ final class AppSettings: ObservableObject {
 
     func importBackup(_ data: Data) throws {
         let backup = try JSONDecoder().decode(SettingsBackup.self, from: data)
-        guard (1...13).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
+        guard (1...14).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
 
         shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.compactMap { action in
             backup.windowShortcuts[action.rawValue].map { (action, $0) } ?? action.defaultShortcut.map { (action, $0) }
@@ -803,6 +804,10 @@ final class AppSettings: ObservableObject {
         windowSwitcherStickyCommandTab = backup.windowSwitcherStickyCommandTab ?? windowSwitcherStickyCommandTab
         if let rows = backup.canvasRowsPerColumn { canvasRowsPerColumn = max(1, min(2, rows)) }
         if let minimap = backup.canvasMinimap { canvasMinimap = minimap }
+        if let profiles = backup.tilingWorkspaceProfiles {
+            _ = TilingWorkspaceProfiles.replace(profiles)
+            HorizontalCanvasService.shared.refreshCurrentWorkspace()
+        }
 
         saveShortcuts()
         clearedWindowShortcuts = []
@@ -1174,6 +1179,7 @@ private struct SettingsBackup: Codable {
     let windowSwitcherStickyCommandTab: Bool?
     let canvasRowsPerColumn: Int?
     let canvasMinimap: Bool?
+    let tilingWorkspaceProfiles: [String: TilingWorkspaceProfile]?
 }
 
 enum SettingsBackupError: LocalizedError {

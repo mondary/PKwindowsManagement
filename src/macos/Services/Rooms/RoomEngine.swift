@@ -36,7 +36,8 @@ final class RoomEngine {
 
     // MARK: Activation
 
-    func activate(_ room: Room, claimed: Set<UInt32> = []) async -> Report {
+    func activate(_ room: Room, claimed: Set<UInt32> = [],
+                  keepMonocleWindowsVisible: Bool = false) async -> Report {
         guard ensureAccessibilityPermission() else { return Report() }
         var report = Report()
 
@@ -85,7 +86,8 @@ final class RoomEngine {
                 guard frames.indices.contains(slotIndex),
                       let candidate = candidates[safe: windowIndex]
                 else { continue }
-                let isMonocleBackground = room.layout == .monocle && slotIndex != max(0, min(room.focusedWindowIndex, room.windows.count - 1))
+                let isMonocleBackground = !keepMonocleWindowsVisible && room.layout == .monocle
+                    && slotIndex != max(0, min(room.focusedWindowIndex, room.windows.count - 1))
                 if !isMonocleBackground && candidate.isMinimized {
                     setBool(kAXMinimizedAttribute as CFString, false, on: candidate.element)
                 }

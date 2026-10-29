@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.10.115] - 2026-10-29
+### Added
+- **Tiling continu** : modes Libre et Tiling, profil indépendant par écran et Space, huit layouts persistants (Auto, Focus, Colonnes, Grille, Stack, Dwindle, Monocle, Canvas) pilotables dans Réglages et le menu. Les fenêtres standard compatibles ajoutées ensuite rejoignent la disposition active; le retour en mode Libre restaure leur géométrie d'origine.
+- **Rooms et previews** : une Room conserve son placement initial et le layout du Space reprend ensuite la main sans altérer la Room. Les previews des Réglages montrent l'arrivée successive de 1 à 6 fenêtres; celle du Canvas suit son viewport et sa mini-carte. Les profils sont inclus dans les sauvegardes de réglages v14.
+
 ## [2026.10.114] - 2026-10-28
 ### Added
 - **Minimap du Canvas** : pendant une session Canvas, une fine barre flotte en haut de chaque écran, façon OmniWM — toutes les colonnes du strip à l'échelle (paires de demi-hauteurs empilées), la colonne sélectionnée accentuée et la zone visible encadrée. Un clic sur une colonne y déplace le viewport et focus sa première fenêtre, sans voler le focus à la session (panneau non activant). La barre suit chaque déplacement : navigation clavier, défilement au trackpad et retiles ; elle disparaît quand le Canvas est libéré, suspendu ou sur un autre bureau. Réglages → Fenêtres → **Minimap du Canvas** pour l'éteindre (activée par défaut, incluse dans les sauvegardes). Géométrie pure isolée dans `CanvasMinimap` avec tests standalone : proportions des segments, clamp du viewport, paires demi-hauteur, mapping clic → colonne et garde-fous (strip vide, arrangement périmé). Vérifications CI : `canvas-minimap-checks`.

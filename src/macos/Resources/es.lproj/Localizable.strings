@@ -650,3 +650,34 @@
 "Tile Current Desktop" = "Organizar el escritorio actual";
 "Tile All Desktops" = "Organizar todos los escritorios";
 "Bento tiling fills each desktop separately, up to 12 windows per display. Windows shared across desktops are excluded." = "El mosaico bento llena cada escritorio por separado, con hasta 12 ventanas por pantalla. Se excluyen las ventanas compartidas entre varios escritorios.";
+
+/* Mosaico continuo */
+"Automatic" = "Automático";
+"Automatic resolves to %@" = "Automático elige %@";
+"Dwindle" = "Dwindle";
+"Monocle" = "Monocle";
+"Continuous tiling" = "Mosaico continuo";
+"Switch to Free mode" = "Volver al modo Libre";
+"Enable continuous tiling" = "Activar mosaico continuo";
+"Layout for this desktop" = "Diseño para este escritorio";
+"Enable tiling on this desktop" = "Activar mosaico en este escritorio";
+"Choose Free mode to position windows yourself, or keep a layout active as new windows arrive on this desktop." = "Elige el modo Libre para colocar las ventanas a tu gusto o mantén un diseño activo para organizar las nuevas ventanas de este escritorio.";
+"Automatically choose a comfortable arrangement as windows arrive." = "Elige automáticamente una distribución cómoda a medida que llegan ventanas.";
+"Keep one large main window and arrange the others beside it." = "Mantiene una ventana principal grande y organiza las demás a su lado.";
+"Give each window a column; new windows extend the row." = "Asigna una columna a cada ventana; las nuevas amplían la fila.";
+"Rebalance windows into equal cells as the grid grows." = "Redistribuye las ventanas en celdas iguales a medida que crece la cuadrícula.";
+"Keep a main window beside overlapping cards with accessible title bars." = "Mantiene una ventana principal junto a tarjetas superpuestas con barras de título accesibles.";
+"Split the remaining area recursively as each window arrives." = "Divide recursivamente el espacio restante cuando llega cada ventana.";
+"Show the selected window full-size; cycle through the others." = "Muestra la ventana seleccionada a tamaño completo y permite recorrer las demás.";
+"Scroll a two-row window strip horizontally, with a minimap." = "Desplaza horizontalmente una tira de ventanas en dos filas, con un minimapa.";
+"Pause preview" = "Pausar vista previa";
+"Play preview" = "Reproducir vista previa";
+"Replay preview" = "Repetir vista previa";
+"%@ layout preview, %d windows" = "Vista previa del diseño %@, %d ventanas";
+"Window %d" = "Ventana %d";
+"%d of 6 windows" = "%d de 6 ventanas";
+"Horizontal Canvas minimap" = "Minimapa del Canvas horizontal";
+"Tiling needs Accessibility permission." = "El mosaico necesita permiso de Accesibilidad.";
+"Room activation needs Accessibility permission." = "Para activar una Room se necesita permiso de Accesibilidad.";
+"No active desktop is available for tiling." = "No hay un escritorio activo disponible para el mosaico.";
+"Tiling preferences could not be saved." = "No se pudieron guardar las preferencias del mosaico.";
