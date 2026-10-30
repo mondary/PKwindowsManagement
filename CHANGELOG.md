@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.10.116] - 2026-10-30
+### Changed
+- Configuration de développement : Gortex v0.62.0, exclusions d’index adaptées au dépôt et serveur MCP OpenCode V2 limité à PKwindowsManagement (`--index` + `--watch`), autostart désactivé et chemins XDG dédiés. Serveur embarqué vérifié par recherche MCP du symbole Swift `CanvasLayout` ; aucun daemon partagé ou suivi multi-dépôts installé.
+### Fixed
+- Compilation `TilingLayoutPreview` : calcul de `step` en expression pure dans `@ViewBuilder` et import explicite de `Combine` dans `GeneralSettingsView`.
+
 ## [2026.10.115] - 2026-10-29
 ### Added
 - **Tiling continu** : modes Libre et Tiling, profil indépendant par écran et Space, huit layouts persistants (Auto, Focus, Colonnes, Grille, Stack, Dwindle, Monocle, Canvas) pilotables dans Réglages et le menu. Les fenêtres standard compatibles ajoutées ensuite rejoignent la disposition active; le retour en mode Libre restaure leur géométrie d'origine.

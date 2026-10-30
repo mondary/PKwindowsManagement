@@ -611,7 +611,7 @@ final class HorizontalCanvasService: ObservableObject {
             guard isCurrent(strip) else { strip.suspended = true; return }
             let entry = strip.entries[index]
             guard CanvasWindowAccess.id(entry.window) == entry.saved.id else { continue }
-            guard let column = CanvasLayout.slot(index: index, columns: strip.columns)?.column else { continue }
+            guard CanvasLayout.slot(index: index, columns: strip.columns) != nil else { continue }
             let target = placement(at: index)
             if let last = entry.lastFrame,
                abs(last.minX - target.frame.minX) < 0.5, abs(last.minY - target.frame.minY) < 0.5,

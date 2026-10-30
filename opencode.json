@@ -1,0 +1,24 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "gortex": {
+        "type": "local",
+        "command": [
+          "/Users/clm/.local/bin/gortex",
+          "mcp",
+          "--index",
+          "/Users/clm/Documents/GitHub/PROJECTS/Macos_PKwindowsManagement",
+          "--watch"
+        ],
+        "cwd": "/Users/clm/Documents/GitHub/PROJECTS/Macos_PKwindowsManagement",
+        "environment": {
+          "GORTEX_AUTOSTART": "0",
+          "XDG_CONFIG_HOME": "/Users/clm/.config/gortex-pkwindowsmanagement",
+          "XDG_CACHE_HOME": "/Users/clm/Library/Caches/Gortex/PKwindowsManagement",
+          "XDG_DATA_HOME": "/Users/clm/Library/Application Support/Gortex/PKwindowsManagement"
+        }
+      }
+    }
+  }
+}

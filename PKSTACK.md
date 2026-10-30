@@ -2,6 +2,8 @@
 
 Skills used for this project:
 
+- `gortex` — Gortex v0.62.0 installé dans `~/.local/bin` sans Homebrew ni modification du PATH. MCP OpenCode V2 local dans `opencode.json`, limité au dépôt avec `--index` + `--watch`, autostart du daemon désactivé et chemins XDG isolés du daemon global. `.gortex.yaml` exclut builds et sources vendor, autorisé explicitement malgré le catch-all `.*` de `.gitignore`. Aucun `gortex install`/`init`, daemon persistant ou suivi global.
+
 - Dev 115 — modes Libre/Tiling persistés par écran + Space, huit layouts dont Canvas intégré au moteur continu, adoption des nouvelles fenêtres et relais Room après placement initial. Réglages/menu, preview 1→6 fenêtres avec viewport/minimap Canvas, sauvegarde v14, géométrie et localisations FR/EN/ES/DE. Tests géométriques et analyse syntaxique Swift passent; build natif et QA visuelle bloqués (Xcode absent, plugin SwiftUI manquant des Command Line Tools). Aucune installation, capture ou publication; validation interactive encore requise.
 
 - Dev 113 — navigation verticale 2D du sélecteur : lignes réelles par section (fenêtres 4/3/2/1 colonnes, apps et rooms à colonnes calculées depuis la largeur), colonne conservée, passage de section au voisin le plus proche, bornage des lignes partielles et des extrémités ; ←/→ et ⇥ restent séquentiels. Tests purs (grille 3/10/2), build SDK 26.5, captures FR/EN et Dev installée.

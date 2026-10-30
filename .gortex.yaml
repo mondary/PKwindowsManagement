@@ -1,0 +1,12 @@
+index:
+  exclude:
+    - ".build/**"
+    - "build/**"
+    - "dist/**"
+    - "vendors/**"
+    - "store/website/**"
+    - "**/.DS_Store"
+    - "**/*.xcuserstate"
+
+mcp:
+  transport: stdio

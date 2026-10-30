@@ -38,14 +38,9 @@ struct TilingLayoutPreview: View {
             }
 
             TimelineView(.animation(minimumInterval: 1.1, paused: paused)) { timeline in
-                let step: Int
-                if reduceMotion {
-                    step = 6
-                } else if isPlaying {
-                    step = Int(timeline.date.timeIntervalSince(previewStart) / 1.1).modulo(6) + 1
-                } else {
-                    step = frozenStep
-                }
+                let step = reduceMotion
+                    ? 6
+                    : (isPlaying ? Int(timeline.date.timeIntervalSince(previewStart) / 1.1).modulo(6) + 1 : frozenStep)
                 preview(count: step)
             }
             .frame(height: 196)
