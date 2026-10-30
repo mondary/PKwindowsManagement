@@ -1,5 +1,17 @@
 # Changelog
 
+## [2026.10.117] - 2026-10-30
+### Added
+- **Modes de fenêtres Libre / Tiling / Strip** : `WorkspaceWindowMode` explicite par écran et Space (`displayWorkspaces`), sélectionnable dans Réglages → Fenêtres, le menu de la barre de menus (mode par écran), le Spotlight, les panneaux Rooms et `⌘Tab`. Le layout Tiling préféré est conservé pendant Strip et restauré au retour ; le cycle Libre → Tiling → Strip est disponible partout.
+- **Rooms à positions enregistrées** : `RoomWindow.savedFrame` (cadre normalisé par écran), `Room.useSavedFrames` et `Room.handoffPolicy` (Conserver le placement / Adopter le mode de l'écran), capture en un clic des fenêtres de l'écran (`captureScreenWindows`, `capturePositions`), restauration exacte et adaptation à l'écran de repli. Fichiers `rooms.json` v1/v2 décodés sans perte.
+- **Studios visuels des Réglages** : design system partagé `PKStudioDesignSystem` (Atelier Glass), cartes d'écrans et de modes avec illustrations, galerie visuelle des 7 layouts Tiling, studio Strip (OpenCanvas/OmniWM), curseurs de marges avec miniature en direct, page **CMD+Tab** dédiée avec aperçu interactif, studio Rooms avec scène positions/layout et politique de relais.
+- **Spotlight unifié** (`⌥Espace`) : recherche et filtres Apps / Rooms & Modes / Scripts & Liens, bascule de mode d'écran et activation de Rooms depuis les résultats.
+- Suite de tests `WorkspaceModeAndRoomSceneChecks` (transitions de modes, compatibilité profils, géométrie normalisée, migration Rooms, résolution de cadres) ajoutée à la CI.
+
+### Changed
+- Le panneau Rooms (`⌃⌥R`), le sélecteur `⌘Tab` et le Launchpad plein écran partagent la barre de modes Libre/Tiling/Strip et l'action **Enregistrer l'écran comme Room** ; le menu de la barre de menus expose les modes par écran et les Rooms.
+- README FR/EN synchronisés ; localisations FR/EN/ES/DE complétées (84 nouvelles clés).
+
 ## [2026.10.116] - 2026-10-30
 ### Changed
 - Configuration de développement : Gortex v0.62.0, exclusions d’index adaptées au dépôt et serveur MCP OpenCode V2 limité à PKwindowsManagement (`--index` + `--watch`), autostart désactivé et chemins XDG dédiés. Serveur embarqué vérifié par recherche MCP du symbole Swift `CanvasLayout` ; aucun daemon partagé ou suivi multi-dépôts installé.

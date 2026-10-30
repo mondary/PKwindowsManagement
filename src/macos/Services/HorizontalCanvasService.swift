@@ -14,6 +14,7 @@ final class HorizontalCanvasService: ObservableObject {
     @Published private(set) var message = ""
     @Published private(set) var inventoryMessage = ""
     @Published private(set) var currentWorkspace: TilingWorkspaceSnapshot?
+    @Published private(set) var displayWorkspaces: [TilingWorkspaceSnapshot] = []
     /// Main-thread snapshots for the minimap bars; rebuilt by publish() on
     /// the worker after every layout, scroll or selection change.
     @Published private(set) var minimaps: [CGDirectDisplayID: CanvasMinimap.Model] = [:]
@@ -139,25 +140,36 @@ final class HorizontalCanvasService: ObservableObject {
         tick()
     }
 
-    /// Refreshes the profile shown in settings/menu for the pointer's current
-    /// display and native Space. Selection is deliberately separate from the
-    /// worker-owned strip dictionary.
+    /// Refreshes the profile shown in settings/menu for every connected display
+    /// as well as the pointer's current display and native Space.
     func refreshCurrentWorkspace() {
         precondition(Thread.isMainThread)
         let context = Context.capture()
-        guard let display = context.displays.first(where: { $0.bounds.contains(context.pointer) })
+        let storedProfiles = TilingWorkspaceProfiles.load()
+        var allSnapshots: [TilingWorkspaceSnapshot] = []
+        for display in context.displays {
+            guard let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else { continue }
+            let key = TilingWorkspaceKey(displayUUID: display.uuid, spaceID: space)
+            let profile = TilingWorkspaceProfiles.profile(for: key, in: storedProfiles)
+            let index = NSScreen.screens.firstIndex {
+                ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID) == display.id
+            } ?? 0
+            allSnapshots.append(TilingWorkspaceSnapshot(
+                key: key,
+                displayID: display.id,
+                displayName: String(format: localizedString("Screen %d"), index + 1),
+                profile: profile
+            ))
+        }
+        if displayWorkspaces != allSnapshots {
+            displayWorkspaces = allSnapshots
+        }
+        guard let pointerDisplay = context.displays.first(where: { $0.bounds.contains(context.pointer) })
                 ?? context.displays.first,
-              let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else {
+              let snapshot = allSnapshots.first(where: { $0.displayID == pointerDisplay.id }) ?? allSnapshots.first else {
             currentWorkspace = nil
             return
         }
-        let key = TilingWorkspaceKey(displayUUID: display.uuid, spaceID: space)
-        let profile = TilingWorkspaceProfiles.profile(for: key, in: TilingWorkspaceProfiles.load())
-        let index = NSScreen.screens.firstIndex {
-            ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID) == display.id
-        } ?? 0
-        let snapshot = TilingWorkspaceSnapshot(key: key, displayID: display.id,
-            displayName: String(format: localizedString("Screen %d"), index + 1), profile: profile)
         if currentWorkspace != snapshot { currentWorkspace = snapshot }
     }
 
@@ -167,11 +179,23 @@ final class HorizontalCanvasService: ObservableObject {
     }
 
     func setCurrentTilingMode(_ mode: TilingMode) {
-        updateCurrentProfile { $0.mode = mode }
+        updateProfile(onDisplayUUID: nil) { $0.mode = mode }
     }
 
     func setCurrentLayout(_ layout: TilingLayoutKind) {
-        updateCurrentProfile { $0.layout = layout }
+        updateProfile(onDisplayUUID: nil) { $0.selectTilingLayout(layout) }
+    }
+
+    func setWorkspaceMode(_ mode: WorkspaceWindowMode, onDisplayUUID displayUUID: String? = nil) {
+        updateProfile(onDisplayUUID: displayUUID) { $0.setWorkspaceMode(mode) }
+    }
+
+    func cycleWorkspaceMode(onDisplayUUID displayUUID: String? = nil) {
+        updateProfile(onDisplayUUID: displayUUID) { $0.cycleWorkspaceMode() }
+    }
+
+    func setTilingLayout(_ layout: TilingLayoutKind, onDisplayUUID displayUUID: String? = nil) {
+        updateProfile(onDisplayUUID: displayUUID) { $0.selectTilingLayout(layout) }
     }
 
     /// One-shot snap commands leave continuous ownership on the current Space;
@@ -196,10 +220,20 @@ final class HorizontalCanvasService: ObservableObject {
     }
 
     private func updateCurrentProfile(_ update: (inout TilingWorkspaceProfile) -> Void) {
+        updateProfile(onDisplayUUID: nil, update)
+    }
+
+    private func updateProfile(onDisplayUUID displayUUID: String?, _ update: (inout TilingWorkspaceProfile) -> Void) {
         precondition(Thread.isMainThread)
         let context = Context.capture()
-        guard let display = context.displays.first(where: { $0.bounds.contains(context.pointer) })
-                ?? context.displays.first,
+        let selectedDisplay: Display?
+        if let displayUUID {
+            selectedDisplay = context.displays.first(where: { $0.uuid == displayUUID })
+        } else {
+            selectedDisplay = context.displays.first(where: { $0.bounds.contains(context.pointer) })
+                ?? context.displays.first
+        }
+        guard let display = selectedDisplay,
               let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else {
             message = localizedString("No active desktop is available for tiling.")
             return
@@ -436,13 +470,25 @@ final class HorizontalCanvasService: ObservableObject {
         }
     }
 
-    /// RoomEngine applies the room's saved geometry once. If continuous tiling
-    /// is enabled on the target Space, hold that workspace while the room is
-    /// laid out, then adopt the resulting frames as the tiler's new baseline.
+    /// RoomEngine applies the room's saved geometry once.
+    /// - If `room.handoffPolicy == .keepRoomPositions`, the target display switches/stays
+    ///   in Free mode so the Room's exact window positions remain undisturbed.
+    /// - If `room.handoffPolicy == .adoptWorkspaceMode` and continuous tiling/strip is
+    ///   enabled on the target Space, hold that workspace while the room is laid out,
+    ///   then adopt the resulting frames as the tiler's new baseline.
     func releaseForRoomActivation(_ room: Room, completion: @escaping (Bool) -> Void) {
         precondition(Thread.isMainThread)
         let context = Context.capture()
         let target = roomWorkspace(room, context: context)
+        if let target {
+            var profile = TilingWorkspaceProfiles.profile(for: target.key, in: TilingWorkspaceProfiles.load())
+            profile.activeRoomID = room.id
+            if room.handoffPolicy == .keepRoomPositions {
+                profile.setWorkspaceMode(.free)
+            }
+            _ = TilingWorkspaceProfiles.update(profile, for: target.key)
+            refreshCurrentWorkspace()
+        }
         queue.async {
             guard AXIsProcessTrusted() else {
                 self.report("Room activation needs Accessibility permission.")
@@ -456,7 +502,11 @@ final class HorizontalCanvasService: ObservableObject {
             if let target {
                 let profile = TilingWorkspaceProfiles.profile(for: target.key,
                     in: TilingWorkspaceProfiles.load())
-                if profile.mode == .tiling { self.roomHandoffs[room.id] = target.workspace }
+                if room.handoffPolicy == .adoptWorkspaceMode && profile.mode == .tiling {
+                    self.roomHandoffs[room.id] = target.workspace
+                } else {
+                    self.roomHandoffs.removeValue(forKey: room.id)
+                }
             }
             for (key, strip) in Array(self.strips) where self.isCurrent(strip) {
                 self.strips.removeValue(forKey: key)
@@ -470,6 +520,7 @@ final class HorizontalCanvasService: ObservableObject {
 
     func willTile(_ room: Room) -> Bool {
         precondition(Thread.isMainThread)
+        guard room.handoffPolicy == .adoptWorkspaceMode else { return false }
         let context = Context.capture()
         guard let target = roomWorkspace(room, context: context) else { return false }
         return TilingWorkspaceProfiles.profile(for: target.key,
@@ -484,9 +535,11 @@ final class HorizontalCanvasService: ObservableObject {
             return
         }
         let profile = TilingWorkspaceProfiles.profile(for: target.key, in: TilingWorkspaceProfiles.load())
+        refreshCurrentWorkspace()
         queue.async {
             let handoff = self.roomHandoffs.removeValue(forKey: room.id)
-            guard profile.mode == .tiling, handoff == target.workspace,
+            guard room.handoffPolicy == .adoptWorkspaceMode,
+                  profile.mode == .tiling, handoff == target.workspace,
                   self.isDesktopCurrent(target.key.spaceID, display: target.display) else { return }
             self.activate(workspace: target.workspace, display: target.display,
                           space: target.key.spaceID, profile: profile, context: context)

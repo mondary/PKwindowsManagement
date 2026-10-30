@@ -11,27 +11,31 @@ struct CompactLaunchpadRootView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(themeBackground)
             .foregroundColor(themeForeground)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.14), lineWidth: 1)
+            )
     }
 
     @ViewBuilder
     private var themeBackground: some View {
         switch settings.compactLaunchpadTheme {
         case .light:
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(red: 0.96, green: 0.96, blue: 0.97))
-                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 8)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(red: 0.96, green: 0.96, blue: 0.98))
+                .shadow(color: .black.opacity(0.12), radius: 22, x: 0, y: 10)
         case .dark:
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(red: 0.11, green: 0.11, blue: 0.12))
-                .shadow(color: .black.opacity(0.4), radius: 20, x: 0, y: 8)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(red: 0.10, green: 0.11, blue: 0.13))
+                .shadow(color: .black.opacity(0.45), radius: 22, x: 0, y: 10)
         case .catpuccin:
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(Color(red: 0.12, green: 0.11, blue: 0.16))
-                .shadow(color: Color(red: 0.55, green: 0.34, blue: 0.65).opacity(0.2), radius: 20, x: 0, y: 8)
+                .shadow(color: Color(red: 0.55, green: 0.34, blue: 0.65).opacity(0.24), radius: 22, x: 0, y: 10)
         case .glass:
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(.ultraThinMaterial)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.regularMaterial)
         }
     }
 
@@ -45,76 +49,182 @@ struct CompactLaunchpadRootView: View {
     }
 }
 
+private enum SpotlightScope: String, CaseIterable, Identifiable {
+    case all
+    case apps
+    case roomsAndModes
+    case snippets
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all: localizedString("All")
+        case .apps: localizedString("Applications")
+        case .roomsAndModes: localizedString("Rooms & Modes")
+        case .snippets: localizedString("Scripts & Links")
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .all: "sparkles"
+        case .apps: "square.grid.2x2"
+        case .roomsAndModes: "rectangle.3.group"
+        case .snippets: "bolt.horizontal.fill"
+        }
+    }
+}
+
+private enum SpotlightItem: Identifiable {
+    case app(LaunchableApp)
+    case room(Room)
+    case windowMode(WorkspaceWindowMode)
+
+    var id: String {
+        switch self {
+        case .app(let app): "app:\(app.id)"
+        case .room(let room): "room:\(room.id)"
+        case .windowMode(let mode): "mode:\(mode.rawValue)"
+        }
+    }
+}
+
 struct CompactLaunchpadView: View {
     @ObservedObject var settings: AppSettings
+    @ObservedObject private var roomStore = RoomStore.shared
+    @ObservedObject private var canvas = HorizontalCanvasService.shared
     @State private var query = ""
+    @State private var scope: SpotlightScope = .all
     @State private var selectedIndex = 0
     @State private var appCatalog: [LaunchableApp] = []
     @State private var commandFeedbackMessage: String?
     @FocusState private var searchFocused: Bool
     private let launcher = AppLauncherService()
 
-    private var apps: [LaunchableApp] {
-        let all = launcher.launcherCommands() + launcher.loadSnippets(settings: settings) + appCatalog
+    private var entries: [SpotlightItem] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return all }
         let needle = trimmed.lowercased()
-        return all.filter {
-            $0.name.lowercased().contains(needle)
-                || $0.bundleID.lowercased().contains(needle)
-                || $0.snippet?.searchText.lowercased().contains(needle) == true
-                || matchesLauncherCommand($0, needle: needle)
+
+        let modeItems: [SpotlightItem] = WorkspaceWindowMode.allCases.compactMap { mode in
+            guard scope == .all || scope == .roomsAndModes else { return nil }
+            if needle.isEmpty {
+                return scope == .roomsAndModes ? .windowMode(mode) : nil
+            }
+            let hay = "\(mode.title) \(mode.shortTitle) \(mode.subtitle) strip opencanvas omniwm tiling libre free".lowercased()
+            return hay.contains(needle) ? .windowMode(mode) : nil
+        }
+
+        let roomItems: [SpotlightItem] = roomStore.rooms.compactMap { room in
+            guard scope == .all || scope == .roomsAndModes else { return nil }
+            guard needle.isEmpty || room.matches(needle) || "room rooms scene".contains(needle) else { return nil }
+            return .room(room)
+        }
+
+        let snippetApps = launcher.launcherCommands() + launcher.loadSnippets(settings: settings)
+        let regularApps = appCatalog
+
+        let candidateApps: [LaunchableApp]
+        switch scope {
+        case .all:
+            candidateApps = snippetApps + regularApps
+        case .apps:
+            candidateApps = regularApps
+        case .roomsAndModes:
+            candidateApps = []
+        case .snippets:
+            candidateApps = snippetApps
+        }
+
+        let filteredApps: [SpotlightItem] = candidateApps.compactMap { app in
+            guard !needle.isEmpty else { return .app(app) }
+            let match = app.name.lowercased().contains(needle)
+                || app.bundleID.lowercased().contains(needle)
+                || app.snippet?.searchText.lowercased().contains(needle) == true
+                || matchesLauncherCommand(app, needle: needle)
+            return match ? .app(app) : nil
+        }
+
+        if !needle.isEmpty {
+            return modeItems + roomItems + filteredApps
+        }
+        switch scope {
+        case .all:
+            return roomItems.prefix(3).map { $0 } + filteredApps
+        case .roomsAndModes:
+            return modeItems + roomItems
+        case .apps, .snippets:
+            return filteredApps
         }
     }
 
     var body: some View {
         let calcState = LaunchpadCalculator.evaluate(query)
-        let visibleApps = calcState == nil ? apps : []
+        let visibleItems = calcState == nil ? entries : []
 
         VStack(spacing: 0) {
             searchBar
+
+            scopeAndModeStrip
+                .padding(.horizontal, 14)
+                .padding(.bottom, 10)
 
             Divider()
 
             if let calcState {
                 calculatorPanel(for: calcState)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if visibleApps.isEmpty {
-                Text("No results")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if visibleItems.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 26, weight: .light))
+                        .foregroundStyle(.secondary)
+                    Text(localizedString("No results"))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: true) {
-                        LazyVStack(spacing: 2) {
-                            ForEach(Array(visibleApps.enumerated()), id: \.element.id) { index, app in
-                                CompactAppRow(app: app, isSelected: index == selectedIndex)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        launch(app)
-                                    }
-                                    .id(app.id)
+                        LazyVStack(spacing: 4) {
+                            ForEach(Array(visibleItems.enumerated()), id: \.element.id) { index, item in
+                                SpotlightRow(
+                                    item: item,
+                                    isSelected: index == selectedIndex,
+                                    activeMode: canvas.currentWorkspace?.profile.workspaceMode ?? .free
+                                )
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    activate(item)
+                                }
+                                .id(item.id)
                             }
                         }
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
                     }
                     .onChange(of: selectedIndex) { idx in
-                        guard idx < visibleApps.count else { return }
+                        guard idx < visibleItems.count else { return }
                         withAnimation(.easeOut(duration: 0.1)) {
-                            proxy.scrollTo(visibleApps[idx].id, anchor: .center)
+                            proxy.scrollTo(visibleItems[idx].id, anchor: .center)
                         }
                     }
                 }
             }
+
+            Divider()
+
+            spotlightFooter
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
             CompactKeyMonitor { event in
-                handleKey(event, apps: visibleApps, calcState: calcState)
+                handleKey(event, items: visibleItems, calcState: calcState)
             }
         )
         .onAppear {
+            canvas.refreshCurrentWorkspace()
             launcher.loadAppsAsync(settings: settings) { apps in
                 appCatalog = apps
                 selectedIndex = 0
@@ -124,6 +234,9 @@ struct CompactLaunchpadView: View {
             }
         }
         .onChange(of: query) { _ in
+            selectedIndex = 0
+        }
+        .onChange(of: scope) { _ in
             selectedIndex = 0
         }
         .onExitCommand {
@@ -139,11 +252,11 @@ struct CompactLaunchpadView: View {
     private var searchBar: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 18, weight: .medium))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.secondary)
-            TextField("Search apps, commands, snippets…", text: $query)
+            TextField(localizedString("Search apps, rooms, window modes, snippets…"), text: $query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 20, weight: .medium))
+                .font(.system(size: 18, weight: .medium, design: .rounded))
                 .focused($searchFocused)
                 .onSubmit { handleEnter() }
             if !query.isEmpty {
@@ -152,14 +265,84 @@ struct CompactLaunchpadView: View {
                     searchFocused = true
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
+                        .font(.system(size: 15))
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
+    }
+
+    private var scopeAndModeStrip: some View {
+        HStack(spacing: 6) {
+            ForEach(SpotlightScope.allCases) { item in
+                let active = scope == item
+                Button {
+                    scope = item
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: item.icon)
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(item.title)
+                            .font(.system(size: 11, weight: active ? .bold : .medium, design: .rounded))
+                    }
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4.5)
+                    .background(
+                        Capsule()
+                            .fill(active ? Color.accentColor.opacity(0.20) : Color.primary.opacity(0.06))
+                    )
+                    .foregroundStyle(active ? Color.accentColor : .secondary)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer(minLength: 4)
+
+            if let ws = canvas.currentWorkspace {
+                let mode = ws.profile.workspaceMode
+                let modeColor = PKStudioPalette.color(for: mode)
+                Button {
+                    canvas.cycleWorkspaceMode()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: mode.symbolName)
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(mode.shortTitle)
+                            .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                    }
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4.5)
+                    .background(modeColor.opacity(0.18), in: Capsule())
+                    .foregroundStyle(modeColor)
+                }
+                .buttonStyle(.plain)
+                .help(localizedString("Click to cycle window mode (Free → Tiling → Strip)"))
+            }
+        }
+    }
+
+    private var spotlightFooter: some View {
+        HStack(spacing: 12) {
+            Text("↑↓ \(localizedString("Navigate"))")
+            Text("⇥ \(localizedString("Filter"))")
+            Text("↵ \(localizedString("Open"))")
+            Spacer()
+            Button {
+                LaunchpadOverlayController.shared.hide()
+                SettingsWindowController.shared.showSettings()
+            } label: {
+                Label(localizedString("Settings"), systemImage: "slider.horizontal.3")
+            }
+            .buttonStyle(.plain)
+        }
+        .font(.system(size: 10.5, weight: .medium, design: .rounded))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 
     @ViewBuilder
@@ -173,7 +356,7 @@ struct CompactLaunchpadView: View {
                 Text(result.displayValue)
                     .font(.system(size: 40, weight: .semibold, design: .rounded))
                     .monospacedDigit()
-                Text("Press Enter to copy")
+                Text(localizedString("Press Enter to copy"))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -183,7 +366,7 @@ struct CompactLaunchpadView: View {
                 Text(message)
                     .font(.system(size: 24, weight: .semibold, design: .rounded))
                     .foregroundStyle(.red)
-                Text("Check the expression")
+                Text(localizedString("Check the expression"))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -191,13 +374,22 @@ struct CompactLaunchpadView: View {
         }
     }
 
-    private func handleKey(_ event: NSEvent, apps: [LaunchableApp], calcState: LaunchpadCalculatorState?) -> Bool {
+    private func handleKey(_ event: NSEvent, items: [SpotlightItem], calcState: LaunchpadCalculatorState?) -> Bool {
         if event.keyCode == 53 {
             if query.isEmpty {
                 LaunchpadOverlayController.shared.hide()
             } else {
                 query = ""
                 searchFocused = true
+            }
+            return true
+        }
+
+        // Tab cycles scope
+        if event.keyCode == 48 {
+            let all = SpotlightScope.allCases
+            if let idx = all.firstIndex(of: scope) {
+                scope = all[(idx + 1) % all.count]
             }
             return true
         }
@@ -211,17 +403,17 @@ struct CompactLaunchpadView: View {
             return false
         }
 
-        guard !apps.isEmpty else { return false }
+        guard !items.isEmpty else { return false }
 
         switch event.keyCode {
         case 125:
-            selectedIndex = min(selectedIndex + 1, apps.count - 1)
+            selectedIndex = min(selectedIndex + 1, items.count - 1)
             return true
         case 126:
             selectedIndex = max(selectedIndex - 1, 0)
             return true
         case 36, 76:
-            launch(apps[selectedIndex])
+            activate(items[selectedIndex])
             return true
         default:
             return false
@@ -235,16 +427,34 @@ struct CompactLaunchpadView: View {
             LaunchpadOverlayController.shared.hide()
             return
         }
-        guard !apps.isEmpty else { return }
-        launch(apps[selectedIndex])
+        let visible = entries
+        guard visible.indices.contains(selectedIndex) else { return }
+        activate(visible[selectedIndex])
     }
 
-    private func launch(_ app: LaunchableApp) {
-        if let message = launcher.launch(app, settings: settings) {
-            commandFeedbackMessage = message
-            return
+    private func activate(_ item: SpotlightItem) {
+        switch item {
+        case .app(let app):
+            if let message = launcher.launch(app, settings: settings) {
+                commandFeedbackMessage = message
+                return
+            }
+            LaunchpadOverlayController.shared.hide()
+        case .room(let room):
+            LaunchpadOverlayController.shared.hide()
+            let claimed = roomStore.claimedWindowIDs(excluding: room.id)
+            let keepMonocle = canvas.willTile(room)
+            canvas.releaseForRoomActivation(room) { released in
+                guard released else { return }
+                Task {
+                    _ = await RoomEngine().activate(room, claimed: claimed, keepMonocleWindowsVisible: keepMonocle)
+                    await MainActor.run { canvas.resumeAfterRoomActivation(room) }
+                }
+            }
+        case .windowMode(let mode):
+            canvas.setWorkspaceMode(mode)
+            LaunchpadOverlayController.shared.hide()
         }
-        LaunchpadOverlayController.shared.hide()
     }
 
     private func copyToClipboard(_ value: String) {
@@ -272,32 +482,100 @@ struct CompactLaunchpadView: View {
     }
 }
 
-private struct CompactAppRow: View {
-    let app: LaunchableApp
+private struct SpotlightRow: View {
+    let item: SpotlightItem
     let isSelected: Bool
+    let activeMode: WorkspaceWindowMode
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(nsImage: app.icon)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
+            switch item {
+            case .app(let app):
+                Image(nsImage: app.icon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 28, height: 28)
+
+                Text(app.name)
+                    .font(.system(size: 14.5, weight: .medium, design: .rounded))
+                    .lineLimit(1)
+
+                Spacer()
+
+                if let shortcut = app.shortcut {
+                    ShortcutKeyBadge(shortcut: shortcut, compact: true)
+                }
+
+            case .room(let room):
+                ZStack {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(PKStudioPalette.roomsAccent.opacity(0.18))
+                    Image(systemName: (room.useSavedFrames && room.hasSavedFrames) ? "mappin.and.ellipse" : "rectangle.3.group.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(PKStudioPalette.roomsAccent)
+                }
                 .frame(width: 28, height: 28)
 
-            Text(app.name)
-                .font(.system(size: 15, weight: .medium))
-                .lineLimit(1)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(room.name)
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .lineLimit(1)
+                    Text("\(room.windows.count) window(s) · \(room.placementModeSummary)")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
 
-            Spacer()
+                Spacer()
 
-            if let shortcut = app.shortcut {
-                ShortcutKeyBadge(shortcut: shortcut, compact: true)
+                Text("Room")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(PKStudioPalette.roomsAccent.opacity(0.16), in: Capsule())
+                    .foregroundStyle(PKStudioPalette.roomsAccent)
+
+            case .windowMode(let mode):
+                let color = PKStudioPalette.color(for: mode)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(color.opacity(0.18))
+                    Image(systemName: mode.symbolName)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(color)
+                }
+                .frame(width: 28, height: 28)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(mode.title)
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    Text(mode.subtitle)
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                if activeMode == mode {
+                    Text(localizedString("Active"))
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(color.opacity(0.18), in: Capsule())
+                        .foregroundStyle(color)
+                }
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(isSelected ? Color.accentColor.opacity(0.20) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(isSelected ? Color.accentColor.opacity(0.65) : Color.clear, lineWidth: 1)
         )
         .contentShape(Rectangle())
     }

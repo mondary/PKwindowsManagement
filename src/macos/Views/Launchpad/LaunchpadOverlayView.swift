@@ -136,7 +136,72 @@ struct LaunchpadOverlayView: View {
     }
 
     private var topBar: some View {
-        HStack {
+        HStack(spacing: 12) {
+            HStack(spacing: 6) {
+                ForEach(WorkspaceWindowMode.allCases) { mode in
+                    let current = HorizontalCanvasService.shared.currentWorkspace?.profile.workspaceMode ?? .free
+                    let active = current == mode
+                    Button {
+                        HorizontalCanvasService.shared.setWorkspaceMode(mode)
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: mode.symbolName)
+                                .font(.system(size: 11, weight: .semibold))
+                            Text(mode.shortTitle)
+                                .font(.system(size: 11.5, weight: active ? .bold : .medium, design: .rounded))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(active ? Color.white.opacity(0.24) : Color.white.opacity(0.08))
+                        )
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(active ? Color.white.opacity(0.55) : Color.white.opacity(0.14), lineWidth: 1)
+                        )
+                        .foregroundStyle(.white.opacity(active ? 0.98 : 0.72))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Button {
+                    LaunchpadOverlayController.shared.hide()
+                    RoomsOverlayController.shared.show()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "rectangle.3.group")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("Rooms")
+                            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color.white.opacity(0.10)))
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.16), lineWidth: 1))
+                    .foregroundStyle(.white.opacity(0.85))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    LaunchpadOverlayController.shared.hide()
+                    WindowSwitcherController.shared.show()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "rectangle.on.rectangle.angled")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("CMD+Tab")
+                            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color.white.opacity(0.10)))
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.16), lineWidth: 1))
+                    .foregroundStyle(.white.opacity(0.85))
+                }
+                .buttonStyle(.plain)
+            }
+
             Spacer()
             Text(appVersionLabel)
                 .font(.system(size: 13, weight: .medium, design: .monospaced))

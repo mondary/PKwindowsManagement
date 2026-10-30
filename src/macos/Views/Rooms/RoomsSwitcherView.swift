@@ -13,6 +13,7 @@ final class RoomsSwitcherModel: ObservableObject {
     @Published var editingRoom: Room?
     @Published var newName = ""
     @Published var newLayout: RoomLayoutKind = .auto
+    @Published var newUseSavedFrames: Bool = true
     /// Windows picked for the new room, in click order: index 0 is the main spot.
     @Published var picked: [RoomEngine.WindowOffer] = []
     @Published var offers: [RoomEngine.WindowOffer] = []
@@ -47,10 +48,35 @@ final class RoomsSwitcherModel: ObservableObject {
     func beginCreation() {
         newName = query.trimmingCharacters(in: .whitespacesAndNewlines)
         newLayout = .auto
+        newUseSavedFrames = true
         picked = []
         offerSelection = 0
         isCreating = true
         refreshOffers()
+    }
+
+    func captureCurrentScreenIntoDraft() {
+        let fallbackName = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        newName = fallbackName.isEmpty
+            ? String(format: localizedString("Scene %d"), store.rooms.count + 1)
+            : fallbackName
+        newLayout = .auto
+        newUseSavedFrames = true
+        isCreating = true
+        screens = RoomEngine.connectedScreens()
+        loadingOffers = true
+        let targetUUID = HorizontalCanvasService.shared.currentWorkspace?.key.displayUUID
+        newDisplayUUID = targetUUID
+        RoomEngine.loadWindowOffers { offers in
+            self.offers = offers
+            if let targetUUID {
+                let onDisplay = offers.filter { $0.displayUUID == targetUUID }
+                self.picked = onDisplay.isEmpty ? offers : onDisplay
+            } else {
+                self.picked = offers
+            }
+            self.loadingOffers = false
+        }
     }
 
     /// Called each time the panel opens.
@@ -230,10 +256,22 @@ final class RoomsSwitcherModel: ObservableObject {
     func createRoom() {
         guard canCreateRoom else { return }
         let windows = picked.map { offer in
-            RoomWindow(bundleID: offer.bundleID, appName: offer.appName, title: offer.title, windowID: offer.windowID)
+            RoomWindow(
+                bundleID: offer.bundleID,
+                appName: offer.appName,
+                title: offer.title,
+                windowID: offer.windowID,
+                savedFrame: offer.normalizedFrame
+            )
         }
-        let room = Room(name: newName.trimmingCharacters(in: .whitespaces), windows: windows,
-                        layout: newLayout, displayUUID: newDisplayUUID)
+        let room = Room(
+            name: newName.trimmingCharacters(in: .whitespaces),
+            windows: windows,
+            layout: newLayout,
+            displayUUID: newDisplayUUID,
+            useSavedFrames: newUseSavedFrames,
+            handoffPolicy: newUseSavedFrames ? .keepRoomPositions : .adoptWorkspaceMode
+        )
         store.upsert(room)
         isCreating = false
         newName = ""
@@ -266,7 +304,7 @@ struct RoomsSwitcherView: View {
                 ListView(model: model, onActivateRoom: onActivateRoom)
             }
         }
-        .frame(width: 560, height: 540)
+        .frame(width: 600, height: 575)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
             .strokeBorder(.primary.opacity(0.12), lineWidth: 1))
@@ -283,7 +321,10 @@ private struct ListView: View {
     @FocusState private var searchFocused: Bool
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 11) {
+            PKOverlayModeSwitcherBar(onCaptureRoom: {
+                model.captureCurrentScreenIntoDraft()
+            })
             searchField
             if model.isChoosingLayout || model.isChoosingAction {
                 RoomMenuView(model: model, onActivateRoom: onActivateRoom)
@@ -542,23 +583,30 @@ private struct RoomRowView: View {
                     }
                 }
                 .padding(.top, 1)
-                Text(room.layout.title)
-                    .font(.system(size: 9.5, weight: .medium))
+                HStack(spacing: 6) {
+                    HStack(spacing: 4) {
+                        Image(systemName: (room.useSavedFrames && room.hasSavedFrames) ? "mappin.and.ellipse" : "square.grid.2x2")
+                            .font(.system(size: 8.5, weight: .semibold))
+                        Text(room.placementModeSummary)
+                            .font(.system(size: 9.5, weight: .medium))
+                    }
                     .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 2.5)
                     .background(Capsule().fill(isSelected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.06)))
-                if let screenName {
-                    Text(screenName)
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 2.5)
-                        .background(Capsule().fill(Color.primary.opacity(0.06)))
+
+                    if let screenName {
+                        Text(screenName)
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2.5)
+                            .background(Capsule().fill(Color.primary.opacity(0.06)))
+                    }
                 }
             }
             Spacer(minLength: 10)
-            RoomLayoutDiagram(windows: room.windows, kind: room.layout, focusedWindowIndex: room.focusedWindowIndex)
+            RoomLayoutDiagram(room: room)
                 .frame(width: 150)
         }
         .padding(12)
@@ -690,18 +738,51 @@ private struct CreationView: View {
             }
 
             screenPicker(model: model)
-            Button {
-                model.beginLayoutSelection()
-            } label: {
-                HStack {
-                    Text(localizedString("Layout"))
-                    Text(model.newLayout.title).fontWeight(.semibold)
-                    Image(systemName: "chevron.down")
+            HStack(spacing: 8) {
+                Button {
+                    model.newUseSavedFrames = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "mappin.and.ellipse")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(localizedString("Saved positions"))
+                            .font(.system(size: 11, weight: model.newUseSavedFrames ? .bold : .medium, design: .rounded))
+                    }
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(model.newUseSavedFrames ? PKStudioPalette.roomsAccent.opacity(0.18) : Color.primary.opacity(0.06))
+                    )
+                    .foregroundStyle(model.newUseSavedFrames ? PKStudioPalette.roomsAccent : .secondary)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .buttonStyle(.plain)
+
+                Button {
+                    model.newUseSavedFrames = false
+                    model.beginLayoutSelection()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text("\(localizedString("Layout")): \(model.newLayout.title)")
+                            .font(.system(size: 11, weight: !model.newUseSavedFrames ? .bold : .medium, design: .rounded))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 9, weight: .semibold))
+                    }
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(!model.newUseSavedFrames ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.06))
+                    )
+                    .foregroundStyle(!model.newUseSavedFrames ? Color.accentColor : .secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(localizedString("Layout")): \(model.newLayout.title)")
+
+                Spacer()
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(localizedString("Layout")): \(model.newLayout.title)")
 
             if model.loadingOffers {
                 Spacer()
@@ -741,8 +822,12 @@ private struct CreationView: View {
 
             if !model.picked.isEmpty {
                 RoomLayoutDiagram(
-                    windows: model.picked.map { RoomWindow(bundleID: $0.bundleID, appName: $0.appName, title: $0.title, windowID: $0.windowID) },
-                    kind: model.newLayout
+                    windows: model.picked.map {
+                        RoomWindow(bundleID: $0.bundleID, appName: $0.appName, title: $0.title,
+                                   windowID: $0.windowID, savedFrame: $0.normalizedFrame)
+                    },
+                    kind: model.newLayout,
+                    useSavedFrames: model.newUseSavedFrames
                 )
                 .frame(width: 220)
             }

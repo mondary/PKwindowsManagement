@@ -80,6 +80,7 @@ private struct SettingsContentView: View {
 private struct RootDashboardView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject private var updater = UpdaterManager.shared
+    @ObservedObject private var canvas = HorizontalCanvasService.shared
     @State private var selection: SettingsSection? = .windows
 
     static var appIcon: NSImage? {
@@ -117,6 +118,8 @@ private struct RootDashboardView: View {
                         WindowShortcutsPreferencesView(settings: settings)
                     case .rooms:
                         RoomsPreferencesView()
+                    case .windowSwitcher:
+                        WindowSwitcherSettingsView(settings: settings)
                     case .launchpad:
                         LaunchpadView(settings: settings)
                     case .appearance:
@@ -153,6 +156,10 @@ private struct RootDashboardView: View {
         .onReceive(NotificationCenter.default.publisher(for: SettingsWindowController.roomsRequested)) { _ in
             searchText = ""
             selection = .rooms
+        }
+        .onReceive(NotificationCenter.default.publisher(for: SettingsWindowController.switcherRequested)) { _ in
+            searchText = ""
+            selection = .windowSwitcher
         }
         .alert(localizedString(updater.switchOffer?.isUpdate == true ? "Install update?" : "Switch channel?"), isPresented: Binding(
             get: { updater.switchOffer != nil },
@@ -205,14 +212,35 @@ private struct RootDashboardView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("PKwindowsManagement")
                         .font(.headline)
-                    Text(localizedString("Window management"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let ws = canvas.currentWorkspace {
+                        let mode = ws.profile.workspaceMode
+                        let color = PKStudioPalette.color(for: mode)
+                        Button {
+                            canvas.cycleWorkspaceMode()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: mode.symbolName)
+                                    .font(.system(size: 9, weight: .bold))
+                                Text("\(ws.displayName) · \(mode.shortTitle)")
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                            }
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2)
+                            .background(color.opacity(0.16), in: Capsule())
+                            .foregroundStyle(color)
+                        }
+                        .buttonStyle(.plain)
+                        .help(localizedString("Click to cycle window mode (Free → Tiling → Strip)"))
+                    } else {
+                        Text(localizedString("Window management"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .padding(.horizontal, 18)
             .padding(.top, 22)
-            .padding(.bottom, 18)
+            .padding(.bottom, 14)
 
             Text(localizedString("Settings").uppercased())
                 .font(.system(size: 10, weight: .bold))
@@ -353,6 +381,7 @@ private struct RootDashboardView: View {
 private enum SettingsSection: String, CaseIterable, Identifiable {
     case windows
     case rooms
+    case windowSwitcher
     case launchpad
     case appearance
     case snippets
@@ -374,7 +403,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     var category: String {
         switch self {
         case .general: "APP"
-        case .windows, .rooms, .launchpad, .appearance, .bigYear, .snippets, .urls: "FEATURES"
+        case .windows, .rooms, .windowSwitcher, .launchpad, .appearance, .bigYear, .snippets, .urls: "FEATURES"
         case .ai: "AI"
         case .library, .support, .about, .credits: "PK PROJECTS"
         }
@@ -393,9 +422,10 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         let details: String
         switch self {
         case .general: details = "general général système system language langue accessibilité accessibility sauvegarde backup"
-        case .windows: details = "canvas open canvas horizontal margins marges fenêtres windows aperçus previews switcher cmd tab quitter quit"
+        case .windows: details = "canvas open canvas strip omniwm horizontal margins marges fenêtres windows tiling libre free"
         case .rooms: details = "rooms room projets projects espaces fenêtres windows disposition layout écran screen salles räume habitaciones"
-        case .launchpad: details = "activation hot corner coin actif raccourci shortcut applications"
+        case .windowSwitcher: details = "cmd tab alt tab switcher aperçus previews miniatures thumbnails fenêtres windows applications"
+        case .launchpad: details = "activation hot corner coin actif raccourci shortcut applications spotlight"
         case .appearance: details = "style theme thème organisation organization groupes categories catégories grille grid navigation"
         case .snippets: details = "snippets scripts raccourcis commands commandes"
         case .urls: details = "urls liens web links navigateur browser raccourcis"
@@ -409,6 +439,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .general: localizedString("System")
         case .windows: localizedString("Windows")
         case .rooms: "Rooms"
+        case .windowSwitcher: "CMD+Tab"
         case .launchpad: "Launchpad"
         case .bigYear: "Big Year"
         case .appearance: localizedString("Appearance")
@@ -427,7 +458,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .general: "gearshape"
         case .windows: "rectangle.split.2x1"
         case .rooms: "rectangle.3.group"
-        case .launchpad: "rectangle.3.group"
+        case .windowSwitcher: "rectangle.on.rectangle.angled"
+        case .launchpad: "sparkles.rectangle.stack"
         case .bigYear: "calendar"
         case .appearance: "paintbrush"
         case .snippets: "doc.on.doc"

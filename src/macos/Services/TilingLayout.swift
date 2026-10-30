@@ -42,6 +42,24 @@ enum TilingLayoutKind: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    var symbolName: String {
+        switch self {
+        case .automatic: "sparkles.rectangle.stack"
+        case .focus: "sidebar.left"
+        case .columns: "rectangle.split.3x1"
+        case .grid: "square.grid.2x2"
+        case .stack: "square.stack.3d.down.right"
+        case .dwindle: "rectangle.split.2x2"
+        case .monocle: "rectangle.inset.filled"
+        case .canvas: "scroll"
+        }
+    }
+
+    /// Layouts dedicated to standard screen tiling (excludes the horizontal Strip/Canvas).
+    static var tilingCases: [TilingLayoutKind] {
+        allCases.filter { $0 != .canvas }
+    }
+
     /// Existing Room geometry is also used by the continuous engine and its
     /// previews. `.canvas` is handled by CanvasLayout instead.
     var roomLayout: RoomLayoutKind? {
@@ -63,10 +81,128 @@ enum TilingMode: String, Codable {
     case tiling
 }
 
+/// First-class window management mode per display/Space:
+/// - `free`: macOS free placement + manual snap/Room scenes
+/// - `tiling`: automatic screen tiling (Auto, Focus, Columns, Grid, Stack, Dwindle, Monocle)
+/// - `strip`: continuous horizontal scrolling ribbon (OpenCanvas / OmniWM style)
+enum WorkspaceWindowMode: String, Codable, CaseIterable, Identifiable {
+    case free
+    case tiling
+    case strip
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .free: localizedString("Free Mode")
+        case .tiling: localizedString("Tiling Mode")
+        case .strip: localizedString("Strip · OpenCanvas")
+        }
+    }
+
+    var shortTitle: String {
+        switch self {
+        case .free: localizedString("Free")
+        case .tiling: localizedString("Tiling")
+        case .strip: localizedString("Strip")
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .free: localizedString("Position windows freely, snap on demand or restore saved Room positions.")
+        case .tiling: localizedString("Automatically arrange open and new windows on this screen.")
+        case .strip: localizedString("Continuous horizontal ribbon (OpenCanvas / OmniWM) with minimap and trackpad scroll.")
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .free: "macwindow.on.rectangle"
+        case .tiling: "rectangle.split.3x1"
+        case .strip: "rectangle.3.group.fill"
+        }
+    }
+}
+
 /// Persisted independently per connected display and native desktop Space.
 struct TilingWorkspaceProfile: Codable, Equatable {
     var mode: TilingMode = .free
     var layout: TilingLayoutKind = .automatic
+    var preferredTilingLayout: TilingLayoutKind? = nil
+    var activeRoomID: String? = nil
+
+    init(mode: TilingMode = .free,
+         layout: TilingLayoutKind = .automatic,
+         preferredTilingLayout: TilingLayoutKind? = nil,
+         activeRoomID: String? = nil) {
+        self.mode = mode
+        self.layout = layout
+        self.preferredTilingLayout = preferredTilingLayout
+        self.activeRoomID = activeRoomID
+    }
+
+    var workspaceMode: WorkspaceWindowMode {
+        get {
+            guard mode == .tiling else { return .free }
+            return layout == .canvas ? .strip : .tiling
+        }
+        set {
+            setWorkspaceMode(newValue)
+        }
+    }
+
+    var effectiveTilingLayout: TilingLayoutKind {
+        if layout != .canvas { return layout }
+        if let preferredTilingLayout, preferredTilingLayout != .canvas {
+            return preferredTilingLayout
+        }
+        return .automatic
+    }
+
+    mutating func setWorkspaceMode(_ newMode: WorkspaceWindowMode) {
+        switch newMode {
+        case .free:
+            if mode == .tiling && layout != .canvas {
+                preferredTilingLayout = layout
+            }
+            mode = .free
+        case .tiling:
+            mode = .tiling
+            activeRoomID = nil
+            if layout == .canvas {
+                layout = effectiveTilingLayout
+            } else {
+                preferredTilingLayout = layout
+            }
+        case .strip:
+            if layout != .canvas {
+                preferredTilingLayout = layout
+            }
+            mode = .tiling
+            layout = .canvas
+            activeRoomID = nil
+        }
+    }
+
+    mutating func selectTilingLayout(_ newLayout: TilingLayoutKind) {
+        if newLayout == .canvas {
+            setWorkspaceMode(.strip)
+        } else {
+            preferredTilingLayout = newLayout
+            layout = newLayout
+            mode = .tiling
+            activeRoomID = nil
+        }
+    }
+
+    mutating func cycleWorkspaceMode() {
+        switch workspaceMode {
+        case .free: setWorkspaceMode(.tiling)
+        case .tiling: setWorkspaceMode(.strip)
+        case .strip: setWorkspaceMode(.free)
+        }
+    }
 }
 
 struct TilingWorkspaceKey: Hashable, Codable {
@@ -76,11 +212,13 @@ struct TilingWorkspaceKey: Hashable, Codable {
     var storageKey: String { "\(displayUUID):\(spaceID)" }
 }
 
-struct TilingWorkspaceSnapshot: Equatable {
+struct TilingWorkspaceSnapshot: Equatable, Identifiable {
     let key: TilingWorkspaceKey
     let displayID: CGDirectDisplayID
     let displayName: String
     let profile: TilingWorkspaceProfile
+
+    var id: String { key.storageKey }
 }
 
 enum TilingLayoutGeometry {

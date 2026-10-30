@@ -3,7 +3,9 @@ import SwiftUI
 struct WindowShortcutsPreferencesView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject private var canvas = HorizontalCanvasService.shared
+    @ObservedObject private var roomStore = RoomStore.shared
     @ObservedObject private var registrationFeedback = ShortcutRegistrationFeedback.shared
+    @State private var selectedDisplayUUID: String?
 
     private var halvesEntries: [WindowCommandSpec] { WindowCommandCatalog.halves }
 
@@ -27,33 +29,46 @@ struct WindowShortcutsPreferencesView: View {
 
     private var desktopsEntries: [WindowCommandSpec] { WindowCommandCatalog.desktops }
 
+    private var focusedWorkspace: TilingWorkspaceSnapshot? {
+        if let selectedDisplayUUID,
+           let matched = canvas.displayWorkspaces.first(where: { $0.key.displayUUID == selectedDisplayUUID }) {
+            return matched
+        }
+        return canvas.currentWorkspace ?? canvas.displayWorkspaces.first
+    }
+
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(localizedString("Window management"))
-                        .font(.title3.weight(.semibold))
+                VStack(alignment: .leading, spacing: 18) {
+                    PKStudioSectionHeader(
+                        title: "Window Studio",
+                        subtitle: "Switch each screen between Free, Tiling and Strip (OpenCanvas), or restore saved Room scenes.",
+                        systemImage: "macwindow.on.rectangle",
+                        tint: PKStudioPalette.tilingAccent
+                    ) {
+                        HStack(spacing: 8) {
+                            Button {
+                                RoomsOverlayController.shared.show()
+                            } label: {
+                                Label(localizedString("Open Rooms"), systemImage: "rectangle.3.group")
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button {
+                                WindowSwitcherController.shared.show()
+                            } label: {
+                                Label(localizedString("Open Window Previews"), systemImage: "rectangle.on.rectangle")
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                    }
 
                     conflictsCard
 
-                    tilingSection
+                    workspaceModeStudioSection
 
-                    windowSwitcherSection
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Label("Rooms", systemImage: "rectangle.3.group")
-                                .font(.headline)
-                            Spacer()
-                            Button(localizedString("Manage Rooms…")) { SettingsWindowController.shared.showRooms() }
-                            Button(localizedString("Open Rooms")) { RoomsOverlayController.shared.show() }
-                            Text("⌃⌥R").font(.body.monospaced()).foregroundStyle(.secondary)
-                        }
-                        Text(localizedString("Create a room from selected windows, choose its screen and layout, then reopen or minimize it from the Rooms panel."))
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    .padding(12)
-                    .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+                    quickBridgesRow
 
                     KeyboardShortcutMapView(settings: settings, availableWidth: max(0, geometry.size.width - 48))
 
@@ -67,7 +82,12 @@ struct WindowShortcutsPreferencesView: View {
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         }
-        .onAppear { canvas.refreshCurrentWorkspace() }
+        .onAppear {
+            canvas.refreshCurrentWorkspace()
+            if selectedDisplayUUID == nil {
+                selectedDisplayUUID = canvas.currentWorkspace?.key.displayUUID
+            }
+        }
     }
 
     // MARK: - Conflits de raccourcis
@@ -200,83 +220,337 @@ struct WindowShortcutsPreferencesView: View {
             )
     }
 
-    private var windowSwitcherSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Label(localizedString("Window previews"), systemImage: "rectangle.on.rectangle")
-                    .font(.headline)
-                Spacer()
-                Button(localizedString("Enable previews…")) { WindowSwitcherController.shared.requestPreviews() }
-                    .help(localizedString("Thumbnails require Screen Recording permission. macOS may ask you to restart the app."))
-                Button(localizedString("Open Window Previews")) { WindowSwitcherController.shared.show() }
+    // MARK: - Studio Modes par Écran (Libre · Tiling · Strip)
+
+    private var workspaceModeStudioSection: some View {
+        let activeSnapshot = focusedWorkspace
+        let activeMode = activeSnapshot?.profile.workspaceMode ?? .free
+        let activeLayout = activeSnapshot?.profile.effectiveTilingLayout ?? .automatic
+        let targetUUID = activeSnapshot?.key.displayUUID
+
+        return PKStudioCard(tint: PKStudioPalette.color(for: activeMode), isHighlighted: true, padding: 18) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .center, spacing: 10) {
+                    Label(localizedString("Screen Modes — Free · Tiling · Strip"), systemImage: "display.2")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                    if let activeSnapshot {
+                        Text(activeSnapshot.displayName)
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(PKStudioPalette.color(for: activeMode).opacity(0.16), in: Capsule())
+                            .foregroundStyle(PKStudioPalette.color(for: activeMode))
+                    }
+                    Spacer()
+                    Button {
+                        canvas.refreshCurrentWorkspace()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help(localizedString("Refresh displays"))
+                }
+
+                // Per-display visual selector cards
+                if !canvas.displayWorkspaces.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(canvas.displayWorkspaces) { snapshot in
+                                let roomName = snapshot.profile.activeRoomID.flatMap { id in
+                                    roomStore.rooms.first(where: { $0.id == id })?.name
+                                }
+                                PKDisplayWorkspaceCard(
+                                    snapshot: snapshot,
+                                    isFocusedDisplay: snapshot.key.displayUUID == (selectedDisplayUUID ?? canvas.currentWorkspace?.key.displayUUID),
+                                    activeRoomName: roomName,
+                                    onSelectDisplay: {
+                                        selectedDisplayUUID = snapshot.key.displayUUID
+                                    },
+                                    onSelectMode: { mode in
+                                        selectedDisplayUUID = snapshot.key.displayUUID
+                                        canvas.setWorkspaceMode(mode, onDisplayUUID: snapshot.key.displayUUID)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 3 Large Visual Mode Cards for the focused screen
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(WorkspaceWindowMode.allCases) { mode in
+                        PKModeSelectorCard(
+                            mode: mode,
+                            activeLayout: activeLayout,
+                            isSelected: activeMode == mode,
+                            isEnabled: activeSnapshot != nil
+                        ) {
+                            canvas.setWorkspaceMode(mode, onDisplayUUID: targetUUID)
+                        }
+                    }
+                }
+
+                // Visual stage for the active mode
+                switch activeMode {
+                case .tiling:
+                    tilingVisualGalleryStage(activeLayout: activeLayout, targetUUID: targetUUID)
+                case .strip:
+                    stripVisualStudioStage
+                case .free:
+                    freeModeQuickStage(activeSnapshot: activeSnapshot)
+                }
+
+                if !canvas.message.isEmpty {
+                    Text(localizedString(canvas.message))
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .textSelection(.enabled)
+                }
             }
-            Text(localizedString("Find a window by its thumbnail, app or title. Tab browses, Return opens and Escape cancels. Thumbnails require Screen Recording permission."))
-                .font(.caption).foregroundStyle(.secondary)
-            Toggle(localizedString("Use ⌘Tab to open window previews"), isOn: $settings.windowSwitcherUsesCommandTab)
-            Text(localizedString("Replaces the macOS app switcher while enabled. Hold ⌘, press Tab to cycle and release ⌘ to activate. ⌘W closes the selected window; ⌘Q quits its app."))
-                .font(.caption).foregroundStyle(.secondary)
-            Text(localizedString("Type directly while ⌘ is held to filter windows."))
-                .font(.caption).foregroundStyle(.secondary)
-            Toggle(localizedString("Keep the picker open when a filter is typed"), isOn: $settings.windowSwitcherStickyCommandTab)
-                .disabled(!settings.windowSwitcherUsesCommandTab)
-            Text(localizedString("Without a filter, releasing ⌘ activates the selected window. With a filter typed, the picker stays open so you can refine it; Return activates the window and Escape cancels."))
-                .font(.caption).foregroundStyle(.secondary)
-            Text(localizedString("Close individual windows with ⌘W or the × button. The picker stays open; save dialogs remain under your control."))
-                .font(.caption).foregroundStyle(.secondary)
-            windowRow(WindowCommandCatalog.switcher)
         }
-        .padding(12)
-        .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    private var tilingSection: some View {
+    private func tilingVisualGalleryStage(activeLayout: TilingLayoutKind, targetUUID: String?) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Label(localizedString("Continuous tiling"), systemImage: "rectangle.split.3x1")
-                    .font(.headline)
+            HStack {
+                Label(localizedString("Tiling Layout Gallery"), systemImage: "square.grid.3x2.fill")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(PKStudioPalette.tilingAccent)
                 Spacer()
-                if let workspace = canvas.currentWorkspace {
-                    Text(workspace.displayName)
-                        .font(.caption)
+                Text(activeLayout.title)
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.secondary)
+            }
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 10)], spacing: 10) {
+                ForEach(TilingLayoutKind.tilingCases) { layout in
+                    PKTilingLayoutTile(
+                        layout: layout,
+                        isSelected: activeLayout == layout
+                    ) {
+                        canvas.setTilingLayout(layout, onDisplayUUID: targetUUID)
+                    }
+                }
+            }
+
+            TilingLayoutPreview(layout: activeLayout, isSelected: true)
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(0.035))
+        )
+    }
+
+    private var stripVisualStudioStage: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label(localizedString("Strip · OpenCanvas / OmniWM Studio"), systemImage: "rectangle.3.group.fill")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(PKStudioPalette.stripAccent)
+                Spacer()
+                Toggle(localizedString("Top minimap bar"), isOn: $settings.canvasMinimap)
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .onChange(of: settings.canvasMinimap) { _ in CanvasMinimapController.shared.refresh() }
+            }
+
+            HStack(alignment: .top, spacing: 14) {
+                TilingLayoutPreview(layout: .canvas, isSelected: true)
+                    .frame(maxWidth: .infinity)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    stripFeatureBadge(
+                        icon: "arrow.left.and.right.square.fill",
+                        keys: "⌃⇧H / ⌃⇧L",
+                        title: localizedString("Column navigation & trackpad scroll")
+                    )
+                    stripFeatureBadge(
+                        icon: "rectangle.split.1x2.fill",
+                        keys: "⌃⇧S / ⌃⇧F",
+                        title: localizedString("Pair any two windows in half-height")
+                    )
+                    stripFeatureBadge(
+                        icon: "arrow.left.arrow.right.circle.fill",
+                        keys: "⌃⇧← / ⌃⇧→",
+                        title: localizedString("Reorder columns along the ribbon")
+                    )
+
+                    HStack(spacing: 8) {
+                        Button(localizedString("Check Canvas windows")) {
+                            canvas.perform(.inspect)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+
+                        Button(localizedString("Restore Free positions")) {
+                            canvas.perform(.restore)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                    if !canvas.inventoryMessage.isEmpty {
+                        Text(canvas.inventoryMessage)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                }
+                .frame(width: 280, alignment: .leading)
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(0.035))
+        )
+    }
+
+    private func stripFeatureBadge(icon: String, keys: String, title: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(PKStudioPalette.stripAccent)
+                .frame(width: 24, height: 24)
+                .background(PKStudioPalette.stripAccent.opacity(0.14), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(keys)
+                    .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                Text(title)
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private func freeModeQuickStage(activeSnapshot: TilingWorkspaceSnapshot?) -> some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "hand.draw.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(PKStudioPalette.freeAccent)
+                    .frame(width: 30, height: 30)
+                    .background(PKStudioPalette.freeAccent.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(localizedString("Free Mode active on this screen"))
+                        .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                    Text(localizedString("Windows keep their manual positions or your saved Room scene."))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
-            Text(localizedString("Choose Free mode to position windows yourself, or keep a layout active as new windows arrive on this desktop."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Toggle(localizedString("Enable tiling on this desktop"), isOn: Binding(
-                get: { canvas.currentWorkspace?.profile.mode == .tiling },
-                set: { canvas.setCurrentTilingMode($0 ? .tiling : .free) }
-            ))
-            .disabled(canvas.currentWorkspace == nil)
-
-            Picker(localizedString("Layout"), selection: Binding(
-                get: { canvas.currentWorkspace?.profile.layout ?? .automatic },
-                set: { canvas.setCurrentLayout($0) }
-            )) {
-                ForEach(TilingLayoutKind.allCases) { layout in
-                    Text(layout.title).tag(layout)
+            Spacer()
+            if !roomStore.rooms.isEmpty {
+                Menu {
+                    ForEach(roomStore.rooms) { room in
+                        Button {
+                            let claimed = roomStore.claimedWindowIDs(excluding: room.id)
+                            let keepMonocle = canvas.willTile(room)
+                            canvas.releaseForRoomActivation(room) { released in
+                                guard released else { return }
+                                Task {
+                                    _ = await RoomEngine().activate(room, claimed: claimed, keepMonocleWindowsVisible: keepMonocle)
+                                    await MainActor.run { canvas.resumeAfterRoomActivation(room) }
+                                }
+                            }
+                        } label: {
+                            Text("\(room.name) · \(room.placementModeSummary)")
+                        }
+                    }
+                } label: {
+                    Label(localizedString("Apply a Room…"), systemImage: "rectangle.3.group.fill")
                 }
-            }
-            .pickerStyle(.menu)
-            .disabled(canvas.currentWorkspace == nil)
-
-            if let layout = canvas.currentWorkspace?.profile.layout {
-                Divider()
-                TilingLayoutPreview(layout: layout,
-                                   isSelected: canvas.currentWorkspace?.profile.layout == layout)
-            }
-            if !canvas.message.isEmpty {
-                Text(localizedString(canvas.message))
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .textSelection(.enabled)
+                .frame(width: 170)
             }
         }
         .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    // MARK: - Quick Bridges to Rooms & CMD+Tab Studios
+
+    private var quickBridgesRow: some View {
+        HStack(alignment: .top, spacing: 16) {
+            PKStudioCard(tint: PKStudioPalette.roomsAccent, padding: 14) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(PKStudioPalette.roomsAccent.opacity(0.16))
+                        Image(systemName: "rectangle.3.group.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(PKStudioPalette.roomsAccent)
+                    }
+                    .frame(width: 38, height: 38)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text("Rooms")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                            Text("⌃⌥R")
+                                .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(PKStudioPalette.roomsAccent.opacity(0.15), in: Capsule())
+                                .foregroundStyle(PKStudioPalette.roomsAccent)
+                        }
+                        Text(localizedString("Save exact window positions or dynamic layouts per project."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    Spacer()
+                    Button(localizedString("Studio Rooms…")) {
+                        SettingsWindowController.shared.showRooms()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(PKStudioPalette.roomsAccent)
+                    .controlSize(.small)
+                }
+            }
+
+            PKStudioCard(tint: PKStudioPalette.switcherAccent, padding: 14) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(PKStudioPalette.switcherAccent.opacity(0.16))
+                        Image(systemName: "rectangle.on.rectangle.angled")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(PKStudioPalette.switcherAccent)
+                    }
+                    .frame(width: 38, height: 38)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text("CMD+Tab")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                            Text(settings.windowSwitcherUsesCommandTab ? "⌘Tab" : "⌃⌥Tab")
+                                .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(PKStudioPalette.switcherAccent.opacity(0.15), in: Capsule())
+                                .foregroundStyle(PKStudioPalette.switcherAccent)
+                        }
+                        Text(localizedString("Visual thumbnails, running apps and Rooms in one switcher."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    Spacer()
+                    Button(localizedString("Studio CMD+Tab…")) {
+                        SettingsWindowController.shared.showWindowSwitcherSettings()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(PKStudioPalette.switcherAccent)
+                    .controlSize(.small)
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -337,30 +611,7 @@ struct WindowShortcutsPreferencesView: View {
     }
 
     private func canvasSection() -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionCard(title: "Horizontal Canvas", entries: WindowCommandCatalog.canvas)
-            HStack {
-                Button(localizedString("Toggle Horizontal Canvas")) { canvas.perform(.toggle) }
-                Button(localizedString("Restore Canvas")) { canvas.perform(.restore) }
-                Text(localizedString(canvas.activeDisplayIDs.isEmpty ? "Canvas inactive" : "Canvas active"))
-                    .foregroundStyle(.secondary)
-            }
-            Text(localizedString("Every window starts at full height. Choose half height for one window, then another: the second joins below the first, even from a distant column. Full height separates that window again. Choices survive desktop switching until Canvas exits."))
-                .font(.caption).foregroundStyle(.secondary)
-            Text(localizedString("Canvas scrolls horizontally with the trackpad, or vertically while holding Option. Ordinary vertical scrolling stays in apps. Previous/next shortcuts move between columns. Exiting restores original positions and sizes."))
-                .font(.caption).foregroundStyle(.secondary)
-            Toggle(localizedString("Canvas minimap"), isOn: $settings.canvasMinimap)
-                .onChange(of: settings.canvasMinimap) { _ in CanvasMinimapController.shared.refresh() }
-            Text(localizedString("A thin bar floats at the top of each screen during a Canvas session: every column of the strip at a glance, half-height pairs stacked, the visible zone outlined. Click a column to travel there."))
-                .font(.caption).foregroundStyle(.secondary)
-            if !canvas.message.isEmpty {
-                Text(canvas.message).font(.caption).foregroundStyle(.orange)
-            }
-            Button(localizedString("Check Canvas windows")) { canvas.perform(.inspect) }
-            if !canvas.inventoryMessage.isEmpty {
-                Text(canvas.inventoryMessage).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-            }
-        }
+        sectionCard(title: "Horizontal Canvas (Strip · OpenCanvas)", entries: WindowCommandCatalog.canvas)
     }
 
     private func sectionCard(title: String, entries: [WindowCommandSpec]) -> some View {
@@ -526,20 +777,12 @@ struct WindowShortcutsPreferencesView: View {
     }
 
     private func generalMarginSection() -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(localizedString("General Margins"))
-                .font(.headline)
-            VStack(spacing: 0) {
-                Text(localizedString("Applied to every window position."))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 8)
-                marginEditor($settings.generalMargins)
-            }
-            .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        }
+        PKVisualMarginStudio(
+            title: "General Margins",
+            subtitle: "Applied around every snapped or tiled window.",
+            margins: $settings.generalMargins,
+            tint: PKStudioPalette.freeAccent
+        )
     }
 
     private func windowRow(_ item: WindowCommandSpec) -> some View {
@@ -591,14 +834,13 @@ struct WindowShortcutsPreferencesView: View {
     }
 
     private func marginEditor(_ margins: Binding<WindowMargins>) -> some View {
-        HStack(spacing: 16) {
-            marginField("Top", margins.top)
-            marginField("Bottom", margins.bottom)
-            marginField("Left", margins.left)
-            marginField("Right", margins.right)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        PKVisualMarginStudio(
+            title: "Inset Margins",
+            subtitle: "Adjust screen padding visually (%)",
+            margins: margins,
+            tint: PKStudioPalette.tilingAccent
+        )
+        .padding(10)
     }
 
     private func marginField(_ label: String, _ value: Binding<CGFloat>) -> some View {

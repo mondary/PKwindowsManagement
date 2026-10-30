@@ -5,11 +5,19 @@ import AppKit
 final class SettingsWindowController: NSWindowController {
     static let shared = SettingsWindowController()
     static let roomsRequested = Notification.Name("PKShowRoomsSettings")
+    static let switcherRequested = Notification.Name("PKShowSwitcherSettings")
 
     func showRooms() {
         showSettings()
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: Self.roomsRequested, object: nil)
+        }
+    }
+
+    func showWindowSwitcherSettings() {
+        showSettings()
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: Self.switcherRequested, object: nil)
         }
     }
     var makeContent: (() -> NSViewController)?

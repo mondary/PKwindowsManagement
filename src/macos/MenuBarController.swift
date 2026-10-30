@@ -192,11 +192,37 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         rebuildStatusMenu()
     }
 
+    @objc private func selectWorkspaceMode(_ sender: NSMenuItem) {
+        guard let payload = sender.representedObject as? [String: String],
+              let rawMode = payload["mode"],
+              let mode = WorkspaceWindowMode(rawValue: rawMode) else { return }
+        let displayUUID = payload["displayUUID"]?.isEmpty == false ? payload["displayUUID"] : nil
+        HorizontalCanvasService.shared.setWorkspaceMode(mode, onDisplayUUID: displayUUID)
+        rebuildStatusMenu()
+    }
+
     @objc private func selectTilingLayout(_ sender: NSMenuItem) {
         guard let raw = sender.representedObject as? String,
               let layout = TilingLayoutKind(rawValue: raw) else { return }
         HorizontalCanvasService.shared.setCurrentLayout(layout)
         rebuildStatusMenu()
+    }
+
+    @objc private func activateRoomFromMenu(_ sender: NSMenuItem) {
+        guard let roomID = sender.representedObject as? String,
+              let room = RoomStore.shared.rooms.first(where: { $0.id == roomID }) else { return }
+        let claimed = RoomStore.shared.claimedWindowIDs(excluding: room.id)
+        let keepMonocle = HorizontalCanvasService.shared.willTile(room)
+        HorizontalCanvasService.shared.releaseForRoomActivation(room) { released in
+            guard released else { return }
+            Task {
+                _ = await RoomEngine().activate(room, claimed: claimed, keepMonocleWindowsVisible: keepMonocle)
+                await MainActor.run {
+                    HorizontalCanvasService.shared.resumeAfterRoomActivation(room)
+                    self.rebuildStatusMenu()
+                }
+            }
+        }
     }
 
     @objc private func checkForUpdates() {
@@ -266,13 +292,34 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
         let workspaceProfile = HorizontalCanvasService.shared.currentWorkspace?.profile
         let tilingMenu = NSMenu()
-        let modeItem = NSMenuItem(
-            title: localizedString(workspaceProfile?.mode == .tiling ? "Switch to Free mode" : "Enable continuous tiling"),
-            action: #selector(toggleTilingMode), keyEquivalent: "")
-        modeItem.target = self
-        modeItem.isEnabled = HorizontalCanvasService.shared.currentWorkspace != nil
-        modeItem.state = workspaceProfile?.mode == .tiling ? .on : .off
-        tilingMenu.addItem(modeItem)
+        for mode in WorkspaceWindowMode.allCases {
+            let item = NSMenuItem(title: mode.title, action: #selector(selectWorkspaceMode(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = ["mode": mode.rawValue, "displayUUID": ""]
+            item.state = workspaceProfile?.workspaceMode == mode ? .on : .off
+            item.isEnabled = HorizontalCanvasService.shared.currentWorkspace != nil
+            tilingMenu.addItem(item)
+        }
+        let allDisplays = HorizontalCanvasService.shared.displayWorkspaces
+        if allDisplays.count > 1 {
+            tilingMenu.addItem(.separator())
+            let screensHeader = NSMenuItem(title: localizedString("Mode by screen"), action: nil, keyEquivalent: "")
+            screensHeader.isEnabled = false
+            tilingMenu.addItem(screensHeader)
+            for snapshot in allDisplays {
+                let screenSub = NSMenu()
+                for mode in WorkspaceWindowMode.allCases {
+                    let sub = NSMenuItem(title: mode.title, action: #selector(selectWorkspaceMode(_:)), keyEquivalent: "")
+                    sub.target = self
+                    sub.representedObject = ["mode": mode.rawValue, "displayUUID": snapshot.key.displayUUID]
+                    sub.state = snapshot.profile.workspaceMode == mode ? .on : .off
+                    screenSub.addItem(sub)
+                }
+                let screenItem = NSMenuItem(title: "\(snapshot.displayName) · \(snapshot.profile.workspaceMode.shortTitle)", action: nil, keyEquivalent: "")
+                screenItem.submenu = screenSub
+                tilingMenu.addItem(screenItem)
+            }
+        }
         tilingMenu.addItem(.separator())
         let layoutHeader = NSMenuItem(title: localizedString("Layout for this desktop"), action: nil, keyEquivalent: "")
         layoutHeader.isEnabled = false
@@ -285,7 +332,21 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             item.isEnabled = HorizontalCanvasService.shared.currentWorkspace != nil
             tilingMenu.addItem(item)
         }
-        let tilingItem = NSMenuItem(title: localizedString("Continuous tiling"), action: nil, keyEquivalent: "")
+        if !RoomStore.shared.rooms.isEmpty {
+            tilingMenu.addItem(.separator())
+            let roomsHeader = NSMenuItem(title: localizedString("Rooms (saved scenes)"), action: nil, keyEquivalent: "")
+            roomsHeader.isEnabled = false
+            tilingMenu.addItem(roomsHeader)
+            for room in RoomStore.shared.rooms.prefix(8) {
+                let rItem = NSMenuItem(title: "\(room.name)  (\(room.placementModeSummary))", action: #selector(activateRoomFromMenu(_:)), keyEquivalent: "")
+                rItem.target = self
+                rItem.representedObject = room.id
+                rItem.state = workspaceProfile?.activeRoomID == room.id ? .on : .off
+                tilingMenu.addItem(rItem)
+            }
+        }
+        let currentModeTitle = workspaceProfile?.workspaceMode.shortTitle ?? localizedString("Free")
+        let tilingItem = NSMenuItem(title: "\(localizedString("Window Mode")) · \(currentModeTitle)", action: nil, keyEquivalent: "")
         tilingItem.submenu = tilingMenu
         tilingItem.state = workspaceProfile?.mode == .tiling ? .on : .off
         menu.addItem(tilingItem)

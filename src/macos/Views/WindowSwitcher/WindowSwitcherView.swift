@@ -82,14 +82,17 @@ struct WindowSwitcherView: View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 14) {
                 title
-                Spacer(minLength: 12)
-                searchField.frame(maxWidth: 400)
+                PKOverlayModeSwitcherBar()
+                    .fixedSize()
+                Spacer(minLength: 10)
+                searchField.frame(maxWidth: 360)
                 headerButtons
             }
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     title
                     Spacer(minLength: 12)
+                    PKOverlayModeSwitcherBar()
                     headerButtons
                 }
                 searchField
@@ -1043,9 +1046,9 @@ private struct RoomPickerCard: View {
                 Spacer(minLength: 4)
                 layoutMenu
             }
-            RoomLayoutDiagram(windows: room.windows, kind: room.layout, focusedWindowIndex: room.focusedWindowIndex)
+            RoomLayoutDiagram(room: room)
                 .frame(height: 74)
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 Button {
                     model.activateRoom(room)
                     onActivate()
@@ -1059,6 +1062,23 @@ private struct RoomPickerCard: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isDisabled)
+                Button {
+                    var stripRoom = room
+                    stripRoom.handoffPolicy = .adoptWorkspaceMode
+                    HorizontalCanvasService.shared.setWorkspaceMode(.strip, onDisplayUUID: room.displayUUID)
+                    model.activateRoom(stripRoom)
+                    onActivate()
+                } label: {
+                    Text("Strip")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(PKStudioPalette.stripAccent.opacity(0.18), in: Capsule())
+                        .foregroundStyle(PKStudioPalette.stripAccent)
+                }
+                .buttonStyle(.plain)
+                .disabled(isDisabled)
+                .help(localizedString("Open Room in Strip (OpenCanvas) mode"))
                 Button {
                     model.minimizeRoom(room)
                 } label: {
@@ -1095,11 +1115,28 @@ private struct RoomPickerCard: View {
 
     private var layoutMenu: some View {
         Menu {
+            Button(localizedString("Saved positions")) {
+                var updated = room
+                if !updated.hasSavedFrames {
+                    updated = RoomEngine().capturePositions(for: updated)
+                } else {
+                    updated.useSavedFrames = true
+                }
+                updated.handoffPolicy = .keepRoomPositions
+                model.roomStore.upsert(updated)
+            }
+            Divider()
             ForEach(RoomLayoutKind.allCases) { kind in
-                Button(kind.title) { model.setRoomLayout(kind, for: room) }
+                Button(kind.title) {
+                    var updated = room
+                    updated.useSavedFrames = false
+                    updated.layout = kind
+                    model.roomStore.upsert(updated)
+                }
             }
         } label: {
-            Label(room.layout.title, systemImage: layoutSymbol(room.layout))
+            Label(room.placementModeSummary,
+                  systemImage: (room.useSavedFrames && room.hasSavedFrames) ? "mappin.and.ellipse" : layoutSymbol(room.layout))
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 7)

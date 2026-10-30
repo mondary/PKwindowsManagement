@@ -19,6 +19,9 @@ final class RoomEngine {
         let element: AXUIElement
         let appElement: AXUIElement
         let info: RoomLiveWindow
+        let frame: CGRect
+        let displayUUID: String?
+        let normalizedFrame: RoomNormalizedRect?
         let isMinimized: Bool
     }
 
@@ -28,6 +31,18 @@ final class RoomEngine {
         let bundleID: String
         let appName: String
         let title: String
+        let displayUUID: String?
+        let normalizedFrame: RoomNormalizedRect?
+
+        init(windowID: UInt32?, bundleID: String, appName: String, title: String,
+             displayUUID: String? = nil, normalizedFrame: RoomNormalizedRect? = nil) {
+            self.windowID = windowID
+            self.bundleID = bundleID
+            self.appName = appName
+            self.title = title
+            self.displayUUID = displayUUID
+            self.normalizedFrame = normalizedFrame
+        }
 
         var id: String { "\(windowID.map(String.init) ?? "x")|\(bundleID)|\(title)" }
 
@@ -81,12 +96,13 @@ final class RoomEngine {
             let visible = screen.visibleFrame
             let axTop = primaryScreenHeight - visible.maxY
             let visibleAX = CGRect(x: visible.minX, y: axTop, width: visible.width, height: visible.height)
-            let frames = RoomTiler.frames(count: room.windows.count, kind: room.layout, in: visibleAX)
+            let usingSaved = room.useSavedFrames && room.hasSavedFrames
+            let frames = room.resolvedFrames(in: visibleAX, minimumSize: CGSize(width: 140, height: 100))
             for (slotIndex, windowIndex) in assignment.sorted(by: { $0.key < $1.key }) {
                 guard frames.indices.contains(slotIndex),
                       let candidate = candidates[safe: windowIndex]
                 else { continue }
-                let isMonocleBackground = !keepMonocleWindowsVisible && room.layout == .monocle
+                let isMonocleBackground = !usingSaved && !keepMonocleWindowsVisible && room.layout == .monocle
                     && slotIndex != max(0, min(room.focusedWindowIndex, room.windows.count - 1))
                 if !isMonocleBackground && candidate.isMinimized {
                     setBool(kAXMinimizedAttribute as CFString, false, on: candidate.element)
@@ -95,7 +111,7 @@ final class RoomEngine {
                 if isMonocleBackground && !candidate.isMinimized {
                     setBool(kAXMinimizedAttribute as CFString, true, on: candidate.element)
                 }
-                if room.layout == .monocle && !isMonocleBackground {
+                if (usingSaved || (room.layout == .monocle && !isMonocleBackground)) {
                     AXUIElementSetAttributeValue(candidate.element, kAXMainAttribute as CFString, kCFBooleanTrue)
                     AXUIElementPerformAction(candidate.element, kAXRaiseAction as CFString)
                 }
@@ -125,9 +141,43 @@ final class RoomEngine {
 
     // MARK: Inventory
 
+    private struct ScreenGeometry {
+        let uuid: String?
+        let boundsAX: CGRect
+        let visibleAX: CGRect
+    }
+
+    private func screenGeometries() -> [ScreenGeometry] {
+        let top = primaryScreenHeight
+        return NSScreen.screens.map { screen in
+            let full = screen.frame
+            let visible = screen.visibleFrame
+            return ScreenGeometry(
+                uuid: Self.uuid(for: screen),
+                boundsAX: CGRect(x: full.minX, y: top - full.maxY, width: full.width, height: full.height),
+                visibleAX: CGRect(x: visible.minX, y: top - visible.maxY, width: visible.width, height: visible.height)
+            )
+        }
+    }
+
+    private func attribution(for windowFrame: CGRect, screens: [ScreenGeometry]) -> (uuid: String?, normalized: RoomNormalizedRect?) {
+        guard !screens.isEmpty else { return (nil, nil) }
+        let center = CGPoint(x: windowFrame.midX, y: windowFrame.midY)
+        let matched = screens.first(where: { $0.boundsAX.contains(center) })
+            ?? screens.max(by: {
+                let a = $0.boundsAX.intersection(windowFrame)
+                let b = $1.boundsAX.intersection(windowFrame)
+                return (a.isNull ? 0 : a.width * a.height) < (b.isNull ? 0 : b.width * b.height)
+            })
+            ?? screens[0]
+        return (matched.uuid, RoomNormalizedRect(frame: windowFrame, in: matched.visibleAX))
+    }
+
     /// Every standard window of every regular app, including minimized ones —
     /// what the picker offers and what slots match against.
-    private func inventory(apps: [NSRunningApplication] = NSWorkspace.shared.runningApplications) -> [Candidate] {
+    private func inventory(apps: [NSRunningApplication] = NSWorkspace.shared.runningApplications,
+                           screens: [ScreenGeometry]? = nil) -> [Candidate] {
+        let resolvedScreens = screens ?? screenGeometries()
         var result: [Candidate] = []
         for app in apps
         where app.activationPolicy == .regular && app != NSRunningApplication.current {
@@ -146,6 +196,7 @@ final class RoomEngine {
                       let frame = frame(of: element),
                       frame.width >= 100, frame.height >= 60
                 else { continue }
+                let (screenUUID, normalized) = attribution(for: frame, screens: resolvedScreens)
                 result.append(Candidate(
                     app: app,
                     element: element,
@@ -155,6 +206,9 @@ final class RoomEngine {
                         title: stringAttribute(kAXTitleAttribute as CFString, on: element) ?? "",
                         windowID: windowID(of: element)
                     ),
+                    frame: frame,
+                    displayUUID: screenUUID,
+                    normalizedFrame: normalized,
                     isMinimized: minimized
                 ))
             }
@@ -169,7 +223,9 @@ final class RoomEngine {
                 windowID: candidate.info.windowID,
                 bundleID: candidate.info.bundleID,
                 appName: candidate.app.localizedName ?? candidate.info.bundleID,
-                title: candidate.info.title
+                title: candidate.info.title,
+                displayUUID: candidate.displayUUID,
+                normalizedFrame: candidate.normalizedFrame
             )
         }
     }
@@ -179,14 +235,83 @@ final class RoomEngine {
     static func loadWindowOffers(completion: @escaping ([WindowOffer]) -> Void) {
         precondition(Thread.isMainThread)
         let apps = NSWorkspace.shared.runningApplications
+        let engine = RoomEngine()
+        let screens = engine.screenGeometries()
         DispatchQueue.global(qos: .userInitiated).async {
-            let offers = RoomEngine().inventory(apps: apps).map { candidate in
+            let offers = engine.inventory(apps: apps, screens: screens).map { candidate in
                 WindowOffer(windowID: candidate.info.windowID, bundleID: candidate.info.bundleID,
                             appName: candidate.app.localizedName ?? candidate.info.bundleID,
-                            title: candidate.info.title)
+                            title: candidate.info.title,
+                            displayUUID: candidate.displayUUID,
+                            normalizedFrame: candidate.normalizedFrame)
             }
             DispatchQueue.main.async { completion(offers) }
         }
+    }
+
+    /// Captures all visible non-minimized windows on the target display (or pointer display)
+    /// with their exact normalized positions, ready to be saved in a Room scene.
+    func captureScreenWindows(displayUUID: String? = nil) -> (displayUUID: String?, windows: [RoomWindow]) {
+        let screens = screenGeometries()
+        let targetScreenObj = targetScreen(uuid: displayUUID)
+        let targetUUID = targetScreenObj.flatMap { Self.uuid(for: $0) } ?? displayUUID
+        let targetVisibleAX: CGRect? = {
+            guard let s = targetScreenObj else { return screens.first?.visibleAX }
+            let v = s.visibleFrame
+            return CGRect(x: v.minX, y: primaryScreenHeight - v.maxY, width: v.width, height: v.height)
+        }()
+        let allCandidates = inventory(screens: screens).filter { !$0.isMinimized && !$0.app.isHidden }
+        let filtered: [Candidate]
+        if let targetUUID {
+            let onScreen = allCandidates.filter { $0.displayUUID == targetUUID }
+            filtered = onScreen.isEmpty ? allCandidates : onScreen
+        } else {
+            filtered = allCandidates
+        }
+        let roomWindows = filtered.map { candidate -> RoomWindow in
+            let norm = targetVisibleAX.map { RoomNormalizedRect(frame: candidate.frame, in: $0) }
+                ?? candidate.normalizedFrame
+            return RoomWindow(
+                bundleID: candidate.info.bundleID,
+                appName: candidate.app.localizedName ?? candidate.info.bundleID,
+                title: candidate.info.title,
+                windowID: candidate.info.windowID,
+                savedFrame: norm
+            )
+        }
+        return (targetUUID, roomWindows)
+    }
+
+    /// Updates an existing Room with the current live positions of its matched windows
+    /// (or captures the target screen's windows if the Room has none yet).
+    func capturePositions(for room: Room, claimed: Set<UInt32> = []) -> Room {
+        var updated = room
+        let screens = screenGeometries()
+        let candidates = inventory(screens: screens)
+        let screenObj = targetScreen(uuid: room.displayUUID)
+        let visibleAX: CGRect? = screenObj.map { s in
+            let v = s.visibleFrame
+            return CGRect(x: v.minX, y: primaryScreenHeight - v.maxY, width: v.width, height: v.height)
+        }
+        if updated.windows.isEmpty {
+            let captured = captureScreenWindows(displayUUID: room.displayUUID)
+            updated.windows = captured.windows
+            if updated.displayUUID == nil { updated.displayUUID = captured.displayUUID }
+        } else {
+            let assignment = RoomSlotMatcher.assign(slots: updated.windows, windows: candidates.map(\.info), claimed: claimed)
+            for (slotIndex, windowIndex) in assignment {
+                guard let candidate = candidates[safe: windowIndex] else { continue }
+                let norm = visibleAX.map { RoomNormalizedRect(frame: candidate.frame, in: $0) }
+                    ?? candidate.normalizedFrame
+                updated.windows[slotIndex].windowID = candidate.info.windowID
+                if !candidate.info.title.isEmpty {
+                    updated.windows[slotIndex].title = candidate.info.title
+                }
+                updated.windows[slotIndex].savedFrame = norm
+            }
+        }
+        updated.useSavedFrames = true
+        return updated
     }
 
     /// A connectable display, for the room's target-screen picker.

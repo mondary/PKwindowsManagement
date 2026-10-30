@@ -1,5 +1,6 @@
-import Foundation
 import Combine
+import CoreGraphics
+import Foundation
 
 /// How a room arranges its windows on screen.
 enum RoomLayoutKind: String, Codable, CaseIterable, Identifiable {
@@ -36,6 +37,74 @@ enum RoomLayoutKind: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// Normalized window geometry (0...1 relative to the target display's visible area).
+/// Allows a Room to record and restore custom window positions across sessions.
+struct RoomNormalizedRect: Codable, Hashable, Equatable {
+    var x: Double
+    var y: Double
+    var width: Double
+    var height: Double
+
+    init(x: Double, y: Double, width: Double, height: Double) {
+        self.x = min(max(x, 0), 0.96)
+        self.y = min(max(y, 0), 0.96)
+        self.width = min(max(width, 0.08), 1.0)
+        self.height = min(max(height, 0.08), 1.0)
+    }
+
+    init(frame: CGRect, in area: CGRect) {
+        guard area.width > 1, area.height > 1 else {
+            self.init(x: 0.04, y: 0.04, width: 0.92, height: 0.92)
+            return
+        }
+        let nx = Double((frame.minX - area.minX) / area.width)
+        let ny = Double((frame.minY - area.minY) / area.height)
+        let nw = Double(frame.width / area.width)
+        let nh = Double(frame.height / area.height)
+        self.init(x: nx, y: ny, width: nw, height: nh)
+    }
+
+    func rect(in area: CGRect, minimumSize: CGSize = CGSize(width: 24, height: 20)) -> CGRect {
+        let minW = min(area.width, minimumSize.width)
+        let minH = min(area.height, minimumSize.height)
+        let w = max(minW, min(area.width, area.width * CGFloat(width)))
+        let h = max(minH, min(area.height, area.height * CGFloat(height)))
+        let maxX = max(area.minX, area.maxX - w)
+        let maxY = max(area.minY, area.maxY - h)
+        let rx = min(max(area.minX, area.minX + area.width * CGFloat(x)), maxX)
+        let ry = min(max(area.minY, area.minY + area.height * CGFloat(y)), maxY)
+        return CGRect(x: rx.rounded(), y: ry.rounded(), width: w.rounded(), height: h.rounded())
+    }
+}
+
+/// How activating a Room interacts with the display's active window mode.
+enum RoomHandoffPolicy: String, Codable, CaseIterable, Identifiable {
+    /// Keep the Room's exact placement (switches/holds the display in Free mode).
+    case keepRoomPositions
+    /// Apply the Room's placement first, then let Tiling/Strip take over if active.
+    case adoptWorkspaceMode
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .keepRoomPositions:
+            return localizedString("Keep Room placement (Free mode)")
+        case .adoptWorkspaceMode:
+            return localizedString("Adopt screen mode (Tiling / Strip)")
+        }
+    }
+
+    var shortTitle: String {
+        switch self {
+        case .keepRoomPositions:
+            return localizedString("Saved scene")
+        case .adoptWorkspaceMode:
+            return localizedString("Follow screen mode")
+        }
+    }
+}
+
 /// One window that belongs to a room, and how to find it again.
 /// Modeled on the upstream Rooms app's WindowSlot (MIT).
 struct RoomWindow: Codable, Identifiable, Hashable {
@@ -48,13 +117,17 @@ struct RoomWindow: Codable, Identifiable, Hashable {
     var title: String
     /// The window's identity while it stays open.
     var windowID: UInt32?
+    /// Optional saved normalized position/size on the target display.
+    var savedFrame: RoomNormalizedRect?
 
-    init(bundleID: String, appName: String, title: String, windowID: UInt32? = nil, id: String = UUID().uuidString) {
+    init(bundleID: String, appName: String, title: String, windowID: UInt32? = nil,
+         savedFrame: RoomNormalizedRect? = nil, id: String = UUID().uuidString) {
         self.id = id
         self.bundleID = bundleID
         self.appName = appName
         self.title = title
         self.windowID = windowID
+        self.savedFrame = savedFrame
     }
 
     init(from decoder: Decoder) throws {
@@ -64,6 +137,7 @@ struct RoomWindow: Codable, Identifiable, Hashable {
         appName = try c.decodeIfPresent(String.self, forKey: .appName) ?? bundleID
         title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
         windowID = try c.decodeIfPresent(UInt32.self, forKey: .windowID)
+        savedFrame = try c.decodeIfPresent(RoomNormalizedRect.self, forKey: .savedFrame)
     }
 }
 
@@ -79,8 +153,14 @@ struct Room: Codable, Identifiable, Hashable {
     /// Target display (CGDisplay UUID string). Nil = the screen under the
     /// pointer when the room is activated, like the upstream Rooms app.
     var displayUUID: String?
+    /// When true and windows carry savedFrame data, restore exact recorded positions.
+    var useSavedFrames: Bool
+    /// Whether activating the Room keeps its exact placement or hands off to Tiling/Strip.
+    var handoffPolicy: RoomHandoffPolicy
 
-    init(id: String? = nil, name: String, windows: [RoomWindow], layout: RoomLayoutKind = .auto, displayUUID: String? = nil) {
+    init(id: String? = nil, name: String, windows: [RoomWindow], layout: RoomLayoutKind = .auto,
+         displayUUID: String? = nil, useSavedFrames: Bool? = nil,
+         handoffPolicy: RoomHandoffPolicy? = nil) {
         self.id = id ?? UUID().uuidString
         self.name = name
         self.windows = windows
@@ -88,6 +168,10 @@ struct Room: Codable, Identifiable, Hashable {
         self.focusedWindowIndex = 0
         self.createdAt = Date()
         self.displayUUID = displayUUID
+        let hasRecorded = windows.contains { $0.savedFrame != nil }
+        let resolvedUseSaved = useSavedFrames ?? hasRecorded
+        self.useSavedFrames = resolvedUseSaved
+        self.handoffPolicy = handoffPolicy ?? (resolvedUseSaved ? .keepRoomPositions : .adoptWorkspaceMode)
     }
 
     /// Tolerant decoding, with migration of v1 rooms that stored apps.
@@ -107,6 +191,36 @@ struct Room: Codable, Identifiable, Hashable {
         focusedWindowIndex = try c.decodeIfPresent(Int.self, forKey: .focusedWindowIndex) ?? 0
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         displayUUID = try c.decodeIfPresent(String.self, forKey: .displayUUID)
+        let hasRecorded = decoded.contains { $0.savedFrame != nil }
+        let decodedUseSaved = try c.decodeIfPresent(Bool.self, forKey: .useSavedFrames) ?? hasRecorded
+        useSavedFrames = decodedUseSaved
+        handoffPolicy = try c.decodeIfPresent(RoomHandoffPolicy.self, forKey: .handoffPolicy)
+            ?? (decodedUseSaved ? .keepRoomPositions : .adoptWorkspaceMode)
+    }
+
+    var hasSavedFrames: Bool {
+        windows.contains { $0.savedFrame != nil }
+    }
+
+    var placementModeSummary: String {
+        if useSavedFrames && hasSavedFrames {
+            return localizedString("Saved positions")
+        }
+        return layout.title
+    }
+
+    /// Computes target frames in `area`, using recorded window frames when enabled
+    /// and falling back to `RoomTiler` for any slot without a recorded frame.
+    func resolvedFrames(in area: CGRect, minimumSize: CGSize = CGSize(width: 24, height: 20)) -> [CGRect] {
+        guard !windows.isEmpty else { return [] }
+        let fallback = RoomTiler.frames(count: windows.count, kind: layout, in: area)
+        guard useSavedFrames && hasSavedFrames else { return fallback }
+        return windows.indices.map { index in
+            if let saved = windows[index].savedFrame {
+                return saved.rect(in: area, minimumSize: minimumSize)
+            }
+            return fallback.indices.contains(index) ? fallback[index] : area
+        }
     }
 
     /// Distinct bundle identifiers in slot order (apps the room may need to launch).
@@ -124,6 +238,8 @@ struct Room: Codable, Identifiable, Hashable {
         case focusedWindowIndex
         case createdAt
         case displayUUID
+        case useSavedFrames
+        case handoffPolicy
     }
 
     /// `apps` is a read-only migration key: never written back.
@@ -136,6 +252,8 @@ struct Room: Codable, Identifiable, Hashable {
         try c.encode(focusedWindowIndex, forKey: .focusedWindowIndex)
         try c.encode(createdAt, forKey: .createdAt)
         try c.encodeIfPresent(displayUUID, forKey: .displayUUID)
+        try c.encode(useSavedFrames, forKey: .useSavedFrames)
+        try c.encode(handoffPolicy, forKey: .handoffPolicy)
     }
 
     static func slug(_ s: String) -> String {
