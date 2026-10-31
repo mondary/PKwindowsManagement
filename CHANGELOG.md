@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.119] - 2026-10-31
+### Changed
+- **Pavage complet du bureau** (`⌃⌥T` Paver le bureau actif / Paver tous les bureaux) : le bento ne réduit plus le nombre de cases pour préserver un confort de 420×280 px — toutes les fenêtres carrelables reçoivent une case, jusqu'à 12 ; seules les tailles minimales réelles d'une application peuvent encore réduire la composition. README FR/EN et `BentoTilingChecks` mis en accord.
+
 ## [2026.10.118] - 2026-10-31
 ### Fixed
 - Panneau Rooms (`⌃⌥R`) : le panneau était créé en 560×540 alors que la vue était passée à 600×575 — la rangée « Créer une room » en bas était coupée. Taille unique partagée (`RoomsSwitcherView.contentSize`), réinstallation du moniteur clavier à chaque affichage et forçage du passage en key window (un autre panneau sans barre de titre pouvait retenir le clavier) : Échap, flèches, ⌘K, ⌘L et ⌘1-9 redeviennent fiables.

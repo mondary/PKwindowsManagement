@@ -65,7 +65,6 @@ enum CanvasLayout {
     }
 
     static let maximumBentoWindows = 12
-    static let comfortableBentoSize = CGSize(width: 420, height: 280)
 
     /// Deliberate compositions, not an incomplete rectangular grid. The first
     /// windows get the largest cells. Four stays 2×2; denser layouts mix sizes.
@@ -98,8 +97,9 @@ enum CanvasLayout {
         return frames
     }
 
-    /// Use fewer windows when the screen or an application's minimum size
-    /// cannot accommodate the composition. Excess windows stay behind it.
+    /// Every tileable window gets a cell, up to the 12-window cap: the bento
+    /// no longer drops windows because cells get small — only an application's
+    /// real minimum size can force fewer, larger cells.
     static func bentoPlan(in area: CGRect, minimumSizes: [CGSize]) -> [CGRect] {
         let limit = min(minimumSizes.count, maximumBentoWindows)
         guard limit > 0, area.width > 0, area.height > 0 else { return [] }
@@ -119,9 +119,6 @@ enum CanvasLayout {
     private static func fitsBento(_ frames: [CGRect], minimumSizes: [CGSize], count: Int) -> Bool {
         for (frame, minimum) in zip(frames, minimumSizes) {
             guard frame.width + 2 >= minimum.width, frame.height + 2 >= minimum.height else { return false }
-            guard count == 1
-                || (frame.width >= comfortableBentoSize.width && frame.height >= comfortableBentoSize.height)
-            else { return false }
         }
         return true
     }

@@ -56,9 +56,6 @@ enum BentoTilingChecks {
                 let plan = CanvasLayout.bentoPlan(in: area, minimumSizes: Array(repeating: .zero, count: count))
                 precondition(plan.count <= min(count, 12))
                 covers(plan, area)
-                if plan.count > 1 {
-                    precondition(plan.allSatisfy { $0.width >= 420 && $0.height >= 280 })
-                }
             }
         }
         precondition(CanvasLayout.bentoFrames(in: areas[0], windows: 0).isEmpty)
@@ -67,7 +64,9 @@ enum BentoTilingChecks {
         precondition(four.allSatisfy { $0.width == 756 && $0.height == 450 })
         let twelve = CanvasLayout.bentoFrames(in: areas[3], windows: 12)
         precondition(twelve[0].height >= twelve.last!.height * 1.9, "12 must retain larger priority windows")
-        precondition(CanvasLayout.bentoPlan(in: areas[0], minimumSizes: Array(repeating: .zero, count: 24)).count == 8)
+        // Full tiling: every tileable window gets a cell up to the 12-window
+        // cap; only real application minimum sizes reduce the composition.
+        precondition(CanvasLayout.bentoPlan(in: areas[0], minimumSizes: Array(repeating: .zero, count: 24)).count == 12)
         precondition(CanvasLayout.bentoPlan(in: areas[3], minimumSizes: Array(repeating: .zero, count: 24)).count == 12)
 
         // A refused minimum width forces fewer, larger cells; touched overflow
