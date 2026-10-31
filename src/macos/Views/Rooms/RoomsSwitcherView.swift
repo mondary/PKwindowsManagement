@@ -296,6 +296,9 @@ struct RoomsSwitcherView: View {
         self.onActivateRoom = onActivateRoom
     }
 
+    /// Design size of the panel; RoomsOverlayController sizes the NSPanel from it.
+    static let contentSize = NSSize(width: 600, height: 575)
+
     var body: some View {
         VStack(spacing: 0) {
             if model.isCreating {
@@ -304,7 +307,7 @@ struct RoomsSwitcherView: View {
                 ListView(model: model, onActivateRoom: onActivateRoom)
             }
         }
-        .frame(width: 600, height: 575)
+        .frame(width: Self.contentSize.width, height: Self.contentSize.height)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
             .strokeBorder(.primary.opacity(0.12), lineWidth: 1))

@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.10.118] - 2026-10-31
+### Fixed
+- Panneau Rooms (`⌃⌥R`) : le panneau était créé en 560×540 alors que la vue était passée à 600×575 — la rangée « Créer une room » en bas était coupée. Taille unique partagée (`RoomsSwitcherView.contentSize`), réinstallation du moniteur clavier à chaque affichage et forçage du passage en key window (un autre panneau sans barre de titre pouvait retenir le clavier) : Échap, flèches, ⌘K, ⌘L et ⌘1-9 redeviennent fiables.
+
 ## [2026.10.117] - 2026-10-30
 ### Added
 - **Modes de fenêtres Libre / Tiling / Strip** : `WorkspaceWindowMode` explicite par écran et Space (`displayWorkspaces`), sélectionnable dans Réglages → Fenêtres, le menu de la barre de menus (mode par écran), le Spotlight, les panneaux Rooms et `⌘Tab`. Le layout Tiling préféré est conservé pendant Strip et restauré au retour ; le cycle Libre → Tiling → Strip est disponible partout.

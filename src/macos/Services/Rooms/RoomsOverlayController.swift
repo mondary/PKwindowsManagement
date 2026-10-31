@@ -35,11 +35,12 @@ final class RoomsOverlayController {
     private func showPanel() {
         if panel?.isVisible == true {
             panel?.makeKeyAndOrderFront(nil)
+            installKeyMonitor()
             return
         }
         model.prepare()
 
-        let size = NSSize(width: 560, height: 540)
+        let size = RoomsSwitcherView.contentSize
         let origin = centeredOrigin(size: size)
         let panel = RoomsPanel(
             contentRect: NSRect(origin: origin, size: size),
@@ -69,6 +70,11 @@ final class RoomsOverlayController {
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         panel.orderFrontRegardless()
+        // Another borderless overlay (switcher, launchpad) may still hold key:
+        // force our panel key so the key monitor consumes keystrokes.
+        if !panel.isKeyWindow {
+            panel.makeKey()
+        }
 
         // ListView's FocusState puts the insertion point in search on appear.
     }
