@@ -71,11 +71,21 @@ struct LaunchpadOverlayView: View {
                     return handleKeyEvent(event, apps: keyboardApps, configuration: gridConfiguration, calculationState: calculationState)
                 }
             }
+            .background(
+                // Type-to-search must work before focus settles (panel
+                // activation races the first keystrokes) and after any
+                // top-bar button click moved focus off the field.
+                SearchKickstarter(query: $query, isFocused: { searchFocused }, focus: { searchFocused = true })
+            )
         }
         .onAppear {
             reloadAppCatalog()
             selectFirstApp()
+            searchFocused = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                searchFocused = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                 searchFocused = true
             }
         }
@@ -143,6 +153,7 @@ struct LaunchpadOverlayView: View {
                     let active = current == mode
                     Button {
                         HorizontalCanvasService.shared.setWorkspaceMode(mode)
+                        searchFocused = true
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: mode.symbolName)
@@ -186,8 +197,7 @@ struct LaunchpadOverlayView: View {
                 Button {
                     LaunchpadOverlayController.shared.hide()
                     WindowSwitcherController.shared.show()
-                } label: {
-                    HStack(spacing: 4) {
+                } label: {                    HStack(spacing: 4) {
                         Image(systemName: "rectangle.on.rectangle.angled")
                             .font(.system(size: 11, weight: .semibold))
                         Text("CMD+Tab")

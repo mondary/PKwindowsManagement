@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.2] - 2026-11-02
+### Fixed
+- **Saisie immédiate dans le Launchpad** (`⌥Space`, modes plein écran et compact) : les premières frappes n'étaient pas toujours reçues — l'activation du panneau court après le clavier et le focus tombait parfois sur la fenêtre au lieu du champ, ou était volé par les puces de mode de la barre. Un `SearchKickstarter` redirige désormais les frappes imprimables vers la recherche tant que le champ ne les possède pas (feuilles/alertes et enregistreurs de raccourci exclus), le focus est retenté à l'ouverture, et les boutons de mode/mode d'écran rendent le focus au champ après clic.
+
 ## [2026.11.1] - 2026-11-02
 ### Fixed
 - **Pavage complet du bureau** (`⌃⌥T`) : une fenêtre dont la taille minimale réelle ne tient dans aucune case multi-fenêtres est désormais écartée et **les autres gardent leur composition dense** ; auparavant une seule fenêtre récalcitrante faisait effondrer le pavage jusqu'à une case unique plein écran. L'ordre des fenêtres suit leur **position spatiale** (plus le z-order) : re-paver est idempotent, les fenêtres ne s'échangent plus leurs case d'une pression à l'autre. Un log discret signale les fenêtres écartées.

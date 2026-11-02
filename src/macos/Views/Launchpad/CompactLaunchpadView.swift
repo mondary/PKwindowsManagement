@@ -223,13 +223,22 @@ struct CompactLaunchpadView: View {
                 handleKey(event, items: visibleItems, calcState: calcState)
             }
         )
+        .background(
+            // Type-to-search even before panel focus settles or after a
+            // scope/mode chip click stole the keyboard from the field.
+            SearchKickstarter(query: $query, isFocused: { searchFocused }, focus: { searchFocused = true })
+        )
         .onAppear {
             canvas.refreshCurrentWorkspace()
             launcher.loadAppsAsync(settings: settings) { apps in
                 appCatalog = apps
                 selectedIndex = 0
             }
+            searchFocused = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                searchFocused = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 searchFocused = true
             }
         }
@@ -282,6 +291,7 @@ struct CompactLaunchpadView: View {
                 let active = scope == item
                 Button {
                     scope = item
+                    searchFocused = true
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: item.icon)
@@ -307,6 +317,7 @@ struct CompactLaunchpadView: View {
                 let modeColor = PKStudioPalette.color(for: mode)
                 Button {
                     canvas.cycleWorkspaceMode()
+                    searchFocused = true
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: mode.symbolName)
