@@ -69,8 +69,8 @@ enum BentoTilingChecks {
         precondition(CanvasLayout.bentoPlan(in: areas[0], minimumSizes: Array(repeating: .zero, count: 24)).count == 12)
         precondition(CanvasLayout.bentoPlan(in: areas[3], minimumSizes: Array(repeating: .zero, count: 24)).count == 12)
 
-        // A refused minimum width forces fewer, larger cells; touched overflow
-        // windows are restored. The final accepted cells must still fill the area.
+        // A refused minimum width drops only the stubborn window: the others
+        // keep the densest composition instead of collapsing to fewer cells.
         let area = areas[0]
         var current: [Int: CGRect] = [:]
         var restored = Set<Int>()
@@ -80,7 +80,8 @@ enum BentoTilingChecks {
             current[index] = actual
             return actual
         }, restore: { index in current.removeValue(forKey: index); restored.insert(index) })
-        precondition(!selected.isEmpty && selected.count < 8)
+        precondition(selected.count == 11, "only the oversized window stays out")
+        precondition(!selected.contains(2))
         precondition(Set(current.keys) == Set(selected))
         precondition(restored.contains(2))
         covers(selected.map { current[$0]! }, area)

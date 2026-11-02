@@ -24,12 +24,39 @@ enum BentoTiling {
         var touched = Set<Int>()
         for _ in 0..<(CanvasLayout.maximumBentoWindows * 2) {
             guard valid() else { return [] }
+            // Biggest minimums first: they claim the largest cells. When the
+            // plan still cannot seat everyone, the blockers are exactly the
+            // windows no multi-cell composition can hold — they stay untiled
+            // instead of shrinking the composition for everyone else. The
+            // index tiebreak keeps equal-minimum windows in a stable order.
+            // (Only one extent is often constrained: sort by the largest
+            // extent, never by area, which collapses to zero.)
+            remaining.sort { lhs, rhs in
+                let lhsExtent = max(minimums[lhs].width, minimums[lhs].height)
+                let rhsExtent = max(minimums[rhs].width, minimums[rhs].height)
+                if lhsExtent != rhsExtent { return lhsExtent > rhsExtent }
+                return lhs < rhs
+            }
             let frames = CanvasLayout.bentoPlan(in: area, minimumSizes: remaining.map { minimums[$0] })
             if frames.isEmpty {
                 guard !remaining.isEmpty else { break }
                 // Even a full display cannot fit this window. Keep working
                 // with the others instead of abandoning the whole screen.
                 remaining.removeFirst()
+                continue
+            }
+            if frames.count < remaining.count {
+                // One or more windows cannot fit any cell of the densest
+                // composition. With minimums sorted descending, the blocker
+                // is the front window: drop exactly one (restoring it if it
+                // was already placed) and re-plan at the same density for
+                // everyone else.
+                let blocker = remaining.removeFirst()
+                if touched.remove(blocker) != nil {
+                    guard valid() else { return [] }
+                    restore(blocker)
+                }
+                if remaining.isEmpty { break }
                 continue
             }
             let selected = Array(remaining.prefix(frames.count))

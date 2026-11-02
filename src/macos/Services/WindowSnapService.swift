@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import OSLog
 
 enum WindowSnapAction: CaseIterable {
     case leftHalf
@@ -484,6 +485,8 @@ final class WindowSnapService {
         let rank: Int
     }
 
+    private static let tileLog = Logger(subsystem: "com.mondary.PKwindowsManagement", category: "Tile")
+
     /// Each (desktop, display) gets its own composition and twelve-window cap.
     /// No Space switching or window reassignment is needed for either scope.
     private func tileWindows(scope: BentoTiling.Scope) {
@@ -532,6 +535,9 @@ final class WindowSnapService {
                         valid() && SpaceManagementService.desktops(forWindow: tile.id) == [tile.desktop]
                     })
                 }, valid: valid)
+                if selected.count < windows.count {
+                    Self.tileLog.notice("tiled \(selected.count) of \(windows.count) windows; \(windows.count - selected.count) could not fit a cell and stay in place")
+                }
                 // Raising an off-Space window can switch desktops. Only bring
                 // forward the bento on desktops that were already visible.
                 if desktops.visibleDesktops.contains(workspace.spaceID) {
@@ -592,7 +598,17 @@ final class WindowSnapService {
                                          desktop: desktop, rank: ranks[id] ?? Int.max))
             }
         }
-        return result.sorted { $0.rank < $1.rank }
+        return result.sorted { lhs, rhs in
+            // Spatial order makes re-tiling idempotent: pressing ⌃⌥T again
+            // keeps every window in its cell. Z-order (rank) used to re-deal
+            // the cells on every pass because raising windows during tiling
+            // changes the z-order the next pass sorts by.
+            let lx = lhs.frame.minX.rounded(), rx = rhs.frame.minX.rounded()
+            if lx != rx { return lx < rx }
+            let ly = lhs.frame.minY.rounded(), ry = rhs.frame.minY.rounded()
+            if ly != ry { return ly < ry }
+            return lhs.rank < rhs.rank
+        }
     }
 
     private func isMinimized(_ window: AXUIElement) -> Bool {

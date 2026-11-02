@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.1] - 2026-11-02
+### Fixed
+- **Pavage complet du bureau** (`⌃⌥T`) : une fenêtre dont la taille minimale réelle ne tient dans aucune case multi-fenêtres est désormais écartée et **les autres gardent leur composition dense** ; auparavant une seule fenêtre récalcitrante faisait effondrer le pavage jusqu'à une case unique plein écran. L'ordre des fenêtres suit leur **position spatiale** (plus le z-order) : re-paver est idempotent, les fenêtres ne s'échangent plus leurs case d'une pression à l'autre. Un log discret signale les fenêtres écartées.
+
 ## [2026.10.119] - 2026-10-31
 ### Changed
 - **Pavage complet du bureau** (`⌃⌥T` Paver le bureau actif / Paver tous les bureaux) : le bento ne réduit plus le nombre de cases pour préserver un confort de 420×280 px — toutes les fenêtres carrelables reçoivent une case, jusqu'à 12 ; seules les tailles minimales réelles d'une application peuvent encore réduire la composition. README FR/EN et `BentoTilingChecks` mis en accord.
