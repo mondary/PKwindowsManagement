@@ -771,4 +771,4 @@
 /* CMD+Tab — Rooms revealed with a Shift tap */
 "Cycle windows and apps" = "Recorrer ventanas y apps";
 "Show Rooms" = "Mostrar las Rooms";
-"Hide Rooms" = "Ocultar las Rooms";
+"Show Windows" = "Mostrar las ventanas";

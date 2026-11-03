@@ -16,6 +16,8 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     /// ⇧ pressed alone (no other key since) reveals the Rooms strip on release.
     private var shiftTapArmed = false
     private var shiftTapAt: TimeInterval = 0
+    /// Debounces the two flagsChanged events a Caps Lock press can emit.
+    private var lastCapsToggle: TimeInterval = 0
     private var outsideClickMonitor: Any?
     private var localClickMonitor: Any?
     private var spaceObserver: NSObjectProtocol?
@@ -265,9 +267,18 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         appActivationObserver = nil
     }
 
-    /// Tap ⇧ while the picker is open toggles the Rooms strip. Holding ⇧ with
-    /// ⇥ (⌘⇧Tab) cycles backwards as before: any keyDown cancels the tap.
+    /// ⌘⇪ (Caps Lock) or a ⇧ tap while the picker is open switches the whole
+    /// panel between Windows and Rooms. Holding ⇧ with ⇥ (⌘⇧Tab) cycles
+    /// backwards as before: any keyDown cancels the ⇧ tap.
     private func handleFlagsChanged(_ event: NSEvent) {
+        if event.keyCode == 57 { // Caps Lock: one flagsChanged per press.
+            guard !model.isCreatingRoom else { return }
+            let now = ProcessInfo.processInfo.systemUptime
+            guard now - lastCapsToggle > 0.3 else { return }
+            lastCapsToggle = now
+            model.toggleRooms()
+            return
+        }
         guard event.keyCode == 56 || event.keyCode == 60 else { return }
         let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
         guard !modifiers.contains(.control), !modifiers.contains(.option) else {
@@ -419,9 +430,19 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
                 model.prepare(resetSearch: false)
                 return nil
             }
-            if let rank = Self.digitRanks[event.keyCode], model.filteredItems.indices.contains(rank),
+            if let rank = Self.digitRanks[event.keyCode],
                !(presentation == .commandTab && !model.query.isEmpty) {
-                activate(model.filteredItems[rank].id)
+                if model.showsRooms {
+                    let rooms = model.visibleRooms
+                    if rooms.indices.contains(rank) {
+                        if !event.isARepeat {
+                            model.activateRoom(rooms[rank])
+                            hide()
+                        }
+                    }
+                } else if model.filteredItems.indices.contains(rank) {
+                    activate(model.filteredItems[rank].id)
+                }
                 return nil
             }
             if typesCommandTabText(event) { return nil }

@@ -20,29 +20,32 @@ struct WindowSwitcherView: View {
             if !model.previewsGranted { previewPermissionBanner }
             if let name = model.quittingName { quittingBanner(name) }
             if !model.message.isEmpty { messageBanner }
-            // One single scrolling page: windows, applications, then rooms.
-            // No nested scroll views — sections are just sections.
+            // One single scrolling page. Windows mode: windows then apps.
+            // Rooms mode (⌘⇪ / ⇧): only the room scenes, never both.
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 0) {
                         Color.clear.frame(height: 1).id("picker-top")
-                        if !model.accessibilityGranted {
-                            permissionView
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 24)
-                        } else if model.isLoading {
-                            ProgressView(localizedString("Loading windows…"))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 48)
-                        } else if model.filteredItems.isEmpty {
-                            emptyView
-                                .frame(maxWidth: .infinity)
+                        if model.showsRooms {
+                            roomsStrip
                         } else {
-                            windowGrid
-                                .frame(maxWidth: .infinity)
+                            if !model.accessibilityGranted {
+                                permissionView
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 24)
+                            } else if model.isLoading {
+                                ProgressView(localizedString("Loading windows…"))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 48)
+                            } else if model.filteredItems.isEmpty {
+                                emptyView
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                windowGrid
+                                    .frame(maxWidth: .infinity)
+                            }
+                            applicationsSection
                         }
-                        applicationsSection
-                        if model.showsRooms { roomsStrip }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -104,10 +107,11 @@ struct WindowSwitcherView: View {
 
     private var title: some View {
         HStack(spacing: 9) {
-            Label(localizedString("Windows"), systemImage: "rectangle.on.rectangle")
+            Label(model.showsRooms ? localizedString("Rooms") : localizedString("Windows"),
+                  systemImage: model.showsRooms ? "rectangle.3.group" : "rectangle.on.rectangle")
                 .font(.headline)
             if !model.isLoading, model.accessibilityGranted {
-                Text("\(model.filteredItems.count)")
+                Text("\(model.showsRooms ? model.visibleRooms.count : model.filteredItems.count)")
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 7)
@@ -732,7 +736,7 @@ struct WindowSwitcherView: View {
                         hint("⌘⇥", "Cycle windows and apps")
                         hint("⇥ / ↑↓", "Browse")
                         hint("↵", "Open selected")
-                        hint("⇧", model.showsRooms ? "Hide Rooms" : "Show Rooms")
+                        hint("⌘⇪", model.showsRooms ? "Show Windows" : "Show Rooms")
                         hint("⌘W", "Close")
                         hint("⌘Q", "Quit app")
                         hint("⌘N", "New Room")
@@ -749,7 +753,7 @@ struct WindowSwitcherView: View {
                         compactHint("⌘⇥", "Cycle")
                         compactHint("⇥ / ↑↓", "Browse")
                         compactHint("↵", "Open")
-                        compactHint("⇧", model.showsRooms ? "Hide Rooms" : "Show Rooms")
+                        compactHint("⌘⇪", model.showsRooms ? "Show Windows" : "Show Rooms")
                         compactHint("⌘W", "Close")
                         compactHint("⌘Q", "Quit app")
                         compactHint("⌘N", "New Room")

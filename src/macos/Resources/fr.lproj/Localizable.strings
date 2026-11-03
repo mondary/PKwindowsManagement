@@ -772,4 +772,4 @@
 /* CMD+Tab — Rooms revealed with a Shift tap */
 "Cycle windows and apps" = "Parcourir fenêtres et apps";
 "Show Rooms" = "Afficher les Rooms";
-"Hide Rooms" = "Masquer les Rooms";
+"Show Windows" = "Afficher les fenêtres";

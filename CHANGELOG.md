@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.4] - 2026-11-03
+### Changed
+- **`⌘Tab` en deux modes exclusifs** : par défaut fenêtres + applications ; **`⌘⇪` (Caps Lock)** — ou un tap `⇧` — bascule le **panneau entier en mode Rooms** (titre « Rooms », seule la grille des rooms est visible, `⌘1-9` ouvre la n-ième room) et une nouvelle bascule revient aux fenêtres. Plus de bandeau Rooms superposé : chaque mode réinitialise à l'ouverture, la recherche filtre dans le mode courant, les hints du pied affichent `⌘⇪`. Débounce du Caps Lock pour les deux flagsChanged d'une même pression. README FR/EN et localisations synchronisés.
+
 ## [2026.11.3] - 2026-11-03
 ### Changed
 - **Sélecteur `⌘Tab`** : les **Rooms sont masquées par défaut**. Un **tap `⇧`** pendant la session (sans autre touche — `⌘⇧Tab` continue de parcourir en arrière) révèle le bandeau des Rooms et sélectionne la première ; `Tab`/`↑`/`↓` passent d'une room à l'autre, `↵` l'active ; un second tap `⇧` les masque et rend la sélection aux fenêtres. Les Rooms restent accessibles par `⌥⇥` (suivante), `⌘N`/`⌘K` (création/actions) et l'overlay `⌃⌥R`. README FR/EN et hints du pied de panneau synchronisés.

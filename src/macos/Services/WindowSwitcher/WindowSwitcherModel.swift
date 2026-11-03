@@ -135,11 +135,11 @@ final class WindowSwitcherModel: ObservableObject {
 
     var filteredProcessItems: [WindowSwitcherItem] { WindowSwitcherState.filtered(processItems, query: query) }
 
-    /// Rooms stay hidden until the user taps ⇧ inside the picker: ⌘Tab is the
-    /// window/app switcher, ⇧ reveals the Room scenes on demand.
+    /// Rooms mode replaces the window grid entirely: ⌘Tab shows windows/apps,
+    /// ⌘⇪ (or a ⇧ tap) switches the whole panel to Room scenes and back.
     @Published var showsRooms = false
 
-    /// Rooms currently offered by the picker (hidden by default).
+    /// Rooms currently offered by the picker (hidden outside Rooms mode).
     var visibleRooms: [Room] { showsRooms ? rooms(matching: query) : [] }
 
     /// Windows, Dock/menu-bar apps, and visible Rooms in show order.
@@ -149,15 +149,16 @@ final class WindowSwitcherModel: ObservableObject {
 
     var navigationTargets: [WindowSwitcherTarget] {
         guard !isCreatingRoom else { return filteredItems.map { .item($0.id) } }
+        // Rooms mode is exclusive: only room cards are reachable.
+        if showsRooms { return visibleRooms.map { .room($0.id) } }
         return WindowSwitcherState.navigationTargets(
             windows: filteredItems,
             apps: filteredProcessItems,
-            roomIDs: visibleRooms.map(\.id)
+            roomIDs: []
         )
     }
 
-    /// Tap ⇧ inside an open picker: reveal the Rooms strip (and select the
-    /// first room) or hide it and return to the window grid.
+    /// ⌘⇪ / ⇧ tap: switch the whole picker between Windows and Rooms mode.
     func toggleRooms() {
         showsRooms.toggle()
         if showsRooms {
@@ -373,11 +374,15 @@ final class WindowSwitcherModel: ObservableObject {
     /// Arrow-up/down in the visible grids: same column, previous/next row,
     /// crossing sections instead of walking the flat list.
     func moveSelectionVertically(_ delta: Int) {
-        let sections = [
-            WindowSwitcherState.GridShape(count: filteredItems.count, columns: max(1, columns)),
-            WindowSwitcherState.GridShape(count: filteredProcessItems.count, columns: max(1, appColumns)),
-            WindowSwitcherState.GridShape(count: visibleRooms.count, columns: max(1, roomColumns)),
-        ]
+        let sections: [WindowSwitcherState.GridShape]
+        if showsRooms {
+            sections = [WindowSwitcherState.GridShape(count: visibleRooms.count, columns: max(1, roomColumns))]
+        } else {
+            sections = [
+                WindowSwitcherState.GridShape(count: filteredItems.count, columns: max(1, columns)),
+                WindowSwitcherState.GridShape(count: filteredProcessItems.count, columns: max(1, appColumns)),
+            ]
+        }
         selectedTarget = WindowSwitcherState.movedVertically(
             in: navigationTargets, sections: sections, from: selectedTarget, by: delta)
         syncRoomSelection()
@@ -581,7 +586,9 @@ final class WindowSwitcherModel: ObservableObject {
     func fallbackActions(query: String) -> [FallbackAction] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         var actions: [FallbackAction] = visibleRooms.map { .room($0) }
-        actions.append(contentsOf: launcherMatches.map { .app($0) })
+        if !showsRooms {
+            actions.append(contentsOf: launcherMatches.map { .app($0) })
+        }
         if !trimmed.isEmpty { actions.append(.createRoom(trimmed)) }
         return actions
     }
