@@ -149,8 +149,8 @@ final class WindowSwitcherModel: ObservableObject {
 
     var navigationTargets: [WindowSwitcherTarget] {
         guard !isCreatingRoom else { return filteredItems.map { .item($0.id) } }
-        // Rooms mode is exclusive: only room cards are reachable.
-        if showsRooms { return visibleRooms.map { .room($0.id) } }
+        // Rooms mode is exclusive: room cards plus the create placeholder.
+        if showsRooms { return visibleRooms.map { .room($0.id) } + [.createRoom] }
         return WindowSwitcherState.navigationTargets(
             windows: filteredItems,
             apps: filteredProcessItems,
@@ -158,21 +158,56 @@ final class WindowSwitcherModel: ObservableObject {
         )
     }
 
-    /// ⌘⇪ / ⇧ tap: switch the whole picker between Windows and Rooms mode.
-    func toggleRooms() {
-        showsRooms.toggle()
-        if showsRooms {
+    /// ⌘⇪ / ⇧ tap: enter Rooms mode, or move to the next room while inside it.
+    func enterOrAdvanceRooms() {
+        if !showsRooms {
+            showsRooms = true
             if let first = visibleRooms.first { selectedTarget = .room(first.id) }
-        } else if case .room = selectedTarget {
-            if let first = filteredItems.first {
-                selectedTarget = .item(first.id)
-            } else if let first = filteredProcessItems.first {
-                selectedTarget = .item(first.id)
-            } else {
-                selectedTarget = nil
-            }
+            syncRoomSelection()
+            return
+        }
+        let rows = visibleRooms
+        guard !rows.isEmpty else {
+            selectedTarget = .createRoom
+            return
+        }
+        let index: Int
+        if case .room(let id) = selectedTarget, let current = rows.firstIndex(where: { $0.id == id }) {
+            index = (current + 1) % rows.count
+        } else {
+            index = 0
+        }
+        selectedTarget = .room(rows[index].id)
+        syncRoomSelection()
+    }
+
+    /// ⌘Tab inside Rooms mode returns to the window grid.
+    func exitRooms() {
+        guard showsRooms else { return }
+        showsRooms = false
+        if let first = filteredItems.first {
+            selectedTarget = .item(first.id)
+        } else if let first = filteredProcessItems.first {
+            selectedTarget = .item(first.id)
+        } else {
+            selectedTarget = nil
         }
         syncRoomSelection()
+    }
+
+    /// Screen a saved room restores on: its recorded display when set, the
+    /// pointer's screen otherwise.
+    func screenLabel(for room: Room) -> String {
+        guard let uuid = room.displayUUID else { return localizedString("Screen under pointer") }
+        for screen in NSScreen.screens {
+            guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
+                  let unmanaged = CGDisplayCreateUUIDFromDisplayID(id) else { continue }
+            let screenUUID = CFUUIDCreateString(kCFAllocatorDefault, unmanaged.takeRetainedValue()) as String
+            if screenUUID.caseInsensitiveCompare(uuid) == .orderedSame {
+                return screen.localizedName
+            }
+        }
+        return localizedString("Disconnected screen")
     }
 
     func isSelected(_ id: WindowSwitcherID) -> Bool { selectedTarget == .item(id) }
@@ -376,7 +411,8 @@ final class WindowSwitcherModel: ObservableObject {
     func moveSelectionVertically(_ delta: Int) {
         let sections: [WindowSwitcherState.GridShape]
         if showsRooms {
-            sections = [WindowSwitcherState.GridShape(count: visibleRooms.count, columns: max(1, roomColumns))]
+            // +1 for the "create room" placeholder tile.
+            sections = [WindowSwitcherState.GridShape(count: visibleRooms.count + 1, columns: max(1, roomColumns))]
         } else {
             sections = [
                 WindowSwitcherState.GridShape(count: filteredItems.count, columns: max(1, columns)),

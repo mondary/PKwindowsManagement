@@ -43,6 +43,11 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     /// Further presses accumulate while the inventory loads, then move live.
     func handleCommandTab(backwards: Bool) {
         if isVisible {
+            // ⌘Tab always leaves Rooms mode: windows are one Tab press away.
+            if model.showsRooms, !model.isCreatingRoom {
+                model.exitRooms()
+                return
+            }
             // A picker opened from the menu/hotkey becomes a hold-Command
             // session too, otherwise its release would be ignored.
             if presentation != .commandTab {
@@ -98,6 +103,8 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             guard let room = model.roomStore.rooms.first(where: { $0.id == id }) else { hide(); return }
             model.activateRoom(room)
             hide()
+        case .createRoom:
+            model.beginRoomCreation()
         }
     }
 
@@ -276,7 +283,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             let now = ProcessInfo.processInfo.systemUptime
             guard now - lastCapsToggle > 0.3 else { return }
             lastCapsToggle = now
-            model.toggleRooms()
+            model.enterOrAdvanceRooms()
             return
         }
         guard event.keyCode == 56 || event.keyCode == 60 else { return }
@@ -294,7 +301,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         guard shiftTapArmed else { return }
         shiftTapArmed = false
         guard ProcessInfo.processInfo.systemUptime - shiftTapAt < 0.45 else { return }
-        model.toggleRooms()
+        model.enterOrAdvanceRooms()
     }
 
     private func handleKey(_ event: NSEvent) -> NSEvent? {
@@ -459,7 +466,13 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         case 53: hide()
         case 36, 76:
             if let target = model.selectedTarget { performActivation(target) }
-        case 48: model.moveSelection(modifiers.contains(.shift) ? -1 : 1)
+        case 48:
+            if model.showsRooms, !model.isCreatingRoom {
+                // Plain Tab exits Rooms mode, mirroring ⌘Tab.
+                model.exitRooms()
+            } else {
+                model.moveSelection(modifiers.contains(.shift) ? -1 : 1)
+            }
         case 123, 124:
             // Preserve caret navigation in a nonempty search query.
             guard model.query.isEmpty, modifiers.isEmpty else { return event }

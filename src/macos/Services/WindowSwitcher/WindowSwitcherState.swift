@@ -9,6 +9,8 @@ struct WindowSwitcherID: Hashable, Sendable {
 enum WindowSwitcherTarget: Hashable {
     case item(WindowSwitcherID)
     case room(String)
+    /// Trailing placeholder tile of the Rooms grid: starts room creation.
+    case createRoom
 }
 
 struct WindowSwitcherItem: Identifiable, Equatable, Sendable {

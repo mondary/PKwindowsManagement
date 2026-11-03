@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.11.5] - 2026-11-03
+### Changed
+- **Navigation `⌘Tab` / Rooms** : `⌘Tab` ramène toujours aux fenêtres (même depuis le mode Rooms), `⌘⇪`/tap `⇧` entre dans le mode Rooms puis **passe à la room suivante** à chaque pression (cyclique), les flèches/`↵` naviguent dans la grille courante.
+- **Mode Rooms complet** : tuile **« Nouvelle room »** de la même taille qu'une carte, sélectionnable au clavier (`↵` lance la création) ou au clic — le bouton du bandeau n'était pas atteignable ; chaque carte affiche désormais son **écran cible** (« Built-in Retina Display », « Écran sous le pointeur », écran débranché) et un marqueur quand des positions sont enregistrées.
+
 ## [2026.11.4] - 2026-11-03
 ### Changed
 - **`⌘Tab` en deux modes exclusifs** : par défaut fenêtres + applications ; **`⌘⇪` (Caps Lock)** — ou un tap `⇧` — bascule le **panneau entier en mode Rooms** (titre « Rooms », seule la grille des rooms est visible, `⌘1-9` ouvre la n-ième room) et une nouvelle bascule revient aux fenêtres. Plus de bandeau Rooms superposé : chaque mode réinitialise à l'ouverture, la recherche filtre dans le mode courant, les hints du pied affichent `⌘⇪`. Débounce du Caps Lock pour les deux flagsChanged d'une même pression. README FR/EN et localisations synchronisés.

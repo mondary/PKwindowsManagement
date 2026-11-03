@@ -55,6 +55,7 @@ struct WindowSwitcherView: View {
                         switch target {
                         case .item(let id): proxy.scrollTo(id, anchor: .center)
                         case .room(let id): proxy.scrollTo(id, anchor: .center)
+                        case .createRoom: proxy.scrollTo("create-room-placeholder", anchor: .center)
                         }
                     }
                 }
@@ -358,6 +359,8 @@ struct WindowSwitcherView: View {
                                        onActivate: onClose)
                             .id(room.id)
                     }
+                    createRoomPlaceholder
+                        .id("create-room-placeholder")
                 }
                 .padding(.vertical, 2)
             }
@@ -365,6 +368,47 @@ struct WindowSwitcherView: View {
         .padding(.horizontal, 18)
         .padding(.top, 8)
         .padding(.bottom, 10)
+    }
+
+    /// Trailing tile of the Rooms grid: same footprint as a room card, dashed,
+    /// selectable with the keyboard (↵ opens the creation flow) or by click.
+    private var createRoomPlaceholder: some View {
+        let isSelected = model.selectedTarget == .createRoom
+        return Button {
+            guard !model.isCreatingRoom else { return }
+            model.beginRoomCreation()
+        } label: {
+            VStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.primary.opacity(0.03))
+                    Image(systemName: "plus")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(height: 74)
+                Text(localizedString("New Room"))
+                    .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.10) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(isSelected ? Color.accentColor.opacity(0.6) : Color.primary.opacity(0.18),
+                                  style: StrokeStyle(lineWidth: 1.2, dash: [5, 4]))
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(model.isCreatingRoom)
+        .opacity(model.isCreatingRoom ? 0.4 : 1)
+        .help(localizedString("New Room"))
+        .accessibilityLabel(localizedString("New Room"))
     }
 
     /// Launchpad-style section: one quiet strip of app tiles (icon + name).
@@ -1054,6 +1098,22 @@ private struct RoomPickerCard: View {
             }
             RoomLayoutDiagram(room: room)
                 .frame(height: 74)
+            HStack(spacing: 5) {
+                Image(systemName: "display")
+                    .font(.system(size: 9, weight: .semibold))
+                Text(model.screenLabel(for: room))
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .lineLimit(1)
+                if room.useSavedFrames && room.hasSavedFrames {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .help(localizedString("Saved positions"))
+                }
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 2)
             HStack(spacing: 6) {
                 Button {
                     model.activateRoom(room)
