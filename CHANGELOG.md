@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.3] - 2026-11-03
+### Changed
+- **Sélecteur `⌘Tab`** : les **Rooms sont masquées par défaut**. Un **tap `⇧`** pendant la session (sans autre touche — `⌘⇧Tab` continue de parcourir en arrière) révèle le bandeau des Rooms et sélectionne la première ; `Tab`/`↑`/`↓` passent d'une room à l'autre, `↵` l'active ; un second tap `⇧` les masque et rend la sélection aux fenêtres. Les Rooms restent accessibles par `⌥⇥` (suivante), `⌘N`/`⌘K` (création/actions) et l'overlay `⌃⌥R`. README FR/EN et hints du pied de panneau synchronisés.
+
 ## [2026.11.2] - 2026-11-02
 ### Fixed
 - **Saisie immédiate dans le Launchpad** (`⌥Space`, modes plein écran et compact) : les premières frappes n'étaient pas toujours reçues — l'activation du panneau court après le clavier et le focus tombait parfois sur la fenêtre au lieu du champ, ou était volé par les puces de mode de la barre. Un `SearchKickstarter` redirige désormais les frappes imprimables vers la recherche tant que le champ ne les possède pas (feuilles/alertes et enregistreurs de raccourci exclus), le focus est retenté à l'ouverture, et les boutons de mode/mode d'écran rendent le focus au champ après clic.

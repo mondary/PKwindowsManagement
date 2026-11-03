@@ -135,7 +135,14 @@ final class WindowSwitcherModel: ObservableObject {
 
     var filteredProcessItems: [WindowSwitcherItem] { WindowSwitcherState.filtered(processItems, query: query) }
 
-    /// Windows, Dock/menu-bar apps, and Rooms in the order shown in the picker.
+    /// Rooms stay hidden until the user taps ⇧ inside the picker: ⌘Tab is the
+    /// window/app switcher, ⇧ reveals the Room scenes on demand.
+    @Published var showsRooms = false
+
+    /// Rooms currently offered by the picker (hidden by default).
+    var visibleRooms: [Room] { showsRooms ? rooms(matching: query) : [] }
+
+    /// Windows, Dock/menu-bar apps, and visible Rooms in show order.
     var navItems: [WindowSwitcherItem] {
         WindowSwitcherState.navigationItems(windows: filteredItems, processes: filteredProcessItems)
     }
@@ -145,8 +152,26 @@ final class WindowSwitcherModel: ObservableObject {
         return WindowSwitcherState.navigationTargets(
             windows: filteredItems,
             apps: filteredProcessItems,
-            roomIDs: rooms(matching: query).map(\.id)
+            roomIDs: visibleRooms.map(\.id)
         )
+    }
+
+    /// Tap ⇧ inside an open picker: reveal the Rooms strip (and select the
+    /// first room) or hide it and return to the window grid.
+    func toggleRooms() {
+        showsRooms.toggle()
+        if showsRooms {
+            if let first = visibleRooms.first { selectedTarget = .room(first.id) }
+        } else if case .room = selectedTarget {
+            if let first = filteredItems.first {
+                selectedTarget = .item(first.id)
+            } else if let first = filteredProcessItems.first {
+                selectedTarget = .item(first.id)
+            } else {
+                selectedTarget = nil
+            }
+        }
+        syncRoomSelection()
     }
 
     func isSelected(_ id: WindowSwitcherID) -> Bool { selectedTarget == .item(id) }
@@ -168,6 +193,8 @@ final class WindowSwitcherModel: ObservableObject {
         stop()
         isOpen = true
         generation = UUID()
+        // Rooms are opt-in per session: ⌘Tab opens on windows/apps only.
+        showsRooms = false
         if resetSearch { query = "" }
         accessibilityGranted = AXIsProcessTrusted()
         previewsGranted = CGPreflightScreenCaptureAccess()
@@ -349,7 +376,7 @@ final class WindowSwitcherModel: ObservableObject {
         let sections = [
             WindowSwitcherState.GridShape(count: filteredItems.count, columns: max(1, columns)),
             WindowSwitcherState.GridShape(count: filteredProcessItems.count, columns: max(1, appColumns)),
-            WindowSwitcherState.GridShape(count: rooms(matching: query).count, columns: max(1, roomColumns)),
+            WindowSwitcherState.GridShape(count: visibleRooms.count, columns: max(1, roomColumns)),
         ]
         selectedTarget = WindowSwitcherState.movedVertically(
             in: navigationTargets, sections: sections, from: selectedTarget, by: delta)
@@ -553,7 +580,7 @@ final class WindowSwitcherModel: ObservableObject {
 
     func fallbackActions(query: String) -> [FallbackAction] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        var actions: [FallbackAction] = rooms(matching: query).map { .room($0) }
+        var actions: [FallbackAction] = visibleRooms.map { .room($0) }
         actions.append(contentsOf: launcherMatches.map { .app($0) })
         if !trimmed.isEmpty { actions.append(.createRoom(trimmed)) }
         return actions

@@ -42,7 +42,7 @@ struct WindowSwitcherView: View {
                                 .frame(maxWidth: .infinity)
                         }
                         applicationsSection
-                        roomsStrip
+                        if model.showsRooms { roomsStrip }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -729,9 +729,10 @@ struct WindowSwitcherView: View {
             } else {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 14) {
-                        hint("⌘⇥", "Cycle windows, apps, and Rooms")
+                        hint("⌘⇥", "Cycle windows and apps")
                         hint("⇥ / ↑↓", "Browse")
                         hint("↵", "Open selected")
+                        hint("⇧", model.showsRooms ? "Hide Rooms" : "Show Rooms")
                         hint("⌘W", "Close")
                         hint("⌘Q", "Quit app")
                         hint("⌘N", "New Room")
@@ -748,6 +749,7 @@ struct WindowSwitcherView: View {
                         compactHint("⌘⇥", "Cycle")
                         compactHint("⇥ / ↑↓", "Browse")
                         compactHint("↵", "Open")
+                        compactHint("⇧", model.showsRooms ? "Hide Rooms" : "Show Rooms")
                         compactHint("⌘W", "Close")
                         compactHint("⌘Q", "Quit app")
                         compactHint("⌘N", "New Room")

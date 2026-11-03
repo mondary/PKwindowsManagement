@@ -768,3 +768,8 @@
 "Window Mode" = "Mode de fenêtres";
 "Windows keep their manual positions or your saved Room scene." = "Les fenêtres conservent leurs positions manuelles ou votre scène de Room enregistrée.";
 "Works anytime, even when ⌘Tab stays on macOS" = "Fonctionne à tout moment, même quand ⌘Tab reste sur macOS";
+
+/* CMD+Tab — Rooms revealed with a Shift tap */
+"Cycle windows and apps" = "Parcourir fenêtres et apps";
+"Show Rooms" = "Afficher les Rooms";
+"Hide Rooms" = "Masquer les Rooms";

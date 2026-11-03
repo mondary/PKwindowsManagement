@@ -12,6 +12,10 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     private var panel: NSPanel?
     private let model = WindowSwitcherModel()
     private var keyMonitor: Any?
+    private var flagsMonitor: Any?
+    /// ⇧ pressed alone (no other key since) reveals the Rooms strip on release.
+    private var shiftTapArmed = false
+    private var shiftTapAt: TimeInterval = 0
     private var outsideClickMonitor: Any?
     private var localClickMonitor: Any?
     private var spaceObserver: NSObjectProtocol?
@@ -219,6 +223,11 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             guard let self, self.panel?.isKeyWindow == true else { return event }
             return self.handleKey(event)
         }
+        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            guard let self, self.panel?.isKeyWindow == true else { return event }
+            self.handleFlagsChanged(event)
+            return event
+        }
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] _ in
             self?.hide()
         }
@@ -242,10 +251,12 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     }
 
     private func removeMonitors() {
-        for monitor in [keyMonitor, outsideClickMonitor, localClickMonitor].compactMap({ $0 }) {
+        for monitor in [keyMonitor, flagsMonitor, outsideClickMonitor, localClickMonitor].compactMap({ $0 }) {
             NSEvent.removeMonitor(monitor)
         }
         keyMonitor = nil
+        flagsMonitor = nil
+        shiftTapArmed = false
         outsideClickMonitor = nil
         localClickMonitor = nil
         if let spaceObserver { NSWorkspace.shared.notificationCenter.removeObserver(spaceObserver) }
@@ -254,10 +265,32 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         appActivationObserver = nil
     }
 
+    /// Tap ⇧ while the picker is open toggles the Rooms strip. Holding ⇧ with
+    /// ⇥ (⌘⇧Tab) cycles backwards as before: any keyDown cancels the tap.
+    private func handleFlagsChanged(_ event: NSEvent) {
+        guard event.keyCode == 56 || event.keyCode == 60 else { return }
+        let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+        guard !modifiers.contains(.control), !modifiers.contains(.option) else {
+            shiftTapArmed = false
+            return
+        }
+        if modifiers.contains(.shift) {
+            guard !model.isCreatingRoom else { return }
+            shiftTapArmed = true
+            shiftTapAt = ProcessInfo.processInfo.systemUptime
+            return
+        }
+        guard shiftTapArmed else { return }
+        shiftTapArmed = false
+        guard ProcessInfo.processInfo.systemUptime - shiftTapAt < 0.45 else { return }
+        model.toggleRooms()
+    }
+
     private func handleKey(_ event: NSEvent) -> NSEvent? {
+        // Any real key cancels the pending ⇧-tap (⌘⇧Tab must not toggle Rooms).
+        shiftTapArmed = false
         let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
         let key = event.charactersIgnoringModifiers?.lowercased()
-
         if model.forceQuitConfirmation != nil {
             if modifiers.isEmpty {
                 switch event.keyCode {
