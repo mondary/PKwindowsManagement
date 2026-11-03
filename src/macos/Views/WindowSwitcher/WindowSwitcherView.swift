@@ -370,43 +370,69 @@ struct WindowSwitcherView: View {
         .padding(.bottom, 10)
     }
 
-    /// Trailing tile of the Rooms grid: same footprint as a room card, dashed,
-    /// selectable with the keyboard (↵ opens the creation flow) or by click.
+    /// Trailing tile of the Rooms grid, same footprint and rows as a room
+    /// card (name, 74pt preview, display line, action bar): selectable with
+    /// ⌘⇪/⇧ + ↵ or click, and it never looks smaller than its neighbours.
     private var createRoomPlaceholder: some View {
         let isSelected = model.selectedTarget == .createRoom
         return Button {
             guard !model.isCreatingRoom else { return }
+            model.selectCreateRoom()
             model.beginRoomCreation()
         } label: {
-            VStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 6) {
+                    Text(localizedString("New Room"))
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Color.primary.opacity(0.03))
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.16),
+                                      style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
                     Image(systemName: "plus")
                         .font(.system(size: 22, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
                 .frame(height: 74)
-                Text(localizedString("New Room"))
-                    .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                HStack(spacing: 5) {
+                    Image(systemName: "camera.viewfinder")
+                        .font(.system(size: 9, weight: .semibold))
+                    Text(localizedString("Capture current screen"))
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 2)
+                HStack(spacing: 6) {
+                    Label(localizedString("New Room"), systemImage: "plus")
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.accentColor.opacity(0.9), in: Capsule())
+                        .foregroundStyle(.white)
+                    Spacer(minLength: 0)
+                }
             }
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.10) : Color.clear)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(isSelected ? Color.accentColor.opacity(0.6) : Color.primary.opacity(0.18),
-                                  style: StrokeStyle(lineWidth: 1.2, dash: [5, 4]))
-            )
         }
         .buttonStyle(.plain)
         .disabled(model.isCreatingRoom)
         .opacity(model.isCreatingRoom ? 0.4 : 1)
+        .padding(12)
+        .frame(width: 224, alignment: .leading)
+        .background(.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(isSelected ? Color.accentColor : Color.primary.opacity(0.14),
+                              style: StrokeStyle(lineWidth: isSelected ? 1.8 : 1, dash: [5, 4]))
+        )
         .help(localizedString("New Room"))
         .accessibilityLabel(localizedString("New Room"))
     }

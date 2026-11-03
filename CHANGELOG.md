@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.7] - 2026-11-03
+### Fixed
+- **Tuile « Nouvelle room » au même gabarit que les cartes** : largeur 224, padding 12 et mêmes lignes (nom, aperçu 74 pt, ligne écran, barre d'action) — plus de tuile plus petite qui cassait la grille ; bordure pointillée, anneau accent quand elle est sélectionnée, clic direct ou `↵` pour créer.
+
 ## [2026.11.6] - 2026-11-03
 ### Fixed
 - **Mode Rooms au clavier** : `⌘⇪` / tap `⇧` parcourt désormais aussi la tuile **« Nouvelle room »** (… dernière room → Nouvelle room → première room), qui devient donc sélectionnable et ouvrable avec `↵` comme n'importe quelle room.

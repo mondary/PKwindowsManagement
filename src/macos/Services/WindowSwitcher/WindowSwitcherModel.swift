@@ -223,6 +223,9 @@ final class WindowSwitcherModel: ObservableObject {
         if let index = rooms(matching: query).firstIndex(where: { $0.id == id }) { roomSelection = index }
     }
 
+    /// Keyboard/click selection of the trailing "New Room" tile.
+    func selectCreateRoom() { selectedTarget = .createRoom }
+
     init(roomStore: RoomStore = .shared) {
         self.roomStore = roomStore
     }
