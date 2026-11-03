@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.6] - 2026-11-03
+### Fixed
+- **Mode Rooms au clavier** : `⌘⇪` / tap `⇧` parcourt désormais aussi la tuile **« Nouvelle room »** (… dernière room → Nouvelle room → première room), qui devient donc sélectionnable et ouvrable avec `↵` comme n'importe quelle room.
+
 ## [2026.11.5] - 2026-11-03
 ### Changed
 - **Navigation `⌘Tab` / Rooms** : `⌘Tab` ramène toujours aux fenêtres (même depuis le mode Rooms), `⌘⇪`/tap `⇧` entre dans le mode Rooms puis **passe à la room suivante** à chaque pression (cyclique), les flèches/`↵` naviguent dans la grille courante.

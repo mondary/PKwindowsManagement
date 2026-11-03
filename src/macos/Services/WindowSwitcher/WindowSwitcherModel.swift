@@ -158,26 +158,30 @@ final class WindowSwitcherModel: ObservableObject {
         )
     }
 
-    /// ⌘⇪ / ⇧ tap: enter Rooms mode, or move to the next room while inside it.
+    /// ⌘⇪ / ⇧ tap: enter Rooms mode, or move to the next entry while inside it.
+    /// The trailing "New Room" tile is part of the cycle, so a room can always
+    /// be created from the keyboard: … last room → New Room → first room …
     func enterOrAdvanceRooms() {
         if !showsRooms {
             showsRooms = true
-            if let first = visibleRooms.first { selectedTarget = .room(first.id) }
+            if let first = visibleRooms.first {
+                selectedTarget = .room(first.id)
+            } else {
+                selectedTarget = .createRoom
+            }
             syncRoomSelection()
             return
         }
-        let rows = visibleRooms
-        guard !rows.isEmpty else {
-            selectedTarget = .createRoom
-            return
-        }
+        var targets: [WindowSwitcherTarget] = visibleRooms.map { .room($0.id) }
+        targets.append(.createRoom)
+        guard !targets.isEmpty else { return }
         let index: Int
-        if case .room(let id) = selectedTarget, let current = rows.firstIndex(where: { $0.id == id }) {
-            index = (current + 1) % rows.count
+        if let current = selectedTarget, let position = targets.firstIndex(of: current) {
+            index = (position + 1) % targets.count
         } else {
             index = 0
         }
-        selectedTarget = .room(rows[index].id)
+        selectedTarget = targets[index]
         syncRoomSelection()
     }
 
