@@ -41,7 +41,12 @@ enum WindowSwitcherChecks {
         let homebrew = app(4, 0, "sh.brew.app", "/Applications/Homebrew.app")
         let finder = app(5, 0, "com.apple.finder", "/System/Library/CoreServices/Finder.app")
         let preview = app(6, 0, "com.apple.Preview", "/System/Applications/Preview.app")
-        let realApps = [mini, monitor, homebrew, finder, preview]
+        // Background apps installed by the user stay closable, even under a
+        // prohibited activation policy (Android tooling, launcher daemons).
+        let background = app(17, 2, "com.example.background", "/Applications/Background.app")
+        // GeForceNOW ships the real app at Product.app/Contents/MacOS/*.app.
+        let nestedExecutable = app(19, 0, "org.example.child", "/Applications/Product.app/Contents/MacOS/Child.app")
+        let realApps = [mini, monitor, homebrew, finder, preview, background, nestedExecutable]
         let internals = [
             helper,
             app(7, 1, "com.apple.AccessibilityUIServer", "/System/Library/CoreServices/AccessibilityUIServer.app"),
@@ -54,12 +59,11 @@ enum WindowSwitcherChecks {
             app(14, 1, "com.apple.WebKit.Networking", "/System/Library/Frameworks/WebKit.framework/XPCServices/Networking.xpc"),
             app(15, 1, "com.apple.python3", "/Library/Developer/Python.framework/Resources/Python.app"),
             app(16, 1, nil, nil),
-            app(17, 2, "com.example.background", "/Applications/Background.app"),
             app(18, 0, "com.example.helper", "/Applications/Example Helper.app"),
-            app(19, 0, "org.example.child", "/Applications/Product.app/Contents/MacOS/Child.app"),
+            app(25, 2, "com.example.systemagent", "/System/Library/Agents/SystemAgent.app"),
             app(0, 0, "com.example.kernel", "/Applications/Kernel.app")
         ]
-        precondition(WindowSwitcherState.listedApplications(realApps + internals).map(\.pid) == [1, 3, 4, 5, 6])
+        precondition(WindowSwitcherState.listedApplications(realApps + internals).map(\.pid) == [1, 3, 4, 5, 6, 17, 19])
         precondition(WindowSwitcherState.listedApplications([helper]).isEmpty)
         let sameProductOtherProcess = app(20, 1, mini.bundleIdentifier, mini.bundlePath)
         precondition(WindowSwitcherState.listedApplications([sameProductOtherProcess, mini, monitor]).map(\.pid) == [1, 3])

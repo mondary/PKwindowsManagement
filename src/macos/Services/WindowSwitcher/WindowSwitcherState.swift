@@ -101,10 +101,23 @@ enum WindowSwitcherState {
     /// Steam reports pid -1 and a `Steam.AppBundle/Steam` launcher path: both
     /// a non-zero pid (including -1) and an .AppBundle wrapper mean "real app".
     static func applicationIdentityKey(_ app: ApplicationIdentity) -> String? {
-        guard app.pid != 0,
-              isListedProcess(activationPolicy: app.activationPolicy, bundleIdentifier: app.bundleIdentifier),
-              let path = app.bundlePath, !path.isEmpty else { return nil }
+        guard app.pid != 0, let path = app.bundlePath, !path.isEmpty else { return nil }
         let url = URL(fileURLWithPath: path).standardizedFileURL
+        let identifier = app.bundleIdentifier?.lowercased()
+        // Third-party background apps the user installed (prohibited policy,
+        // e.g. Android tooling running headless) must stay listed so ⌘Q can
+        // stop them. Apple agents and anything under /System stay out.
+        let userInstalled = url.path.hasPrefix("/Applications/")
+            || url.path.hasPrefix("/Users/")
+            || url.path.hasPrefix("/opt/homebrew/")
+        let policyListed = app.activationPolicy == 0
+            || app.activationPolicy == 1
+            || (app.activationPolicy == 2 && identifier != nil && userInstalled)
+        guard policyListed else { return nil }
+        if let identifier {
+            if excludedBundleIdentifiers.contains(where: { $0.lowercased() == identifier }) { return nil }
+            if app.activationPolicy == 1, identifier.hasPrefix("com.apple.") { return nil }
+        }
         let components = url.pathComponents.map { $0.lowercased() }
         let last = components.last ?? ""
         let parent = components.count >= 2 ? components[components.count - 2] : ""
@@ -126,7 +139,6 @@ enum WindowSwitcherState {
             return nil
         }
         let lowerPath = url.path.lowercased()
-        let identifier = app.bundleIdentifier?.lowercased()
         if lowerPath.hasPrefix("/system/library/") {
             // Finder is a genuine user application installed in CoreServices.
             guard identifier == "com.apple.finder", app.activationPolicy == 0,

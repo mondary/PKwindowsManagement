@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.9] - 2026-11-05
+### Fixed
+- **Apps d'arrière-plan fermables** : les apps tierces en politique `prohibited` installées par l'utilisateur (`/Applications`, `~/Applications`, `/Users/…`, Homebrew) sont désormais listées dans `⌘Tab` et donc arrêtables au `⌘Q` (Android Dex et consorts) ; les agents Apple et tout ce qui vit sous `/System` restent exclus. Tests d'identité mis à jour (app d'arrière-plan admise, agent système refusé, bundle `Contents/MacOS` admis).
+
 ## [2026.11.8] - 2026-11-05
 ### Fixed
 - **Apps manquantes dans `⌘Tab`** : les apps dont le bundle réel est imbriqué dans `Product.app/Contents/MacOS/Product.app` (GeForceNOW) sont désormais listées comme apps autonomes ; les vrais helpers (`LoginItems`, `Helpers`, `XPCServices`, `PlugIns`) restent exclus.
