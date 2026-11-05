@@ -463,3 +463,14 @@
 "Accept the model conditions" = "Accept the model conditions";
 "Manage my Hugging Face token" = "Manage my Hugging Face token";
 "Your existing token from huggingface-cli login is reused automatically. Accept the conditions once for this account, then retry the download." = "Your existing token from huggingface-cli login is reused automatically. Accept the conditions once for this account, then retry the download.";
+
+/* Trackpad gesture → Exposé PK */
+"Four-finger swipe up" = "Four-finger swipe up";
+"Opens Exposé PK instead of doing nothing" = "Opens Exposé PK instead of doing nothing";
+"macOS keeps four-finger swipes for Mission Control. To make Exposé PK the only response, release that system gesture once in System Settings → Trackpad → More Gestures." = "macOS keeps four-finger swipes for Mission Control. To make Exposé PK the only response, release that system gesture once in System Settings → Trackpad → More Gestures.";
+"Open Trackpad settings" = "Open Trackpad settings";
+"Release the gesture…" = "Release the gesture…";
+"Release the Mission Control gesture?" = "Release the Mission Control gesture?";
+"Release the gesture" = "Release the gesture";
+"This disables the four-finger vertical swipe in macOS Trackpad settings. Mission Control remains available from its keyboard shortcut and the menu bar. A logout may be required." = "This disables the four-finger vertical swipe in macOS Trackpad settings. Mission Control remains available from its keyboard shortcut and the menu bar. A logout may be required.";
+"Cancel" = "Cancel";

@@ -69,6 +69,9 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         HorizontalCanvasService.shared.start()
         CanvasMinimapController.shared.start(isEnabled: { AppRuntime.shared.settings?.canvasMinimap ?? true })
         registerRoomsHotKey()
+        TrackpadSwipeMonitor.shared.isEnabled = { AppRuntime.shared.settings?.exposeTrackpadGesture ?? true }
+        TrackpadSwipeMonitor.shared.onSwipeUp = { WindowSwitcherController.shared.toggleExpose() }
+        TrackpadSwipeMonitor.shared.start()
         UpdaterManager.shared.start()
         SettingsWindowController.shared.showSettings()
         DispatchQueue.main.async { SettingsWindowController.shared.hideSwiftUISettingsArtifacts() }
@@ -95,6 +98,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         SettingsWindowController.shared.stopArtifactCleanup()
         LaunchShortcutMonitor.shared.stop()
         CommandTabMonitor.shared.stop()
+        TrackpadSwipeMonitor.shared.stop()
         unregisterLaunchpadHotKey()
         unregisterRoomsHotKey()
         if let launchpadHotKeyHandler {

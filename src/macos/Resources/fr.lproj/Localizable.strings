@@ -806,3 +806,13 @@
 "Accept the model conditions" = "Accepter les conditions du modèle";
 "Manage my Hugging Face token" = "Gérer mon token Hugging Face";
 "Your existing token from huggingface-cli login is reused automatically. Accept the conditions once for this account, then retry the download." = "Ton token existant (huggingface-cli login) est réutilisé automatiquement. Accepte les conditions une fois pour ce compte, puis relance le téléchargement.";
+
+/* Trackpad gesture → Exposé PK */
+"Four-finger swipe up" = "Balayage à quatre doigts vers le haut";
+"Opens Exposé PK instead of doing nothing" = "Ouvre Exposé PK au lieu de ne rien faire";
+"macOS keeps four-finger swipes for Mission Control. To make Exposé PK the only response, release that system gesture once in System Settings → Trackpad → More Gestures." = "macOS réserve les balayages à quatre doigts à Mission Control. Pour qu'Exposé PK soit la seule réponse, libère ce geste système une fois dans Réglages Système → Trackpad → Plus de gestes.";
+"Open Trackpad settings" = "Ouvrir les réglages Trackpad";
+"Release the gesture…" = "Libérer le geste…";
+"Release the Mission Control gesture?" = "Libérer le geste Mission Control ?";
+"Release the gesture" = "Libérer le geste";
+"This disables the four-finger vertical swipe in macOS Trackpad settings. Mission Control remains available from its keyboard shortcut and the menu bar. A logout may be required." = "Cela désactive le balayage vertical à quatre doigts dans les réglages Trackpad de macOS. Mission Control reste accessible par son raccourci clavier et la barre de menus. Une reconnexion peut être nécessaire.";

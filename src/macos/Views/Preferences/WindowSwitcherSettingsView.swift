@@ -6,6 +6,7 @@ struct WindowSwitcherSettingsView: View {
     @ObservedObject var settings: AppSettings
     @State private var previewSelectedCard: Int = 1
     @State private var previewFilterDemo: Bool = false
+    @State private var confirmReleaseGesture = false
 
     private var accent: Color { PKStudioPalette.switcherAccent }
 
@@ -436,6 +437,7 @@ struct WindowSwitcherSettingsView: View {
                 .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
                 exposeShortcutRow
+                exposeGestureRow
 
                 HStack(spacing: 12) {
                     Image(systemName: "photo.badge.checkmark")
@@ -493,6 +495,58 @@ struct WindowSwitcherSettingsView: View {
         }
         .padding(10)
         .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// Optional native four-finger upward swipe. macOS owns that gesture by
+    /// default (Mission Control), so the row explains how to release it.
+    private var exposeGestureRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Toggle(isOn: Binding(
+                get: { settings.exposeTrackpadGesture },
+                set: { settings.exposeTrackpadGesture = $0 }
+            )) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(localizedString("Four-finger swipe up"))
+                        .font(.system(size: 12.5, weight: .semibold))
+                    Text(localizedString("Opens Exposé PK instead of doing nothing"))
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+
+            Text(localizedString("macOS keeps four-finger swipes for Mission Control. To make Exposé PK the only response, release that system gesture once in System Settings → Trackpad → More Gestures."))
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 10) {
+                Button(localizedString("Open Trackpad settings")) {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.Trackpad-Settings.extension") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+                Button(localizedString("Release the gesture…")) { confirmReleaseGesture = true }
+                Spacer(minLength: 0)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding(10)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
+        .alert(localizedString("Release the Mission Control gesture?"), isPresented: $confirmReleaseGesture) {
+            Button(localizedString("Cancel"), role: .cancel) {}
+            Button(localizedString("Release the gesture"), role: .destructive) { releaseSystemSwipe() }
+        } message: {
+            Text(localizedString("This disables the four-finger vertical swipe in macOS Trackpad settings. Mission Control remains available from its keyboard shortcut and the menu bar. A logout may be required."))
+        }
+    }
+
+    /// Explicit, confirmed change of a macOS preference (never silent).
+    private func releaseSystemSwipe() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/defaults")
+        process.arguments = ["write", "com.apple.AppleMultitouchTrackpad",
+                             "TrackpadFourFingerVertSwipeGesture", "-int", "0"]
+        try? process.run()
     }
 
     // MARK: - 5. Visual Keyboard Gestures Grid

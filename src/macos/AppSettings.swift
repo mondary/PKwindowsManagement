@@ -53,6 +53,7 @@ final class AppSettings: ObservableObject {
         static let windowSwitcherStickyCommandTab = "window-switcher-sticky-command-tab"
         static let canvasRowsPerColumn = "canvas-rows-per-column"
         static let canvasMinimap = "canvas-minimap"
+        static let exposeTrackpadGesture = "expose-trackpad-gesture"
     }
 
     private let defaults: UserDefaults
@@ -277,6 +278,15 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    /// Upward trackpad swipe opens the fullscreen Exposé PK instead of the
+    /// macOS Mission Control gesture (which must be released separately).
+    @Published var exposeTrackpadGesture: Bool {
+        didSet {
+            defaults.set(exposeTrackpadGesture, forKey: Keys.exposeTrackpadGesture)
+            scheduleAutoBackup()
+        }
+    }
+
     /// OmniWM-style minimap bar on top of each screen running a Canvas.
     @Published var canvasMinimap: Bool {
         didSet {
@@ -389,6 +399,7 @@ final class AppSettings: ObservableObject {
         let storedRows = defaults.integer(forKey: Keys.canvasRowsPerColumn)
         canvasRowsPerColumn = storedRows == 1 ? 1 : 2
         canvasMinimap = defaults.object(forKey: Keys.canvasMinimap) as? Bool ?? true
+        exposeTrackpadGesture = defaults.object(forKey: Keys.exposeTrackpadGesture) as? Bool ?? true
 
         if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()

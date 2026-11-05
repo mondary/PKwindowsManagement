@@ -2,6 +2,8 @@
 
 Skills used for this project:
 
+- Dev 2026.11.20 — geste trackpad quatre doigts vers le haut mappé sur Exposé PK via MultitouchSupport (chargement dynamique, callback contacts, détecteur pur testé : doigts/sens/amplitude/tir unique/anti-rebond). Réglage activé par défaut, ligne dans Réglages avec libération confirmée du geste Mission Control et lien Trackpad. `⌘Tab` ferme toujours le sélecteur, avec activation de l’app propriétaire en repli AX. Build/package/signature et tests à vérifier avant relance ; geste réel et acceptation système à confirmer par l’utilisateur, sans pilotage de son écran.
+
 - Dev 2026.11.19 — `⌘Tab` ne peut plus rester bloqué : toute activation ferme le panneau ; si AX ne résout pas la fenêtre exacte (ou si une tâche orpheline existe), l’app propriétaire est activée au lieu de laisser le sélecteur affiché. Modèle Laya gated : réutilisation du token existant (`HF_TOKEN`, `HUGGING_FACE_HUB_TOKEN`, `~/.cache/huggingface/token`) dans `install-model.sh`, marqueur `GATED_REPO` et encart Réglages avec liens cliquables vers les conditions du modèle et la gestion des tokens. Build vérifié ; activation et téléchargement réels à confirmer par l’utilisateur, sans pilotage de son écran.
 
 - Dev 2026.11.18 — régression `⌘Tab` après Exposé : requête de focus orpheline verrouillant `activationTask` et rejetant silencieusement clics/Entrée. Nettoyage à la fermeture et à chaque ouverture, libération avant garde de session, filet de sécurité pour tâche orpheline. Build SDK 26.5 et tests Exposé/raccourcis/capture verts ; activation réelle à confirmer par l’utilisateur, sans pilotage de son écran.

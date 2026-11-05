@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.11.20] - 2026-11-05
+### Added
+- **Geste trackpad à quatre doigts vers le haut → Exposé PK** : moniteur natif via le framework système MultitouchSupport (le même que Mission Control), détection du nombre de doigts, du sens et de l'amplitude, déclenchement unique par geste avec anti-rebond. Activable dans Réglages → sélecteur, avec un bouton explicite pour **libérer le geste Mission Control** (confirmation, écriture de `TrackpadFourFingerVertSwipeGesture`) et un accès direct aux réglages Trackpad. Mission Control reste accessible au clavier.
+- Tests purs du détecteur : nombre de doigts, direction, tir unique, réarmement, anti-rebond, geste trop lent et coordonnées invalides. Aucune capture d'écran ni pilotage de ta session.
+### Fixed
+- `⌘Tab` ferme désormais toujours son panneau : si la fenêtre exacte ne peut pas être activée par Accessibilité, l'application propriétaire est mise au premier plan au lieu de laisser le sélecteur affiché.
+
 ## [2026.11.19] - 2026-11-05
 ### Fixed
 - **`⌘Tab` bloqué après Exposé ou après un échec AX** : une activation garantit désormais la fermeture du panneau. Si la fenêtre exacte ne peut pas être résolue (AX indisponible, app fermée, tâche orpheline), l'application propriétaire est activée et le panneau disparaît — plus de sélecteur qui reste affiché sans réaction au clic ou à Entrée.
