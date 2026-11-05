@@ -2,6 +2,8 @@
 
 Skills used for this project:
 
+- Dev 2026.11.17 — fond d’écran Exposé sur écran interne : diagnostic lecture seule (URL temporaire `StaticWallpaper` inexistante, fill bleu système), repli capture ScreenCaptureKit du bureau avec toutes les fenêtres exclues, suppression du fill bleu au profit d’un dégradé neutre. Build SDK 26.5 ; QA visuelle utilisateur, aucune capture de sa session par l’agent.
+
 - Dev 2026.11.16 — retour utilisateur après essai : capture Exposé à la résolution d’affichage (2× Retina plafonnée, purge au changement de mode), NSApp.activate pour un premier clic fonctionnel, cartes de groupe Îlots lisibles (fond, contour, titre interne, écarts resserrés) et strip à largeur adaptée au ratio (paysage/carré/colonne) avec badge d’app par carte. Régressions : ratios mixtes dans le strip, hit-test et clic unique. Build + signature à vérifier ; QA visuelle utilisateur requise.
 
 - Dev 2026.11.15 — Exposé Îlots / Strip Android mémorisé (`pkwm.expose.layoutMode`) : partition spatiale pondérée, grilles locales sans facteur de réduction global, marges réduites ; bande plein écran à grands aperçus, défilement borné et révélation clavier. Zones de clic géométriques, identité pression/relâchement et retrait des overlays avant activation du candidat AX capturé. Tests purs 0–128 fenêtres, couverture spatiale, proportions, hit-test décalé et annulation de glissement validés ; régressions sélecteur/raccourcis/capture vertes. Build et signature stricte vérifiés ; 2026.11.15-dev relancée (PID 61124, chemin du bundle local vérifié). Compétences macOS/build/commits et présence locale réutilisées ; pas de QA écran ni d’upload, acceptation graphique utilisateur requise.

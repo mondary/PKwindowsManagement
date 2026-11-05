@@ -81,7 +81,10 @@ struct ExposeView: View {
 
     private var wallpaper: some View {
         ZStack {
-            Color(nsColor: screen.fill)
+            // Neutral fallback only: never show a saturated system fill colour
+            // when a wallpaper file cannot be read.
+            LinearGradient(colors: [Color(white: 0.16), Color(white: 0.06)],
+                           startPoint: .top, endPoint: .bottom)
             if let image = scene.wallpapers[screen.id] {
                 if screen.fitWallpaper {
                     Image(nsImage: image).resizable().scaledToFit()

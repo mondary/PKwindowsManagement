@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.11.17] - 2026-11-05
+### Fixed
+- **Fond d’écran de l’écran interne** : macOS 26 renvoie parfois un chemin temporaire supprimé pour les fonds dynamiques (`.../T/StaticWallpaper/*_static.jpg`), ce qui faisait retomber Exposé sur la couleur de remplissage système — l’écran bleu. Exposé charge désormais le fichier s’il existe, sinon capture le bureau **sans aucune fenêtre** (ScreenCaptureKit, fenêtres/Dock/icônes exclus) pour retrouver le vrai fond d’écran, quel que soit son format (HEIC, aérien, dynamique).
+- Suppression totale du repli bleu : si aucune image n’est disponible (permission d’enregistrement refusée), un dégradé neutre sombre remplace la couleur système — plus jamais d’écran bleu.
+- Diagnostic lecture seule ajouté : l’écran interne pointait vers un fichier inexistant avec un remplissage bleu `(0,32 · 0,49 · 0,72)`, alors que l’écran externe utilisait un PNG valide.
+
 ## [2026.11.16] - 2026-11-05
 ### Fixed
 - **Aperçus nets dans Exposé** : capture à la résolution réelle d'affichage (2× Retina, plafonnée) au lieu des vignettes 640 px du sélecteur ; chaque mode (Îlots / Strip) définit sa taille de capture et le cache est purgé au basculement pour reprendre les images à la bonne résolution.

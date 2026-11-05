@@ -1,6 +1,7 @@
 import AppKit
 import AVFoundation
 import ImageIO
+import ScreenCaptureKit
 import Combine
 import SwiftUI
 
@@ -14,7 +15,6 @@ final class ExposeScene: ObservableObject {
         let frame: CGRect
         let safeTop: CGFloat
         let wallpaperURL: URL?
-        let fill: NSColor
         let fitWallpaper: Bool
     }
 
@@ -52,7 +52,6 @@ final class ExposeScene: ObservableObject {
             return Screen(id: id, appKitFrame: screen.frame, frame: CGDisplayBounds(id),
                 safeTop: max(screen.safeAreaInsets.top, 24),
                 wallpaperURL: NSWorkspace.shared.desktopImageURL(for: screen),
-                fill: options[.fillColor] as? NSColor ?? .black,
                 fitWallpaper: options[.allowClipping] as? Bool == false)
         }
         guard let activeID = active.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
@@ -109,27 +108,66 @@ final class ExposeScene: ObservableObject {
                                    visibleArea: availableArea)
     }
 
-    /// Read the selected wallpaper file, not the user's screen. For aerial
-    /// movies use a poster frame; never start a video stream behind the UI.
+    /// Read the selected wallpaper file; never start a video stream behind
+    /// the UI. macOS 26 sometimes reports a deleted temp path for built-in
+    /// dynamic wallpapers (e.g. .../T/StaticWallpaper/xxx_static.jpg), which
+    /// used to fall back to the default BLUE fill colour. When the file is
+    /// missing, capture the desktop with every window excluded: the result
+    /// is the actual wallpaper, whatever its format.
     func loadWallpapers() async {
         for screen in screens {
-            guard !Task.isCancelled, wallpapers[screen.id] == nil, let url = screen.wallpaperURL else { continue }
-            let image = await Task.detached(priority: .userInitiated) { () -> CGImage? in
-                if let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-                   let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
-                       kCGImageSourceCreateThumbnailFromImageAlways: true,
-                       kCGImageSourceCreateThumbnailWithTransform: true,
-                       kCGImageSourceThumbnailMaxPixelSize: 3840
-                   ] as CFDictionary) { return image }
-                guard ["mov", "mp4", "m4v"].contains(url.pathExtension.lowercased()) else { return nil }
-                let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
-                generator.appliesPreferredTrackTransform = true
-                generator.maximumSize = CGSize(width: 3840, height: 2160)
-                guard let cg = try? generator.copyCGImage(at: .zero, actualTime: nil) else { return nil }
-                return cg
-            }.value
-            guard !Task.isCancelled else { return }
-            if let image { wallpapers[screen.id] = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height)) }
+            guard !Task.isCancelled, wallpapers[screen.id] == nil else { continue }
+            if let image = await Self.image(from: screen.wallpaperURL) {
+                wallpapers[screen.id] = image
+            } else if let image = await Self.desktopSnapshot(displayID: screen.id) {
+                wallpapers[screen.id] = image
+            }
         }
+    }
+
+    private static func image(from url: URL?) async -> NSImage? {
+        guard let url else { return nil }
+        let cg = await Task.detached(priority: .userInitiated) { () -> CGImage? in
+            if let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+               let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                   kCGImageSourceCreateThumbnailFromImageAlways: true,
+                   kCGImageSourceCreateThumbnailWithTransform: true,
+                   kCGImageSourceThumbnailMaxPixelSize: 3840
+               ] as CFDictionary) { return image }
+            guard ["mov", "mp4", "m4v"].contains(url.pathExtension.lowercased()) else { return nil }
+            let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
+            generator.appliesPreferredTrackTransform = true
+            generator.maximumSize = CGSize(width: 3840, height: 2160)
+            return try? generator.copyCGImage(at: .zero, actualTime: nil)
+        }.value
+        guard let cg else { return nil }
+        return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
+    }
+
+    /// Wallpaper-only snapshot: every shareable window (apps, Finder desktop
+    /// icons, Dock, menu bar, our own panels) is excluded, so only the real
+    /// desktop picture remains. Requires Screen Recording, like previews.
+    private static func desktopSnapshot(displayID: CGDirectDisplayID) async -> NSImage? {
+        guard #available(macOS 14.0, *), CGPreflightScreenCaptureAccess() else { return nil }
+        let content = await WindowCaptureRequest<SCShareableContent>.perform { complete in
+            SCShareableContent.getExcludingDesktopWindows(true, onScreenWindowsOnly: false) { content, _ in
+                complete(content)
+            }
+        }
+        guard let content, let display = content.displays.first(where: { $0.displayID == displayID }) else { return nil }
+        let filter = SCContentFilter(display: display, excludingWindows: content.windows)
+        let config = SCStreamConfiguration()
+        config.width = Int(CGDisplayPixelsWide(displayID))
+        config.height = Int(CGDisplayPixelsHigh(displayID))
+        config.showsCursor = false
+        config.ignoreShadowsDisplay = true
+        config.ignoreGlobalClipSingleWindow = true
+        let cg = await WindowCaptureRequest<CGImage>.perform { complete in
+            SCScreenshotManager.captureImage(contentFilter: filter, configuration: config) { image, _ in
+                complete(image)
+            }
+        }
+        guard let cg else { return nil }
+        return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
     }
 }
