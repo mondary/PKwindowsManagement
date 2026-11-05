@@ -86,17 +86,18 @@ struct WindowSwitcherView: View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 14) {
                 title
-                PKOverlayModeSwitcherBar()
-                    .fixedSize()
+                modeToggle
                 Spacer(minLength: 10)
                 searchField.frame(maxWidth: 360)
+                quickActions
                 headerButtons
             }
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     title
                     Spacer(minLength: 12)
-                    PKOverlayModeSwitcherBar()
+                    modeToggle
+                    quickActions
                     headerButtons
                 }
                 searchField
@@ -104,6 +105,44 @@ struct WindowSwitcherView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
+    }
+
+    /// The picker's two exclusive views, made explicit: ⌘⇥ switches windows
+    /// and apps, ⌘⇧ (or ⌘⇪) switches to Rooms and advances room to room.
+    private var modeToggle: some View {
+        HStack(spacing: 3) {
+            modeChip(title: "Windows", shortcut: "⌘⇥", active: !model.showsRooms) {
+                model.exitRooms()
+            }
+            modeChip(title: "Rooms", shortcut: "⌘⇧", active: model.showsRooms) {
+                model.enterOrAdvanceRooms()
+            }
+        }
+        .padding(3)
+        .background(.primary.opacity(0.05), in: Capsule())
+        .help(localizedString(model.showsRooms
+            ? "Each ⇧ press moves to the next room"
+            : "⌘⇧ switches to Rooms"))
+    }
+
+    private func modeChip(title: String, shortcut: String, active: Bool,
+                          action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Text(localizedString(title))
+                    .font(.system(size: 11, weight: active ? .bold : .medium, design: .rounded))
+                Text(shortcut)
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(active ? Color.accentColor.opacity(0.16) : Color.clear,
+                        in: Capsule())
+            .overlay(Capsule()
+                .strokeBorder(active ? Color.accentColor.opacity(0.5) : .clear, lineWidth: 1))
+            .foregroundStyle(active ? Color.accentColor : .secondary)
+        }
+        .buttonStyle(.plain)
     }
 
     private var title: some View {
@@ -153,6 +192,50 @@ struct WindowSwitcherView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(.primary.opacity(0.07), lineWidth: 1)
         )
+    }
+
+    /// Visible close/quit affordances: the same commands as ⌘W and ⌘Q, so the
+    /// actions are discoverable without reading the footer.
+    private var quickActions: some View {
+        HStack(spacing: 5) {
+            quickAction(title: "Close", key: "⌘W", icon: "xmark", enabled: canCloseSelected) {
+                guard let id = model.selectedID, model.candidate(for: id) != nil else { return }
+                model.closeWindow(id)
+            }
+            quickAction(title: "Quit", key: "⌘Q", icon: "power", enabled: model.selectedID != nil) {
+                guard let id = model.selectedID else { return }
+                if model.candidate(for: id) != nil {
+                    model.quitApp(id)
+                } else {
+                    model.quitProcess(id)
+                }
+            }
+        }
+    }
+
+    private var canCloseSelected: Bool {
+        guard let id = model.selectedID else { return false }
+        return model.candidate(for: id) != nil
+    }
+
+    private func quickAction(title: String, key: String, icon: String,
+                             enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 9, weight: .bold))
+                Text(key)
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+            }
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .background(.primary.opacity(enabled ? 0.07 : 0.03), in: Capsule())
+            .foregroundStyle(enabled ? Color.secondary : Color.secondary.opacity(0.35))
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .help("\(localizedString(title)) (\(key))")
+        .accessibilityLabel(localizedString(title))
     }
 
     private var headerButtons: some View {

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.11.12] - 2026-11-05
+### Changed
+- **En-tête du sélecteur `⌘Tab` repensé** : les 4 pastilles confuses (Écran 1 + Libre/Tiling/Strip, dont les clics ne faisaient rien dans le sélecteur) sont remplacées par une **bascule explicite Windows `⌘⇥` / Rooms `⌘⇧`**, cliquable, qui montre les deux fonctionnalités et où l'on se trouve ; les modes Tiling/Strip restent dans les Réglages et le menu de barre.
+- Actions **`⌘W` Fermer** et **`⌘Q` Quitter** désormais visibles dans l'en-tête (pastilles icône + raccourci, désactivées sans sélection), en plus du pied de panneau.
+
 ## [2026.11.11] - 2026-11-05
 ### Changed
 - Version `⌘Tab` déplacée de l'en-tête vers le **pied du panneau, à droite** (après le hint Échap), en monospace tertiaire ; en disposition compacte elle passe sous la grille de hints, alignée à droite.

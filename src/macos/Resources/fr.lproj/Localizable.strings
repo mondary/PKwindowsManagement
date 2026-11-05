@@ -773,3 +773,7 @@
 "Cycle windows and apps" = "Parcourir fenêtres et apps";
 "Show Rooms" = "Afficher les Rooms";
 "Show Windows" = "Afficher les fenêtres";
+
+/* CMD+Tab — mode toggle */
+"⌘⇧ switches to Rooms" = "⌘⇧ bascule vers les Rooms";
+"Each ⇧ press moves to the next room" = "Chaque appui sur ⇧ passe à la room suivante";
