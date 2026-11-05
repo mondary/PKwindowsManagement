@@ -108,15 +108,23 @@ enum WindowSwitcherState {
         let components = url.pathComponents.map { $0.lowercased() }
         let last = components.last ?? ""
         let parent = components.count >= 2 ? components[components.count - 2] : ""
-        let standaloneBundle = last.hasSuffix(".app") || parent.hasSuffix(".appbundle")
+        let grandparent = components.count >= 3 ? components[components.count - 3] : ""
+        // Some products (GeForceNOW) ship the real app at
+        // Product.app/Contents/MacOS/Product.app: that is a standalone app,
+        // not a helper — allow exactly this nesting and nothing deeper.
+        let nestedExecutableApp = parent == "macos" && grandparent == "contents"
+        let standaloneBundle = last.hasSuffix(".app") || parent.hasSuffix(".appbundle") || nestedExecutableApp
         guard standaloneBundle else { return nil }
         // LoginItems, Frameworks, XPCServices and embedded apps belong to the
         // enclosing product, not to a second Applications tile.
-        guard !components.dropLast().contains(where: {
-            $0.hasSuffix(".app") || $0.hasSuffix(".framework") || $0.hasSuffix(".xpc")
-                || $0 == "contents" || $0 == "loginitems" || $0 == "xpcservices"
-                || $0 == "helpers"
-        }) else { return nil }
+        if !nestedExecutableApp,
+           components.dropLast().contains(where: {
+               $0.hasSuffix(".app") || $0.hasSuffix(".framework") || $0.hasSuffix(".xpc")
+                   || $0 == "contents" || $0 == "loginitems" || $0 == "xpcservices"
+                   || $0 == "helpers"
+           }) {
+            return nil
+        }
         let lowerPath = url.path.lowercased()
         let identifier = app.bundleIdentifier?.lowercased()
         if lowerPath.hasPrefix("/system/library/") {

@@ -83,6 +83,9 @@ final class WindowSwitcherModel: ObservableObject {
     @Published private(set) var quittingPID: pid_t?
     @Published private(set) var quittingName: String?
     @Published private(set) var isForceQuitting = false
+    /// Bundle being quit for a process tile: every instance is terminated.
+    private var quittingBundleID: String?
+    private var quittingIsProcess = false
     @Published private(set) var forceQuitConfirmation: ForceQuitConfirmation?
     /// Room creation: pick windows in order; index 0 is the main spot.
     @Published var isCreatingRoom = false
@@ -295,7 +298,9 @@ final class WindowSwitcherModel: ObservableObject {
             let resolved = app.pid > 0 ? appsByPID[app.pid] : appsByBundle[app.bundleIdentifier ?? ""]
             if let icon = resolved?.icon { iconsByPID[snapshot.pid] = icon }
             launchedAtByPID[snapshot.pid] = snapshot.launchedAt
-            if let bundleID = snapshot.bundleID { bundleByPID[snapshot.pid] = bundleID }
+            // Keep the bundle for every process tile: ⌘Q stops all instances
+            // of that bundle, not just the representative pid.
+            if let bundleID = app.bundleIdentifier { bundleByPID[snapshot.pid] = bundleID }
         }
         icons = iconsByPID
         processBundleIDs = bundleByPID
@@ -823,12 +828,15 @@ final class WindowSwitcherModel: ObservableObject {
     }
 
     /// Quits a windowless process listed in the picker's dedicated sections.
+    /// Every instance of the bundle is stopped: accessory helpers can run
+    /// several processes behind one tile, and quitting only one used to leave
+    /// the tile alive (⌘Q appeared to do nothing).
     func quitProcess(_ id: WindowSwitcherID) {
         precondition(Thread.isMainThread)
         guard isOpen, closingID == nil, quittingPID == nil,
-              let item = processItems.first(where: { $0.id == id }),
-              let launchedAt = processLaunchedAt[id.pid] else { return }
-        beginQuit(pid: id.pid, name: item.appName, launchedAt: launchedAt)
+              let item = processItems.first(where: { $0.id == id }) else { return }
+        beginQuit(pid: id.pid, name: item.appName, launchedAt: processLaunchedAt[id.pid],
+                  bundleID: processBundleIDs[id.pid], isProcess: true)
     }
 
     func requestForceQuit(_ id: WindowSwitcherID) {
@@ -874,19 +882,26 @@ final class WindowSwitcherModel: ObservableObject {
         }
     }
 
-    private func beginQuit(pid: Int32, name: String, launchedAt: Date?, force: Bool = false) {
+    private func beginQuit(pid: Int32, name: String, launchedAt: Date?, force: Bool = false,
+                           bundleID: String? = nil, isProcess: Bool = false) {
         quittingPID = pid
         quittingName = name
         isForceQuitting = force
+        quittingBundleID = isProcess ? bundleID : nil
+        quittingIsProcess = isProcess
         message = ""
         messageKind = .info
         let token = generation
         // Pid-less apps (Steam reports -1) are addressed by bundle identity.
-        let bundleID = pid < 0 ? processBundleIDs[pid] : nil
+        let syntheticBundleID = pid < 0 ? processBundleIDs[pid] : nil
+        let processBundle = isProcess ? bundleID : nil
         let work = Task.detached(priority: .userInitiated) {
-            if let bundleID {
+            if let processBundle {
+                return WindowSwitcherInventory.quitAll(bundleIdentifier: processBundle, force: force)
+            }
+            if let syntheticBundleID {
                 return WindowSwitcherInventory.quitInstance(
-                    bundleIdentifier: bundleID, launchedAt: launchedAt, force: force)
+                    bundleIdentifier: syntheticBundleID, launchedAt: launchedAt, force: force)
             }
             return WindowSwitcherInventory.quit(pid: pid, launchedAt: launchedAt, force: force)
         }
@@ -899,6 +914,10 @@ final class WindowSwitcherModel: ObservableObject {
             self.isForceQuitting = false
             self.quitTask = nil
             self.quitResultTask = nil
+            let wasProcess = self.quittingIsProcess
+            let quitBundle = self.quittingBundleID
+            self.quittingIsProcess = false
+            self.quittingBundleID = nil
             switch result {
             case .quit:
                 let removed = self.items.filter { $0.id.pid == pid }.map(\.id)
@@ -919,6 +938,13 @@ final class WindowSwitcherModel: ObservableObject {
                 if self.focusedID?.pid == pid { self.focusedID = nil }
                 self.selectedTarget = next
             case .pending:
+                // Windowless helpers (launchers, tray daemons) have no save
+                // dialogs: if they ignore a graceful quit, escalate once.
+                if wasProcess, !self.isForceQuitting, let quitBundle {
+                    self.beginQuit(pid: pid, name: name, launchedAt: nil,
+                                   force: true, bundleID: quitBundle, isProcess: true)
+                    return
+                }
                 self.message = localizedString("The app has not quit yet. A save dialog may be waiting, or it refused to quit.")
                 self.messageKind = .error
             case .failed:

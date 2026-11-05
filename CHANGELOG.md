@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.11.8] - 2026-11-05
+### Fixed
+- **Apps manquantes dans `⌘Tab`** : les apps dont le bundle réel est imbriqué dans `Product.app/Contents/MacOS/Product.app` (GeForceNOW) sont désormais listées comme apps autonomes ; les vrais helpers (`LoginItems`, `Helpers`, `XPCServices`, `PlugIns`) restent exclus.
+- **`⌘Q` qui ne tuait pas** : pour une tuile de processus (app sans fenêtre, helper de barre des menus), `⌘Q` arrête **toutes les instances du bundle** (Open Computer Use tournait en 14 processus derrière une seule tuile : n'en tuer qu'un laissait la tuile vivante) et, si l'app ignore le quit gracieux, **escalade une fois en quit forcé**. Une date de lancement absente ne bloque plus silencieusement l'action.
+
 ## [2026.11.7] - 2026-11-03
 ### Fixed
 - **Tuile « Nouvelle room » au même gabarit que les cartes** : largeur 224, padding 12 et mêmes lignes (nom, aperçu 74 pt, ligne écran, barre d'action) — plus de tuile plus petite qui cassait la grille ; bordure pointillée, anneau accent quand elle est sélectionnée, clic direct ou `↵` pour créer.

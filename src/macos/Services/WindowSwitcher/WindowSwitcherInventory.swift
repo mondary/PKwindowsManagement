@@ -138,13 +138,38 @@ enum WindowSwitcherInventory {
     static func quit(pid: pid_t, launchedAt: Date?, force: Bool = false) -> WindowQuitRequest.Result {
         WindowQuitRequest.run(isCancelled: { Task.isCancelled }, validate: {
             guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated,
-                  app.launchDate == launchedAt else { return false }
+                  launchedAt == nil || app.launchDate == launchedAt else { return false }
             return true
         }, terminate: {
             guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated else { return false }
             return force ? app.forceTerminate() : app.terminate()
         }, isTerminated: {
             NSRunningApplication(processIdentifier: pid)?.isTerminated ?? true
+        }, pause: { Thread.sleep(forTimeInterval: 0.05) })
+    }
+
+    /// Quit every running instance of one bundle. Accessory helpers
+    /// (Open Computer Use, launcher daemons…) can run several processes behind
+    /// a single tile; quitting one pid left the tile alive, which reads as
+    /// "⌘Q does nothing". Returns .quit only when none remain.
+    static func quitAll(bundleIdentifier: String, force: Bool = false) -> WindowQuitRequest.Result {
+        func alive() -> [NSRunningApplication] {
+            NSWorkspace.shared.runningApplications.filter {
+                $0.bundleIdentifier == bundleIdentifier && !$0.isTerminated
+            }
+        }
+        return WindowQuitRequest.run(isCancelled: { Task.isCancelled }, validate: {
+            !alive().isEmpty
+        }, terminate: {
+            let instances = alive()
+            guard !instances.isEmpty else { return false }
+            var accepted = false
+            for app in instances {
+                accepted = (force ? app.forceTerminate() : app.terminate()) || accepted
+            }
+            return accepted
+        }, isTerminated: {
+            alive().isEmpty
         }, pause: { Thread.sleep(forTimeInterval: 0.05) })
     }
 
