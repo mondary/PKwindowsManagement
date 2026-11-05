@@ -119,10 +119,6 @@ struct WindowSwitcherView: View {
                     .padding(.vertical, 3)
                     .background(.primary.opacity(0.06), in: Capsule())
             }
-            Text(appVersionLabel)
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(.tertiary)
-                .help(appVersionLabel)
         }
     }
 
@@ -825,22 +821,32 @@ struct WindowSwitcherView: View {
                         }
                         Spacer(minLength: 0)
                         hint("esc", "Dismiss picker")
+                        Text(appVersionLabel)
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                            .padding(.leading, 2)
+                            .help(appVersionLabel)
                     }
                     .fixedSize(horizontal: true, vertical: false)
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 0), alignment: .leading), count: 3),
-                              alignment: .leading, spacing: 8) {
-                        compactHint("⌘⇥", "Cycle")
-                        compactHint("⇥ / ↑↓", "Browse")
-                        compactHint("↵", "Open")
-                        compactHint("⌘⇪", model.showsRooms ? "Show Windows" : "Show Rooms")
-                        compactHint("⌘W", "Close")
-                        compactHint("⌘Q", "Quit app")
-                        compactHint("⌘N", "New Room")
-                        if !model.roomStore.rooms.isEmpty {
-                            compactHint("⌘K", "Room actions")
-                            compactHint("⌥⇥", "Next Room")
+                    VStack(alignment: .trailing, spacing: 6) {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 0), alignment: .leading), count: 3),
+                                  alignment: .leading, spacing: 8) {
+                            compactHint("⌘⇥", "Cycle")
+                            compactHint("⇥ / ↑↓", "Browse")
+                            compactHint("↵", "Open")
+                            compactHint("⌘⇪", model.showsRooms ? "Show Windows" : "Show Rooms")
+                            compactHint("⌘W", "Close")
+                            compactHint("⌘Q", "Quit app")
+                            compactHint("⌘N", "New Room")
+                            if !model.roomStore.rooms.isEmpty {
+                                compactHint("⌘K", "Room actions")
+                                compactHint("⌥⇥", "Next Room")
+                            }
+                            compactHint("esc", "Dismiss")
                         }
-                        compactHint("esc", "Dismiss")
+                        Text(appVersionLabel)
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.tertiary)
                     }
                 }
             }

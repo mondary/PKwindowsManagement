@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.11] - 2026-11-05
+### Changed
+- Version `⌘Tab` déplacée de l'en-tête vers le **pied du panneau, à droite** (après le hint Échap), en monospace tertiaire ; en disposition compacte elle passe sous la grille de hints, alignée à droite.
+
 ## [2026.11.10] - 2026-11-05
 ### Added
 - **Version visible dans `⌘Tab`** : l'en-tête du sélecteur affiche `v2026.11.10` (monospace discret) à côté du titre et du compteur, dans les deux modes fenêtres/rooms.
