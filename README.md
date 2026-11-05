@@ -6,7 +6,7 @@
 
 PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres au clavier et lancer rapidement les applications installées.
 
-Version **2026.10.116**
+Version Dev **2026.11.16**
 
 ## Vitrine interactive
 
@@ -63,6 +63,14 @@ Version **2026.10.116**
 - L'icône officielle de l'app s'affiche dans la barre de menu (en couleur) ; menu contextuel pour ouvrir les préférences ou quitter.
 - Mises à jour Sparkle dans `À propos` : compare la version installée aux dernières versions Stable et Dev ; chaque canal indique s'il est à jour, propose une mise à jour ou correspond à l'autre canal.
 - Chargement plus léger au démarrage : les raccourcis globaux n'ont plus besoin de charger toutes les icônes d'applications, et l'analyse couleur ne se fait que pour le tri `Icon Color`.
+
+### Exposé PK (Dev)
+
+- **`Ctrl + Option + E`** ouvre un **Exposé plein écran, sans cadre**, sur le fond d’écran. Les répliques des fenêtres partent de leurs positions d’origine pour se regrouper par application sur l’écran de déclenchement. Le choix **Îlots / Strip Android**, visible dans Exposé et mémorisé, propose deux dispositions : îlots d’applications répartis sur presque toute la surface — chaque groupe sur une carte sombre avec son titre et ses fenêtres resserrés, aperçus capturés en haute résolution, ou grandes cartes plein écran dimensionnées selon le ratio de chaque fenêtre (pas de bandes vides pour les fenêtres en colonne), défilant au trackpad/à la molette. En Îlots, toutes les fenêtres exposées par macOS/AX tiennent sans empilement ni défilement. L’ouverture et le retour sont animés, sans déplacer ni redimensionner les fenêtres réelles. Les fonds vidéo utilisent une image statique ; la réduction des animations est respectée.
+- Autres accès : clic droit sur l’icône de barre de menu → **Ouvrir Exposé PK**, ou bouton du studio Fenêtres. Raccourci modifiable dans les réglages du sélecteur ; URL disponible : `pkwm://expose`.
+- `←→` ou Tab entre fenêtres, `↑↓` entre applications ; clic ou Entrée pour activer précisément la fenêtre choisie : son identité est mémorisée et l’overlay disparaît avant le focus ; Échap ou clic sur le fond pour revenir au bureau avec l’animation inverse. Recherche par app/titre, écran d’origine sur chaque carte, actions visibles `⌘W`/`⌘Q` sur la sélection.
+- Accessibilité requise pour l’inventaire/activation ; Enregistrement de l’écran pour les miniatures, sinon titres/icônes. Les fenêtres non exposées par macOS/AX ou sans surface capturable (certains Spaces, fenêtres minimisées/protégées) peuvent être absentes ou sans aperçu.
+- **Mission Control, le geste à quatre doigts et `⌘Tab` restent inchangés.** Cette Dev se teste d’abord au clavier ; pas encore de capture ni de validation graphique automatisée.
 
 ## 🧠 Utilisation
 - Ouvre l'application.

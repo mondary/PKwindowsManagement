@@ -165,6 +165,14 @@ final class LaunchShortcutMonitor {
                 }
                 return nil
             }
+            if let shortcut = settings?.shortcut(for: .windowExposeToggle),
+               shortcut.key.lowercased() == keyString(from: event, keyCode: keyCode),
+               modifierState.matches(shortcut.modifier, flags: event.flags) {
+                if event.getIntegerValueField(.keyboardEventAutorepeat) == 0 {
+                    DispatchQueue.main.async { WindowSwitcherController.shared.toggleExpose() }
+                }
+                return nil
+            }
             // The nonactivating picker owns typing and navigation while open.
             // Do not let launch/snap/Canvas bindings intercept its search field.
             if WindowSwitcherController.shared.isVisible { return .passUnretained(event) }

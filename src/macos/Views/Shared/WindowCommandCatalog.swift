@@ -52,7 +52,7 @@ enum WindowCommandFamily: String, CaseIterable, Identifiable {
              .canvasFullHeight, .canvasHalfHeight, .canvasAbove, .canvasBelow,
              .canvasMoveColumnLeft, .canvasMoveColumnRight:
             self = .canvas
-        case .windowSwitcherToggle:
+        case .windowSwitcherToggle, .windowExposeToggle:
             self = .switcher
         }
     }
@@ -83,6 +83,7 @@ enum WindowCommandFamily: String, CaseIterable, Identifiable {
 /// Source unique des commandes affichées dans les réglages et la carte clavier.
 enum WindowCommandCatalog {
     static let switcher = WindowCommandSpec.bound("Open Window Previews", "rectangle.on.rectangle", .windowSwitcherToggle)
+    static let expose = WindowCommandSpec.bound("Open Exposé PK", "rectangle.split.3x1", .windowExposeToggle)
     static let halves: [WindowCommandSpec] = [
         .bound("Left Half", "rectangle.lefthalf.inset.filled", .windowLeftHalf),
         .bound("Right Half", "rectangle.righthalf.inset.filled", .windowRightHalf),
@@ -198,7 +199,7 @@ enum WindowCommandCatalog {
     /// Toutes les commandes dont la carte clavier suit la liaison.
     static let all: [WindowCommandSpec] =
         halves + move + quarters + fourths + thirds + twoThirds + threeFourths + horizontal
-        + sixths + displays + desktops + size.all + canvas + [switcher]
+        + sixths + displays + desktops + size.all + canvas + [switcher, expose]
 
     // Touches enregistrables, en rangées de clavier ANSI compactes.
     static let numberRow = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="]

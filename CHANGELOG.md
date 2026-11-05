@@ -1,5 +1,34 @@
 # Changelog
 
+## [2026.11.16] - 2026-11-05
+### Fixed
+- **Aperçus nets dans Exposé** : capture à la résolution réelle d'affichage (2× Retina, plafonnée) au lieu des vignettes 640 px du sélecteur ; chaque mode (Îlots / Strip) définit sa taille de capture et le cache est purgé au basculement pour reprendre les images à la bonne résolution.
+- **Premier clic fonctionnel** : l'app est activée à l'ouverture de l'overlay — macOS n'avale plus le premier clic physique, la fenêtre est sélectionnée du premier coup.
+- **Groupes lisibles (Îlots)** : carte par application (fond sombre, coins arrondis, contour) avec titre et compteur à l'intérieur, écarts fenêtres/titre resserrés ; plus de titres flottant loin des fenêtres.
+- **Strip sans bandes vides** : largeur de carte adaptée au ratio de la fenêtre (paysage ~82 %, carré ~68 %, colonne ~54 %), badge compact d'app sur chaque carte ; la continuité du strip reste visible, plus de transparence massive à droite/gauche des fenêtres en colonne.
+- Régressions pures étendues : ratios portrait/carré/paysage dans le strip, capture haute résolution et purge par mode. QA visuelle et clic réel laissés à l'utilisateur, sans pilotage de son écran.
+
+## [2026.11.15] - 2026-11-05
+### Changed
+- **Exposé à deux dispositions mémorisées** : « Îlots » répartit les groupes d’applications sur presque tout l’écran, chaque îlot choisissant sa grille et la taille de ses aperçus ; suppression du facteur de réduction global qui rendait tout petit et centré. « Strip Android » affiche de grands aperçus dans une bande plein écran défilant au trackpad ou à la molette ; la navigation clavier garde la fenêtre sélectionnée visible.
+- Bascule Îlots / Strip Android dans les contrôles flottants, marges réduites et contrôles hors de la surface de sélection. L’animation sur le fond d’écran, le regroupement par application et `⌃⌥E` restent conservés, sans modifier les tailles/positions réelles des fenêtres.
+### Fixed
+- **Sélection d’une fenêtre au clic** : zones de clic explicites suivant la géométrie visible (y compris après défilement), identité capturée pression/relâchement, annulation si glissement ailleurs. L’overlay et ses moniteurs de focus sont retirés avant d’activer précisément le candidat AX mémorisé, au lieu de conserver une surface plein écran au-dessus de la fenêtre choisie.
+- Tests purs des deux dispositions (0–128 fenêtres), occupation de l’espace, absence de chevauchement, limites de défilement et identité du clic. QA graphique et activation réelle laissées à l’utilisateur, sans pilotage de son écran.
+
+## [2026.11.14] - 2026-11-05
+### Changed
+- **Exposé PK refait en superposition plein écran** : suppression du panneau encadré, du rail horizontal et des cartes de type sélecteur. Le fond d’écran de chaque moniteur reste visible (image du fichier choisi ; poster statique pour les fonds vidéo).
+- Répliques des fenêtres animées depuis leurs positions Quartz d’origine vers une composition par application sur l’écran de déclenchement, puis retour animé avant fermeture ou activation. Une surface sans bordure par écran, sans créer de Space ni déplacer/redimensionner les fenêtres réelles. Réduction des animations respectée.
+- Toutes les miniatures sont ajustées à la surface disponible, sans empilement ni défilement ; trois fenêtres Chrome côte à côte, groupes plus importants sur plusieurs lignes. Recherche et actions clavier conservées sur `⌃⌥E`.
+- Tests purs de composition, absence de chevauchement des groupes/aperçus/libellés (0–128 fenêtres), proportions et coordonnées multi-écrans négatives. Build vérifié ; validation visuelle de l’animation laissée à l’utilisateur.
+
+## [2026.11.13] - 2026-11-05
+### Added
+- **Exposé PK** : vue panoramique indépendante avec groupes par application, chaque fenêtre en miniature côte à côte sans empilement, défilement horizontal et écran d’origine indiqué. Les fenêtres réelles conservent leur placement.
+- Accès par **`⌃⌥E`** configurable dans les réglages du sélecteur, menu « Ouvrir Exposé PK », bouton dans le studio Fenêtres et URL `pkwm://expose`. Le geste Mission Control et `⌘Tab` restent inchangés. Recherche, `←→`/Tab entre fenêtres, `↑↓` entre apps, clic/Entrée pour activer, Échap pour fermer, actions visibles `⌘W`/`⌘Q`.
+- Localisations FR/EN/ES/DE et régressions pures : regroupement par identité, absence de superposition (0–128 fenêtres), multi-écrans, conservation des positions et navigation. Miniatures conditionnées à la permission d’enregistrement d’écran ; validation graphique et geste laissés à l’utilisateur.
+
 ## [2026.11.12] - 2026-11-05
 ### Changed
 - **En-tête du sélecteur `⌘Tab` repensé** : les 4 pastilles confuses (Écran 1 + Libre/Tiling/Strip, dont les clics ne faisaient rien dans le sélecteur) sont remplacées par une **bascule explicite Windows `⌘⇥` / Rooms `⌘⇧`**, cliquable, qui montre les deux fonctionnalités et où l'on se trouve ; les modes Tiling/Strip restent dans les Réglages et le menu de barre.

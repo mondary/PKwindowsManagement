@@ -435,6 +435,8 @@ struct WindowSwitcherSettingsView: View {
                 .padding(10)
                 .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
+                exposeShortcutRow
+
                 HStack(spacing: 12) {
                     Image(systemName: "photo.badge.checkmark")
                         .font(.system(size: 18, weight: .semibold))
@@ -462,6 +464,35 @@ struct WindowSwitcherSettingsView: View {
                 .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
         }
+    }
+
+    private var exposeShortcutRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Button { WindowSwitcherController.shared.showExpose() } label: {
+                    Label(localizedString("Open Exposé PK"), systemImage: "rectangle.split.3x1")
+                }
+                .buttonStyle(.bordered)
+                Spacer(minLength: 8)
+                CompactShortcutField(shortcut: Binding(
+                    get: { settings.shortcut(for: .windowExposeToggle) },
+                    set: { value in
+                        if let value { settings.setShortcut(value, for: .windowExposeToggle) }
+                        else { settings.clearShortcut(for: .windowExposeToggle) }
+                    }
+                ))
+                Button { settings.resetShortcut(for: .windowExposeToggle) } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                }
+                .buttonStyle(.plain)
+                .help(localizedString("Reset"))
+            }
+            Text(localizedString("Try the fullscreen Exposé with Ctrl + Option + E: windows animate over your wallpaper. Trackpad gestures stay unchanged."))
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
     }
 
     // MARK: - 5. Visual Keyboard Gestures Grid

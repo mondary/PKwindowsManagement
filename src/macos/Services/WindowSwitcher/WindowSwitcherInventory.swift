@@ -27,6 +27,7 @@ enum WindowSwitcherInventory {
             as? [[String: Any]] ?? []
         var ranks: [CGWindowID: Int] = [:]
         var onScreen = Set<CGWindowID>()
+        var frames: [CGWindowID: CGRect] = [:]
         var expected: [pid_t: Set<CGWindowID>] = [:]
         for (rank, info) in infos.enumerated() {
             guard let id = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
@@ -41,6 +42,7 @@ enum WindowSwitcherInventory {
                let frame = CGRect(dictionaryRepresentation: raw as CFDictionary),
                frame.width > 80, frame.height > 60 {
                 expected[pid, default: []].insert(id)
+                frames[id] = frame
             }
         }
         let focused = frontmostPID.flatMap { pid in
@@ -73,7 +75,7 @@ enum WindowSwitcherInventory {
                     isMinimized: CanvasWindowAccess.value(window, kAXMinimizedAttribute) as? Bool == true,
                     isHidden: app.isHidden,
                     isFullScreen: CanvasWindowAccess.value(window, "AXFullScreen") as? Bool == true,
-                    isOnScreen: onScreen.contains(id)
+                    isOnScreen: onScreen.contains(id), frame: frames[id]
                 ), element: window, launchedAt: app.launchedAt))
             }
         }

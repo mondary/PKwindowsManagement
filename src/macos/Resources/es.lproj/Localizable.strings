@@ -776,3 +776,26 @@
 /* CMD+Tab — mode toggle */
 "⌘⇧ switches to Rooms" = "⌘⇧ cambia a Rooms";
 "Each ⇧ press moves to the next room" = "Cada pulsación de ⇧ pasa a la siguiente room";
+
+/* Exposé PK — independent horizontal overview */
+"Open Exposé PK" = "Abrir Exposé PK";
+"All displays · Grouped by app · No overlapping windows" = "Todas las pantallas · Por aplicación · Sin superposición";
+"Search windows or apps" = "Buscar ventanas o apps";
+"Clear search" = "Borrar búsqueda";
+"Screen unavailable" = "Pantalla no disponible";
+"%d windows" = "%d ventanas";
+"Allow Accessibility to see your windows" = "Permite Accesibilidad para ver tus ventanas";
+"Accessibility is required to list and select windows." = "Se necesita Accesibilidad para listar y seleccionar ventanas.";
+"Grant Accessibility…" = "Permitir Accesibilidad…";
+"Enable Screen Recording for window thumbnails. Titles remain available." = "Activa Grabación de pantalla para las miniaturas. Los títulos siguen disponibles.";
+"Scroll horizontally · ← → Windows · ↑ ↓ Apps · ↵ Open · esc Dismiss" = "Desliza horizontalmente · ← → Ventanas · ↑ ↓ Apps · ↵ Abrir · esc Cerrar";
+"Try the horizontal overview with Ctrl + Option + E. Mission Control and trackpad gestures stay unchanged." = "Prueba la vista horizontal con Ctrl + Option + E. Mission Control y los gestos no cambian.";
+
+/* Fullscreen Exposé, wallpaper and desktop return */
+"All windows are grouped on the display where Exposé was opened." = "Todas las ventanas se agrupan en la pantalla donde se abrió Exposé.";
+"← → Windows · ↑ ↓ Apps · ↵ Open · esc Return to desktop" = "← → Ventanas · ↑ ↓ Apps · ↵ Abrir · esc Volver al escritorio";
+"Try the fullscreen Exposé with Ctrl + Option + E: windows animate over your wallpaper. Trackpad gestures stay unchanged." = "Prueba Exposé a pantalla completa con Ctrl + Option + E: las ventanas se animan sobre tu fondo. Los gestos no cambian.";
+
+/* Exposé layout choice */
+"Islands" = "Islas";
+"Android strip" = "Tira Android";

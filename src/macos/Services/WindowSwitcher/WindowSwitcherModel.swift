@@ -104,6 +104,23 @@ final class WindowSwitcherModel: ObservableObject {
     @Published var renamingRoomID: String?
     @Published var renameText = ""
     var onReady: (() -> Void)?
+    /// Independent overview, sharing inventory/actions but not Cmd-Tab behavior.
+    var isExposePresentation = false
+    private var applicationIdentities: [Int32: String] = [:]
+    private var exposeDisplays: [ExposeLayout.Display] = []
+
+    var exposeGroups: [ExposeLayout.Group] {
+        ExposeLayout.groups(filteredItems, identities: applicationIdentities)
+    }
+
+    func exposeScreenLabel(for item: WindowSwitcherItem) -> String {
+        ExposeLayout.displayName(for: item.frame, displays: exposeDisplays)
+            ?? localizedString("Screen unavailable")
+    }
+
+    func moveExposeGroup(_ delta: Int) {
+        selectedID = ExposeLayout.adjacentGroup(in: exposeGroups, selected: selectedID, delta: delta)
+    }
     var columns = 3
     /// Column counts of the Applications and Rooms grids, computed from the
     /// panel width by `present()` so vertical arrows land on real rows.
@@ -151,6 +168,7 @@ final class WindowSwitcherModel: ObservableObject {
     }
 
     var navigationTargets: [WindowSwitcherTarget] {
+        if isExposePresentation { return exposeGroups.flatMap { $0.windows.map { .item($0.id) } } }
         guard !isCreatingRoom else { return filteredItems.map { .item($0.id) } }
         // Rooms mode is exclusive: room cards plus the create placeholder.
         if showsRooms { return visibleRooms.map { .room($0.id) } + [.createRoom] }
@@ -247,9 +265,11 @@ final class WindowSwitcherModel: ObservableObject {
         let apps = NSWorkspace.shared.runningApplications.filter {
             $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
                 && !$0.isTerminated
-                && WindowSwitcherState.includesApplication(
-                    activationPolicy: $0.activationPolicy.rawValue,
-                    bundleIdentifier: $0.bundleIdentifier)
+                && (isExposePresentation
+                    ? WindowSwitcherState.isListedProcess(activationPolicy: $0.activationPolicy.rawValue,
+                                                         bundleIdentifier: $0.bundleIdentifier)
+                    : WindowSwitcherState.includesApplication(activationPolicy: $0.activationPolicy.rawValue,
+                                                             bundleIdentifier: $0.bundleIdentifier))
         }
         // Keep real standalone apps, not every accessory process advertised
         // by NSWorkspace (Siri, Wi-Fi, WebKit/XPC, LoginItem helpers…). This is
@@ -264,6 +284,15 @@ final class WindowSwitcherModel: ObservableObject {
         let appsByPID = WindowSwitcherState.uniqueValuesByPID(runningApps.map {
             (pid: $0.processIdentifier, value: $0)
         })
+        applicationIdentities = appsByPID.mapValues { app in
+            app.bundleIdentifier.map { "bundle:\($0.lowercased())" }
+                ?? app.bundleURL.map { "path:\($0.standardizedFileURL.path)" }
+                ?? "pid:\(app.processIdentifier)"
+        }
+        exposeDisplays = NSScreen.screens.compactMap { screen in
+            guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else { return nil }
+            return ExposeLayout.Display(name: screen.localizedName, frame: CGDisplayBounds(id))
+        }
         var appsByBundle: [String: NSRunningApplication] = [:]
         for app in runningApps {
             if let bundleID = app.bundleIdentifier, appsByBundle[bundleID] == nil {
@@ -301,6 +330,9 @@ final class WindowSwitcherModel: ObservableObject {
             // Keep the bundle for every process tile: ⌘Q stops all instances
             // of that bundle, not just the representative pid.
             if let bundleID = app.bundleIdentifier { bundleByPID[snapshot.pid] = bundleID }
+        }
+        for app in apps {
+            if let icon = app.icon { iconsByPID[app.processIdentifier] = icon }
         }
         icons = iconsByPID
         processBundleIDs = bundleByPID
@@ -388,6 +420,8 @@ final class WindowSwitcherModel: ObservableObject {
         processItems.removeAll()
         processLaunchedAt.removeAll()
         processBundleIDs.removeAll()
+        applicationIdentities.removeAll()
+        exposeDisplays.removeAll()
         icons.removeAll()
         focusedID = nil
         selectedTarget = nil
@@ -723,7 +757,7 @@ final class WindowSwitcherModel: ObservableObject {
     // MARK: - Launcher fallback
 
     func loadLauncherAppsIfNeeded() {
-        guard isOpen, !isLoading, !query.isEmpty, navItems.isEmpty,
+        guard !isExposePresentation, isOpen, !isLoading, !query.isEmpty, navItems.isEmpty,
               !didLoadLauncherApps, !isLoadingLauncherApps,
               let settings = AppRuntime.shared.settings else { return }
         didLoadLauncherApps = true
@@ -955,6 +989,48 @@ final class WindowSwitcherModel: ObservableObject {
         }
     }
 
+    /// Capture resolution matching the replica size on screen (see
+    /// WindowThumbnailCapture.captureSize); switching Exposé modes resets it.
+    var exposeCaptureSize = CGSize(width: 640, height: 400)
+
+    /// Prime the entry animation BEFORE covering the actual desktop. Missing
+    /// or protected surfaces remain labeled placeholders. No window is moved,
+    /// unminimized or focused to obtain an image. Cancellation is generation-safe.
+    func warmExposePreviews() async {
+        guard isExposePresentation, isOpen, previewsGranted else { return }
+        let token = generation
+        let deadline = ProcessInfo.processInfo.systemUptime + 2.5
+        let visibleFirst = items.filter { $0.isOnScreen && !$0.isMinimized && !$0.isHidden }
+            + items.filter { !$0.isOnScreen || $0.isMinimized || $0.isHidden }
+        for item in visibleFirst.prefix(64) {
+            guard !Task.isCancelled, isOpen, generation == token,
+                  ProcessInfo.processInfo.systemUptime < deadline else { return }
+            guard !attemptedPreviews.contains(item.id) else { continue }
+            attemptedPreviews.insert(item.id)
+            let image = await capture.image(for: item.id,
+                targetSize: isExposePresentation ? exposeCaptureSize : nil)
+            guard !Task.isCancelled, isOpen, generation == token else { return }
+            completedPreviews.insert(item.id)
+            if let image {
+                images[item.id] = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
+                imageOrder.append(item.id)
+            }
+        }
+    }
+
+    /// Mode switch (Islands/Strip) changes the displayed replica size: drop the
+    /// cached bitmaps so the next capture matches the new resolution.
+    func resetExposePreviews() {
+        precondition(Thread.isMainThread)
+        guard isOpen, isExposePresentation else { return }
+        images.removeAll()
+        imageOrder.removeAll()
+        attemptedPreviews.removeAll()
+        completedPreviews.removeAll()
+        pendingPreviews.removeAll()
+        Task { @MainActor [weak self] in await self?.warmExposePreviews() }
+    }
+
     /// Lazy grid cells enqueue requests; one screenshot at a time, bounded RAM.
     func requestPreview(_ id: WindowSwitcherID) {
         guard isOpen, previewsGranted, candidates[id] != nil,
@@ -969,14 +1045,15 @@ final class WindowSwitcherModel: ObservableObject {
                 let id = self.pendingPreviews.removeFirst()
                 guard self.filteredItems.contains(where: { $0.id == id }) else { continue }
                 self.attemptedPreviews.insert(id)
-                let image = await capture.image(for: id)
+                let image = await capture.image(for: id,
+                    targetSize: self.isExposePresentation ? self.exposeCaptureSize : nil)
                 guard !Task.isCancelled, self.isOpen, self.generation == token else { return }
                 guard self.candidates[id] != nil else { continue }
                 self.completedPreviews.insert(id)
                 if let image {
                     self.images[id] = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
                     self.imageOrder.append(id)
-                    if self.imageOrder.count > 48 {
+                    if self.imageOrder.count > (self.isExposePresentation ? 96 : 48) {
                         let oldest = self.imageOrder.removeFirst()
                         self.images.removeValue(forKey: oldest)
                         self.attemptedPreviews.remove(oldest)

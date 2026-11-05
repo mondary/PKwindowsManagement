@@ -777,3 +777,26 @@
 /* CMD+Tab — mode toggle */
 "⌘⇧ switches to Rooms" = "⌘⇧ bascule vers les Rooms";
 "Each ⇧ press moves to the next room" = "Chaque appui sur ⇧ passe à la room suivante";
+
+/* Exposé PK — independent horizontal overview */
+"Open Exposé PK" = "Ouvrir Exposé PK";
+"All displays · Grouped by app · No overlapping windows" = "Tous les écrans · Par application · Sans superposition";
+"Search windows or apps" = "Rechercher une fenêtre ou une app";
+"Clear search" = "Effacer la recherche";
+"Screen unavailable" = "Écran indisponible";
+"%d windows" = "%d fenêtres";
+"Allow Accessibility to see your windows" = "Autorise l’Accessibilité pour voir tes fenêtres";
+"Accessibility is required to list and select windows." = "L’Accessibilité est nécessaire pour lister et sélectionner les fenêtres.";
+"Grant Accessibility…" = "Autoriser l’Accessibilité…";
+"Enable Screen Recording for window thumbnails. Titles remain available." = "Active l’Enregistrement de l’écran pour les miniatures. Les titres restent disponibles.";
+"Scroll horizontally · ← → Windows · ↑ ↓ Apps · ↵ Open · esc Dismiss" = "Défilement horizontal · ← → Fenêtres · ↑ ↓ Apps · ↵ Ouvrir · esc Fermer";
+"Try the horizontal overview with Ctrl + Option + E. Mission Control and trackpad gestures stay unchanged." = "Teste la vue horizontale avec Ctrl + Option + E. Mission Control et les gestes du trackpad restent inchangés.";
+
+/* Fullscreen Exposé, wallpaper and desktop return */
+"All windows are grouped on the display where Exposé was opened." = "Toutes les fenêtres sont regroupées sur l’écran où Exposé a été ouvert.";
+"← → Windows · ↑ ↓ Apps · ↵ Open · esc Return to desktop" = "← → Fenêtres · ↑ ↓ Apps · ↵ Ouvrir · esc Retour au bureau";
+"Try the fullscreen Exposé with Ctrl + Option + E: windows animate over your wallpaper. Trackpad gestures stay unchanged." = "Teste Exposé plein écran avec Ctrl + Option + E : les fenêtres s’animent sur ton fond d’écran. Les gestes du trackpad restent inchangés.";
+
+/* Exposé layout choice */
+"Islands" = "Îlots";
+"Android strip" = "Strip Android";

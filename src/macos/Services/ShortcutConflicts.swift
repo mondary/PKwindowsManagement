@@ -104,6 +104,7 @@ enum ShortcutConflictEngine {
         case .launch: return 30
         case .windowAction(let action):
             if action == .windowSwitcherToggle { return 20 }
+            if action == .windowExposeToggle { return 21 }
             let index = ShortcutAction.allCases.firstIndex(of: action) ?? 0
             if action.spaceAction != nil { return 300 + index }
             if action.canvasAction != nil { return 400 + index }

@@ -776,3 +776,26 @@
 /* CMD+Tab — mode toggle */
 "⌘⇧ switches to Rooms" = "⌘⇧ wechselt zu Rooms";
 "Each ⇧ press moves to the next room" = "Jeder ⇧-Druck wechselt zur nächsten Room";
+
+/* Exposé PK — independent horizontal overview */
+"Open Exposé PK" = "Exposé PK öffnen";
+"All displays · Grouped by app · No overlapping windows" = "Alle Bildschirme · Nach App · Ohne Überlappung";
+"Search windows or apps" = "Fenster oder Apps suchen";
+"Clear search" = "Suche löschen";
+"Screen unavailable" = "Bildschirm nicht verfügbar";
+"%d windows" = "%d Fenster";
+"Allow Accessibility to see your windows" = "Bedienungshilfen erlauben, um Fenster zu sehen";
+"Accessibility is required to list and select windows." = "Bedienungshilfen werden zum Auflisten und Auswählen der Fenster benötigt.";
+"Grant Accessibility…" = "Bedienungshilfen erlauben…";
+"Enable Screen Recording for window thumbnails. Titles remain available." = "Bildschirmaufnahme für Vorschaubilder erlauben. Fenstertitel bleiben verfügbar.";
+"Scroll horizontally · ← → Windows · ↑ ↓ Apps · ↵ Open · esc Dismiss" = "Horizontal scrollen · ← → Fenster · ↑ ↓ Apps · ↵ Öffnen · esc Schließen";
+"Try the horizontal overview with Ctrl + Option + E. Mission Control and trackpad gestures stay unchanged." = "Horizontale Übersicht mit Ctrl + Option + E testen. Mission Control und Trackpad-Gesten bleiben unverändert.";
+
+/* Fullscreen Exposé, wallpaper and desktop return */
+"All windows are grouped on the display where Exposé was opened." = "Alle Fenster werden auf dem Bildschirm gruppiert, auf dem Exposé geöffnet wurde.";
+"← → Windows · ↑ ↓ Apps · ↵ Open · esc Return to desktop" = "← → Fenster · ↑ ↓ Apps · ↵ Öffnen · esc Zurück zum Schreibtisch";
+"Try the fullscreen Exposé with Ctrl + Option + E: windows animate over your wallpaper. Trackpad gestures stay unchanged." = "Vollbild-Exposé mit Ctrl + Option + E testen: Fenster bewegen sich über deinem Hintergrundbild. Trackpad-Gesten bleiben unverändert.";
+
+/* Exposé layout choice */
+"Islands" = "Inseln";
+"Android strip" = "Android-Streifen";

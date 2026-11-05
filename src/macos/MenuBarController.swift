@@ -120,6 +120,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     @objc private func handleGetURL(_ event: NSAppleEventDescriptor, withReply reply: NSAppleEventDescriptor) {
         guard let raw = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue,
               let url = URL(string: raw), url.scheme?.lowercased() == "pkwm" else { return }
+        if (url.host ?? "").lowercased() == "expose" {
+            WindowSwitcherController.shared.toggleExpose()
+            return
+        }
         let action: ShortcutAction
         switch (url.host ?? "").lowercased() {
         case "tile": action = .windowTileAll
@@ -167,6 +171,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
     @objc private func openRooms() {
         RoomsOverlayController.shared.toggle()
+    }
+
+    @objc private func openExpose() {
+        WindowSwitcherController.shared.toggleExpose()
     }
 
     @objc private func openWindowPreviews() {
@@ -282,6 +290,13 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         previewItem.target = self
         previewItem.keyEquivalentModifierMask = previewShortcut?.modifier.flags ?? []
         menu.addItem(previewItem)
+        let exposeShortcut = AppRuntime.shared.settings?.shortcut(for: .windowExposeToggle)
+        let exposeItem = NSMenuItem(title: localizedString("Open Exposé PK"),
+                                   action: #selector(openExpose),
+                                   keyEquivalent: exposeShortcut?.menuKeyEquivalent ?? "")
+        exposeItem.target = self
+        exposeItem.keyEquivalentModifierMask = exposeShortcut?.modifier.flags ?? []
+        menu.addItem(exposeItem)
         let roomsItem = NSMenuItem(title: localizedString("Open Rooms"), action: #selector(openRooms), keyEquivalent: "r")
         roomsItem.target = self
         roomsItem.keyEquivalentModifierMask = [.control, .option]

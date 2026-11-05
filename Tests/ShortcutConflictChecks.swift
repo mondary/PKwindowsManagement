@@ -109,6 +109,16 @@ enum ShortcutConflictChecks {
         assert(shared.count == 1)
         assert(shared[0].winner.id == "launch.com.example.app")
 
-        print("Shortcut conflict checks passed")
+        // Exposé is independently configurable; Cmd-Tab and previews keep their keys.
+        precondition(ShortcutAction(rawValue: "windowExposeToggle") == .windowExposeToggle)
+        precondition(ShortcutAction.windowExposeToggle.defaultShortcut == .init(key: "e", modifier: .controlOption))
+        precondition(ShortcutAction.windowSwitcherToggle.defaultShortcut == .init(key: "tab", modifier: .controlOption))
+        precondition(ShortcutAction.windowExposeToggle.spaceAction == nil)
+        precondition(ShortcutAction.windowExposeToggle.canvasAction == nil)
+        let expose = binding(.windowAction(.windowExposeToggle), "Exposé PK", "e", .controlOption)
+        let launchOnE = binding(.launch(id: "com.example.launch"), "Launch", "e", .controlOption)
+        precondition(ShortcutConflictEngine.conflictGroups([launchOnE, expose])[0].winner.id == expose.id)
+        precondition(ShortcutConflictEngine.dispatchRank(switcher) < ShortcutConflictEngine.dispatchRank(expose))
+        print("Shortcut conflict checks passed (including independent Exposé binding)")
     }
 }

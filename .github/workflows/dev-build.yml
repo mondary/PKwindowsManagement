@@ -70,6 +70,8 @@ jobs:
         run: |
           swiftc src/macos/Services/WindowSwitcher/WindowSwitcherState.swift Tests/WindowSwitcherChecks.swift -o "$RUNNER_TEMP/window-picker-checks"
           "$RUNNER_TEMP/window-picker-checks"
+          swiftc src/macos/Services/WindowSwitcher/WindowSwitcherState.swift src/macos/Services/WindowSwitcher/ExposeLayout.swift Tests/ExposeLayoutChecks.swift -o "$RUNNER_TEMP/expose-checks"
+          "$RUNNER_TEMP/expose-checks"
           swiftc src/macos/Services/WindowSwitcher/WindowCloseRequest.swift Tests/WindowCloseRequestChecks.swift -o "$RUNNER_TEMP/window-close-checks"
           "$RUNNER_TEMP/window-close-checks"
           swiftc src/macos/Services/WindowSwitcher/WindowQuitRequest.swift Tests/WindowQuitRequestChecks.swift -o "$RUNNER_TEMP/window-quit-checks"

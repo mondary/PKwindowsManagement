@@ -30,6 +30,8 @@ struct WindowSwitcherItem: Identifiable, Equatable, Sendable {
     let isFullScreen: Bool
     let isOnScreen: Bool
     var kind: ItemKind = .window
+    /// Original Quartz bounds, used only to label the overview's display.
+    var frame: CGRect? = nil
 
     var displayTitle: String { title.isEmpty ? appName : title }
     var isProcess: Bool { kind != .window }

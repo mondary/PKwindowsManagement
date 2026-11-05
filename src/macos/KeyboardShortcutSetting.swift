@@ -212,6 +212,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case canvasMoveColumnLeft
     case canvasMoveColumnRight
     case windowSwitcherToggle
+    case windowExposeToggle
 
     var id: String { rawValue }
 
@@ -286,6 +287,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasMoveColumnLeft: localizedString("Move Canvas Column Left")
         case .canvasMoveColumnRight: localizedString("Move Canvas Column Right")
         case .windowSwitcherToggle: localizedString("Open Window Previews")
+        case .windowExposeToggle: localizedString("Open Exposé PK")
         }
     }
 
@@ -330,6 +332,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasAbove: .init(key: "k", modifier: .controlShift)
         case .canvasBelow: .init(key: "j", modifier: .controlShift)
         case .windowSwitcherToggle: .init(key: "tab", modifier: .controlOption)
+        case .windowExposeToggle: .init(key: "e", modifier: .controlOption)
         case .windowMakeLarger: .init(key: "=", modifier: .controlOption)
         case .windowMakeSmaller: .init(key: "-", modifier: .controlOption)
         case .windowToggleFullScreen, .windowMaximizeHeight, .windowMaximizeWidth,

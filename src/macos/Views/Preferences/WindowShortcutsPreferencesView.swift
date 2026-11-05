@@ -56,6 +56,13 @@ struct WindowShortcutsPreferencesView: View {
                             .buttonStyle(.bordered)
 
                             Button {
+                                WindowSwitcherController.shared.showExpose()
+                            } label: {
+                                Label(localizedString("Open Exposé PK"), systemImage: "rectangle.split.3x1")
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button {
                                 WindowSwitcherController.shared.show()
                             } label: {
                                 Label(localizedString("Open Window Previews"), systemImage: "rectangle.on.rectangle")

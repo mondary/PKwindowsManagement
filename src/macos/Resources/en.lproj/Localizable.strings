@@ -434,3 +434,26 @@
 "Room activation needs Accessibility permission." = "Room activation needs Accessibility permission.";
 "No active desktop is available for tiling." = "No active desktop is available for tiling.";
 "Tiling preferences could not be saved." = "Tiling preferences could not be saved.";
+
+/* Exposé PK — independent horizontal overview */
+"Open Exposé PK" = "Open Exposé PK";
+"All displays · Grouped by app · No overlapping windows" = "All displays · Grouped by app · No overlapping windows";
+"Search windows or apps" = "Search windows or apps";
+"Clear search" = "Clear search";
+"Screen unavailable" = "Screen unavailable";
+"%d windows" = "%d windows";
+"Allow Accessibility to see your windows" = "Allow Accessibility to see your windows";
+"Accessibility is required to list and select windows." = "Accessibility is required to list and select windows.";
+"Grant Accessibility…" = "Grant Accessibility…";
+"Enable Screen Recording for window thumbnails. Titles remain available." = "Enable Screen Recording for window thumbnails. Titles remain available.";
+"Scroll horizontally · ← → Windows · ↑ ↓ Apps · ↵ Open · esc Dismiss" = "Scroll horizontally · ← → Windows · ↑ ↓ Apps · ↵ Open · esc Dismiss";
+"Try the horizontal overview with Ctrl + Option + E. Mission Control and trackpad gestures stay unchanged." = "Try the horizontal overview with Ctrl + Option + E. Mission Control and trackpad gestures stay unchanged.";
+
+/* Fullscreen Exposé, wallpaper and desktop return */
+"All windows are grouped on the display where Exposé was opened." = "All windows are grouped on the display where Exposé was opened.";
+"← → Windows · ↑ ↓ Apps · ↵ Open · esc Return to desktop" = "← → Windows · ↑ ↓ Apps · ↵ Open · esc Return to desktop";
+"Try the fullscreen Exposé with Ctrl + Option + E: windows animate over your wallpaper. Trackpad gestures stay unchanged." = "Try the fullscreen Exposé with Ctrl + Option + E: windows animate over your wallpaper. Trackpad gestures stay unchanged.";
+
+/* Exposé layout choice */
+"Islands" = "Islands";
+"Android strip" = "Android strip";
