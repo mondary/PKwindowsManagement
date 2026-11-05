@@ -133,6 +133,11 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     private func present(message: String = "", mode: Presentation, backwards: Bool = false) {
         if mode == .expose { presentExpose(); return }
         guard !isVisible else { return }
+        // New picker session: drop any focus request left over from Exposé or
+        // from a previous Cmd-Tab so clicks and Return always work.
+        activationTask?.cancel()
+        activationTask = nil
+        committingActivation = false
         interactionID = UUID()
         presentation = mode
         commandTabOffset = mode == .commandTab && backwards ? -1 : 0
@@ -304,8 +309,11 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             let succeeded = await Task.detached(priority: .userInitiated) {
                 WindowSwitcherInventory.activate(choice, selectionTicket: ticket)
             }.value
-            guard let self, self.interactionID == interaction else { return }
+            guard let self else { return }
+            // Clear FIRST: the picker may already have been reopened (new
+            // interaction), and an early return must never poison the lock.
             self.activationTask = nil
+            guard self.interactionID == interaction else { return }
             if !succeeded, SpaceManagementService.shared.windowSelectionTicket() == ticket {
                 self.showExpose()
                 self.model.message = localizedString("This window is no longer available or could not be activated. Try refreshing the list.")
@@ -337,9 +345,14 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         exposePreparation?.cancel()
         exposePreparation = nil
         exposeScene = nil
-        if activationTask != nil {
-            // Invalidate any in-flight focus request if the user dismisses the
-            // picker or changes apps before the selected window is confirmed.
+        // A focus request can outlive its picker session (Exposé closes, a new
+        // Cmd-Tab opens). Never leave the controller locked behind a stale
+        // task: every later click would silently do nothing.
+        let hadFocusRequest = activationTask != nil
+        activationTask?.cancel()
+        activationTask = nil
+        if hadFocusRequest {
+            // Invalidate an in-flight focus request before dismissing.
             SpaceManagementService.shared.userChangedWindowSelection()
         }
         interactionID = UUID()
@@ -393,6 +406,13 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         if presentation == .expose, exposeScene?.expanded == true {
             endExpose(activating: id)
             return
+        }
+        if activationTask != nil, !model.isBusy {
+            // Safety net for an unexpected orphan: never swallow the user's
+            // click/Return without at least attempting the focus request.
+            activationTask?.cancel()
+            activationTask = nil
+            committingActivation = false
         }
         guard activationTask == nil, !model.isBusy, let candidate = model.candidate(for: id) else { return }
         SpaceManagementService.shared.userChangedWindowSelection()

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.11.18] - 2026-11-05
+### Fixed
+- **`⌘Tab` ne répondait plus après Exposé** : la requête de focus restait mémorisée dans le contrôleur quand une nouvelle session `⌘Tab` s’ouvrait avant sa fin ; le garde `activationTask == nil` rejetait alors silencieusement **tous les clics et Entrée**, laissant le panneau affiché. La tâche est maintenant annulée et nettoyée à chaque fermeture et à chaque nouvelle ouverture, et son identité est libérée avant toute garde de session. Filet de sécurité : une tâche orpheline est remplacée au lieu de bloquer l’action.
+- **Passer d’une fenêtre à l’autre au `⌘Tab`** : le clic sur une carte ou `Entrée` active de nouveau la fenêtre choisie, ferme le panneau et rend la main à l’application cible ; `⌘Q` reste disponible pour tuer une app. Régressions Exposé/raccourcis/capture vertes, build vérifié.
+
 ## [2026.11.17] - 2026-11-05
 ### Fixed
 - **Fond d’écran de l’écran interne** : macOS 26 renvoie parfois un chemin temporaire supprimé pour les fonds dynamiques (`.../T/StaticWallpaper/*_static.jpg`), ce qui faisait retomber Exposé sur la couleur de remplissage système — l’écran bleu. Exposé charge désormais le fichier s’il existe, sinon capture le bureau **sans aucune fenêtre** (ScreenCaptureKit, fenêtres/Dock/icônes exclus) pour retrouver le vrai fond d’écran, quel que soit son format (HEIC, aérien, dynamique).

@@ -2,6 +2,8 @@
 
 Skills used for this project:
 
+- Dev 2026.11.18 — régression `⌘Tab` après Exposé : requête de focus orpheline verrouillant `activationTask` et rejetant silencieusement clics/Entrée. Nettoyage à la fermeture et à chaque ouverture, libération avant garde de session, filet de sécurité pour tâche orpheline. Build SDK 26.5 et tests Exposé/raccourcis/capture verts ; activation réelle à confirmer par l’utilisateur, sans pilotage de son écran.
+
 - Dev 2026.11.17 — fond d’écran Exposé sur écran interne : diagnostic lecture seule (URL temporaire `StaticWallpaper` inexistante, fill bleu système), repli capture ScreenCaptureKit du bureau avec toutes les fenêtres exclues, suppression du fill bleu au profit d’un dégradé neutre. Build SDK 26.5 ; QA visuelle utilisateur, aucune capture de sa session par l’agent.
 
 - Dev 2026.11.16 — retour utilisateur après essai : capture Exposé à la résolution d’affichage (2× Retina plafonnée, purge au changement de mode), NSApp.activate pour un premier clic fonctionnel, cartes de groupe Îlots lisibles (fond, contour, titre interne, écarts resserrés) et strip à largeur adaptée au ratio (paysage/carré/colonne) avec badge d’app par carte. Régressions : ratios mixtes dans le strip, hit-test et clic unique. Build + signature à vérifier ; QA visuelle utilisateur requise.
