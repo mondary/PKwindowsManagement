@@ -7,15 +7,15 @@
     <description>Most recent dev builds</description>
     <language>en</language>
     <item>
-      <title>Dev build 2026.11.16-dev</title>
-      <pubDate>Thu, 05 Nov 2026 13:29:24 +0000</pubDate>
-      <sparkle:version>1793885229</sparkle:version>
-      <sparkle:shortVersionString>2026.11.16-dev</sparkle:shortVersionString>
+      <title>Dev build 2026.11.17-dev</title>
+      <pubDate>Thu, 05 Nov 2026 13:50:09 +0000</pubDate>
+      <sparkle:version>1793886471</sparkle:version>
+      <sparkle:shortVersionString>2026.11.17-dev</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
       <enclosure
         url="https://github.com/mondary/PKwindowsManagement/releases/download/dev/PKwindowsManagement-dev.zip"
-        sparkle:edSignature="/sHy41gikjW8t+x2XIR79jmUxgL4dVviUAA31bfG7Lq9WFMvcy06Txpaod0YZ7WnQuid8H9eyq9EK3vKwmFwCw=="
-        length="8850149"
+        sparkle:edSignature="sO6cG0jMzLK/1RihUl93T1bRxA+nEx6xIVRLw336e7HEqyaxSnR20dIqF3VBl3sujpuA1mFnv7aCUzf025dQAw=="
+        length="8852943"
         type="application/octet-stream" />
     </item>
   </channel>
