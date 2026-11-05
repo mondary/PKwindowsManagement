@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.11.19] - 2026-11-05
+### Fixed
+- **`⌘Tab` bloqué après Exposé ou après un échec AX** : une activation garantit désormais la fermeture du panneau. Si la fenêtre exacte ne peut pas être résolue (AX indisponible, app fermée, tâche orpheline), l'application propriétaire est activée et le panneau disparaît — plus de sélecteur qui reste affiché sans réaction au clic ou à Entrée.
+- **Téléchargement du modèle Laya protégé (gated) sur Hugging Face** : le script réutilise le token déjà enregistré (`HF_TOKEN`, `HUGGING_FACE_HUB_TOKEN` ou `~/.cache/huggingface/token`) au lieu de le redemander ; un refus `gated`/401/403 affiche un message court avec deux liens **cliquables** — accepter les conditions du modèle et gérer les tokens — et précise qu'aucun nouveau token n'est nécessaire.
+
 ## [2026.11.18] - 2026-11-05
 ### Fixed
 - **`⌘Tab` ne répondait plus après Exposé** : la requête de focus restait mémorisée dans le contrôleur quand une nouvelle session `⌘Tab` s’ouvrait avant sa fin ; le garde `activationTask == nil` rejetait alors silencieusement **tous les clics et Entrée**, laissant le panneau affiché. La tâche est maintenant annulée et nettoyée à chaque fermeture et à chaque nouvelle ouverture, et son identité est libérée avant toute garde de session. Filet de sécurité : une tâche orpheline est remplacée au lieu de bloquer l’action.

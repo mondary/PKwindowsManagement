@@ -102,10 +102,27 @@ struct AISettingsView: View {
                 .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 if let error = models.errorMessage {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                        .textSelection(.enabled)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .textSelection(.enabled)
+                        if models.needsHuggingFaceConsent {
+                            HStack(spacing: 14) {
+                                Link(destination: URL(string: "https://huggingface.co/convaiinnovations/laya")!) {
+                                    Label(localizedString("Accept the model conditions"), systemImage: "safari")
+                                }
+                                Link(destination: URL(string: "https://huggingface.co/settings/tokens")!) {
+                                    Label(localizedString("Manage my Hugging Face token"), systemImage: "key")
+                                }
+                            }
+                            .font(.caption.weight(.semibold))
+                            Text(localizedString("Your existing token from huggingface-cli login is reused automatically. Accept the conditions once for this account, then retry the download."))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
             }
             .padding(24)

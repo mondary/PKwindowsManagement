@@ -281,7 +281,10 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         // Capture the AX candidate now, never re-resolve the hover/selection
         // after the exit animation. A clicked Chrome window stays that window.
         let choice = id.flatMap { model.candidate(for: $0) }
-        if id != nil && choice == nil { return }
+        if let id, choice == nil {
+            forceActivateApp(pid: id.pid)
+            return
+        }
         scene.dismissing = true
         let interaction = interactionID
         withAnimation(.easeInOut(duration: scene.exitDuration)) { scene.expanded = false }
@@ -314,10 +317,9 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             // interaction), and an early return must never poison the lock.
             self.activationTask = nil
             guard self.interactionID == interaction else { return }
-            if !succeeded, SpaceManagementService.shared.windowSelectionTicket() == ticket {
-                self.showExpose()
-                self.model.message = localizedString("This window is no longer available or could not be activated. Try refreshing the list.")
-                self.model.messageKind = .error
+            if !succeeded {
+                // Never re-open a blocking overlay: bring the app forward.
+                self.forceActivateApp(pid: choice.item.id.pid)
             }
         }
     }
@@ -402,19 +404,35 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         }
     }
 
+    /// A Cmd-Tab pick must NEVER leave the panel on screen. If AX cannot
+    /// resolve the exact window, activate its application and get out of the
+    /// way; the user can still reach the target window.
+    private func forceActivateApp(pid: Int32) {
+        guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated else {
+            hide()
+            return
+        }
+        hide()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+            app.activate(options: [.activateIgnoringOtherApps])
+        }
+    }
+
     private func activate(_ id: WindowSwitcherID) {
         if presentation == .expose, exposeScene?.expanded == true {
             endExpose(activating: id)
             return
         }
-        if activationTask != nil, !model.isBusy {
-            // Safety net for an unexpected orphan: never swallow the user's
-            // click/Return without at least attempting the focus request.
+        if activationTask != nil {
+            // An orphan request must not swallow this click/Return.
             activationTask?.cancel()
             activationTask = nil
             committingActivation = false
         }
-        guard activationTask == nil, !model.isBusy, let candidate = model.candidate(for: id) else { return }
+        guard !model.isBusy, let candidate = model.candidate(for: id) else {
+            forceActivateApp(pid: id.pid)
+            return
+        }
         SpaceManagementService.shared.userChangedWindowSelection()
         let ticket = SpaceManagementService.shared.windowSelectionTicket()
         let interaction = interactionID
@@ -429,15 +447,9 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             self.committingActivation = false
             if succeeded {
                 self.hide()
-            } else if self.isVisible,
-                      SpaceManagementService.shared.windowSelectionTicket() == ticket {
-                self.panel?.makeKey()
-                if let scene = self.exposeScene {
-                    scene.dismissing = false
-                    withAnimation(.easeOut(duration: scene.entryDuration)) { scene.expanded = true }
-                }
-                self.model.message = localizedString("This window is no longer available or could not be activated. Try refreshing the list.")
-                self.model.messageKind = .error
+            } else {
+                // No dead end: dismiss and bring the owning app forward.
+                self.forceActivateApp(pid: candidate.item.id.pid)
             }
         }
     }

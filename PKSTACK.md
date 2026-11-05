@@ -2,6 +2,8 @@
 
 Skills used for this project:
 
+- Dev 2026.11.19 — `⌘Tab` ne peut plus rester bloqué : toute activation ferme le panneau ; si AX ne résout pas la fenêtre exacte (ou si une tâche orpheline existe), l’app propriétaire est activée au lieu de laisser le sélecteur affiché. Modèle Laya gated : réutilisation du token existant (`HF_TOKEN`, `HUGGING_FACE_HUB_TOKEN`, `~/.cache/huggingface/token`) dans `install-model.sh`, marqueur `GATED_REPO` et encart Réglages avec liens cliquables vers les conditions du modèle et la gestion des tokens. Build vérifié ; activation et téléchargement réels à confirmer par l’utilisateur, sans pilotage de son écran.
+
 - Dev 2026.11.18 — régression `⌘Tab` après Exposé : requête de focus orpheline verrouillant `activationTask` et rejetant silencieusement clics/Entrée. Nettoyage à la fermeture et à chaque ouverture, libération avant garde de session, filet de sécurité pour tâche orpheline. Build SDK 26.5 et tests Exposé/raccourcis/capture verts ; activation réelle à confirmer par l’utilisateur, sans pilotage de son écran.
 
 - Dev 2026.11.17 — fond d’écran Exposé sur écran interne : diagnostic lecture seule (URL temporaire `StaticWallpaper` inexistante, fill bleu système), repli capture ScreenCaptureKit du bureau avec toutes les fenêtres exclues, suppression du fill bleu au profit d’un dégradé neutre. Build SDK 26.5 ; QA visuelle utilisateur, aucune capture de sa session par l’agent.

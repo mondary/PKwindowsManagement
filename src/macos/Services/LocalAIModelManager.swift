@@ -15,6 +15,9 @@ final class LocalAIModelManager: ObservableObject {
     @Published private(set) var serverLoading = false
     @Published private(set) var isBusy = false
     @Published private(set) var errorMessage: String?
+    /// The repository is gated: the user must accept its conditions once.
+    /// A token alone is not enough, and we never ask for one again here.
+    @Published private(set) var needsHuggingFaceConsent = false
 
     private let fileManager = FileManager.default
     private let supportDirectory = FileManager.default.homeDirectoryForCurrentUser
@@ -70,7 +73,7 @@ final class LocalAIModelManager: ObservableObject {
         runScript("install-model.sh") { [weak self] success, output in
             guard let self else { return }
             self.isBusy = false
-            if !success { self.errorMessage = output }
+            if !success { self.setFailure(output) }
             self.refresh()
         }
     }
@@ -79,7 +82,7 @@ final class LocalAIModelManager: ObservableObject {
         runScript("start-server.sh") { [weak self] success, output in
             guard let self else { return }
             self.isBusy = false
-            if !success { self.errorMessage = output }
+            if !success { self.setFailure(output) }
             Task { await self.refreshServerStatus() }
         }
     }
@@ -88,7 +91,7 @@ final class LocalAIModelManager: ObservableObject {
         runScript("stop-server.sh") { [weak self] success, output in
             guard let self else { return }
             self.isBusy = false
-            if !success { self.errorMessage = output }
+            if !success { self.setFailure(output) }
             Task { await self.refreshServerStatus() }
         }
     }
@@ -98,7 +101,7 @@ final class LocalAIModelManager: ObservableObject {
             guard let self else { return }
             self.isBusy = false
             if !success {
-                self.errorMessage = output
+                self.setFailure(output)
                 return
             }
             do {
@@ -115,6 +118,15 @@ final class LocalAIModelManager: ObservableObject {
 
     func clearError() {
         errorMessage = nil
+        needsHuggingFaceConsent = false
+    }
+
+    private func setFailure(_ output: String) {
+        // The installer prints a short marker instead of the raw library dump.
+        needsHuggingFaceConsent = output.contains("GATED_REPO")
+        errorMessage = needsHuggingFaceConsent
+            ? localizedString("The Laya model is gated on Hugging Face. Accept its conditions once, then retry. Your existing token is reused automatically.")
+            : output
     }
 
     func refreshServerStatus() async {
@@ -138,6 +150,7 @@ final class LocalAIModelManager: ObservableObject {
     private func runScript(_ name: String, completion: @escaping (Bool, String) -> Void) {
         guard !isBusy else { return }
         errorMessage = nil
+        needsHuggingFaceConsent = false
         guard installRuntimeFiles() else { return }
         isBusy = true
         let script = supportDirectory.appendingPathComponent(name)

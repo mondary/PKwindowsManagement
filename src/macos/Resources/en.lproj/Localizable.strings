@@ -457,3 +457,9 @@
 /* Exposé layout choice */
 "Islands" = "Islands";
 "Android strip" = "Android strip";
+
+/* Hugging Face gated model consent */
+"The Laya model is gated on Hugging Face. Accept its conditions once, then retry. Your existing token is reused automatically." = "The Laya model is gated on Hugging Face. Accept its conditions once, then retry. Your existing token is reused automatically.";
+"Accept the model conditions" = "Accept the model conditions";
+"Manage my Hugging Face token" = "Manage my Hugging Face token";
+"Your existing token from huggingface-cli login is reused automatically. Accept the conditions once for this account, then retry the download." = "Your existing token from huggingface-cli login is reused automatically. Accept the conditions once for this account, then retry the download.";

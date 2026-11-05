@@ -799,3 +799,9 @@
 /* Exposé layout choice */
 "Islands" = "Inseln";
 "Android strip" = "Android-Streifen";
+
+/* Hugging Face gated model consent */
+"The Laya model is gated on Hugging Face. Accept its conditions once, then retry. Your existing token is reused automatically." = "Das Laya-Modell ist auf Hugging Face geschützt. Bedingungen einmal akzeptieren, dann erneut versuchen. Der vorhandene Token wird automatisch wiederverwendet.";
+"Accept the model conditions" = "Modellbedingungen akzeptieren";
+"Manage my Hugging Face token" = "Hugging-Face-Token verwalten";
+"Your existing token from huggingface-cli login is reused automatically. Accept the conditions once for this account, then retry the download." = "Der vorhandene Token (huggingface-cli login) wird automatisch wiederverwendet. Bedingungen einmal für dieses Konto akzeptieren, dann den Download wiederholen.";
