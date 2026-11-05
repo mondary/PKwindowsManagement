@@ -119,7 +119,16 @@ struct WindowSwitcherView: View {
                     .padding(.vertical, 3)
                     .background(.primary.opacity(0.06), in: Capsule())
             }
+            Text(appVersionLabel)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(.tertiary)
+                .help(appVersionLabel)
         }
+    }
+
+    private var appVersionLabel: String {
+        let raw = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        return "v\(raw)"
     }
 
     private var searchField: some View {

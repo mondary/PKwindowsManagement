@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.10] - 2026-11-05
+### Added
+- **Version visible dans `⌘Tab`** : l'en-tête du sélecteur affiche `v2026.11.10` (monospace discret) à côté du titre et du compteur, dans les deux modes fenêtres/rooms.
+
 ## [2026.11.9] - 2026-11-05
 ### Fixed
 - **Apps d'arrière-plan fermables** : les apps tierces en politique `prohibited` installées par l'utilisateur (`/Applications`, `~/Applications`, `/Users/…`, Homebrew) sont désormais listées dans `⌘Tab` et donc arrêtables au `⌘Q` (Android Dex et consorts) ; les agents Apple et tout ce qui vit sous `/System` restent exclus. Tests d'identité mis à jour (app d'arrière-plan admise, agent système refusé, bundle `Contents/MacOS` admis).
