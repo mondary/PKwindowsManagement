@@ -16,6 +16,26 @@ enum CanvasMinimap {
         let rows: Int
         /// Window IDs in that column, row order (discovery indices).
         let windowIDs: [CGWindowID]
+        /// Owning processes, parallel to windowIDs: the bar resolves app
+        /// icons from them on the main thread (NSRunningApplication).
+        let pids: [pid_t]
+
+        /// No minimum width expansion: even very dense strips retain disjoint
+        /// hit targets and cannot spill over their neighboring app icons.
+        func frame(in size: CGSize) -> CGRect {
+            let span = max(0, length * size.width)
+            let inset = min(1.5, span / 4)
+            return CGRect(x: start * size.width + inset, y: 0,
+                          width: max(0, span - 2 * inset), height: max(0, size.height))
+        }
+
+        init(start: CGFloat, length: CGFloat, rows: Int, windowIDs: [CGWindowID], pids: [pid_t] = []) {
+            self.start = start
+            self.length = length
+            self.rows = rows
+            self.windowIDs = windowIDs
+            self.pids = pids
+        }
     }
 
     struct Model: Equatable {
@@ -40,6 +60,7 @@ enum CanvasMinimap {
         widths: [CGFloat],
         columns: [CanvasLayout.Column],
         windowIDs: [CGWindowID],
+        pids: [pid_t] = [],
         selected: CGWindowID?,
         viewport: CGFloat,
         contentWidth: CGFloat
@@ -53,7 +74,8 @@ enum CanvasMinimap {
                 start: position.0 / extent,
                 length: position.1 / extent,
                 rows: column.rows,
-                windowIDs: column.windows.compactMap { windowIDs.indices.contains($0) ? windowIDs[$0] : nil }
+                windowIDs: column.windows.compactMap { windowIDs.indices.contains($0) ? windowIDs[$0] : nil },
+                pids: column.windows.compactMap { pids.indices.contains($0) ? pids[$0] : 0 }
             )
         }
         return Model(

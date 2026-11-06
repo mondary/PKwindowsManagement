@@ -10,6 +10,78 @@ enum CanvasLayout {
     static let gap: CGFloat = 8
     static let peek: CGFloat = 44
 
+    /// Column width as a share of the visible content region. Persisted per
+    /// application bundle, cycled with a global shortcut on the focused window.
+    enum ColumnWidthKind: String, CaseIterable {
+        case third, half, twoThirds, full
+
+        var fraction: CGFloat {
+            switch self {
+            case .third: return 1 / 3
+            case .half: return 0.5
+            case .twoThirds: return 2 / 3
+            case .full: return 1
+            }
+        }
+
+        var next: ColumnWidthKind {
+            switch self {
+            case .third: return .half
+            case .half: return .twoThirds
+            case .twoThirds: return .full
+            case .full: return .third
+            }
+        }
+
+        /// Wider wins when a column mixes applications.
+        static func widest(_ a: ColumnWidthKind, _ b: ColumnWidthKind) -> ColumnWidthKind {
+            a.fraction >= b.fraction ? a : b
+        }
+    }
+
+    /// Worker-side preferences retain changes until the main-thread settings
+    /// writer acknowledges them. A retile before that write must not roll back
+    /// the new width, including several shortcut presses queued in one burst.
+    struct WidthPreferences {
+        private(set) var values: [String: String] = [:]
+        private var pending: [String: (value: String, token: UUID)] = [:]
+
+        mutating func reload(_ persisted: [String: String]) {
+            values = persisted.merging(pending.mapValues { $0.value }) { _, latest in latest }
+        }
+
+        @discardableResult
+        mutating func set(_ kind: ColumnWidthKind, for bundles: [String]) -> UUID {
+            let token = UUID()
+            for bundle in bundles {
+                values[bundle] = kind.rawValue
+                pending[bundle] = (kind.rawValue, token)
+            }
+            return token
+        }
+
+        mutating func acknowledge(_ token: UUID) {
+            // Equality is not an acknowledgement: a complete width cycle can
+            // match the old persisted value while older writes are still queued.
+            pending = pending.filter { $0.value.token != token }
+        }
+
+        func kind(for bundles: [String?]) -> ColumnWidthKind {
+            bundles.map { bundle in
+                bundle.flatMap { values[$0] }.flatMap(ColumnWidthKind.init(rawValue:)) ?? .half
+            }.reduce(nil as ColumnWidthKind?) { result, kind in
+                result.map { ColumnWidthKind.widest($0, kind) } ?? kind
+            } ?? .half
+        }
+    }
+
+    /// Width for one column: respect the largest real app minimum even if it
+    /// exceeds one page; otherwise a full column fills the content region.
+    static func columnWidth(kind: ColumnWidthKind, contentWidth: CGFloat, minimum: CGFloat) -> CGFloat {
+        guard contentWidth > 0 else { return max(1, minimum) }
+        return max((contentWidth * kind.fraction).rounded(), minimum, 1)
+    }
+
     struct Geometry {
         let area: CGRect
         let contentMinX: CGFloat

@@ -139,7 +139,7 @@ enum SpaceAction: String, CaseIterable, Identifiable {
 
 /// Actions du Canvas horizontal portées par HorizontalCanvasService.
 enum CanvasAction: String {
-    case toggle, previous, next, above, below, moveColumnLeft, moveColumnRight, fullHeight, halfHeight, restore, inspect
+    case toggle, previous, next, above, below, moveColumnLeft, moveColumnRight, fullHeight, halfHeight, cycleColumnWidth, restore, inspect
 }
 
 enum ShortcutAction: String, CaseIterable, Identifiable {
@@ -211,6 +211,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case canvasBelow
     case canvasMoveColumnLeft
     case canvasMoveColumnRight
+    case canvasCycleWidth
     case windowSwitcherToggle
     case windowExposeToggle
 
@@ -286,6 +287,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasBelow: localizedString("Canvas Window Below")
         case .canvasMoveColumnLeft: localizedString("Move Canvas Column Left")
         case .canvasMoveColumnRight: localizedString("Move Canvas Column Right")
+        case .canvasCycleWidth: localizedString("Cycle Canvas Column Width")
         case .windowSwitcherToggle: localizedString("Open Window Previews")
         case .windowExposeToggle: localizedString("Open Exposé PK")
         }
@@ -331,6 +333,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasHalfHeight: .init(key: "s", modifier: .controlShift)
         case .canvasAbove: .init(key: "k", modifier: .controlShift)
         case .canvasBelow: .init(key: "j", modifier: .controlShift)
+        case .canvasCycleWidth: .init(key: "w", modifier: .controlShift)
         case .windowSwitcherToggle: .init(key: "tab", modifier: .controlOption)
         case .windowExposeToggle: .init(key: "e", modifier: .controlOption)
         case .windowMakeLarger: .init(key: "=", modifier: .controlOption)
@@ -375,6 +378,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasBelow: .below
         case .canvasMoveColumnLeft: .moveColumnLeft
         case .canvasMoveColumnRight: .moveColumnRight
+        case .canvasCycleWidth: .cycleColumnWidth
         default: nil
         }
     }

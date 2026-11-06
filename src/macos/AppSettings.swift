@@ -54,6 +54,8 @@ final class AppSettings: ObservableObject {
         static let canvasRowsPerColumn = "canvas-rows-per-column"
         static let canvasMinimap = "canvas-minimap"
         static let exposeTrackpadGesture = "expose-trackpad-gesture"
+        /// JSON [bundleID: ColumnWidthKind]; read directly by the Canvas worker.
+        static let stripColumnWidths = "strip-column-widths"
     }
 
     private let defaults: UserDefaults
@@ -287,6 +289,26 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    /// Preferred strip column width per application (bundle ID → kind raw
+    /// value). The Canvas worker reads the same defaults key directly, so no
+    /// cross-thread access to this object is needed.
+    @Published var stripColumnWidths: [String: String] {
+        didSet {
+            defaults.set(try? JSONEncoder().encode(stripColumnWidths), forKey: Keys.stripColumnWidths)
+            scheduleAutoBackup()
+        }
+    }
+
+    func columnWidthKind(forBundle bundleID: String?) -> CanvasLayout.ColumnWidthKind? {
+        guard let bundleID, let raw = stripColumnWidths[bundleID] else { return nil }
+        return CanvasLayout.ColumnWidthKind(rawValue: raw)
+    }
+
+    func setColumnWidthKind(_ kind: CanvasLayout.ColumnWidthKind, forBundle bundleID: String?) {
+        guard let bundleID else { return }
+        stripColumnWidths[bundleID] = kind.rawValue
+    }
+
     /// OmniWM-style minimap bar on top of each screen running a Canvas.
     @Published var canvasMinimap: Bool {
         didSet {
@@ -400,6 +422,8 @@ final class AppSettings: ObservableObject {
         canvasRowsPerColumn = storedRows == 1 ? 1 : 2
         canvasMinimap = defaults.object(forKey: Keys.canvasMinimap) as? Bool ?? true
         exposeTrackpadGesture = defaults.object(forKey: Keys.exposeTrackpadGesture) as? Bool ?? true
+        stripColumnWidths = (defaults.data(forKey: Keys.stripColumnWidths)
+            .flatMap { try? JSONDecoder().decode([String: String].self, from: $0) }) ?? [:]
 
         if shouldSeedDefaultSnippets || archiveResult.didChange || archiveMergeResult.didChange || downloadsResult.didChange {
             saveSnippets()
@@ -703,7 +727,7 @@ final class AppSettings: ObservableObject {
 
     func exportBackup() throws -> Data {
         let backup = SettingsBackup(
-            version: 14,
+            version: 15,
             windowShortcuts: Dictionary(uniqueKeysWithValues: shortcuts.map { ($0.key.rawValue, $0.value) }),
             launchShortcuts: launchShortcuts,
             snippets: snippets,
@@ -740,6 +764,7 @@ final class AppSettings: ObservableObject {
             windowSwitcherStickyCommandTab: windowSwitcherStickyCommandTab,
             canvasRowsPerColumn: canvasRowsPerColumn,
             canvasMinimap: canvasMinimap,
+            stripColumnWidths: stripColumnWidths,
             tilingWorkspaceProfiles: TilingWorkspaceProfiles.load()
         )
         let encoder = JSONEncoder()
@@ -770,7 +795,7 @@ final class AppSettings: ObservableObject {
 
     func importBackup(_ data: Data) throws {
         let backup = try JSONDecoder().decode(SettingsBackup.self, from: data)
-        guard (1...14).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
+        guard (1...15).contains(backup.version) else { throw SettingsBackupError.unsupportedVersion }
 
         shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.compactMap { action in
             backup.windowShortcuts[action.rawValue].map { (action, $0) } ?? action.defaultShortcut.map { (action, $0) }
@@ -815,6 +840,7 @@ final class AppSettings: ObservableObject {
         windowSwitcherStickyCommandTab = backup.windowSwitcherStickyCommandTab ?? windowSwitcherStickyCommandTab
         if let rows = backup.canvasRowsPerColumn { canvasRowsPerColumn = max(1, min(2, rows)) }
         if let minimap = backup.canvasMinimap { canvasMinimap = minimap }
+        if let widths = backup.stripColumnWidths { stripColumnWidths = widths }
         if let profiles = backup.tilingWorkspaceProfiles {
             _ = TilingWorkspaceProfiles.replace(profiles)
             HorizontalCanvasService.shared.refreshCurrentWorkspace()
@@ -1190,6 +1216,7 @@ private struct SettingsBackup: Codable {
     let windowSwitcherStickyCommandTab: Bool?
     let canvasRowsPerColumn: Int?
     let canvasMinimap: Bool?
+    let stripColumnWidths: [String: String]?
     let tilingWorkspaceProfiles: [String: TilingWorkspaceProfile]?
 }
 

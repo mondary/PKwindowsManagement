@@ -474,3 +474,5 @@
 "Release the gesture" = "Release the gesture";
 "This disables the four-finger vertical swipe in macOS Trackpad settings. Mission Control remains available from its keyboard shortcut and the menu bar. A logout may be required." = "This disables the four-finger vertical swipe in macOS Trackpad settings. Mission Control remains available from its keyboard shortcut and the menu bar. A logout may be required.";
 "Cancel" = "Cancel";
+
+"Cycle Canvas Column Width" = "Strip: cycle column width";

@@ -375,6 +375,13 @@ struct WindowShortcutsPreferencesView: View {
                         title: localizedString("Column navigation & trackpad scroll")
                     )
                     stripFeatureBadge(
+                        icon: "arrow.left.and.right",
+                        keys: settings.shortcuts[.canvasCycleWidth].map {
+                            $0.modifier.symbolPrefix + $0.keyDisplayName
+                        } ?? "—",
+                        title: localizedString("Cycle Canvas Column Width") + " · ⅓ / ½ / ⅔ / 1"
+                    )
+                    stripFeatureBadge(
                         icon: "rectangle.split.1x2.fill",
                         keys: "⌃⇧S / ⌃⇧F",
                         title: localizedString("Pair any two windows in half-height")

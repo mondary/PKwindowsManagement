@@ -816,3 +816,5 @@
 "Release the Mission Control gesture?" = "Libérer le geste Mission Control ?";
 "Release the gesture" = "Libérer le geste";
 "This disables the four-finger vertical swipe in macOS Trackpad settings. Mission Control remains available from its keyboard shortcut and the menu bar. A logout may be required." = "Cela désactive le balayage vertical à quatre doigts dans les réglages Trackpad de macOS. Mission Control reste accessible par son raccourci clavier et la barre de menus. Une reconnexion peut être nécessaire.";
+
+"Cycle Canvas Column Width" = "Strip : changer la largeur de colonne";

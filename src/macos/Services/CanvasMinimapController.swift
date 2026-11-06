@@ -14,6 +14,7 @@ final class CanvasMinimapController {
     private var panels: [CGDirectDisplayID: NSPanel] = [:]
     private var hosts: [CGDirectDisplayID: NSHostingView<CanvasMinimapBar>] = [:]
     private var subscription: Any?
+    private var iconCache: [pid_t: NSImage] = [:]
     /// Injected so this file stays free of settings/runtime dependencies and
     /// remains standalone-typecheckable.
     private var isEnabled: () -> Bool = { true }
@@ -48,9 +49,7 @@ final class CanvasMinimapController {
             }
             let frame = barFrame(on: screen)
             if let panel = panels[displayID], let host = hosts[displayID] {
-                host.rootView = CanvasMinimapBar(model: model) { column in
-                    HorizontalCanvasService.shared.focusColumn(column, on: displayID)
-                }
+                host.rootView = barView(model: model, displayID: displayID)
                 panel.setFrame(frame, display: true)
             } else {
                 open(model: model, displayID: displayID, frame: frame)
@@ -59,10 +58,8 @@ final class CanvasMinimapController {
     }
 
     private func open(model: CanvasMinimap.Model, displayID: CGDirectDisplayID, frame: NSRect) {
-        let host = NSHostingView(rootView: CanvasMinimapBar(model: model) { column in
-            HorizontalCanvasService.shared.focusColumn(column, on: displayID)
-        })
-        let panel = NSPanel(
+        let host = MinimapHostingView(rootView: barView(model: model, displayID: displayID))
+        let panel = MinimapPanel(
             contentRect: frame,
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
@@ -86,6 +83,23 @@ final class CanvasMinimapController {
         panel.orderFrontRegardless()
     }
 
+    private func barView(model: CanvasMinimap.Model, displayID: CGDirectDisplayID) -> CanvasMinimapBar {
+        CanvasMinimapBar(model: model, onSelect: { column in
+            HorizontalCanvasService.shared.focusColumn(column, on: displayID)
+        }, icon: { [weak self] pid in self?.appIcon(for: pid) })
+    }
+
+    /// Main-thread icon resolution with a bounded cache; pid 0 = none.
+    private func appIcon(for pid: pid_t) -> NSImage? {
+        guard pid != 0 else { return nil }
+        if let cached = iconCache[pid] { return cached }
+        guard let icon = NSRunningApplication(processIdentifier: pid)?.icon?.copy() as? NSImage else { return nil }
+        icon.size = NSSize(width: 24, height: 24)
+        if iconCache.count > 96 { iconCache.removeAll() }
+        iconCache[pid] = icon
+        return icon
+    }
+
     private func close(_ displayID: CGDirectDisplayID) {
         panels[displayID]?.orderOut(nil)
         panels[displayID] = nil
@@ -102,12 +116,12 @@ final class CanvasMinimapController {
         }
     }
 
-    /// Centered under the menu bar; wide enough to read a dozen columns
-    /// without covering the camera housing zone of the desktop.
+    /// Thin, subtle pill: 22 pt tall, narrower than before, right under the
+    /// menu bar. It stays out of the way and shows app icons, not blocks.
     private func barFrame(on screen: NSScreen) -> NSRect {
         let visible = screen.visibleFrame
-        let width = min(max(320, visible.width * 0.42), 640)
-        let height: CGFloat = 34
+        let width = min(max(280, visible.width * 0.36), 560)
+        let height: CGFloat = 22
         return NSRect(
             x: visible.midX - width / 2,
             y: visible.maxY - height,
@@ -117,62 +131,114 @@ final class CanvasMinimapController {
     }
 }
 
-/// The bar itself: proportional column cells (two stacked cells for
-/// half-height pairs), the selected column accented, and the visible zone
-/// outlined on top. No state: every change comes as a new model.
+/// The first click must navigate, not activate the hosting view first.
+private final class MinimapHostingView: NSHostingView<CanvasMinimapBar> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+}
+
+private final class MinimapPanel: NSPanel {
+    override var canBecomeKey: Bool { false }
+    override var canBecomeMain: Bool { false }
+}
+
+/// Proportional app-icon cells, selected-column accent and a thin viewport
+/// rule. No state: every change comes as a new model.
 struct CanvasMinimapBar: View {
     let model: CanvasMinimap.Model
     let onSelect: (Int) -> Void
+    /// App icon for an owning pid, resolved (and cached) on the main thread.
+    var icon: (pid_t) -> NSImage? = { _ in nil }
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .topLeading) {
                 ForEach(Array(model.segments.enumerated()), id: \.offset) { pair in
-                    columnCells(rows: pair.element.rows, selected: model.selectedColumn == pair.offset)
-                        .frame(width: max(3, pair.element.length * proxy.size.width - 2), height: nil)
-                        .frame(maxHeight: .infinity)
-                        .offset(x: pair.element.start * proxy.size.width + 1)
-                        .onTapGesture { onSelect(pair.offset) }
+                    segmentCapsule(index: pair.offset, segment: pair.element, size: proxy.size)
                 }
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.85), lineWidth: 1.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(Color.white.opacity(0.10))
-                    )
-                    .frame(width: max(12, (model.viewportEnd - model.viewportStart) * proxy.size.width))
+                // Visible zone: a thin top rule instead of a heavy outline.
+                Rectangle()
+                    .fill(Color.clear)
+                    .overlay(alignment: .top) {
+                        Capsule().fill(Color.accentColor.opacity(0.85)).frame(height: 2)
+                    }
+                    .frame(width: max(0, (model.viewportEnd - model.viewportStart) * proxy.size.width))
                     .frame(maxHeight: .infinity)
                     .offset(x: model.viewportStart * proxy.size.width)
                     .allowsHitTesting(false)
             }
         }
-        .padding(EdgeInsets(top: 6, leading: 7, bottom: 6, trailing: 7))
+        .padding(EdgeInsets(top: 4, leading: 6, bottom: 3, trailing: 6))
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            Capsule(style: .continuous)
                 .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.15))
-                )
+                .opacity(0.92)
         )
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5))
     }
 
-    @ViewBuilder
-    private func columnCells(rows: Int, selected: Bool) -> some View {
-        if rows >= 2 {
-            VStack(spacing: 2) {
-                cell(selected: selected)
-                cell(selected: selected)
-            }
-        } else {
-            cell(selected: selected)
+    /// Each column is a distinct hit target, without minimum-width overlap.
+    private func segmentCapsule(index: Int, segment: CanvasMinimap.Segment, size: CGSize) -> some View {
+        let selected = model.selectedColumn == index
+        let frame = segment.frame(in: size)
+        let images = segment.pids.compactMap(icon)
+        let names = segment.pids.compactMap {
+            NSRunningApplication(processIdentifier: $0)?.localizedName
+        }.joined(separator: " · ")
+        return Button(action: { onSelect(index) }) {
+            segmentLabel(selected: selected, frameWidth: frame.width,
+                         images: images, paired: segment.rows == 2)
         }
+        .buttonStyle(.plain)
+        .frame(height: frame.height)
+        .offset(x: frame.minX)
+        .help(names)
+        .accessibilityLabel(Text(names))
+        .accessibilityValue(Text("\(index + 1)"))
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
-    private func cell(selected: Bool) -> some View {
-        RoundedRectangle(cornerRadius: 3, style: .continuous)
-            .fill(selected
-                ? Color(nsColor: .controlAccentColor).opacity(0.9)
-                : Color.primary.opacity(0.22))
+    private func segmentLabel(selected: Bool, frameWidth: CGFloat,
+                              images: [NSImage], paired: Bool) -> some View {
+        HStack(spacing: 2) {
+            if images.isEmpty {
+                Image(systemName: "app").font(.system(size: 12))
+            } else {
+                ForEach(Array(images.prefix(frameWidth > 30 ? 2 : 1).enumerated()), id: \.offset) { pair in
+                    iconView(pair.element)
+                }
+            }
+            if paired && images.count < 2 && frameWidth > 30 {
+                badgeText(selected: selected)
+            }
+        }
+        .frame(width: frameWidth)
+        .frame(maxHeight: .infinity)
+        .clipped()
+        .background(segmentBackground(selected: selected))
+        .overlay(segmentBorder(selected: selected))
+        .contentShape(Capsule())
+    }
+
+    private func iconView(_ image: NSImage) -> some View {
+        Image(nsImage: image)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 12, height: 12)
+    }
+
+    private func badgeText(selected: Bool) -> some View {
+        Text("2")
+            .font(.system(size: 8, weight: .bold, design: .rounded))
+            .foregroundStyle(selected ? Color.accentColor : Color.secondary)
+    }
+
+    private func segmentBackground(selected: Bool) -> some View {
+        Capsule(style: .continuous)
+            .fill(selected ? Color.accentColor.opacity(0.22) : Color.primary.opacity(0.07))
+    }
+
+    private func segmentBorder(selected: Bool) -> some View {
+        Capsule()
+            .strokeBorder(selected ? Color.accentColor.opacity(0.55) : Color.clear, lineWidth: 1)
     }
 }

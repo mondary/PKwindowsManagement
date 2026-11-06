@@ -18,6 +18,13 @@ enum CanvasMinimapChecks {
             selected: 202, viewport: 0, contentWidth: 300
         )
         assert(model != nil)
+        // App icons: pids parallel windowIDs per column, row order.
+        let withPIDs = CanvasMinimap.model(
+            displayID: 7, widths: widths, columns: columns, windowIDs: ids,
+            pids: [11, 22], selected: 202, viewport: 0, contentWidth: 300
+        )
+        assert(withPIDs?.segments.map(\.pids) == [[11], [22]])
+        assert(withPIDs?.segments.map(\.windowIDs) == [[101], [202]])
         let minimap = model!
         assert(minimap.segments.count == 2)
         assert(abs(minimap.segments[0].start - 8.0 / 924.0) < 1e-9)
@@ -70,6 +77,26 @@ enum CanvasMinimapChecks {
         assert(CanvasMinimap.columnIndex(at: -1, widths: widths) == 0)
         assert(CanvasMinimap.columnIndex(at: 2, widths: widths) == 1)
         assert(CanvasMinimap.columnIndex(at: 0.5, widths: []) == nil)
+
+        // Dense strips: tiny proportional cells never overlap or leave the bar.
+        for count in [1, 2, 12, 64, 128] {
+            let denseWidths = (0..<count).map { CGFloat($0.isMultiple(of: 2) ? 600 : 1800) }
+            let denseColumns = (0..<count).map { CanvasLayout.Column(windows: [$0], rows: 1) }
+            let dense = CanvasMinimap.model(displayID: 7, widths: denseWidths,
+                columns: denseColumns, windowIDs: (0..<count).map(UInt32.init),
+                selected: nil, viewport: 0, contentWidth: 1800)!
+            for barWidth: CGFloat in [120, 280, 560] {
+                let frames = dense.segments.map { $0.frame(in: CGSize(width: barWidth, height: 15)) }
+                assert(frames.allSatisfy { $0.width >= 0 && $0.minX >= 0 && $0.maxX <= barWidth })
+                for index in frames.indices.dropFirst() {
+                    assert(frames[index - 1].maxX <= frames[index].minX)
+                }
+            }
+        }
+        let pairedPIDs = CanvasMinimap.model(displayID: 7, widths: [300, 600],
+            columns: paired, windowIDs: pairIDs, pids: [11, 22, 33],
+            selected: 303, viewport: 0, contentWidth: 300)!
+        assert(pairedPIDs.segments[1].pids == [22, 33])
 
         // A single column fills the whole bar; empty strips produce no model.
         let single = CanvasMinimap.model(

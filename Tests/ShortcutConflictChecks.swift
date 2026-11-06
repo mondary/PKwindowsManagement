@@ -12,6 +12,17 @@ enum ShortcutConflictChecks {
         precondition(ShortcutAction(rawValue: "windowTileAll") == .windowTileAll)
         precondition(ShortcutAction.windowTileAll.defaultShortcut == .init(key: "t", modifier: .controlOption))
         precondition(ShortcutAction.windowTileAllDesktops.defaultShortcut == nil)
+        // Strip width cycling is independent of snap/Exposé and adds no
+        // collision to the existing defaults or changes to saved bindings.
+        precondition(ShortcutAction.canvasCycleWidth.defaultShortcut == .init(key: "w", modifier: .controlShift))
+        precondition(ShortcutAction.canvasCycleWidth.canvasAction == .cycleColumnWidth)
+        precondition(ShortcutAction.canvasCycleWidth.spaceAction == nil)
+        let widthShortcut = ShortcutAction.canvasCycleWidth.defaultShortcut!
+        for action in ShortcutAction.allCases where action != .canvasCycleWidth {
+            if let shortcut = action.defaultShortcut {
+                precondition(!widthShortcut.collides(with: shortcut))
+            }
+        }
         let controlOption = ShortcutModifierPreset.controlOption
         let controlShift = ShortcutModifierPreset.controlShift
 

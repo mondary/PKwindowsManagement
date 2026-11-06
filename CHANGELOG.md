@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026.11.21] - 2026-11-06
+### Added
+- **Strip : largeurs ⅓ / ½ / ⅔ / presque plein écran** : `Ctrl+Shift+W` (modifiable dans les réglages) fait cycler la colonne active et réorganise les suivantes sans sortir du ruban. Le choix est mémorisé par application, inclus dans les sauvegardes v15 et appliqué aux autres Strips visibles de la même app. Une paire demi-hauteur partage une seule largeur ; les minimums réels des apps sont respectés, même au-delà du viewport.
+### Changed
+- **Minimap discrète à icônes cliquables** : barre translucide de 22 pt, icônes de 12 pt, deux icônes pour les paires lorsque la place le permet, sélection en accent et trait léger pour la zone visible. Survol : nom des apps. Les cellules restent proportionnelles, sans chevauchement jusque dans les rubans denses ; le panneau ne prend pas le focus clavier.
+### Fixed
+- Le clic cible le Strip du **Space actuellement visible**, sans tomber sur celui d'un ancien bureau suspendu ; acceptation explicite du premier clic.
+- Le cycle atteint bien ⅓ et conserve immédiatement le nouveau choix pendant l'écriture asynchrone des préférences, y compris lors de pressions rapprochées.
+- Régressions pures : fractions/cycle, préférences retardées et acquittées, paires d'apps, minimums, origines mixtes, viewport, PID et minimap dense (1–128 colonnes). Redimensionnement manuel qui pousse les voisines et auto-masquage non inclus ; QA réelle laissée à l'utilisateur sans capture ni pilotage de son écran.
+
 ## [2026.11.20] - 2026-11-05
 ### Added
 - **Geste trackpad à quatre doigts vers le haut → Exposé PK** : moniteur natif via le framework système MultitouchSupport (le même que Mission Control), détection du nombre de doigts, du sens et de l'amplitude, déclenchement unique par geste avec anti-rebond. Activable dans Réglages → sélecteur, avec un bouton explicite pour **libérer le geste Mission Control** (confirmation, écriture de `TrackpadFourFingerVertSwipeGesture`) et un accès direct aux réglages Trackpad. Mission Control reste accessible au clavier.

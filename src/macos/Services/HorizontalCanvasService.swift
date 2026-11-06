@@ -86,7 +86,6 @@ final class HorizontalCanvasService: ObservableObject {
     private final class Strip {
         var display: Display
         let space: UInt64
-        let defaultWidth: CGFloat
         /// Discovery order; arrangement stores the explicit column membership.
         var entries: [Entry] = []
         var arrangement = CanvasArrangement()
@@ -97,10 +96,9 @@ final class HorizontalCanvasService: ObservableObject {
         var layout: TilingLayoutKind = .canvas
         var lastNavigation: TimeInterval = 0
         var suspended = false
-        init(display: Display, space: UInt64, defaultWidth: CGFloat, layout: TilingLayoutKind = .canvas) {
+        init(display: Display, space: UInt64, layout: TilingLayoutKind = .canvas) {
             self.display = display
             self.space = space
-            self.defaultWidth = defaultWidth
             self.layout = layout
         }
     }
@@ -115,6 +113,8 @@ final class HorizontalCanvasService: ObservableObject {
     private var pendingScrolls: [CanvasWorkspace: CGFloat] = [:] // main thread only
     private var scrollFlushScheduled = false // main thread only
     private var saved: [CGWindowID: SavedWindow] = [:]
+    /// Main-thread settings writes may lag a retile; retain pending widths.
+    private var columnWidthPrefs = CanvasLayout.WidthPreferences()
     private var recoveryLoaded = false
     private var timer: Timer?
     private var tickPending = false // main thread only
@@ -287,15 +287,7 @@ final class HorizontalCanvasService: ObservableObject {
         guard !entries.isEmpty else { return }
 
         let previous = arrangements[workspace]
-        let geometry = CanvasLayout.Geometry(area: display.area, rows: 2)
-        let strip = Strip(
-            display: display,
-            space: space,
-            defaultWidth: geometry.defaultColumnWidth(
-                columns: CanvasLayout.preferredColumns(forAreaWidth: display.area.width)
-            ),
-            layout: profile.layout
-        )
+        let strip = Strip(display: display, space: space, layout: profile.layout)
         strip.entries = entries
         if let previous { strip.arrangement = previous }
         let focused = CanvasWindowAccess.focusedID(pid: context.frontmostPID)
@@ -354,6 +346,10 @@ final class HorizontalCanvasService: ObservableObject {
             let workspace = CanvasWorkspace(displayID: display.id, spaceID: space)
             if let strip = self.strips[workspace], self.isCurrent(strip) {
                 guard strip.layout == .canvas, !strip.entries.isEmpty, !strip.widths.isEmpty else { return }
+                if action == .cycleColumnWidth {
+                    self.cycleColumnWidth(in: strip, focused: focused, context: context)
+                    return
+                }
                 if action == .fullHeight || action == .halfHeight {
                     // Read actual focus now, rather than waiting for the periodic
                     // observer: a click followed by a shortcut must affect that window.
@@ -395,6 +391,52 @@ final class HorizontalCanvasService: ObservableObject {
         }
     }
 
+    /// Reflow a whole focused column and persist its apps without blocking main.
+    private func cycleColumnWidth(in strip: Strip, focused: CGWindowID?, context: Context) {
+        // Cycle the focused window's application width preference:
+        // 1/3 → 1/2 → 2/3 → full screen → 1/3. The whole strip
+        // re-flows; following columns are pushed right.
+        guard let focused,
+              let entryIndex = strip.entries.firstIndex(where: { $0.saved.id == focused }) else { return }
+        strip.selected = focused
+        guard let slot = CanvasLayout.slot(index: entryIndex, columns: strip.columns) else { return }
+        let pids = strip.columns[slot.column].windows.map { strip.entries[$0].saved.pid }
+        let bundles = Array(Set(pids.compactMap {
+            NSRunningApplication(processIdentifier: $0)?.bundleIdentifier
+        }))
+        guard !bundles.isEmpty else { return }
+        reloadColumnWidthPrefs()
+        let next = columnKind(pids: pids).next
+        let writeToken = columnWidthPrefs.set(next, for: bundles)
+        DispatchQueue.main.async {
+            guard let settings = AppRuntime.shared.settings else { return }
+            for bundle in bundles {
+                settings.setColumnWidthKind(next, forBundle: bundle)
+            }
+            self.queue.async { self.columnWidthPrefs.acknowledge(writeToken) }
+        }
+        retile(strip)
+        if let slot = CanvasLayout.slot(index: entryIndex, columns: strip.columns) {
+            let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
+            strip.viewport = CanvasLayout.fitViewport(index: slot.column, widths: strip.widths,
+                geometry: geometry, current: strip.viewport)
+        }
+        teleport(strip, context: context)
+        // The preference belongs to an app, not just this desktop.
+        // Update its other visible strips without changing focus.
+        for other in strips.values where other !== strip
+            && other.layout == .canvas && isCurrent(other) {
+            guard other.entries.contains(where: {
+                NSRunningApplication(processIdentifier: $0.saved.pid)?.bundleIdentifier
+                    .map { bundles.contains($0) } ?? false
+            }) else { continue }
+            retile(other)
+            fitViewport(other)
+            teleport(other, context: context)
+        }
+        focusSelected(strip)
+    }
+
     /// Minimap click: travel to a column on the display that owns the bar.
     /// Same guards and placement pass as keyboard navigation; the publish()
     /// inside teleport() refreshes the bar.
@@ -406,8 +448,10 @@ final class HorizontalCanvasService: ObservableObject {
         queue.async {
             guard AXIsProcessTrusted() else { self.report("Canvas needs Accessibility permission."); return }
             guard self.loadRecovery(context) else { return }
-            guard let workspace = self.strips.keys.first(where: { $0.displayID == displayID }),
-                  let strip = self.strips[workspace], self.isCurrent(strip),
+            guard let display = context.displays.first(where: { $0.id == displayID }),
+                  let space = SpaceManagementService.userDesktop(onDisplay: display.uuid),
+                  let strip = self.strips[CanvasWorkspace(displayID: displayID, spaceID: space)],
+                  self.isCurrent(strip),
                   strip.layout == .canvas,
                   !strip.entries.isEmpty, !strip.widths.isEmpty else { return }
             let clamped = min(max(0, column), strip.widths.count - 1)
@@ -607,12 +651,32 @@ final class HorizontalCanvasService: ObservableObject {
         strip.columns = strip.arrangement.columns.map { column in
             CanvasLayout.Column(windows: column.windows.compactMap { indices[$0] }, rows: column.halfHeight ? 2 : 1)
         }
+        reloadColumnWidthPrefs()
+        let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
         strip.widths = strip.columns.map { column in
-            column.windows.reduce(strip.defaultWidth) { max($0, strip.entries[$1].minimumWidth) }
+            let minimum = column.windows.reduce(CGFloat(0)) { max($0, strip.entries[$1].minimumWidth) }
+            let kind = columnKind(pids: column.windows.map { strip.entries[$0].saved.pid })
+            return CanvasLayout.columnWidth(kind: kind, contentWidth: geometry.contentWidth, minimum: minimum)
         }
         if !strip.entries.contains(where: { $0.saved.id == strip.selected }) {
             strip.selected = strip.entries.first?.saved.id
         }
+    }
+
+    /// Shared defaults key with AppSettings.stripColumnWidths (JSON map).
+    private static let columnWidthsKey = "strip-column-widths"
+
+    private func reloadColumnWidthPrefs() {
+        let map = UserDefaults.standard.data(forKey: Self.columnWidthsKey)
+            .flatMap { try? JSONDecoder().decode([String: String].self, from: $0) } ?? [:]
+        columnWidthPrefs.reload(map)
+    }
+
+    /// A column adopts the widest preference among its applications.
+    private func columnKind(pids: [pid_t]) -> CanvasLayout.ColumnWidthKind {
+        columnWidthPrefs.kind(for: pids.map {
+            NSRunningApplication(processIdentifier: $0)?.bundleIdentifier
+        })
     }
 
     /// Recommit every window to its cell, focused first (the one the user is
@@ -1109,6 +1173,7 @@ final class HorizontalCanvasService: ObservableObject {
                 widths: strip.widths,
                 columns: strip.columns,
                 windowIDs: strip.entries.map { $0.saved.id },
+                pids: strip.entries.map { $0.saved.pid },
                 selected: strip.selected,
                 viewport: strip.viewport,
                 contentWidth: geometry.contentWidth

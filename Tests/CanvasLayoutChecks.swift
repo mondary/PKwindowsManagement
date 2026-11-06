@@ -154,6 +154,57 @@ enum CanvasLayoutChecks {
         let maximum = CanvasLayout.maxViewport(widths: widths, viewport: geometry.contentWidth)
         assert(CanvasLayout.clampViewport(maximum + 500, widths: widths, viewport: geometry.contentWidth) == maximum)
 
-        print("Canvas grid: page shape, row baselines, fit visibility, oversized columns and monitor seams passed")
+        // Column width kinds: share of the content region, clamped by real
+        // minimums, including apps wider than one page.
+        let content: CGFloat = 1800
+        assert(CanvasLayout.columnWidth(kind: .third, contentWidth: content, minimum: 0) == 600)
+        assert(CanvasLayout.columnWidth(kind: .half, contentWidth: content, minimum: 0) == 900)
+        assert(CanvasLayout.columnWidth(kind: .twoThirds, contentWidth: content, minimum: 0) == 1200)
+        assert(CanvasLayout.columnWidth(kind: .full, contentWidth: content, minimum: 0) == content)
+        assert(CanvasLayout.columnWidth(kind: .third, contentWidth: content, minimum: 700) == 700)
+        assert(CanvasLayout.columnWidth(kind: .full, contentWidth: content, minimum: 9999) == 9999)
+        assert(CanvasLayout.columnWidth(kind: .half, contentWidth: 0, minimum: 320) == 320)
+        assert(CanvasLayout.ColumnWidthKind.third.next == .half)
+        assert(CanvasLayout.ColumnWidthKind.half.next == .twoThirds)
+        assert(CanvasLayout.ColumnWidthKind.twoThirds.next == .full)
+        assert(CanvasLayout.ColumnWidthKind.full.next == .third)
+        assert(CanvasLayout.ColumnWidthKind.widest(.third, .twoThirds) == .twoThirds)
+        assert(CanvasLayout.ColumnWidthKind.widest(.full, .half) == .full)
+        // Preference selection and asynchronous persistence acknowledgements.
+        var prefs = CanvasLayout.WidthPreferences()
+        prefs.reload(["a": "third", "b": "twoThirds", "invalid": "unknown"])
+        assert(prefs.kind(for: ["a"]) == .third)
+        assert(prefs.kind(for: ["a", "b"]) == .twoThirds)
+        assert(prefs.kind(for: ["a", nil]) == .half)
+        assert(prefs.kind(for: ["invalid"]) == .half)
+        assert(prefs.kind(for: []) == .half)
+        let olderWrite = prefs.set(.full, for: ["a", "b"])
+        prefs.reload(["a": "third", "b": "twoThirds"])
+        assert(prefs.kind(for: ["a", "b"]) == .full)
+        let latestWrite = prefs.set(.third, for: ["a", "b"])
+        prefs.reload(["a": "third", "b": "third"]) // Same value, not yet acknowledged.
+        prefs.acknowledge(olderWrite)
+        prefs.reload(["a": "full", "b": "full"])
+        assert(prefs.kind(for: ["a", "b"]) == .third)
+        prefs.acknowledge(latestWrite)
+        prefs.reload([:]) // Acknowledged values may be reset/imported later.
+        assert(prefs.kind(for: ["a", "b"]) == .half)
+
+        // Mixed widths keep origins, parking and viewport maths intact.
+        let mixedWidths: [CGFloat] = [
+            CanvasLayout.columnWidth(kind: .third, contentWidth: content, minimum: 0),
+            CanvasLayout.columnWidth(kind: .full, contentWidth: content, minimum: 0),
+            CanvasLayout.columnWidth(kind: .twoThirds, contentWidth: content, minimum: 0)
+        ]
+        let mixedOrigins = CanvasLayout.canvasOrigins(widths: mixedWidths)
+        assert(mixedOrigins[1] == mixedOrigins[0] + mixedWidths[0] + CanvasLayout.gap)
+        let wideGeometry = CanvasLayout.Geometry(
+            area: CGRect(x: 0, y: 0, width: content + 2 * CanvasLayout.peek, height: 1000), rows: 2)
+        let fullViewport = CanvasLayout.fitViewport(index: 1, widths: mixedWidths,
+            geometry: wideGeometry, current: 0)
+        assert(fullViewport >= mixedOrigins[1] - CanvasLayout.gap)
+        assert(fullViewport <= mixedOrigins[1] + CanvasLayout.gap)
+
+        print("Canvas grid: page shape, row baselines, fit visibility, oversized columns, monitor seams and per-app column widths passed")
     }
 }

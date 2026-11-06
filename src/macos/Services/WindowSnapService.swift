@@ -961,7 +961,7 @@ extension ShortcutAction {
              .desktopMoveLeft, .desktopMoveRight,
              .canvasToggle, .canvasPrevious, .canvasNext, .canvasRestore,
              .canvasFullHeight, .canvasHalfHeight, .canvasAbove, .canvasBelow,
-             .canvasMoveColumnLeft, .canvasMoveColumnRight, .windowSwitcherToggle, .windowExposeToggle:
+             .canvasMoveColumnLeft, .canvasMoveColumnRight, .canvasCycleWidth, .windowSwitcherToggle, .windowExposeToggle:
             nil
         }
     }
