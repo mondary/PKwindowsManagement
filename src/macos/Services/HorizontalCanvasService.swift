@@ -209,6 +209,35 @@ final class HorizontalCanvasService: ObservableObject {
         updateProfile(onDisplayUUID: displayUUID) { $0.selectTilingLayout(layout) }
     }
 
+    /// Moving one window to another display (Next/Previous Display) removes
+    /// just that window from its strip: the desktop profile stays in Strip
+    /// mode, the remaining windows keep their ribbon — pairs and order — and
+    /// the mover lands free on the destination screen (or joins its strip
+    /// when that screen runs one).
+    func releaseFocusedWindow(completion: @escaping () -> Void) {
+        precondition(Thread.isMainThread)
+        let context = Context.capture()
+        let focused = CanvasWindowAccess.focusedID(pid: context.frontmostPID)
+        queue.async {
+            guard AXIsProcessTrusted() else {
+                self.report("Canvas needs Accessibility permission.")
+                DispatchQueue.main.async(execute: completion)
+                return
+            }
+            defer { DispatchQueue.main.async(execute: completion) }
+            guard let focused,
+                  let strip = self.strips.values.first(where: {
+                      self.isCurrent($0) && $0.entries.contains(where: { $0.saved.id == focused })
+                  }) else { return }
+            strip.entries.removeAll { $0.saved.id == focused }
+            self.saved.removeValue(forKey: focused)
+            strip.arrangement.synchronize(strip.entries.map { $0.saved.id })
+            self.retile(strip)
+            self.fitViewport(strip)
+            self.teleport(strip, context: context)
+        }
+    }
+
     /// One-shot snap commands leave continuous ownership on the Space of the
     /// window being placed — the focused window's display, not the pointer's:
     /// snapping a window on the MacBook must never disturb another screen's
@@ -392,8 +421,17 @@ final class HorizontalCanvasService: ObservableObject {
                     guard let focused,
                           let entry = strip.entries.first(where: { $0.saved.id == focused }) else { return }
                     strip.selected = focused
-                    if action == .halfHeight { strip.arrangement.setHalfHeight(entry.saved.id) }
-                    else { strip.arrangement.setFullHeight(entry.saved.id) }
+                    if action == .halfHeight {
+                        // Toggle: a half-height window returns to full height;
+                        // pressing it on the next window starts a new pair.
+                        if strip.arrangement.isHalfHeight(entry.saved.id) {
+                            strip.arrangement.setFullHeight(entry.saved.id)
+                        } else {
+                            strip.arrangement.setHalfHeight(entry.saved.id)
+                        }
+                    } else {
+                        strip.arrangement.setFullHeight(entry.saved.id)
+                    }
                     self.retile(strip)
                     self.fitViewport(strip)
                     self.teleport(strip, context: context)

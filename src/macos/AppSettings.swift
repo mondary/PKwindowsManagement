@@ -376,7 +376,13 @@ final class AppSettings: ObservableObject {
         self.defaults = defaults
         let edgeRaw = defaults.string(forKey: Keys.clipboardDrawerEdge) ?? ClipboardDrawerEdge.top.rawValue
         clipboardDrawerEdge = ClipboardDrawerEdge(rawValue: edgeRaw) ?? .top
-        shortcuts = Self.loadShortcuts(from: defaults)
+        var loadedShortcuts = Self.loadShortcuts(from: defaults)
+        // Persisted defaults must follow a binding change; custom bindings stay.
+        if loadedShortcuts[.canvasHalfHeight] == KeyboardShortcutSetting(key: "s", modifier: .controlShift),
+           let newDefault = ShortcutAction.canvasHalfHeight.defaultShortcut {
+            loadedShortcuts[.canvasHalfHeight] = newDefault
+        }
+        shortcuts = loadedShortcuts
         clearedWindowShortcuts = defaults.stringArray(forKey: Keys.clearedWindowShortcuts) ?? []
         recentBundleIDs = defaults.stringArray(forKey: Keys.launchRecents) ?? []
         let loadedLaunchShortcuts = Self.loadLaunchShortcuts(from: defaults)

@@ -21,8 +21,16 @@ struct PKwindowsManagementApp: App {
             apps: launcher.loadShortcutTargets(settings: settings),
             launchHandler: { app in _ = launcher.launch(app, settings: settings) },
             windowHandler: { action in
-                HorizontalCanvasService.shared.releaseForManualPlacement {
-                    WindowSnapService().perform(action, preset: settings.windowMarginPreset)
+                // Moving between displays releases only the mover: its strip
+                // keeps running on the source screen.
+                if action == .nextDisplay || action == .previousDisplay {
+                    HorizontalCanvasService.shared.releaseFocusedWindow {
+                        WindowSnapService().perform(action, preset: settings.windowMarginPreset)
+                    }
+                } else {
+                    HorizontalCanvasService.shared.releaseForManualPlacement {
+                        WindowSnapService().perform(action, preset: settings.windowMarginPreset)
+                    }
                 }
             },
             spaceHandler: { action, ticket in

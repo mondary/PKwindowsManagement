@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.11.26] - 2026-11-07
+### Changed
+- **Demi-hauteur en toggle sur `Ctrl+Option+S`** : le raccourci bascule la fenêtre active entre demi et pleine hauteur (les installs existantes sur l'ancien défaut `Ctrl+Shift+S` sont migrées automatiquement, les raccourcis personnalisés restent intacts) ; `Ctrl+Shift+F` détache toujours explicitement. La suivante pressée empile la fenêtre sous la première.
+### Fixed
+- **Changer une fenêtre d'écran ne casse plus le Strip** : `Ctrl+Option+Espace` / `Ctrl+Option+[` (écran suivant/précédent) retire uniquement la fenêtre déplacée de son ruban — le profil du bureau d'origine reste en mode Strip, les fenêtres restantes conservent leurs colonnes et paires ; la fenêtre arrive libre sur l'écran cible (ou rejoint son Strip s'il en tourne un).
+
 ## [2026.11.25] - 2026-11-07
 ### Added
 - **Largeur par défaut selon la taille de l'écran** : sous le seuil réglable (2 000 pt par défaut), les colonnes sans préférence gardent ⅔ ; au-dessus (grand écran externe), elles passent à ⅓. Les deux largeurs et le seuil se règlent dans le studio Strip (Réglages → Fenêtres) et partent dans les sauvegardes ; les préférences par app et les largeurs manuelles restent prioritaires.

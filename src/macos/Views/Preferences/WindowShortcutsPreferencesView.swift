@@ -391,7 +391,9 @@ struct WindowShortcutsPreferencesView: View {
                     )
                     stripFeatureBadge(
                         icon: "rectangle.split.1x2.fill",
-                        keys: "⌃⇧S / ⌃⇧F",
+                        keys: settings.shortcuts[.canvasHalfHeight].map {
+                            $0.modifier.symbolPrefix + $0.keyDisplayName
+                        } ?? "—",
                         title: localizedString("Pair any two windows in half-height")
                     )
                     stripFeatureBadge(

@@ -336,7 +336,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasPrevious: .init(key: "h", modifier: .controlShift)
         case .canvasNext: .init(key: "l", modifier: .controlShift)
         case .canvasFullHeight: .init(key: "f", modifier: .controlShift)
-        case .canvasHalfHeight: .init(key: "s", modifier: .controlShift)
+        case .canvasHalfHeight: .init(key: "s", modifier: .controlOption)
         case .canvasAbove: .init(key: "k", modifier: .controlShift)
         case .canvasBelow: .init(key: "j", modifier: .controlShift)
         case .canvasCycleWidth: .init(key: "w", modifier: .controlShift)
