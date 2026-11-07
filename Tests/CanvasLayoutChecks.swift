@@ -269,6 +269,32 @@ enum CanvasLayoutChecks {
             }
         }
 
+        // Column target for a real-window drag: nearest column by center,
+        // clamped at both ends, from screen coordinates.
+        let stripWidths: [CGFloat] = [300, 600, 300]
+        let contentMinX: CGFloat = 44
+        assert(CanvasLayout.columnIndex(atScreenX: 44 + 8 + 150, widths: stripWidths, viewport: 0,
+                                         contentMinX: contentMinX) == 0)
+        assert(CanvasLayout.columnIndex(atScreenX: 44 + 8 + 300 + 8 + 300, widths: stripWidths, viewport: 0,
+                                         contentMinX: contentMinX) == 1)
+        assert(CanvasLayout.columnIndex(atScreenX: 44 + 8 + 300 + 8 + 600 + 8 + 150, widths: stripWidths,
+                                         viewport: 0, contentMinX: contentMinX) == 2)
+        // Nearest-center boundary sits midway between column centers (387):
+        // below it the drop belongs to column 0, above it to column 1.
+        assert(CanvasLayout.columnIndex(atScreenX: 44 + 316, widths: stripWidths, viewport: 0,
+                                         contentMinX: contentMinX) == 0)
+        assert(CanvasLayout.columnIndex(atScreenX: 44 + 400, widths: stripWidths, viewport: 0,
+                                         contentMinX: contentMinX) == 1)
+        assert(CanvasLayout.columnIndex(atScreenX: -500, widths: stripWidths, viewport: 0,
+                                         contentMinX: contentMinX) == 0)
+        assert(CanvasLayout.columnIndex(atScreenX: 9000, widths: stripWidths, viewport: 0,
+                                         contentMinX: contentMinX) == 2)
+        // A scrolled viewport shifts the mapping: dropping at the same screen
+        // spot targets a later column once the strip moved left.
+        assert(CanvasLayout.columnIndex(atScreenX: 44 + 158, widths: stripWidths, viewport: 316,
+                                         contentMinX: contentMinX) == 1)
+        assert(CanvasLayout.columnIndex(atScreenX: 100, widths: [], viewport: 0, contentMinX: 44) == nil)
+
         // Mixed widths keep origins, parking and viewport maths intact.
         let mixedWidths: [CGFloat] = [
             CanvasLayout.columnWidth(kind: .third, contentWidth: content, minimum: 0),

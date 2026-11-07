@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.11.28] - 2026-11-07
+### Added
+- **Déplacer une vraie fenêtre du Strip à la souris** : glisser une fenêtre du ruban et la relâcher sur une autre colonne réorganise le strip — sa colonne prend la place de la colonne sous le centre de la fenêtre (paires d'un bloc), sans quitter le mode Strip. Le Canvas laisse le glisser natif se dérouler puis réordonne au relâchement (observateur 0,2 s).
+### Fixed
+- **Modificateurs des raccourcis enfin exacts** : un raccourci ne matche plus quand des modificateurs en trop sont enfoncés. Auparavant `⌃⌥⇧+flèche` matchait le snap `⌃⌥+flèche` (moitié gauche/droite) et cassait le strip au lieu de déplacer la colonne.
+- **Déplacer une colonne passe sur `Ctrl+Option+Shift+H/L`** (miroir de la navigation `⌃⇧H/L`) : l'ancien défaut flèches était piégé par le bug de matching ; les installs sur l'ancien défaut sont migrées automatiquement, les associations personnalisées restent.
+
 ## [2026.11.27] - 2026-11-07
 ### Changed
 - Bandeaux de version des README FR/EN rattrapés (ils étaient restés en 2026.11.25 alors que le contenu de la 11.26 était bien appliqué).

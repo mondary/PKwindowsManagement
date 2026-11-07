@@ -835,6 +835,39 @@ final class HorizontalCanvasService: ObservableObject {
         }, contentWidth: contentWidth)
     }
 
+    /// Drag & drop of a real strip window: once the mouse button is released,
+    /// a window that kept its size but moved carries its column to the spot
+    /// under its new center — same reordering as the minimap drag, with the
+    /// actual window. Never during the drag; the observer fires at most every
+    /// 0.2 s, and a resize (size change) is left to adoptFocusedWidth.
+    private func adoptFocusedDrag(_ strip: Strip, context: Context) -> Bool {
+        guard strip.layout == .canvas, !context.pointerDown, isCurrent(strip),
+              context.displays.first(where: { $0.id == strip.display.id })?.area == strip.display.area,
+              let focused = CanvasWindowAccess.focusedID(pid: context.frontmostPID),
+              let index = strip.entries.firstIndex(where: { $0.saved.id == focused }),
+              let applied = strip.entries[index].lastFrame,
+              let slot = CanvasLayout.slot(index: index, columns: strip.columns) else { return false }
+        let entry = strip.entries[index]
+        guard context.apps[entry.saved.pid] == entry.saved.launchedAt,
+              CanvasWindowAccess.id(entry.window) == entry.saved.id,
+              SpaceManagementService.desktops(forWindow: entry.saved.id) == [strip.space],
+              CanvasWindowAccess.eligible(entry.window),
+              let actual = CanvasWindowAccess.frame(entry.window),
+              abs(actual.width - applied.width) <= 3, abs(actual.height - applied.height) <= 3,
+              abs(actual.midX - applied.midX) > 40 else { return false }
+        let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
+        guard let target = CanvasLayout.columnIndex(atScreenX: actual.midX,
+                widths: strip.widths, viewport: strip.viewport,
+                contentMinX: geometry.contentMinX),
+              target != slot.column else { return false }
+        strip.selected = focused
+        strip.arrangement.moveColumn(containing: focused, by: target - slot.column)
+        strip.lastNavigation = ProcessInfo.processInfo.systemUptime
+        retile(strip)
+        fitViewport(strip)
+        return true
+    }
+
     /// Read only the focused managed window; all state and AX work remain on
     /// the serial worker. A resize never changes other windows of the same app.
     private func adoptFocusedWidth(_ strip: Strip, context: Context) -> Bool {
@@ -881,7 +914,8 @@ final class HorizontalCanvasService: ObservableObject {
             for strip in self.strips.values where strip.layout == .canvas
                 && !strip.suspended && self.isCurrent(strip) {
                 let resized = self.adoptFocusedWidth(strip, context: context)
-                if resized || strip.placementDeferred { self.teleport(strip, context: context) }
+                let dragged = !resized && self.adoptFocusedDrag(strip, context: context)
+                if resized || dragged || strip.placementDeferred { self.teleport(strip, context: context) }
             }
         }
     }

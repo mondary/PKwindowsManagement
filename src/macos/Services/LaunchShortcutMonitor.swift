@@ -385,34 +385,45 @@ private struct ModifierState {
         }
     }
 
+    /// Exact modifier matching over the four primary modifiers: a preset
+    /// never swallows an event carrying extra modifiers. Before this, ⌃⌥⇧→
+    /// matched the ⌃⌥→ half-snap subset-style and tore the strip apart.
+    /// Arrow keys add maskNumericPad, which stays ignored, like fn-based
+    /// presets that track their own physical key state.
     func matches(_ preset: ShortcutModifierPreset, flags: CGEventFlags) -> Bool {
+        var pressed: CGEventFlags = []
+        if flags.contains(.maskCommand) { pressed.insert(.maskCommand) }
+        if flags.contains(.maskAlternate) { pressed.insert(.maskAlternate) }
+        if flags.contains(.maskControl) { pressed.insert(.maskControl) }
+        if flags.contains(.maskShift) { pressed.insert(.maskShift) }
+        func exactly(_ required: CGEventFlags) -> Bool { pressed == required }
         switch preset {
         case .controlOption:
-            return flags.contains(.maskControl) && flags.contains(.maskAlternate)
+            return exactly([.maskControl, .maskAlternate])
         case .controlShift:
-            return flags.contains(.maskControl) && flags.contains(.maskShift)
+            return exactly([.maskControl, .maskShift])
         case .controlOptionShift:
-            return flags.contains(.maskControl) && flags.contains(.maskAlternate) && flags.contains(.maskShift)
+            return exactly([.maskControl, .maskAlternate, .maskShift])
         case .command:
-            return flags.contains(.maskCommand)
+            return exactly([.maskCommand])
         case .leftCommand:
-            return flags.contains(.maskCommand) && leftCommand
+            return exactly([.maskCommand]) && leftCommand
         case .rightCommand:
-            return flags.contains(.maskCommand) && rightCommand
+            return exactly([.maskCommand]) && rightCommand
         case .option:
-            return flags.contains(.maskAlternate)
+            return exactly([.maskAlternate])
         case .leftOption:
-            return flags.contains(.maskAlternate) && leftOption
+            return exactly([.maskAlternate]) && leftOption
         case .rightOption:
-            return flags.contains(.maskAlternate) && rightOption
+            return exactly([.maskAlternate]) && rightOption
         case .shift:
-            return flags.contains(.maskShift)
+            return exactly([.maskShift])
         case .leftShift:
-            return flags.contains(.maskShift) && leftShift
+            return exactly([.maskShift]) && leftShift
         case .rightShift:
-            return flags.contains(.maskShift) && rightShift
+            return exactly([.maskShift]) && rightShift
         case .fnShift:
-            return fn && (flags.contains(.maskShift) || leftShift || rightShift)
+            return exactly([.maskShift]) && fn
         }
     }
 

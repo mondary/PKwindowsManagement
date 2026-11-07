@@ -164,6 +164,28 @@ enum CanvasLayout {
         min(max(0, value), maxViewport(widths: widths, viewport: viewport))
     }
 
+    /// Which column a dragged window was dropped on, from a screen X
+    /// coordinate: strip-space conversion, then the nearest column by center.
+    /// Clamped at both ends so a drop in the edge lanes stays on the first or
+    /// last column instead of guessing.
+    static func columnIndex(atScreenX x: CGFloat, widths: [CGFloat], viewport: CGFloat,
+                            contentMinX: CGFloat) -> Int? {
+        guard !widths.isEmpty else { return nil }
+        let stripX = x - contentMinX + viewport
+        let origins = canvasOrigins(widths: widths)
+        var best = 0
+        var bestDistance = CGFloat.greatestFiniteMagnitude
+        for (index, origin) in origins.enumerated() {
+            let center = origin + widths[index] / 2
+            let distance = abs(stripX - center)
+            if distance < bestDistance {
+                bestDistance = distance
+                best = index
+            }
+        }
+        return best
+    }
+
     static func columnCount(windows: Int, rows: Int) -> Int {
         max(1, (max(0, windows) + rows - 1) / rows)
     }

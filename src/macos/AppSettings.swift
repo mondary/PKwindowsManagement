@@ -382,6 +382,16 @@ final class AppSettings: ObservableObject {
            let newDefault = ShortcutAction.canvasHalfHeight.defaultShortcut {
             loadedShortcuts[.canvasHalfHeight] = newDefault
         }
+        // The arrow-key move-column default collided with subset modifier
+        // matching and fired the half-snap instead; H/L mirror ⌃⇧H/L navigation.
+        for (action, legacy) in [(ShortcutAction.canvasMoveColumnLeft,
+                                   KeyboardShortcutSetting(key: "left", modifier: .controlOptionShift)),
+                                  (ShortcutAction.canvasMoveColumnRight,
+                                   KeyboardShortcutSetting(key: "right", modifier: .controlOptionShift))] {
+            if loadedShortcuts[action] == legacy, let newDefault = action.defaultShortcut {
+                loadedShortcuts[action] = newDefault
+            }
+        }
         shortcuts = loadedShortcuts
         clearedWindowShortcuts = defaults.stringArray(forKey: Keys.clearedWindowShortcuts) ?? []
         recentBundleIDs = defaults.stringArray(forKey: Keys.launchRecents) ?? []
