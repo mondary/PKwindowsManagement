@@ -64,6 +64,8 @@
 "Key" = "Touche";
 "Space" = "Espace";
 "Control + Option" = "Contrôle + Option";
+"Control + Option + Shift" = "Contrôle + Option + Maj";
+"Drag to reorder columns" = "Glisser pour réagencer les colonnes";
 "Left Command" = "Commande gauche";
 "Right Command" = "Commande droite";
 "Left Option" = "Option gauche";

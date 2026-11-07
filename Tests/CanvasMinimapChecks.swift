@@ -78,6 +78,18 @@ enum CanvasMinimapChecks {
         assert(CanvasMinimap.columnIndex(at: 2, widths: widths) == 1)
         assert(CanvasMinimap.columnIndex(at: 0.5, widths: []) == nil)
 
+        // Drag-to-reorder target: same gap rule, fractions of the bar.
+        let segments = CanvasMinimap.model(
+            displayID: 7, widths: widths, columns: columns, windowIDs: ids,
+            selected: nil, viewport: 0, contentWidth: 300
+        )!.segments
+        assert(CanvasMinimap.reorderTarget(at: 0, segments: segments) == 0)
+        assert(CanvasMinimap.reorderTarget(at: 316.0 / 924.0, segments: segments) == 1)
+        assert(CanvasMinimap.reorderTarget(at: 311.0 / 924.0, segments: segments) == 0)
+        assert(CanvasMinimap.reorderTarget(at: -1, segments: segments) == 0)
+        assert(CanvasMinimap.reorderTarget(at: 2, segments: segments) == 1)
+        assert(CanvasMinimap.reorderTarget(at: 0.5, segments: []) == nil)
+
         // Dense strips: tiny proportional cells never overlap or leave the bar.
         for count in [1, 2, 12, 64, 128] {
             let denseWidths = (0..<count).map { CGFloat($0.isMultiple(of: 2) ? 600 : 1800) }

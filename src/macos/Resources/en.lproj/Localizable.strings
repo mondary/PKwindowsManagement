@@ -198,6 +198,8 @@
 "Bottom" = "Bottom";
 "Strip minimap" = "Strip minimap";
 "Minimap position" = "Minimap position";
+"Control + Option + Shift" = "Control + Option + Shift";
+"Drag to reorder columns" = "Drag to reorder columns";
 "Left" = "Left";
 "Right" = "Right";
 "Missing bundled AI script: %@. Reinstall the app to repair its resources." = "Missing bundled AI script: %@. Reinstall the app to repair its resources.";

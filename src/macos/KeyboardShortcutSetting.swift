@@ -5,6 +5,7 @@ import Foundation
 enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
     case controlOption
     case controlShift
+    case controlOptionShift
     case command
     case leftCommand
     case rightCommand
@@ -22,6 +23,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .controlOption: localizedString("Control + Option")
         case .controlShift: localizedString("Control + Shift")
+        case .controlOptionShift: localizedString("Control + Option + Shift")
         case .command: localizedString("Command")
         case .leftCommand: localizedString("Left Command")
         case .rightCommand: localizedString("Right Command")
@@ -39,6 +41,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .controlOption: "⌃⌥"
         case .controlShift: "⌃⇧"
+        case .controlOptionShift: "⌃⌥⇧"
         case .command: "⌘"
         case .leftCommand: "⌘L"
         case .rightCommand: "⌘R"
@@ -56,6 +59,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .controlOption: [.control, .option]
         case .controlShift: [.control, .shift]
+        case .controlOptionShift: [.control, .option, .shift]
         case .command, .leftCommand, .rightCommand: [.command]
         case .option, .leftOption, .rightOption: [.option]
         case .shift, .leftShift, .rightShift: [.shift]
@@ -67,6 +71,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .controlOption: UInt32(controlKey | optionKey)
         case .controlShift: UInt32(controlKey | shiftKey)
+        case .controlOptionShift: UInt32(controlKey | optionKey | shiftKey)
         case .command, .leftCommand, .rightCommand: UInt32(cmdKey)
         case .option, .leftOption, .rightOption: UInt32(optionKey)
         case .shift, .leftShift, .rightShift: UInt32(shiftKey)
@@ -78,6 +83,7 @@ enum ShortcutModifierPreset: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .controlOption: ["⌃", "⌥"]
         case .controlShift: ["⌃", "⇧"]
+        case .controlOptionShift: ["⌃", "⌥", "⇧"]
         case .command: ["⌘"]
         case .leftCommand: ["⌘L"]
         case .rightCommand: ["⌘R"]
@@ -334,6 +340,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .canvasAbove: .init(key: "k", modifier: .controlShift)
         case .canvasBelow: .init(key: "j", modifier: .controlShift)
         case .canvasCycleWidth: .init(key: "w", modifier: .controlShift)
+        case .canvasMoveColumnLeft: .init(key: "left", modifier: .controlOptionShift)
+        case .canvasMoveColumnRight: .init(key: "right", modifier: .controlOptionShift)
         case .windowSwitcherToggle: .init(key: "tab", modifier: .controlOption)
         case .windowExposeToggle: .init(key: "e", modifier: .controlOption)
         case .windowMakeLarger: .init(key: "=", modifier: .controlOption)
@@ -346,8 +354,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
              .windowFirstFourth, .windowSecondFourth, .windowThirdFourth, .windowLastFourth,
              .windowFirstThreeFourths, .windowCenterThreeFourths, .windowLastThreeFourths,
              .desktopMoveLeft, .desktopMoveRight, .canvasRestore, .windowTileAllDesktops,
-             .windowMaximizeAllDisplays,
-             .canvasMoveColumnLeft, .canvasMoveColumnRight:
+             .windowMaximizeAllDisplays:
             nil
         }
     }

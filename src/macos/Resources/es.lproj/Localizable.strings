@@ -64,6 +64,8 @@
 "Key" = "Tecla";
 "Space" = "Espacio";
 "Control + Option" = "Control + Opción";
+"Control + Option + Shift" = "Control + Opción + Mayúsculas";
+"Drag to reorder columns" = "Arrastra para reordenar las columnas";
 "Left Command" = "Comando izquierdo";
 "Right Command" = "Comando derecho";
 "Left Option" = "Opción izquierda";

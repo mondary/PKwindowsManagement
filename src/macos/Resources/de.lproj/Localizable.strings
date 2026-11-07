@@ -64,6 +64,8 @@
 "Key" = "Taste";
 "Space" = "Leertaste";
 "Control + Option" = "Control + Option";
+"Control + Option + Shift" = "Control + Option + Shift";
+"Drag to reorder columns" = "Spalten durch Ziehen neu anordnen";
 "Left Command" = "Linke Befehlstaste";
 "Right Command" = "Rechte Befehlstaste";
 "Left Option" = "Linke Wahltaste";

@@ -480,6 +480,37 @@ final class HorizontalCanvasService: ObservableObject {
         }
     }
 
+    /// Minimap drag: reorder one column on the display that owns the bar. The
+    /// whole stacked pair travels together and the selection follows it.
+    func moveColumn(_ column: Int, to index: Int, on displayID: CGDirectDisplayID) {
+        precondition(Thread.isMainThread)
+        guard !shuttingDown else { return }
+        message = ""
+        let context = Context.capture()
+        queue.async {
+            guard AXIsProcessTrusted() else { self.report("Canvas needs Accessibility permission."); return }
+            guard self.loadRecovery(context) else { return }
+            guard let display = context.displays.first(where: { $0.id == displayID }),
+                  let space = SpaceManagementService.userDesktop(onDisplay: display.uuid),
+                  let strip = self.strips[CanvasWorkspace(displayID: displayID, spaceID: space)],
+                  self.isCurrent(strip),
+                  strip.layout == .canvas,
+                  !strip.entries.isEmpty, !strip.widths.isEmpty else { return }
+            let source = min(max(0, column), strip.widths.count - 1)
+            let target = min(max(0, index), strip.widths.count - 1)
+            guard source != target,
+                  let entryIndex = CanvasLayout.index(column: source, row: 0, columns: strip.columns) else { return }
+            let anchor = strip.entries[entryIndex].saved.id
+            strip.selected = anchor
+            strip.arrangement.moveColumn(containing: anchor, by: target - source)
+            strip.lastNavigation = ProcessInfo.processInfo.systemUptime
+            self.retile(strip)
+            self.fitViewport(strip)
+            self.teleport(strip, context: context)
+            self.focusSelected(strip)
+        }
+    }
+
     /// Continuous horizontal/Option scroll. Never read the worker-owned strips on
     /// the event-tap thread; knownWorkspaces is the main-thread snapshot.
     func scroll(rawDelta: CGFloat, location: CGPoint) -> Bool {

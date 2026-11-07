@@ -391,6 +391,8 @@ private struct ModifierState {
             return flags.contains(.maskControl) && flags.contains(.maskAlternate)
         case .controlShift:
             return flags.contains(.maskControl) && flags.contains(.maskShift)
+        case .controlOptionShift:
+            return flags.contains(.maskControl) && flags.contains(.maskAlternate) && flags.contains(.maskShift)
         case .command:
             return flags.contains(.maskCommand)
         case .leftCommand:

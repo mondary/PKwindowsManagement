@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.24] - 2026-11-07
+### Added
+- **Réagencer les fenêtres du Strip** : appui long sur une pastille du fil d'Ariane puis glisser — le geste des icônes de la barre des menus — déplace la colonne entière (une paire demi-hauteur voyage d'un bloc) avec un trait d'insertion accentué ; le clic simple navigue toujours. Au clavier, `Ctrl+Option+Shift+←/→` déplace la colonne active : nouveau préréglage de modificateurs Contrôle+Option+Maj (FR/EN/ES/DE) appliqué par défaut aux commandes « Déplacer la colonne » existantes, sans toucher à vos associations.
+
 ## [2026.11.23] - 2026-11-07
 ### Added
 - **Minimap en haut ou en bas** : Réglages → Fenêtres → studio Strip place le fil d'Ariane sur le bord haut (défaut) ou bas de chaque écran — pratique sans Dock en bas. Bascule immédiate, choix mémorisé et inclus dans les sauvegardes.

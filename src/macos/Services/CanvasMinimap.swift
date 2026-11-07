@@ -87,6 +87,20 @@ enum CanvasMinimap {
         )
     }
 
+    /// Drop target for a drag at `fraction` of the bar. Same gap rule as
+    /// clicks: a point between two segments belongs to the segment before it,
+    /// so every drop position answers with a column — dropping a segment onto
+    /// itself is a no-op the caller can detect.
+    static func reorderTarget(at fraction: CGFloat, segments: [Segment]) -> Int? {
+        guard !segments.isEmpty else { return nil }
+        let position = min(max(0, fraction), 1)
+        var result = 0
+        for (index, segment) in segments.enumerated() where position >= segment.start {
+            result = index
+        }
+        return result
+    }
+
     /// Reverse mapping for clicks on the bar. A position in the gap between
     /// two columns or in the trailing margin belongs to the column before it,
     /// so every point of the bar answers with a column.

@@ -89,6 +89,8 @@ final class CanvasMinimapController {
     private func barView(model: CanvasMinimap.Model, displayID: CGDirectDisplayID) -> CanvasMinimapBar {
         CanvasMinimapBar(model: model, onSelect: { column in
             HorizontalCanvasService.shared.focusColumn(column, on: displayID)
+        }, onMove: { column, target in
+            HorizontalCanvasService.shared.moveColumn(column, to: target, on: displayID)
         }, icon: { [weak self] pid in self?.appIcon(for: pid) })
     }
 
@@ -151,8 +153,13 @@ private final class MinimapPanel: NSPanel {
 struct CanvasMinimapBar: View {
     let model: CanvasMinimap.Model
     let onSelect: (Int) -> Void
+    /// Menu-bar-style reorder: long press a segment, drag, drop onto another
+    /// column. Fractions live in the bar's own coordinate space.
+    var onMove: (Int, Int) -> Void = { _, _ in }
     /// App icon for an owning pid, resolved (and cached) on the main thread.
     var icon: (pid_t) -> NSImage? = { _ in nil }
+
+    @State private var reorder: (source: Int, target: Int)?
 
     var body: some View {
         GeometryReader { proxy in
@@ -170,7 +177,19 @@ struct CanvasMinimapBar: View {
                     .frame(maxHeight: .infinity)
                     .offset(x: model.viewportStart * proxy.size.width)
                     .allowsHitTesting(false)
+                // Insertion indicator while dragging a segment.
+                if let reorder, reorder.target != reorder.source,
+                   model.segments.indices.contains(reorder.target) {
+                    let segment = model.segments[reorder.target]
+                    let edge = reorder.target > reorder.source ? segment.start + segment.length : segment.start
+                    Capsule()
+                        .fill(Color.accentColor)
+                        .frame(width: 2)
+                        .offset(x: edge * proxy.size.width - 1)
+                        .allowsHitTesting(false)
+                }
             }
+            .coordinateSpace(name: "canvasMinimapBar")
         }
         .padding(EdgeInsets(top: 4, leading: 6, bottom: 3, trailing: 6))
         .background(
@@ -182,6 +201,8 @@ struct CanvasMinimapBar: View {
     }
 
     /// Each column is a distinct hit target, without minimum-width overlap.
+    /// Tap travels to the column; long press then drag — the menu-bar icon
+    /// gesture — reorders it. The pair travels as one column.
     private func segmentCapsule(index: Int, segment: CanvasMinimap.Segment, size: CGSize) -> some View {
         let selected = model.selectedColumn == index
         let frame = segment.frame(in: size)
@@ -189,17 +210,36 @@ struct CanvasMinimapBar: View {
         let names = segment.pids.compactMap {
             NSRunningApplication(processIdentifier: $0)?.localizedName
         }.joined(separator: " · ")
-        return Button(action: { onSelect(index) }) {
-            segmentLabel(selected: selected, frameWidth: frame.width,
-                         images: images, paired: segment.rows == 2)
-        }
-        .buttonStyle(.plain)
-        .frame(height: frame.height)
-        .offset(x: frame.minX)
-        .help(names)
-        .accessibilityLabel(Text(names))
-        .accessibilityValue(Text("\(index + 1)"))
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        let dragging = reorder?.source == index
+        return segmentLabel(selected: selected, frameWidth: frame.width,
+                             images: images, paired: segment.rows == 2)
+            .frame(height: frame.height)
+            .offset(x: frame.minX)
+            .contentShape(Capsule())
+            .onTapGesture { onSelect(index) }
+            .gesture(
+                LongPressGesture(minimumDuration: 0.22)
+                    .sequenced(before: DragGesture(minimumDistance: 8, coordinateSpace: .named("canvasMinimapBar")))
+                    .onChanged { value in
+                        guard case .second(true, .some(let drag)) = value else { return }
+                        let fraction = drag.location.x / max(1, size.width)
+                        if let target = CanvasMinimap.reorderTarget(at: fraction, segments: model.segments) {
+                            reorder = (source: index, target: target)
+                        }
+                    }
+                    .onEnded { _ in
+                        if let current = reorder, current.target != current.source {
+                            onMove(current.source, current.target)
+                        }
+                        reorder = nil
+                    }
+            )
+            .opacity(dragging ? 0.55 : 1)
+            .scaleEffect(dragging ? 0.9 : 1)
+            .help(names + " · " + localizedString("Drag to reorder columns"))
+            .accessibilityLabel(Text(names))
+            .accessibilityValue(Text("\(index + 1)"))
+            .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     }
 
     private func segmentLabel(selected: Bool, frameWidth: CGFloat,

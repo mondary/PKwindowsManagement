@@ -45,6 +45,24 @@ enum CanvasStateChecks {
                 assert(sample.columns.contains { $0.windows == [first, second] })
             }
         }
+        // Reordering moves whole columns — stacked pairs travel together —
+        // clamps at the edges and never drops a window.
+        var ordered = CanvasArrangement()
+        ordered.synchronize([1, 2, 3, 4, 5])
+        ordered.setHalfHeight(2)
+        ordered.setHalfHeight(5)
+        assert(ordered.columns.map(\.windows) == [[1], [2, 5], [3], [4]])
+        ordered.moveColumn(containing: 4, by: -2)
+        assert(ordered.columns.map(\.windows) == [[1], [4], [2, 5], [3]])
+        ordered.moveColumn(containing: 2, by: 1)
+        assert(ordered.columns.map(\.windows) == [[1], [4], [3], [2, 5]])
+        assert(ordered.columns.first(where: { $0.windows.contains(5) })?.halfHeight == true)
+        ordered.moveColumn(containing: 1, by: -1)
+        assert(ordered.columns.map(\.windows) == [[1], [4], [3], [2, 5]])
+        ordered.moveColumn(containing: 3, by: 9)
+        assert(ordered.columns.map(\.windows) == [[1], [4], [3], [2, 5]])
+        assert(Set(ordered.columns.flatMap(\.windows)) == Set([1, 2, 3, 4, 5]))
+
         let a = CanvasWorkspace(displayID: 1, spaceID: 101)
         for count in [14, 24, 64] {
             let many = (1...count).map(UInt32.init)
