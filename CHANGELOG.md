@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.11.25] - 2026-11-07
+### Added
+- **Largeur par défaut selon la taille de l'écran** : sous le seuil réglable (2 000 pt par défaut), les colonnes sans préférence gardent ⅔ ; au-dessus (grand écran externe), elles passent à ⅓. Les deux largeurs et le seuil se règlent dans le studio Strip (Réglages → Fenêtres) et partent dans les sauvegardes ; les préférences par app et les largeurs manuelles restent prioritaires.
+- **Nouvelle fenêtre juste après la fenêtre active** : une fenêtre qui rejoint le Strip s'ouvre à droite de la colonne courante (comme un onglet Chrome « next tab »), au lieu d'en fin de ruban ; basculable dans le studio Strip. Les fenêtres de réglages ou les popups d'une app s'ouvrent ainsi près de la fenêtre qui les a appelés.
+### Fixed
+- **Snap sans casser les autres écrans** : une commande de placement libère uniquement le bureau de la fenêtre ciblée (fenêtre focalisée, sinon pointeur) au lieu de l'écran du pointeur et de relâcher tous les strips actifs — le strip d'un autre écran continue de tourner, paires et ordre conservés.
+
 ## [2026.11.24] - 2026-11-07
 ### Added
 - **Réagencer les fenêtres du Strip** : appui long sur une pastille du fil d'Ariane puis glisser — le geste des icônes de la barre des menus — déplace la colonne entière (une paire demi-hauteur voyage d'un bloc) avec un trait d'insertion accentué ; le clic simple navigue toujours. Au clavier, `Ctrl+Option+Shift+←/→` déplace la colonne active : nouveau préréglage de modificateurs Contrôle+Option+Maj (FR/EN/ES/DE) appliqué par défaut aux commandes « Déplacer la colonne » existantes, sans toucher à vos associations.

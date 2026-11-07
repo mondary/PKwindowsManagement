@@ -45,6 +45,12 @@ enum CanvasLayout {
     struct WidthPreferences {
         private(set) var values: [String: String] = [:]
         private var pending: [String: (value: String, token: UUID)] = [:]
+        /// Screen-size-aware fallback: at or above this visible width the wide
+        /// default applies (a large external display reads better in thirds);
+        /// below it the narrow default (⅔ on a MacBook).
+        var wideContentThreshold: CGFloat = 2000
+        var narrowDefault: ColumnWidthKind = .twoThirds
+        var wideDefault: ColumnWidthKind = .third
 
         mutating func reload(_ persisted: [String: String]) {
             values = persisted.merging(pending.mapValues { $0.value }) { _, latest in latest }
@@ -66,14 +72,16 @@ enum CanvasLayout {
             pending = pending.filter { $0.value.token != token }
         }
 
-        /// Apps without a stored preference get two thirds of the content
-        /// region: reading width dominates the ribbon, halves felt cramped.
-        func kind(for bundles: [String?]) -> ColumnWidthKind {
-            bundles.map { bundle in
-                bundle.flatMap { values[$0] }.flatMap(ColumnWidthKind.init(rawValue:)) ?? .twoThirds
+        /// Apps without a stored preference get the screen-size-aware
+        /// default: reading width dominates small screens, while a large
+        /// external display fits four to six comfortable thirds.
+        func kind(for bundles: [String?], contentWidth: CGFloat = 0) -> ColumnWidthKind {
+            let fallback: ColumnWidthKind = contentWidth >= wideContentThreshold ? wideDefault : narrowDefault
+            return bundles.map { bundle in
+                bundle.flatMap { values[$0] }.flatMap(ColumnWidthKind.init(rawValue:)) ?? fallback
             }.reduce(nil as ColumnWidthKind?) { result, kind in
                 result.map { ColumnWidthKind.widest($0, kind) } ?? kind
-            } ?? .twoThirds
+            } ?? fallback
         }
     }
 

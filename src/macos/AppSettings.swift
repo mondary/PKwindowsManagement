@@ -54,6 +54,10 @@ final class AppSettings: ObservableObject {
         static let canvasRowsPerColumn = "canvas-rows-per-column"
         static let canvasMinimap = "canvas-minimap"
         static let stripMinimapAtBottom = "strip-minimap-at-bottom"
+        static let stripDefaultWidthNarrow = "strip-default-width-narrow"
+        static let stripDefaultWidthWide = "strip-default-width-wide"
+        static let stripWideDisplayThreshold = "strip-wide-display-threshold"
+        static let stripNewColumnNext = "strip-new-column-next"
         static let exposeTrackpadGesture = "expose-trackpad-gesture"
         /// JSON [bundleID: ColumnWidthKind]; read directly by the Canvas worker.
         static let stripColumnWidths = "strip-column-widths"
@@ -326,6 +330,40 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    /// Default column width per screen size: under the threshold (MacBook)
+    /// vs at or above (large external display). ColumnWidthKind raw values.
+    @Published var stripDefaultWidthNarrow: String {
+        didSet {
+            defaults.set(stripDefaultWidthNarrow, forKey: Keys.stripDefaultWidthNarrow)
+            scheduleAutoBackup()
+        }
+    }
+
+    @Published var stripDefaultWidthWide: String {
+        didSet {
+            defaults.set(stripDefaultWidthWide, forKey: Keys.stripDefaultWidthWide)
+            scheduleAutoBackup()
+        }
+    }
+
+    /// Visible-area width in points at which the wide default takes over.
+    @Published var stripWideDisplayThreshold: Double {
+        didSet {
+            stripWideDisplayThreshold = min(max(1024, stripWideDisplayThreshold), 8192)
+            defaults.set(stripWideDisplayThreshold, forKey: Keys.stripWideDisplayThreshold)
+            scheduleAutoBackup()
+        }
+    }
+
+    /// Newly discovered windows join right after the focused column (true,
+    /// Chrome-tab style) instead of at the end of the ribbon.
+    @Published var stripNewColumnNext: Bool {
+        didSet {
+            defaults.set(stripNewColumnNext, forKey: Keys.stripNewColumnNext)
+            scheduleAutoBackup()
+        }
+    }
+
     var bigYearColors: BigYearColors {
         bigYearTheme.colors.applying(overrides: bigYearColorOverrides)
     }
@@ -431,6 +469,14 @@ final class AppSettings: ObservableObject {
         canvasRowsPerColumn = storedRows == 1 ? 1 : 2
         canvasMinimap = defaults.object(forKey: Keys.canvasMinimap) as? Bool ?? true
         stripMinimapAtBottom = defaults.object(forKey: Keys.stripMinimapAtBottom) as? Bool ?? false
+        stripDefaultWidthNarrow = defaults.string(forKey: Keys.stripDefaultWidthNarrow)
+            .flatMap(CanvasLayout.ColumnWidthKind.init(rawValue:))?.rawValue
+            ?? CanvasLayout.ColumnWidthKind.twoThirds.rawValue
+        stripDefaultWidthWide = defaults.string(forKey: Keys.stripDefaultWidthWide)
+            .flatMap(CanvasLayout.ColumnWidthKind.init(rawValue:))?.rawValue
+            ?? CanvasLayout.ColumnWidthKind.third.rawValue
+        stripWideDisplayThreshold = defaults.object(forKey: Keys.stripWideDisplayThreshold) as? Double ?? 2000
+        stripNewColumnNext = defaults.object(forKey: Keys.stripNewColumnNext) as? Bool ?? true
         exposeTrackpadGesture = defaults.object(forKey: Keys.exposeTrackpadGesture) as? Bool ?? true
         stripColumnWidths = (defaults.data(forKey: Keys.stripColumnWidths)
             .flatMap { try? JSONDecoder().decode([String: String].self, from: $0) }) ?? [:]
@@ -775,6 +821,10 @@ final class AppSettings: ObservableObject {
             canvasRowsPerColumn: canvasRowsPerColumn,
             canvasMinimap: canvasMinimap,
             stripMinimapAtBottom: stripMinimapAtBottom,
+            stripDefaultWidthNarrow: stripDefaultWidthNarrow,
+            stripDefaultWidthWide: stripDefaultWidthWide,
+            stripWideDisplayThreshold: stripWideDisplayThreshold,
+            stripNewColumnNext: stripNewColumnNext,
             stripColumnWidths: stripColumnWidths,
             tilingWorkspaceProfiles: TilingWorkspaceProfiles.load()
         )
@@ -852,6 +902,12 @@ final class AppSettings: ObservableObject {
         if let rows = backup.canvasRowsPerColumn { canvasRowsPerColumn = max(1, min(2, rows)) }
         if let minimap = backup.canvasMinimap { canvasMinimap = minimap }
         if let minimapAtBottom = backup.stripMinimapAtBottom { stripMinimapAtBottom = minimapAtBottom }
+        if let narrow = backup.stripDefaultWidthNarrow,
+           CanvasLayout.ColumnWidthKind(rawValue: narrow) != nil { stripDefaultWidthNarrow = narrow }
+        if let wide = backup.stripDefaultWidthWide,
+           CanvasLayout.ColumnWidthKind(rawValue: wide) != nil { stripDefaultWidthWide = wide }
+        if let threshold = backup.stripWideDisplayThreshold { stripWideDisplayThreshold = min(max(1024, threshold), 8192) }
+        if let newColumnNext = backup.stripNewColumnNext { stripNewColumnNext = newColumnNext }
         if let widths = backup.stripColumnWidths { stripColumnWidths = widths }
         if let profiles = backup.tilingWorkspaceProfiles {
             _ = TilingWorkspaceProfiles.replace(profiles)
@@ -1229,6 +1285,10 @@ private struct SettingsBackup: Codable {
     let canvasRowsPerColumn: Int?
     let canvasMinimap: Bool?
     let stripMinimapAtBottom: Bool?
+    let stripDefaultWidthNarrow: String?
+    let stripDefaultWidthWide: String?
+    let stripWideDisplayThreshold: Double?
+    let stripNewColumnNext: Bool?
     let stripColumnWidths: [String: String]?
     let tilingWorkspaceProfiles: [String: TilingWorkspaceProfile]?
 }

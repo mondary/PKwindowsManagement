@@ -66,6 +66,11 @@
 "Control + Option" = "Control + Option";
 "Control + Option + Shift" = "Control + Option + Shift";
 "Drag to reorder columns" = "Spalten durch Ziehen neu anordnen";
+"Default column width" = "Standard-Spaltenbreite";
+"Small screen" = "Kleiner Bildschirm";
+"Large screen" = "Großer Bildschirm";
+"Wide display threshold" = "Schwelle großer Bildschirm";
+"New window right after the focused one" = "Neues Fenster direkt nach dem aktiven Fenster";
 "Left Command" = "Linke Befehlstaste";
 "Right Command" = "Rechte Befehlstaste";
 "Left Option" = "Linke Wahltaste";

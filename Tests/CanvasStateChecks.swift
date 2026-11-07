@@ -63,6 +63,20 @@ enum CanvasStateChecks {
         assert(ordered.columns.map(\.windows) == [[1], [4], [3], [2, 5]])
         assert(Set(ordered.columns.flatMap(\.windows)) == Set([1, 2, 3, 4, 5]))
 
+        // Chrome-tab arrival: a discovered column lands right after the
+        // focused column from either direction; no-ops preserve the ribbon.
+        var arrival = CanvasArrangement()
+        arrival.synchronize([1, 2, 3, 4])
+        arrival.moveColumn(containing: 4, afterColumnContaining: 1)
+        assert(arrival.columns.map(\.windows) == [[1], [4], [2], [3]])
+        arrival.moveColumn(containing: 2, afterColumnContaining: 3)
+        assert(arrival.columns.map(\.windows) == [[1], [4], [3], [2]])
+        arrival.moveColumn(containing: 4, afterColumnContaining: 1)
+        assert(arrival.columns.map(\.windows) == [[1], [4], [3], [2]])
+        arrival.moveColumn(containing: 3, afterColumnContaining: 3)
+        assert(arrival.columns.map(\.windows) == [[1], [4], [3], [2]])
+        assert(Set(arrival.columns.flatMap(\.windows)) == Set([1, 2, 3, 4]))
+
         let a = CanvasWorkspace(displayID: 1, spaceID: 101)
         for count in [14, 24, 64] {
             let many = (1...count).map(UInt32.init)

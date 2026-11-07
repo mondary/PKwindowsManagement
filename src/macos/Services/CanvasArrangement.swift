@@ -25,6 +25,16 @@ struct CanvasArrangement {
         columns.first(where: { $0.windows.contains(id) })?.halfHeight == true
     }
 
+    /// Chrome-tab-style arrival: drop the column holding `id` right after
+    /// the column holding `anchor`. No-op when already adjacent or equal.
+    mutating func moveColumn(containing id: UInt32, afterColumnContaining anchor: UInt32) {
+        guard let source = columns.firstIndex(where: { $0.windows.contains(id) }),
+              let anchorIndex = columns.firstIndex(where: { $0.windows.contains(anchor) }),
+              source != anchorIndex, source != anchorIndex + 1 else { return }
+        let column = columns.remove(at: source)
+        columns.insert(column, at: source < anchorIndex ? anchorIndex : anchorIndex + 1)
+    }
+
     mutating func moveColumn(containing id: UInt32, by offset: Int) {
         guard offset != 0,
               let source = columns.firstIndex(where: { $0.windows.contains(id) }) else { return }

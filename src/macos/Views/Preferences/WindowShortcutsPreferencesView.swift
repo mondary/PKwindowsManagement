@@ -400,6 +400,51 @@ struct WindowShortcutsPreferencesView: View {
                         title: localizedString("Reorder columns along the ribbon")
                     )
 
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(localizedString("Default column width"))
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(localizedString("Small screen")).font(.caption2).foregroundStyle(.secondary)
+                            Picker(localizedString("Small screen"), selection: $settings.stripDefaultWidthNarrow) {
+                                ForEach(CanvasLayout.ColumnWidthKind.allCases, id: \.rawValue) { kind in
+                                    Text(widthSymbol(kind)).tag(kind.rawValue)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(localizedString("Large screen")).font(.caption2).foregroundStyle(.secondary)
+                            Picker(localizedString("Large screen"), selection: $settings.stripDefaultWidthWide) {
+                                ForEach(CanvasLayout.ColumnWidthKind.allCases, id: \.rawValue) { kind in
+                                    Text(widthSymbol(kind)).tag(kind.rawValue)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        HStack(spacing: 6) {
+                            Text(localizedString("Wide display threshold"))
+                            Spacer()
+                            TextField("2000", value: $settings.stripWideDisplayThreshold,
+                                      formatter: stripThresholdFormatter)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 58)
+                                .textFieldStyle(.roundedBorder)
+                                .controlSize(.mini)
+                            Text("pt").foregroundStyle(.secondary)
+                        }
+                        .font(.caption2)
+                        Toggle(localizedString("New window right after the focused one"),
+                               isOn: $settings.stripNewColumnNext)
+                            .controlSize(.small)
+                            .font(.caption2)
+                    }
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.primary.opacity(0.035))
+                    )
+
                     HStack(spacing: 8) {
                         Button(localizedString("Check Canvas windows")) {
                             canvas.perform(.inspect)
@@ -428,6 +473,23 @@ struct WindowShortcutsPreferencesView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color.primary.opacity(0.035))
         )
+    }
+
+    private var stripThresholdFormatter: NumberFormatter {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimum = 1024
+        formatter.maximum = 8192
+        return formatter
+    }
+
+    private func widthSymbol(_ kind: CanvasLayout.ColumnWidthKind) -> String {
+        switch kind {
+        case .third: return "⅓"
+        case .half: return "½"
+        case .twoThirds: return "⅔"
+        case .full: return "1"
+        }
     }
 
     private func stripFeatureBadge(icon: String, keys: String, title: String) -> some View {

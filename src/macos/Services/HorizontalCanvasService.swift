@@ -209,13 +209,37 @@ final class HorizontalCanvasService: ObservableObject {
         updateProfile(onDisplayUUID: displayUUID) { $0.selectTilingLayout(layout) }
     }
 
-    /// One-shot snap commands leave continuous ownership on the current Space;
-    /// otherwise the periodic tiler would immediately undo the user's manual
-    /// placement after the legacy Canvas release path.
+    /// One-shot snap commands leave continuous ownership on the Space of the
+    /// window being placed — the focused window's display, not the pointer's:
+    /// snapping a window on the MacBook must never disturb another screen's
+    /// active strip. Other strips keep running; their profiles are untouched.
     func releaseForManualPlacement(completion: @escaping () -> Void) {
         precondition(Thread.isMainThread)
-        setCurrentTilingMode(.free)
-        release(completion: completion)
+        let context = Context.capture()
+        let focused = CanvasWindowAccess.focusedID(pid: context.frontmostPID)
+        guard let display = targetDisplay(context, focused: focused),
+              let space = SpaceManagementService.userDesktop(onDisplay: display.uuid) else {
+            completion()
+            return
+        }
+        let key = TilingWorkspaceKey(displayUUID: display.uuid, spaceID: space)
+        var profile = TilingWorkspaceProfiles.profile(for: key, in: TilingWorkspaceProfiles.load())
+        profile.mode = .free
+        guard TilingWorkspaceProfiles.update(profile, for: key) else {
+            completion()
+            return
+        }
+        AppRuntime.shared.settings?.scheduleAutoBackup()
+        refreshCurrentWorkspace()
+        let workspace = CanvasWorkspace(displayID: display.id, spaceID: space)
+        queue.async {
+            if let strip = self.strips.removeValue(forKey: workspace) {
+                self.arrangements[workspace] = strip.arrangement
+                self.restore(strip.entries.map(\.saved), context: context)
+            }
+            self.publish()
+            DispatchQueue.main.async(execute: completion)
+        }
     }
 
     private func currentProfileForPointer() -> TilingWorkspaceProfile {
@@ -419,7 +443,8 @@ final class HorizontalCanvasService: ObservableObject {
         }))
         guard !bundles.isEmpty else { return }
         reloadColumnWidthPrefs()
-        let next = columnKind(pids: pids).next
+        let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
+        let next = columnKind(pids: pids, contentWidth: geometry.contentWidth).next
         // An explicit preset replaces the manual override for this column.
         columnEntries.forEach { $0.manualWidth = nil }
         let writeToken = columnWidthPrefs.set(next, for: bundles)
@@ -705,7 +730,8 @@ final class HorizontalCanvasService: ObservableObject {
         let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
         strip.widths = strip.columns.map { column in
             let minimum = column.windows.reduce(CGFloat(0)) { max($0, strip.entries[$1].minimumWidth) }
-            let kind = columnKind(pids: column.windows.map { strip.entries[$0].saved.pid })
+            let kind = columnKind(pids: column.windows.map { strip.entries[$0].saved.pid },
+                                  contentWidth: geometry.contentWidth)
             return CanvasLayout.resolvedColumnWidth(preferred: kind,
                 manualWidths: column.windows.compactMap { strip.entries[$0].manualWidth },
                 contentWidth: geometry.contentWidth, minimum: minimum)
@@ -715,20 +741,48 @@ final class HorizontalCanvasService: ObservableObject {
         }
     }
 
+    /// Newly discovered windows arrive right after the focused window's
+    /// column (Chrome-tab style) when the user chose that; the default
+    /// placement stays the end of the ribbon. Called after the discovery
+    /// retile, so the fresh columns already sit at the end.
+    private func placeNewColumns(afterDiscovery additions: [Entry], in strip: Strip) {
+        guard !additions.isEmpty else { return }
+        let next = UserDefaults.standard.object(forKey: "strip-new-column-next") as? Bool ?? true
+        guard next, let anchor = strip.selected else { return }
+        var moved = false
+        for entry in additions {
+            let before = strip.arrangement.columns
+            strip.arrangement.moveColumn(containing: entry.saved.id, afterColumnContaining: anchor)
+            if strip.arrangement.columns != before { moved = true }
+        }
+        guard moved else { return }
+        retile(strip)
+    }
+
     /// Shared defaults key with AppSettings.stripColumnWidths (JSON map).
     private static let columnWidthsKey = "strip-column-widths"
 
     private func reloadColumnWidthPrefs() {
-        let map = UserDefaults.standard.data(forKey: Self.columnWidthsKey)
+        let defaults = UserDefaults.standard
+        let map = defaults.data(forKey: Self.columnWidthsKey)
             .flatMap { try? JSONDecoder().decode([String: String].self, from: $0) } ?? [:]
+        let narrow = defaults.string(forKey: "strip-default-width-narrow")
+            .flatMap(CanvasLayout.ColumnWidthKind.init(rawValue:)) ?? .twoThirds
+        let wide = defaults.string(forKey: "strip-default-width-wide")
+            .flatMap(CanvasLayout.ColumnWidthKind.init(rawValue:)) ?? .third
+        let threshold = defaults.object(forKey: "strip-wide-display-threshold") as? Double ?? 2000
         columnWidthPrefs.reload(map)
+        columnWidthPrefs.narrowDefault = narrow
+        columnWidthPrefs.wideDefault = wide
+        columnWidthPrefs.wideContentThreshold = CGFloat(min(max(1024, threshold), 8192))
     }
 
-    /// A column adopts the widest preference among its applications.
-    private func columnKind(pids: [pid_t]) -> CanvasLayout.ColumnWidthKind {
+    /// A column adopts the widest preference among its applications, or the
+    /// screen-size-aware default when none stored a preference.
+    private func columnKind(pids: [pid_t], contentWidth: CGFloat) -> CanvasLayout.ColumnWidthKind {
         columnWidthPrefs.kind(for: pids.map {
             NSRunningApplication(processIdentifier: $0)?.bundleIdentifier
-        })
+        }, contentWidth: contentWidth)
     }
 
     /// Read only the focused managed window; all state and AX work remain on
@@ -1147,6 +1201,7 @@ final class HorizontalCanvasService: ObservableObject {
                 }
                 if changed {
                     self.retile(strip)
+                    self.placeNewColumns(afterDiscovery: additions, in: strip)
                     if !resumed { self.fitViewport(strip) }
                 }
                 if ProcessInfo.processInfo.systemUptime - strip.lastNavigation > 1,

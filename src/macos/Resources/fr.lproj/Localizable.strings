@@ -66,6 +66,11 @@
 "Control + Option" = "Contrôle + Option";
 "Control + Option + Shift" = "Contrôle + Option + Maj";
 "Drag to reorder columns" = "Glisser pour réagencer les colonnes";
+"Default column width" = "Largeur de colonne par défaut";
+"Small screen" = "Petit écran";
+"Large screen" = "Grand écran";
+"Wide display threshold" = "Seuil grand écran";
+"New window right after the focused one" = "Nouvelle fenêtre juste après la fenêtre active";
 "Left Command" = "Commande gauche";
 "Right Command" = "Commande droite";
 "Left Option" = "Option gauche";

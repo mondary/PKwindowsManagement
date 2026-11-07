@@ -190,6 +190,23 @@ enum CanvasLayoutChecks {
         prefs.reload([:]) // Acknowledged values may be reset/imported later.
         assert(prefs.kind(for: ["a", "b"]) == .twoThirds)
 
+        // Screen-size-aware defaults: below the threshold the narrow default
+        // (⅔ on a MacBook), at or above it the wide default (⅓ on a large
+        // external display); stored per-app preferences still win.
+        var sized = CanvasLayout.WidthPreferences()
+        assert(sized.kind(for: [], contentWidth: 1470 - 88) == .twoThirds)
+        assert(sized.kind(for: [], contentWidth: 2560 - 88) == .third)
+        assert(sized.kind(for: [], contentWidth: 2000) == .third)
+        assert(sized.kind(for: [], contentWidth: 1999) == .twoThirds)
+        sized.narrowDefault = .half
+        sized.wideDefault = .full
+        assert(sized.kind(for: [], contentWidth: 2560) == .full)
+        assert(sized.kind(for: [], contentWidth: 1500) == .half)
+        sized.reload(["a": "full"])
+        assert(sized.kind(for: ["a"], contentWidth: 2560) == .full)
+        sized.reload(["a": "full", "b": "third"])
+        assert(sized.kind(for: ["a", "b"], contentWidth: 1200) == .full) // widest wins
+
         // Manual resize adoption ignores our own accepted sizes, moves, height
         // changes, live drags, parked windows and unconfirmed AX frames.
         let applied = CGRect(x: 44, y: 24, width: 900, height: 1000)
