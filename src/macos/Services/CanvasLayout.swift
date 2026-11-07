@@ -66,12 +66,14 @@ enum CanvasLayout {
             pending = pending.filter { $0.value.token != token }
         }
 
+        /// Apps without a stored preference get two thirds of the content
+        /// region: reading width dominates the ribbon, halves felt cramped.
         func kind(for bundles: [String?]) -> ColumnWidthKind {
             bundles.map { bundle in
-                bundle.flatMap { values[$0] }.flatMap(ColumnWidthKind.init(rawValue:)) ?? .half
+                bundle.flatMap { values[$0] }.flatMap(ColumnWidthKind.init(rawValue:)) ?? .twoThirds
             }.reduce(nil as ColumnWidthKind?) { result, kind in
                 result.map { ColumnWidthKind.widest($0, kind) } ?? kind
-            } ?? .half
+            } ?? .twoThirds
         }
     }
 

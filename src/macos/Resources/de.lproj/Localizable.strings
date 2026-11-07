@@ -760,6 +760,8 @@
 "Tiling Layout Gallery" = "Tiling-Layout-Galerie";
 "Tiling Mode" = "Tiling-Modus";
 "Top minimap bar" = "Obere Minikarten-Leiste";
+"Strip minimap" = "Strip-Minimap";
+"Minimap position" = "Position der Minimap";
 "Trigger Mode" = "Auslösemodus";
 "Use only the dedicated shortcut (⌃⌥Tab)" = "Nur das dedizierte Kürzel verwenden (⌃⌥Tab)";
 "Visual thumbnails, running apps and Rooms in one switcher." = "Visuelle Miniaturen, laufende Apps und Rooms in einem Wechsler.";

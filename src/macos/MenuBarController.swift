@@ -67,7 +67,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
             self?.rebuildStatusMenu()
         }
         HorizontalCanvasService.shared.start()
-        CanvasMinimapController.shared.start(isEnabled: { AppRuntime.shared.settings?.canvasMinimap ?? true })
+        CanvasMinimapController.shared.start(
+            isEnabled: { AppRuntime.shared.settings?.canvasMinimap ?? true },
+            isAtBottom: { AppRuntime.shared.settings?.stripMinimapAtBottom ?? false }
+        )
         registerRoomsHotKey()
         TrackpadSwipeMonitor.shared.isEnabled = { AppRuntime.shared.settings?.exposeTrackpadGesture ?? true }
         TrackpadSwipeMonitor.shared.onSwipeUp = { WindowSwitcherController.shared.toggleExpose() }

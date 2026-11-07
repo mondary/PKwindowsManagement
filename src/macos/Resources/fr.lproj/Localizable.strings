@@ -761,6 +761,8 @@
 "Tiling Layout Gallery" = "Galerie de dispositions Tiling";
 "Tiling Mode" = "Mode Tiling";
 "Top minimap bar" = "Barre de mini-carte en haut";
+"Strip minimap" = "Minimap du Strip";
+"Minimap position" = "Position de la minimap";
 "Trigger Mode" = "Mode de déclenchement";
 "Use only the dedicated shortcut (⌃⌥Tab)" = "Utiliser uniquement le raccourci dédié (⌃⌥Tab)";
 "Visual thumbnails, running apps and Rooms in one switcher." = "Miniatures visuelles, apps en cours et Rooms dans un seul sélecteur.";

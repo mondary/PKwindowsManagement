@@ -196,6 +196,8 @@
 "Web Links" = "Web Links";
 "Top" = "Top";
 "Bottom" = "Bottom";
+"Strip minimap" = "Strip minimap";
+"Minimap position" = "Minimap position";
 "Left" = "Left";
 "Right" = "Right";
 "Missing bundled AI script: %@. Reinstall the app to repair its resources." = "Missing bundled AI script: %@. Reinstall the app to repair its resources.";

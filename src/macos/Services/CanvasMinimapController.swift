@@ -2,7 +2,7 @@ import AppKit
 import Combine
 import SwiftUI
 
-/// Thin OmniWM-style bar floating at the top of every screen running an
+/// Thin OmniWM-style bar floating at the top or bottom edge of every screen running an
 /// active horizontal Canvas: the whole strip of columns at a glance, the
 /// visible zone highlighted, click a column to travel there. One
 /// non-activating panel per display, driven by the service's main-thread
@@ -18,9 +18,12 @@ final class CanvasMinimapController {
     /// Injected so this file stays free of settings/runtime dependencies and
     /// remains standalone-typecheckable.
     private var isEnabled: () -> Bool = { true }
+    private var isAtBottom: () -> Bool = { false }
 
-    func start(isEnabled: @escaping () -> Bool = { true }) {
+    func start(isEnabled: @escaping () -> Bool = { true },
+               isAtBottom: @escaping () -> Bool = { false }) {
         self.isEnabled = isEnabled
+        self.isAtBottom = isAtBottom
         guard subscription == nil else { return }
         subscription = HorizontalCanvasService.shared.$minimaps
             .receive(on: DispatchQueue.main)
@@ -117,14 +120,16 @@ final class CanvasMinimapController {
     }
 
     /// Thin, subtle pill: 22 pt tall, narrower than before, right under the
-    /// menu bar. It stays out of the way and shows app icons, not blocks.
+    /// menu bar — or right above the screen's bottom edge when the user
+    /// placed it there (no Dock in the way). It stays out of the way and
+    /// shows app icons, not blocks.
     private func barFrame(on screen: NSScreen) -> NSRect {
         let visible = screen.visibleFrame
         let width = min(max(280, visible.width * 0.36), 560)
         let height: CGFloat = 22
         return NSRect(
             x: visible.midX - width / 2,
-            y: visible.maxY - height,
+            y: isAtBottom() ? visible.minY : visible.maxY - height,
             width: width,
             height: height
         )

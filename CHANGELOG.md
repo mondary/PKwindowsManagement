@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.11.23] - 2026-11-07
+### Added
+- **Minimap en haut ou en bas** : Réglages → Fenêtres → studio Strip place le fil d'Ariane sur le bord haut (défaut) ou bas de chaque écran — pratique sans Dock en bas. Bascule immédiate, choix mémorisé et inclus dans les sauvegardes.
+### Changed
+- **Largeur par défaut ⅔** : une colonne sans préférence enregistrée occupe désormais deux tiers de la zone utile au lieu de la moitié ; les colonnes suivantes coulissent comme avant. `Ctrl+Shift+W`, les choix par application et les largeurs manuelles à la souris sont inchangés.
+
 ## [2026.11.22] - 2026-11-07
 ### Added
 - **Strip — redimensionnement à la souris** : élargir ou réduire la fenêtre active conserve sa largeur dans le ruban. Au relâchement de la souris, les colonnes suivantes se décalent et le viewport se recale ; aucune sortie du Strip. La largeur est propre à cette fenêtre pendant la vie du Strip (navigation, découverte et changement de Space inclus), sans modifier les autres fenêtres de la même app. Une paire demi-hauteur partage la largeur choisie.

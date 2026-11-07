@@ -175,9 +175,9 @@ enum CanvasLayoutChecks {
         prefs.reload(["a": "third", "b": "twoThirds", "invalid": "unknown"])
         assert(prefs.kind(for: ["a"]) == .third)
         assert(prefs.kind(for: ["a", "b"]) == .twoThirds)
-        assert(prefs.kind(for: ["a", nil]) == .half)
-        assert(prefs.kind(for: ["invalid"]) == .half)
-        assert(prefs.kind(for: []) == .half)
+        assert(prefs.kind(for: ["a", nil]) == .twoThirds) // Unstored apps default to ⅔.
+        assert(prefs.kind(for: ["invalid"]) == .twoThirds)
+        assert(prefs.kind(for: []) == .twoThirds)
         let olderWrite = prefs.set(.full, for: ["a", "b"])
         prefs.reload(["a": "third", "b": "twoThirds"])
         assert(prefs.kind(for: ["a", "b"]) == .full)
@@ -188,7 +188,7 @@ enum CanvasLayoutChecks {
         assert(prefs.kind(for: ["a", "b"]) == .third)
         prefs.acknowledge(latestWrite)
         prefs.reload([:]) // Acknowledged values may be reset/imported later.
-        assert(prefs.kind(for: ["a", "b"]) == .half)
+        assert(prefs.kind(for: ["a", "b"]) == .twoThirds)
 
         // Manual resize adoption ignores our own accepted sizes, moves, height
         // changes, live drags, parked windows and unconfirmed AX frames.

@@ -358,10 +358,18 @@ struct WindowShortcutsPreferencesView: View {
                     .font(.system(size: 13, weight: .bold, design: .rounded))
                     .foregroundStyle(PKStudioPalette.stripAccent)
                 Spacer()
-                Toggle(localizedString("Top minimap bar"), isOn: $settings.canvasMinimap)
+                Toggle(localizedString("Strip minimap"), isOn: $settings.canvasMinimap)
                     .toggleStyle(.switch)
                     .controlSize(.small)
                     .onChange(of: settings.canvasMinimap) { _ in CanvasMinimapController.shared.refresh() }
+                Picker(localizedString("Minimap position"), selection: $settings.stripMinimapAtBottom) {
+                    Text(localizedString("Top")).tag(false)
+                    Text(localizedString("Bottom")).tag(true)
+                }
+                .pickerStyle(.segmented)
+                .controlSize(.small)
+                .frame(width: 132)
+                .onChange(of: settings.stripMinimapAtBottom) { _ in CanvasMinimapController.shared.refresh() }
             }
 
             HStack(alignment: .top, spacing: 14) {

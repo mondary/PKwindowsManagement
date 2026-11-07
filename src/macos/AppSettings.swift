@@ -53,6 +53,7 @@ final class AppSettings: ObservableObject {
         static let windowSwitcherStickyCommandTab = "window-switcher-sticky-command-tab"
         static let canvasRowsPerColumn = "canvas-rows-per-column"
         static let canvasMinimap = "canvas-minimap"
+        static let stripMinimapAtBottom = "strip-minimap-at-bottom"
         static let exposeTrackpadGesture = "expose-trackpad-gesture"
         /// JSON [bundleID: ColumnWidthKind]; read directly by the Canvas worker.
         static let stripColumnWidths = "strip-column-widths"
@@ -317,6 +318,14 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    /// Minimap edge: false = top (default), true = bottom (no Dock there).
+    @Published var stripMinimapAtBottom: Bool {
+        didSet {
+            defaults.set(stripMinimapAtBottom, forKey: Keys.stripMinimapAtBottom)
+            scheduleAutoBackup()
+        }
+    }
+
     var bigYearColors: BigYearColors {
         bigYearTheme.colors.applying(overrides: bigYearColorOverrides)
     }
@@ -421,6 +430,7 @@ final class AppSettings: ObservableObject {
         let storedRows = defaults.integer(forKey: Keys.canvasRowsPerColumn)
         canvasRowsPerColumn = storedRows == 1 ? 1 : 2
         canvasMinimap = defaults.object(forKey: Keys.canvasMinimap) as? Bool ?? true
+        stripMinimapAtBottom = defaults.object(forKey: Keys.stripMinimapAtBottom) as? Bool ?? false
         exposeTrackpadGesture = defaults.object(forKey: Keys.exposeTrackpadGesture) as? Bool ?? true
         stripColumnWidths = (defaults.data(forKey: Keys.stripColumnWidths)
             .flatMap { try? JSONDecoder().decode([String: String].self, from: $0) }) ?? [:]
@@ -764,6 +774,7 @@ final class AppSettings: ObservableObject {
             windowSwitcherStickyCommandTab: windowSwitcherStickyCommandTab,
             canvasRowsPerColumn: canvasRowsPerColumn,
             canvasMinimap: canvasMinimap,
+            stripMinimapAtBottom: stripMinimapAtBottom,
             stripColumnWidths: stripColumnWidths,
             tilingWorkspaceProfiles: TilingWorkspaceProfiles.load()
         )
@@ -840,6 +851,7 @@ final class AppSettings: ObservableObject {
         windowSwitcherStickyCommandTab = backup.windowSwitcherStickyCommandTab ?? windowSwitcherStickyCommandTab
         if let rows = backup.canvasRowsPerColumn { canvasRowsPerColumn = max(1, min(2, rows)) }
         if let minimap = backup.canvasMinimap { canvasMinimap = minimap }
+        if let minimapAtBottom = backup.stripMinimapAtBottom { stripMinimapAtBottom = minimapAtBottom }
         if let widths = backup.stripColumnWidths { stripColumnWidths = widths }
         if let profiles = backup.tilingWorkspaceProfiles {
             _ = TilingWorkspaceProfiles.replace(profiles)
@@ -1216,6 +1228,7 @@ private struct SettingsBackup: Codable {
     let windowSwitcherStickyCommandTab: Bool?
     let canvasRowsPerColumn: Int?
     let canvasMinimap: Bool?
+    let stripMinimapAtBottom: Bool?
     let stripColumnWidths: [String: String]?
     let tilingWorkspaceProfiles: [String: TilingWorkspaceProfile]?
 }
