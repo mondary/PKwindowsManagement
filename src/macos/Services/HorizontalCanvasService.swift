@@ -32,6 +32,7 @@ final class HorizontalCanvasService: ObservableObject {
         let hiddenPIDs: Set<pid_t>
         let frontmostPID: pid_t?
         let pointer: CGPoint
+        let pointerDown: Bool
 
         static func capture() -> Context {
             precondition(Thread.isMainThread)
@@ -59,7 +60,8 @@ final class HorizontalCanvasService: ObservableObject {
                 apps: apps,
                 hiddenPIDs: Set(NSWorkspace.shared.runningApplications.filter(\.isHidden).map(\.processIdentifier)),
                 frontmostPID: NSWorkspace.shared.frontmostApplication?.processIdentifier,
-                pointer: CGPoint(x: pointer.x, y: top - pointer.y)
+                pointer: CGPoint(x: pointer.x, y: top - pointer.y),
+                pointerDown: NSEvent.pressedMouseButtons != 0
             )
         }
     }
@@ -77,6 +79,7 @@ final class HorizontalCanvasService: ObservableObject {
         let window: AXUIElement
         var lastFrame: CGRect?
         var minimumWidth: CGFloat = 0
+        var manualWidth: CGFloat?
         init(saved: SavedWindow, window: AXUIElement) {
             self.saved = saved
             self.window = window
@@ -96,6 +99,7 @@ final class HorizontalCanvasService: ObservableObject {
         var layout: TilingLayoutKind = .canvas
         var lastNavigation: TimeInterval = 0
         var suspended = false
+        var placementDeferred = false
         init(display: Display, space: UInt64, layout: TilingLayoutKind = .canvas) {
             self.display = display
             self.space = space
@@ -117,6 +121,8 @@ final class HorizontalCanvasService: ObservableObject {
     private var columnWidthPrefs = CanvasLayout.WidthPreferences()
     private var recoveryLoaded = false
     private var timer: Timer?
+    private var resizeTimer: Timer?
+    private var resizePending = false // main thread only
     private var tickPending = false // main thread only
     private var shuttingDown = false // main thread only
     /// Room activation temporarily releases managed frames while RoomEngine
@@ -136,6 +142,11 @@ final class HorizontalCanvasService: ObservableObject {
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in self?.tick() }
+        // Focused-window-only polling: no inventory scan and at most one read
+        // in flight. Reflow after releasing the resize handle, never during drag.
+        resizeTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+            self?.checkManualResize()
+        }
         refreshCurrentWorkspace()
         tick()
     }
@@ -346,6 +357,7 @@ final class HorizontalCanvasService: ObservableObject {
             let workspace = CanvasWorkspace(displayID: display.id, spaceID: space)
             if let strip = self.strips[workspace], self.isCurrent(strip) {
                 guard strip.layout == .canvas, !strip.entries.isEmpty, !strip.widths.isEmpty else { return }
+                _ = self.adoptFocusedWidth(strip, context: context)
                 if action == .cycleColumnWidth {
                     self.cycleColumnWidth(in: strip, focused: focused, context: context)
                     return
@@ -400,13 +412,16 @@ final class HorizontalCanvasService: ObservableObject {
               let entryIndex = strip.entries.firstIndex(where: { $0.saved.id == focused }) else { return }
         strip.selected = focused
         guard let slot = CanvasLayout.slot(index: entryIndex, columns: strip.columns) else { return }
-        let pids = strip.columns[slot.column].windows.map { strip.entries[$0].saved.pid }
+        let columnEntries = strip.columns[slot.column].windows.map { strip.entries[$0] }
+        let pids = columnEntries.map { $0.saved.pid }
         let bundles = Array(Set(pids.compactMap {
             NSRunningApplication(processIdentifier: $0)?.bundleIdentifier
         }))
         guard !bundles.isEmpty else { return }
         reloadColumnWidthPrefs()
         let next = columnKind(pids: pids).next
+        // An explicit preset replaces the manual override for this column.
+        columnEntries.forEach { $0.manualWidth = nil }
         let writeToken = columnWidthPrefs.set(next, for: bundles)
         DispatchQueue.main.async {
             guard let settings = AppRuntime.shared.settings else { return }
@@ -454,6 +469,7 @@ final class HorizontalCanvasService: ObservableObject {
                   self.isCurrent(strip),
                   strip.layout == .canvas,
                   !strip.entries.isEmpty, !strip.widths.isEmpty else { return }
+            _ = self.adoptFocusedWidth(strip, context: context)
             let clamped = min(max(0, column), strip.widths.count - 1)
             guard let index = CanvasLayout.index(column: clamped, row: 0, columns: strip.columns) else { return }
             strip.selected = strip.entries[index].saved.id
@@ -608,6 +624,8 @@ final class HorizontalCanvasService: ObservableObject {
         shuttingDown = true
         timer?.invalidate()
         timer = nil
+        resizeTimer?.invalidate()
+        resizeTimer = nil
         if let spaceObserver { NSWorkspace.shared.notificationCenter.removeObserver(spaceObserver) }
         spaceObserver = nil
         let context = Context.capture()
@@ -619,6 +637,7 @@ final class HorizontalCanvasService: ObservableObject {
 
     private func shiftViewport(on workspace: CanvasWorkspace, by delta: CGFloat, context: Context) {
         guard let strip = strips[workspace], isCurrent(strip), !strip.widths.isEmpty else { return }
+        _ = adoptFocusedWidth(strip, context: context)
         let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
         strip.viewport = CanvasLayout.clampViewport(strip.viewport + delta, widths: strip.widths, viewport: geometry.contentWidth)
         teleport(strip, context: context)
@@ -656,7 +675,9 @@ final class HorizontalCanvasService: ObservableObject {
         strip.widths = strip.columns.map { column in
             let minimum = column.windows.reduce(CGFloat(0)) { max($0, strip.entries[$1].minimumWidth) }
             let kind = columnKind(pids: column.windows.map { strip.entries[$0].saved.pid })
-            return CanvasLayout.columnWidth(kind: kind, contentWidth: geometry.contentWidth, minimum: minimum)
+            return CanvasLayout.resolvedColumnWidth(preferred: kind,
+                manualWidths: column.windows.compactMap { strip.entries[$0].manualWidth },
+                contentWidth: geometry.contentWidth, minimum: minimum)
         }
         if !strip.entries.contains(where: { $0.saved.id == strip.selected }) {
             strip.selected = strip.entries.first?.saved.id
@@ -679,6 +700,57 @@ final class HorizontalCanvasService: ObservableObject {
         })
     }
 
+    /// Read only the focused managed window; all state and AX work remain on
+    /// the serial worker. A resize never changes other windows of the same app.
+    private func adoptFocusedWidth(_ strip: Strip, context: Context) -> Bool {
+        guard strip.layout == .canvas, !context.pointerDown, isCurrent(strip),
+              context.displays.first(where: { $0.id == strip.display.id })?.area == strip.display.area,
+              strip.entries.contains(where: { $0.saved.pid == context.frontmostPID }),
+              let focused = CanvasWindowAccess.focusedID(pid: context.frontmostPID),
+              let index = strip.entries.firstIndex(where: { $0.saved.id == focused }),
+              let slot = CanvasLayout.slot(index: index, columns: strip.columns) else { return false }
+        let entry = strip.entries[index]
+        guard context.apps[entry.saved.pid] == entry.saved.launchedAt,
+              entry.lastFrame != nil, CanvasWindowAccess.id(entry.window) == entry.saved.id,
+              SpaceManagementService.desktops(forWindow: entry.saved.id) == [strip.space],
+              CanvasWindowAccess.eligible(entry.window),
+              let actual = CanvasWindowAccess.frame(entry.window) else { return false }
+        let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
+        let target = CanvasLayout.placement(column: slot.column, row: slot.row,
+            widths: strip.widths, geometry: geometry, viewport: strip.viewport,
+            otherDisplays: context.displays.filter { $0.id != strip.display.id }.map(\.bounds),
+            rows: strip.columns[slot.column].rows)
+        guard let width = CanvasLayout.manualResizeWidth(actual: actual, applied: entry.lastFrame,
+            parked: target.parked != nil, pointerDown: context.pointerDown,
+            contentWidth: geometry.contentWidth) else { return false }
+        // Both halves must share the new column width, including when shrinking.
+        for member in strip.columns[slot.column].windows {
+            strip.entries[member].manualWidth = width
+            strip.entries[member].lastFrame = nil
+        }
+        strip.selected = focused
+        retile(strip)
+        fitViewport(strip)
+        return true
+    }
+
+    private func checkManualResize() {
+        precondition(Thread.isMainThread)
+        guard !shuttingDown, !resizePending, !knownWorkspaces.isEmpty,
+              NSEvent.pressedMouseButtons == 0 else { return }
+        resizePending = true
+        let context = Context.capture()
+        queue.async {
+            defer { DispatchQueue.main.async { self.resizePending = false } }
+            guard AXIsProcessTrusted() else { return }
+            for strip in self.strips.values where strip.layout == .canvas
+                && !strip.suspended && self.isCurrent(strip) {
+                let resized = self.adoptFocusedWidth(strip, context: context)
+                if resized || strip.placementDeferred { self.teleport(strip, context: context) }
+            }
+        }
+    }
+
     /// Recommit every window to its cell, focused first (the one the user is
     /// watching), then on-screen left-to-right, then parked slivers. Unchanged
     /// origins skip their AX round-trip entirely (ScrollWM measurement: an AX
@@ -690,6 +762,11 @@ final class HorizontalCanvasService: ObservableObject {
             return
         }
         guard !strip.widths.isEmpty else { return }
+        // Never fight the native resize handle. The lightweight observer
+        // flushes this placement as soon as the mouse button is released.
+        guard !context.pointerDown else { strip.placementDeferred = true; return }
+        strip.placementDeferred = false
+        _ = adoptFocusedWidth(strip, context: context)
         let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
         strip.viewport = CanvasLayout.clampViewport(strip.viewport, widths: strip.widths, viewport: geometry.contentWidth)
         let others = context.displays.filter { $0.id != strip.display.id }.map(\.bounds)
@@ -997,8 +1074,13 @@ final class HorizontalCanvasService: ObservableObject {
                     self.restore(strip.entries.map(\.saved), context: context)
                     continue
                 }
+                // Leave a native drag alone; discovery and placement resume
+                // on the next pass. No other display's strip is suspended.
+                if strip.layout == .canvas, context.pointerDown,
+                   strip.entries.contains(where: { $0.saved.id == focused }) { continue }
+                let resized = !strip.suspended && self.adoptFocusedWidth(strip, context: context)
                 let resumed = strip.suspended
-                var changed = resumed || display.area != strip.display.area || strip.layout != profile.layout
+                var changed = resized || resumed || display.area != strip.display.area || strip.layout != profile.layout
                 if strip.layout != profile.layout {
                     strip.layout = profile.layout
                     strip.viewport = 0

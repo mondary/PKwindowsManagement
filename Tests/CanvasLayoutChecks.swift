@@ -190,6 +190,68 @@ enum CanvasLayoutChecks {
         prefs.reload([:]) // Acknowledged values may be reset/imported later.
         assert(prefs.kind(for: ["a", "b"]) == .half)
 
+        // Manual resize adoption ignores our own accepted sizes, moves, height
+        // changes, live drags, parked windows and unconfirmed AX frames.
+        let applied = CGRect(x: 44, y: 24, width: 900, height: 1000)
+        func resized(_ width: CGFloat, parked: Bool = false, down: Bool = false,
+                     baseline: CGRect? = applied) -> CGFloat? {
+            CanvasLayout.manualResizeWidth(
+                actual: CGRect(x: -100, y: 30, width: width, height: 500),
+                applied: baseline, parked: parked, pointerDown: down, contentWidth: content)
+        }
+        assert(resized(1200) == 1200)
+        assert(resized(600) == 600)
+        assert(resized(1800) == 1800)
+        assert(resized(2000) == 1800) // Reserved edge lanes stay available.
+        assert(resized(900) == nil && resized(902) == nil)
+        assert(resized(1200, parked: true) == nil)
+        assert(resized(1200, down: true) == nil)
+        assert(resized(1200, baseline: nil) == nil)
+        assert(resized(.nan) == nil && resized(.infinity) == nil && resized(0) == nil)
+        assert(resized(1200, baseline: CGRect(x: 44, y: 24, width: 1200, height: 1000)) == nil)
+        assert(CanvasLayout.resolvedColumnWidth(preferred: .full, manualWidths: [600],
+            contentWidth: content, minimum: 0) == 600) // Shrink beats app preference.
+        assert(CanvasLayout.resolvedColumnWidth(preferred: .half, manualWidths: [600, 1200],
+            contentWidth: content, minimum: 0) == 1200) // Paired halves share a width.
+        assert(CanvasLayout.resolvedColumnWidth(preferred: .third, manualWidths: [600],
+            contentWidth: content, minimum: 750) == 750) // Real app constraints win.
+        assert(CanvasLayout.resolvedColumnWidth(preferred: .half, manualWidths: [],
+            contentWidth: content, minimum: 0) == 900) // Other windows keep defaults.
+
+        // Repeated grow/shrink operations, odd viewport sizes and negative
+        // display origins: later columns reflow, visible columns never overlap.
+        for areaWidth: CGFloat in [1024, 1441, 2560] {
+            let g = CanvasLayout.Geometry(area: CGRect(x: -2560, y: -900,
+                width: areaWidth, height: 800), rows: 2)
+            for requested: CGFloat in [333, g.contentWidth * 2 / 3, g.contentWidth, 450] {
+                let widths = [g.contentWidth / 3,
+                    CanvasLayout.resolvedColumnWidth(preferred: .half, manualWidths: [requested],
+                        contentWidth: g.contentWidth, minimum: 320), g.contentWidth / 2]
+                let origins = CanvasLayout.canvasOrigins(widths: widths)
+                for i in 1..<widths.count {
+                    assert(abs(origins[i] - origins[i - 1] - widths[i - 1] - CanvasLayout.gap) < 0.001)
+                }
+                for selected in widths.indices {
+                    let viewport = CanvasLayout.fitViewport(index: selected, widths: widths, geometry: g, current: 9999)
+                    let placements = widths.indices.map {
+                        CanvasLayout.placement(column: $0, row: 0, widths: widths,
+                            geometry: g, viewport: viewport, otherDisplays: [], rows: 2)
+                    }
+                    assert(placements[selected].parked == nil)
+                    let visible = placements.filter { $0.parked == nil }
+                    for i in visible.indices {
+                        for j in visible.indices where j > i {
+                            assert(!visible[i].frame.intersects(visible[j].frame))
+                        }
+                    }
+                    let bottom = CanvasLayout.placement(column: selected, row: 1, widths: widths,
+                        geometry: g, viewport: viewport, otherDisplays: [], rows: 2)
+                    assert(bottom.frame.width == placements[selected].frame.width)
+                    assert(!bottom.frame.intersects(placements[selected].frame))
+                }
+            }
+        }
+
         // Mixed widths keep origins, parking and viewport maths intact.
         let mixedWidths: [CGFloat] = [
             CanvasLayout.columnWidth(kind: .third, contentWidth: content, minimum: 0),

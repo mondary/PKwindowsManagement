@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026.11.22] - 2026-11-07
+### Added
+- **Strip — redimensionnement à la souris** : élargir ou réduire la fenêtre active conserve sa largeur dans le ruban. Au relâchement de la souris, les colonnes suivantes se décalent et le viewport se recale ; aucune sortie du Strip. La largeur est propre à cette fenêtre pendant la vie du Strip (navigation, découverte et changement de Space inclus), sans modifier les autres fenêtres de la même app. Une paire demi-hauteur partage la largeur choisie.
+- La largeur manuelle peut occuper toute la zone utile, hors bandes latérales de navigation ; les minimums réels des apps restent prioritaires. `Ctrl+Shift+W` remplace le choix manuel de la colonne par les préréglages ⅓ / ½ / ⅔ / pleine largeur utile.
+### Fixed
+- Les placements attendent la fin du glisser pour ne pas lutter contre la poignée native. Observation ciblée sur la fenêtre active, sans réinventaire ; cadres non confirmés, fenêtres garées et changements de géométrie d’écran exclus de l’apprentissage.
+- Régressions de géométrie : agrandissement/réduction, faux changements, tailles invalides, minimums, paires et absence de chevauchement des colonnes visibles. Validation à l’écran laissée à l’utilisateur.
+
 ## [2026.11.21] - 2026-11-06
 ### Added
 - **Strip : largeurs ⅓ / ½ / ⅔ / presque plein écran** : `Ctrl+Shift+W` (modifiable dans les réglages) fait cycler la colonne active et réorganise les suivantes sans sortir du ruban. Le choix est mémorisé par application, inclus dans les sauvegardes v15 et appliqué aux autres Strips visibles de la même app. Une paire demi-hauteur partage une seule largeur ; les minimums réels des apps sont respectés, même au-delà du viewport.

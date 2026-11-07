@@ -82,6 +82,28 @@ enum CanvasLayout {
         return max((contentWidth * kind.fraction).rounded(), minimum, 1)
     }
 
+    /// A manual width belongs to a window, not its application. A stacked
+    /// pair shares the widest override, including when it later joins a column.
+    static func resolvedColumnWidth(preferred: ColumnWidthKind, manualWidths: [CGFloat],
+                                    contentWidth: CGFloat, minimum: CGFloat) -> CGFloat {
+        guard let manual = manualWidths.filter({ $0.isFinite && $0 > 0 }).max() else {
+            return columnWidth(kind: preferred, contentWidth: contentWidth, minimum: minimum)
+        }
+        return max(1, min(manual, max(1, contentWidth)), minimum)
+    }
+
+    /// Compare only against a confirmed applied frame. Never learn a parked
+    /// sliver, an in-flight drag, or an unconfirmed AX constraint as user intent.
+    static func manualResizeWidth(actual: CGRect, applied: CGRect?, parked: Bool,
+                                  pointerDown: Bool, contentWidth: CGFloat) -> CGFloat? {
+        guard !parked, !pointerDown, let applied,
+              actual.width.isFinite, actual.height.isFinite,
+              actual.width > 80, actual.height > 80,
+              contentWidth.isFinite, contentWidth > 0,
+              abs(actual.width - applied.width) > 3 else { return nil }
+        return min(actual.width, contentWidth)
+    }
+
     struct Geometry {
         let area: CGRect
         let contentMinX: CGFloat
