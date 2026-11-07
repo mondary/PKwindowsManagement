@@ -71,8 +71,9 @@ enum CanvasWindowAccess {
     /// Verified Canvas placement; scrolling remains position-only when size
     /// already matches. Called exclusively on the Canvas worker queue.
     static func applyCanvasFrame(_ frame: CGRect, window: AXUIElement,
-                                 requireExactSize: Bool = false, valid: () -> Bool) -> CanvasFrameApplication.Result {
-        let original = self.frame(window)
+                                 requireExactSize: Bool = false, knownInitial: CGRect? = nil,
+                                 verify: Bool = true, valid: () -> Bool) -> CanvasFrameApplication.Result {
+        let original = knownInitial ?? self.frame(window)
         var pid: pid_t = 0
         AXUIElementGetPid(window, &pid)
         let app = AXUIElementCreateApplication(pid)
@@ -95,7 +96,8 @@ enum CanvasWindowAccess {
                 var point = proposed
                 guard let value = AXValueCreate(.cgPoint, &point) else { return false }
                 return setValue(window, kAXPositionAttribute as CFString, value) == .success
-            }, pause: { Thread.sleep(forTimeInterval: $0) }, valid: valid, requireExactSize: requireExactSize)
+            }, pause: { Thread.sleep(forTimeInterval: $0) }, valid: valid, requireExactSize: requireExactSize,
+            verify: verify)
     }
 
     /// `reconcile` enables the temporary AXManualAccessibility initialization;

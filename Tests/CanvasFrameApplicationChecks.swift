@@ -36,6 +36,24 @@ enum CanvasFrameApplicationChecks {
         var sizeWrites = 0
         _ = CanvasFrameApplication.apply(scrolled, initial: half, read: { scrolled }, size: { _ in sizeWrites += 1; return true }, position: { _ in true }, pause: { _ in fatalError("scroll must not sleep") })
         assert(sizeWrites == 0)
+        // Scroll fast path (verify: false): one position write, zero
+        // confirmation reads, zero pauses — the periodic pass reconciles.
+        var fastReads = 0
+        var fastWrites = 0
+        let fast = CanvasFrameApplication.apply(scrolled, initial: half,
+            read: { fastReads += 1; return half },
+            size: { _ in fatalError("scroll fast path must not resize") },
+            position: { _ in fastWrites += 1; return true },
+            pause: { _ in fatalError("scroll fast path must not sleep") },
+            verify: false)
+        assert(fast.accepted && fastWrites == 1 && fastReads == 0)
+        assert(fast.actual?.origin == scrolled.origin && fast.actual?.size == half.size)
+        // A resize still goes through the verified path even with verify: false.
+        var slowReads = 0
+        let mustResize = CanvasFrameApplication.apply(half, initial: full,
+            read: { slowReads += 1; return half },
+            size: { _ in true }, position: { _ in true }, pause: { _ in }, verify: false)
+        assert(mustResize.actual == half && slowReads > 0)
         // Bento must expand a slightly undersized cell: the scrolling Canvas's
         // character-grid tolerance would otherwise preserve a visible hole.
         var bentoCell = half.insetBy(dx: 8, dy: 8)

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.11.27] - 2026-11-07
+### Changed
+- Bandeaux de version des README FR/EN rattrapés (ils étaient restés en 2026.11.25 alors que le contenu de la 11.26 était bien appliqué).
+- **Scroll horizontal fluide** : les flush défilent au prochain tour de run loop au lieu d'un tick fixe de 25 ms ; chaque fenêtre ne reçoit plus qu'**une écriture de position** par frame pendant le scroll (plus de lecture de confirmation) et la taille connue évite la relecture du cadre ; les placements d'une passe sont calculés une fois. Les paires demi-hauteur suivent le même chemin rapide.
+### Fixed
+- Le fil d'Ariane se rafraîchit au plus toutes les 90 ms pendant le scroll (au lieu d'un publish SwiftUI à chaque frame) avec un rattrapage final garanti ; le scroll n'appelle plus l'adoption de largeur manuelle à chaque frame (l'observateur dédié à 0,2 s suffit). La vérification complète des cadres revient au tick périodique.
+
 ## [2026.11.26] - 2026-11-07
 ### Changed
 - **Demi-hauteur en toggle sur `Ctrl+Option+S`** : le raccourci bascule la fenêtre active entre demi et pleine hauteur (les installs existantes sur l'ancien défaut `Ctrl+Shift+S` sont migrées automatiquement, les raccourcis personnalisés restent intacts) ; `Ctrl+Shift+F` détache toujours explicitement. La suivante pressée empile la fenêtre sous la première.

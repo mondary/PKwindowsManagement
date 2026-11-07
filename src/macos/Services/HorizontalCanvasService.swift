@@ -116,6 +116,9 @@ final class HorizontalCanvasService: ObservableObject {
     private var knownWorkspaces: Set<CanvasWorkspace> = [] // main thread snapshot
     private var pendingScrolls: [CanvasWorkspace: CGFloat] = [:] // main thread only
     private var scrollFlushScheduled = false // main thread only
+    /// Worker-side minimap publish throttle: during continuous scroll the bar
+    /// follows at most every 90 ms; the final flush always publishes.
+    private var lastScrollPublish: TimeInterval = 0
     private var saved: [CGWindowID: SavedWindow] = [:]
     /// Main-thread settings writes may lag a retile; retain pending widths.
     private var columnWidthPrefs = CanvasLayout.WidthPreferences()
@@ -594,7 +597,10 @@ final class HorizontalCanvasService: ObservableObject {
     private func scheduleScrollFlush() {
         guard !scrollFlushScheduled, !pendingScrolls.isEmpty, !shuttingDown else { return }
         scrollFlushScheduled = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.025) {
+        // Flush on the very next main turn instead of a fixed 25 ms tick: the
+        // single-in-flight rule already coalesces bursts, and the frame budget
+        // is spent on window moves, not on waiting.
+        DispatchQueue.main.async {
             let deltas = self.pendingScrolls
             self.pendingScrolls.removeAll(keepingCapacity: true)
             let context = Context.capture()
@@ -604,7 +610,12 @@ final class HorizontalCanvasService: ObservableObject {
                 }
                 DispatchQueue.main.async {
                     self.scrollFlushScheduled = false
-                    if !self.pendingScrolls.isEmpty { self.scheduleScrollFlush() }
+                    if !self.pendingScrolls.isEmpty {
+                        self.scheduleScrollFlush()
+                    } else if deltas.isEmpty == false {
+                        // Scroll ended: make sure the throttled minimap catches up.
+                        self.queue.async { self.publish() }
+                    }
                 }
             }
         }
@@ -731,10 +742,11 @@ final class HorizontalCanvasService: ObservableObject {
 
     private func shiftViewport(on workspace: CanvasWorkspace, by delta: CGFloat, context: Context) {
         guard let strip = strips[workspace], isCurrent(strip), !strip.widths.isEmpty else { return }
-        _ = adoptFocusedWidth(strip, context: context)
         let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
         strip.viewport = CanvasLayout.clampViewport(strip.viewport + delta, widths: strip.widths, viewport: geometry.contentWidth)
-        teleport(strip, context: context)
+        // Scroll frames take the position-only fast path; the 0.2 s observer
+        // keeps adopting manual widths, no need for a read here.
+        teleport(strip, context: context, scrollFrame: true)
     }
 
     private func fitViewport(_ strip: Strip) {
@@ -878,7 +890,8 @@ final class HorizontalCanvasService: ObservableObject {
     /// watching), then on-screen left-to-right, then parked slivers. Unchanged
     /// origins skip their AX round-trip entirely (ScrollWM measurement: an AX
     /// move costs ~0.4ms cross-process, so skips dominate on large strips).
-    private func teleport(_ strip: Strip, context: Context, negotiationPass: Int = 0) {
+    private func teleport(_ strip: Strip, context: Context, negotiationPass: Int = 0,
+                          scrollFrame: Bool = false) {
         guard isCurrent(strip) else { return }
         guard strip.layout == .canvas else {
             teleportRegular(strip, context: context)
@@ -894,11 +907,13 @@ final class HorizontalCanvasService: ObservableObject {
         strip.viewport = CanvasLayout.clampViewport(strip.viewport, widths: strip.widths, viewport: geometry.contentWidth)
         let others = context.displays.filter { $0.id != strip.display.id }.map(\.bounds)
 
+        var placementCache: [Int: CanvasLayout.Placement] = [:]
         func placement(at index: Int) -> CanvasLayout.Placement {
+            if let cached = placementCache[index] { return cached }
             guard let slot = CanvasLayout.slot(index: index, columns: strip.columns) else {
                 return CanvasLayout.Placement(frame: .null, parked: nil)
             }
-            return CanvasLayout.placement(
+            let computed = CanvasLayout.placement(
                 column: slot.column,
                 row: slot.row,
                 widths: strip.widths,
@@ -907,6 +922,8 @@ final class HorizontalCanvasService: ObservableObject {
                 otherDisplays: others,
                 rows: strip.columns[slot.column].rows
             )
+            placementCache[index] = computed
+            return computed
         }
 
         let selectedIndex = strip.entries.firstIndex(where: { $0.saved.id == strip.selected })
@@ -938,7 +955,8 @@ final class HorizontalCanvasService: ObservableObject {
             guard CanvasWindowAccess.eligible(entry.window),
                   SpaceManagementService.desktops(forWindow: entry.saved.id) == [strip.space]
             else { continue }
-            let result = CanvasWindowAccess.applyCanvasFrame(target.frame, window: entry.window) { self.isCurrent(strip) }
+            let result = CanvasWindowAccess.applyCanvasFrame(target.frame, window: entry.window,
+                knownInitial: entry.lastFrame, verify: !scrollFrame) { self.isCurrent(strip) }
             let accepted = result.accepted
             if let actual = result.actual {
                 entry.lastFrame = accepted && CanvasFrameApplication.fitsSize(actual.size, target.frame.size)
@@ -970,7 +988,12 @@ final class HorizontalCanvasService: ObservableObject {
             }
         }
         // The minimap bar follows every placement pass: keyboard navigation,
-        // continuous scroll and retiles all end here.
+        // continuous scroll and retiles all end here. Scroll frames throttle
+        // the bar to ~11 fps — the windows themselves take the frame budget;
+        // the final scroll flush always catches the minimap up.
+        let now = ProcessInfo.processInfo.systemUptime
+        if scrollFrame, now - lastScrollPublish < 0.09 { return }
+        lastScrollPublish = now
         publish()
     }
 

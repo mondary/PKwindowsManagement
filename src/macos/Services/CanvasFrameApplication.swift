@@ -35,13 +35,23 @@ enum CanvasFrameApplication {
     static func apply(_ target: CGRect, initial: CGRect?,
                       read: () -> CGRect?, size: (CGSize) -> Bool,
                       position: (CGPoint) -> Bool, pause: (Double) -> Void,
-                      valid: () -> Bool = { true }, requireExactSize: Bool = false) -> Result {
+                      valid: () -> Bool = { true }, requireExactSize: Bool = false,
+                      verify: Bool = true) -> Result {
         func fits(_ size: CGSize) -> Bool {
             requireExactSize
                 ? abs(size.width - target.width) <= 2 && abs(size.height - target.height) <= 2
                 : fitsSize(size, target.size)
         }
         let resizing = initial.map { !fits($0.size) } ?? true
+        // Scroll fast path: the size already fits, so a single position write
+        // is enough — no confirmation read, no pause. The periodic pass
+        // re-reads and reconciles anything an app silently rejected.
+        if !verify, !resizing {
+            let moved = position(target.origin)
+            return Result(actual: CGRect(origin: target.origin, size: initial?.size ?? target.size),
+                          accepted: moved,
+                          confirmedHeightConstraint: false, confirmedWidthConstraint: false)
+        }
         var requested = target.size
         var adjustedRounding = false
         var accepted = true
