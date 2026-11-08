@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.11.29] - 2026-11-08
+### Fixed
+- **Strip bloqué par le journal de restauration** : des fenêtres restées « en attente » (bureau non visible lors d'un arrêt, restauration impossible) étaient exclues pour toujours — le Strip ne trouvait plus aucune fenêtre et ne se lançait plus. Après cinq tentatives sur un bureau visible, l'enregistrement est abandonné : la fenêtre garde sa position et redevient adoptable. Les fenêtres de l'app elle-même ne rejoignent plus le Strip.
+- **Drag fantôme** : une fenêtre déplacée par son propre application ne déclenche plus de réordonnancement — l'adoption exige un clic observé dans la seconde précédente.
+
 ## [2026.11.28] - 2026-11-07
 ### Added
 - **Déplacer une vraie fenêtre du Strip à la souris** : glisser une fenêtre du ruban et la relâcher sur une autre colonne réorganise le strip — sa colonne prend la place de la colonne sous le centre de la fenêtre (paires d'un bloc), sans quitter le mode Strip. Le Canvas laisse le glisser natif se dérouler puis réordonne au relâchement (observateur 0,2 s).

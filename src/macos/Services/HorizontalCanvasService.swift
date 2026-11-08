@@ -126,6 +126,14 @@ final class HorizontalCanvasService: ObservableObject {
     private var timer: Timer?
     private var resizeTimer: Timer?
     private var resizePending = false // main thread only
+    /// Restoration retries per window, worker only: after five visible-desktop
+    /// failures the record is abandoned so it can never wedge the strip
+    /// (the window stays where it is and becomes adoptable again).
+    private var restoreAttempts: [CGWindowID: Int] = [:]
+    /// Last instant a mouse button was seen down by the 0.2 s observer. A
+    /// window-drag adoption requires a recent press: apps that move their own
+    /// windows must never be mistaken for the user dragging one (main only).
+    private var lastPointerDownAt: TimeInterval = 0
     private var tickPending = false // main thread only
     private var shuttingDown = false // main thread only
     /// Room activation temporarily releases managed frames while RoomEngine
@@ -148,6 +156,9 @@ final class HorizontalCanvasService: ObservableObject {
         // Focused-window-only polling: no inventory scan and at most one read
         // in flight. Reflow after releasing the resize handle, never during drag.
         resizeTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+            if NSEvent.pressedMouseButtons != 0 {
+                self?.lastPointerDownAt = ProcessInfo.processInfo.systemUptime
+            }
             self?.checkManualResize()
         }
         refreshCurrentWorkspace()
@@ -840,8 +851,8 @@ final class HorizontalCanvasService: ObservableObject {
     /// under its new center — same reordering as the minimap drag, with the
     /// actual window. Never during the drag; the observer fires at most every
     /// 0.2 s, and a resize (size change) is left to adoptFocusedWidth.
-    private func adoptFocusedDrag(_ strip: Strip, context: Context) -> Bool {
-        guard strip.layout == .canvas, !context.pointerDown, isCurrent(strip),
+    private func adoptFocusedDrag(_ strip: Strip, context: Context, allow: Bool) -> Bool {
+        guard allow, strip.layout == .canvas, !context.pointerDown, isCurrent(strip),
               context.displays.first(where: { $0.id == strip.display.id })?.area == strip.display.area,
               let focused = CanvasWindowAccess.focusedID(pid: context.frontmostPID),
               let index = strip.entries.firstIndex(where: { $0.saved.id == focused }),
@@ -907,6 +918,9 @@ final class HorizontalCanvasService: ObservableObject {
         guard !shuttingDown, !resizePending, !knownWorkspaces.isEmpty,
               NSEvent.pressedMouseButtons == 0 else { return }
         resizePending = true
+        // Only adopt a real-window drag right after an observed press: never
+        // for autonomous app window moves.
+        let sawRecentPointer = ProcessInfo.processInfo.systemUptime - lastPointerDownAt < 1.0
         let context = Context.capture()
         queue.async {
             defer { DispatchQueue.main.async { self.resizePending = false } }
@@ -914,7 +928,7 @@ final class HorizontalCanvasService: ObservableObject {
             for strip in self.strips.values where strip.layout == .canvas
                 && !strip.suspended && self.isCurrent(strip) {
                 let resized = self.adoptFocusedWidth(strip, context: context)
-                let dragged = !resized && self.adoptFocusedDrag(strip, context: context)
+                let dragged = !resized && self.adoptFocusedDrag(strip, context: context, allow: sawRecentPointer)
                 if resized || dragged || strip.placementDeferred { self.teleport(strip, context: context) }
             }
         }
@@ -1134,6 +1148,7 @@ final class HorizontalCanvasService: ObservableObject {
                   let raw = info[kCGWindowBounds as String] as? [String: Any],
                   let frame = CGRect(dictionaryRepresentation: raw as CFDictionary),
                   frame.width > 0, frame.height > 0,
+                  pid != ProcessInfo.processInfo.processIdentifier,
                   context.apps[pid] != nil, !context.hiddenPIDs.contains(pid) else { continue }
             let documentSized = frame.width > 80 && frame.height > 80 && (info[kCGWindowLayer as String] as? Int) == 0
             guard context.displays.max(by: { Self.area($0.bounds.intersection(frame)) < Self.area($1.bounds.intersection(frame)) })?.id == display.id else {
@@ -1404,6 +1419,17 @@ final class HorizontalCanvasService: ObservableObject {
             }
             if restored {
                 saved.removeValue(forKey: record.id)
+                restoreAttempts.removeValue(forKey: record.id)
+            } else {
+                let attempts = restoreAttempts[record.id, default: 0] + 1
+                restoreAttempts[record.id] = attempts
+                if attempts >= 5 {
+                    // Never let an unrestorable record wedge the strip forever:
+                    // the window keeps its current frame and becomes adoptable.
+                    saved.removeValue(forKey: record.id)
+                    restoreAttempts.removeValue(forKey: record.id)
+                    logger.notice("Canvas abandoned restoring window \(record.id) after \(attempts) attempts; it becomes adoptable where it stands")
+                }
             }
         }
         _ = persist()
