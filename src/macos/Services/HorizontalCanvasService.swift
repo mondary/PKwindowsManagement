@@ -1148,7 +1148,6 @@ final class HorizontalCanvasService: ObservableObject {
                   let raw = info[kCGWindowBounds as String] as? [String: Any],
                   let frame = CGRect(dictionaryRepresentation: raw as CFDictionary),
                   frame.width > 0, frame.height > 0,
-                  pid != ProcessInfo.processInfo.processIdentifier,
                   context.apps[pid] != nil, !context.hiddenPIDs.contains(pid) else { continue }
             let documentSized = frame.width > 80 && frame.height > 80 && (info[kCGWindowLayer as String] as? Int) == 0
             guard context.displays.max(by: { Self.area($0.bounds.intersection(frame)) < Self.area($1.bounds.intersection(frame)) })?.id == display.id else {

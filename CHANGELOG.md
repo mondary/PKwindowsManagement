@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.32] - 2026-11-08
+### Fixed
+- **La fenêtre Réglages rejoint le Strip** : l'exclusion de notre propre app (ajoutée trop largement en 2026.11.29 pour contourner le journal de restauration) est retirée — ses accès AX passaient déjà par le thread principal, elle peut donc être gérée comme n'importe quelle fenêtre et ne flotte plus en surimpression du ruban.
+
 ## [2026.11.31] - 2026-11-08
 ### Fixed
 - **Scroll vertical figé** : un geste de scroll n'engage plus qu'un seul axe. Le bruit horizontal parasite d'un scroll vertical pur ne déplace plus le strip d'un pixel — l'axe dominant est verrouillé après ~12 points de mouvement et tient jusqu'à la fin du geste (momentum inclus) ; les résidus de l'autre axe sont avalés. `⌥` + scroll vertical force le strip immédiatement, et un swipe horizontal ne fait plus scroller la page en dessous. Après 0,35 s de silence, le geste suivant rechoisit son axe librement.
