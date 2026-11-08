@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.31] - 2026-11-08
+### Fixed
+- **Scroll vertical figé** : un geste de scroll n'engage plus qu'un seul axe. Le bruit horizontal parasite d'un scroll vertical pur ne déplace plus le strip d'un pixel — l'axe dominant est verrouillé après ~12 points de mouvement et tient jusqu'à la fin du geste (momentum inclus) ; les résidus de l'autre axe sont avalés. `⌥` + scroll vertical force le strip immédiatement, et un swipe horizontal ne fait plus scroller la page en dessous. Après 0,35 s de silence, le geste suivant rechoisit son axe librement.
+
 ## [2026.11.30] - 2026-11-08
 ### Changed
 - **Geste Exposé : 3 ou 4 doigts au choix** : le compte de doigts est réglable dans Réglages → CMD+Tab → geste trackpad (sélecteur 3 / 4) et le déclencheur exige désormais le compte **exact** — l'autre compte reste au système (Mission Control et compagnie). Le bouton **Libérer le geste…** écrit la clé macOS correspondante (`TrackpadThreeFingerVertSwipeGesture` ou `…Four…`). Le geste trackpad et son compte de doigts entrent dans les sauvegardes.

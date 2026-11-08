@@ -235,6 +235,8 @@ final class LaunchShortcutMonitor {
 
     /// Horizontal swipes navigate the strip directly. Option also maps a
     /// vertical wheel/swipe to the strip; plain vertical scrolling stays in apps.
+    private var axisLock = ScrollAxisLock()
+
     private func handleScroll(event: CGEvent) -> Unmanaged<CGEvent>? {
         if WindowSwitcherController.shared.isVisible { return .passUnretained(event) }
         let flags = event.flags
@@ -245,8 +247,18 @@ final class LaunchShortcutMonitor {
         let xPoint = event.getIntegerValueField(.scrollWheelEventPointDeltaAxis2)
         let yPoint = event.getIntegerValueField(.scrollWheelEventPointDeltaAxis1)
         let yLine = event.getIntegerValueField(.scrollWheelEventDeltaAxis1)
-        let delta = xPoint != 0 ? xPoint : (flags.contains(.maskAlternate) ? (yPoint != 0 ? yPoint : yLine * 12) : 0)
-        guard delta != 0 else { return .passUnretained(event) }
+        // One gesture, one axis: a vertical page scroll must never nudge the
+        // strip sideways, and a strip swipe must not scroll the page below.
+        let optionHeld = flags.contains(.maskAlternate)
+        let axis = axisLock.update(xDelta: Int(xPoint), yDelta: Int(yPoint != 0 ? yPoint : yLine),
+                                   option: optionHeld, time: Double(event.timestamp) / 1_000_000_000)
+        guard axis == .strip else { return .passUnretained(event) }
+        let delta = xPoint != 0 ? xPoint : (optionHeld ? (yPoint != 0 ? yPoint : yLine * 12) : 0)
+        guard delta != 0 else {
+            // Residual motion of a locked strip gesture: swallow it so the
+            // page underneath never steals the stray vertical component.
+            return nil
+        }
         let consumed = HorizontalCanvasService.shared.scroll(rawDelta: CGFloat(delta), location: event.location)
         return consumed ? nil : .passUnretained(event)
     }
