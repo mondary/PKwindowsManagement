@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.33] - 2026-11-08
+### Fixed
+- **Pictogrammes flèches lisibles** : les pastilles et touches de raccourcis utilisaient la police mono (SF Mono), qui ne couvre pas les glyphes ←/→/↑/↓ — `Fn⇧←` et `Fn⇧→` s'affichaient en carré avec point d'interrogation. Tous les affichages de raccourcis (pastilles des réglages, carte clavier, champ d'enregistrement) repassent en police système, qui rend toutes les flèches.
+
 ## [2026.11.32] - 2026-11-08
 ### Fixed
 - **La fenêtre Réglages rejoint le Strip** : l'exclusion de notre propre app (ajoutée trop largement en 2026.11.29 pour contourner le journal de restauration) est retirée — ses accès AX passaient déjà par le thread principal, elle peut donc être gérée comme n'importe quelle fenêtre et ne flotte plus en surimpression du ruban.

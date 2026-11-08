@@ -107,7 +107,7 @@ struct KeyboardShortcutMapView: View {
                             .font(.body)
                         Spacer()
                         Text(entry.badge)
-                            .font(.system(.body, design: .monospaced))
+                            .font(.system(.body))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -137,7 +137,7 @@ private struct MapKeycap: View {
         Button(action: onSelect) {
             VStack(spacing: 6) {
                 Text(legend)
-                    .font(.system(size: width >= 72 ? 18 : 15, weight: .bold, design: .monospaced))
+                    .font(.system(size: width >= 72 ? 18 : 15, weight: .bold))
                     .foregroundStyle(entries.isEmpty ? .secondary : .primary)
                 if entries.isEmpty {
                     EmptyView()
@@ -151,7 +151,7 @@ private struct MapKeycap: View {
                                 .scaleEffect(1.3)
                                 .frame(width: 23, height: 18)
                             Text(entry.badge)
-                                .font(.system(size: width >= 100 ? 13 : 11, weight: .semibold, design: .monospaced))
+                                .font(.system(size: width >= 100 ? 13 : 11, weight: .semibold))
                                 .foregroundStyle(entry.spec.family.tint)
                                 .lineLimit(1)
                         }

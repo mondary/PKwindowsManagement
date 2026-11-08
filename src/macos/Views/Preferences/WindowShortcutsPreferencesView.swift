@@ -218,7 +218,7 @@ struct WindowShortcutsPreferencesView: View {
 
     private func shortcutBadge(_ shortcut: KeyboardShortcutSetting) -> some View {
         Text(shortcutBadgeText(shortcut))
-            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+            .font(.system(size: 12, weight: .semibold))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(
@@ -503,7 +503,7 @@ struct WindowShortcutsPreferencesView: View {
                 .background(PKStudioPalette.stripAccent.opacity(0.14), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             VStack(alignment: .leading, spacing: 1) {
                 Text(keys)
-                    .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                    .font(.system(size: 10.5, weight: .bold))
                 Text(title)
                     .font(.system(size: 10.5))
                     .foregroundStyle(.secondary)
@@ -579,7 +579,7 @@ struct WindowShortcutsPreferencesView: View {
                             Text("Rooms")
                                 .font(.system(size: 14, weight: .bold, design: .rounded))
                             Text("⌃⌥R")
-                                .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                                .font(.system(size: 10.5, weight: .bold))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(PKStudioPalette.roomsAccent.opacity(0.15), in: Capsule())
@@ -616,7 +616,7 @@ struct WindowShortcutsPreferencesView: View {
                             Text("CMD+Tab")
                                 .font(.system(size: 14, weight: .bold, design: .rounded))
                             Text(settings.windowSwitcherUsesCommandTab ? "⌘Tab" : "⌃⌥Tab")
-                                .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                                .font(.system(size: 10.5, weight: .bold))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(PKStudioPalette.switcherAccent.opacity(0.15), in: Capsule())

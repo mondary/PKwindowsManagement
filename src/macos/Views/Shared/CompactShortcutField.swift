@@ -15,7 +15,7 @@ struct CompactShortcutField: View {
     var body: some View {
         HStack(spacing: 6) {
             Text(displayString)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(shortcut.wrappedValue == nil ? Color.secondary : Color.primary)
                 .lineLimit(1)
                 .padding(.horizontal, 8)

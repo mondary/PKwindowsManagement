@@ -26,7 +26,7 @@ struct ShortcutRecorderField: View {
 
                 TextField("Key", text: $keyText)
                     .textFieldStyle(.roundedBorder)
-                    .font(.body.monospaced())
+                    .font(.body)
                     .frame(width: keyWidth)
                     .focused($isKeyFieldFocused)
                     .onChange(of: keyText) { newValue in
