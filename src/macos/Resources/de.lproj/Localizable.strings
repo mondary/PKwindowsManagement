@@ -817,6 +817,8 @@
 
 /* Trackpad gesture → Exposé PK */
 "Four-finger swipe up" = "Vier-Finger-Wisch nach oben";
+"Trackpad swipe up" = "Trackpad-Wisch nach oben";
+"Fingers" = "Finger";
 "Opens Exposé PK instead of doing nothing" = "Öffnet Exposé PK statt nichts zu tun";
 "macOS keeps four-finger swipes for Mission Control. To make Exposé PK the only response, release that system gesture once in System Settings → Trackpad → More Gestures." = "macOS behält Vier-Finger-Wischer für Mission Control. Damit nur Exposé PK reagiert, diese Systemgeste einmal unter Systemeinstellungen → Trackpad → Weitere Gesten freigeben.";
 "Open Trackpad settings" = "Trackpad-Einstellungen öffnen";

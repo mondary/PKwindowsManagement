@@ -11,7 +11,7 @@ struct TrackpadSwipeChecks {
         precondition(!detector.update(fingers: 2, y: 0.2, time: 0))
         precondition(!detector.update(fingers: 2, y: 0.8, time: 0.1))
 
-        // A three-finger upward swipe fires exactly once.
+        // A four-finger upward swipe fires exactly once (default setting).
         precondition(!detector.update(fingers: 4, y: 0.20, time: 1.0))
         precondition(!detector.update(fingers: 4, y: 0.25, time: 1.05))
         precondition(detector.update(fingers: 4, y: 0.35, time: 1.10))
@@ -47,10 +47,22 @@ struct TrackpadSwipeChecks {
         precondition(!invalid.update(fingers: 4, y: -3, time: 0.1))
         precondition(!invalid.update(fingers: 4, y: .nan, time: 0.2))
 
-        // A three-finger swipe is accepted when four are not available.
+        // The finger count is an EXACT match: with the 3-finger setting a
+        // 4-finger swipe stays with the system, and the other way around.
         var three = TrackpadSwipeDetector()
-        precondition(!three.update(fingers: 3, y: 0.2, time: 0))
-        precondition(three.update(fingers: 3, y: 0.4, time: 0.1))
+        three.requiredFingers = 3
+        precondition(!three.update(fingers: 4, y: 0.2, time: 0))
+        precondition(!three.update(fingers: 4, y: 0.5, time: 0.1))
+        precondition(!three.update(fingers: 3, y: 0.2, time: 0.3))
+        precondition(three.update(fingers: 3, y: 0.4, time: 0.4))
+        var four = TrackpadSwipeDetector()
+        four.requiredFingers = 4
+        precondition(!four.update(fingers: 3, y: 0.2, time: 0))
+        precondition(!four.update(fingers: 3, y: 0.9, time: 0.3))
+        precondition(!four.update(fingers: 4, y: 0.2, time: 0.5))
+        precondition(four.update(fingers: 4, y: 0.4, time: 0.6))
+        // Default is the documented four-finger behaviour.
+        precondition(TrackpadSwipeDetector().requiredFingers == 4)
 
         print("Trackpad swipe checks passed: finger count, direction, single fire, rearm, cooldown, slow/invalid gestures")
     }

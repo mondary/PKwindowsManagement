@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.30] - 2026-11-08
+### Changed
+- **Geste Exposé : 3 ou 4 doigts au choix** : le compte de doigts est réglable dans Réglages → CMD+Tab → geste trackpad (sélecteur 3 / 4) et le déclencheur exige désormais le compte **exact** — l'autre compte reste au système (Mission Control et compagnie). Le bouton **Libérer le geste…** écrit la clé macOS correspondante (`TrackpadThreeFingerVertSwipeGesture` ou `…Four…`). Le geste trackpad et son compte de doigts entrent dans les sauvegardes.
+
 ## [2026.11.29] - 2026-11-08
 ### Fixed
 - **Strip bloqué par le journal de restauration** : des fenêtres restées « en attente » (bureau non visible lors d'un arrêt, restauration impossible) étaient exclues pour toujours — le Strip ne trouvait plus aucune fenêtre et ne se lançait plus. Après cinq tentatives sur un bureau visible, l'enregistrement est abandonné : la fenêtre garde sa position et redevient adoptable. Les fenêtres de l'app elle-même ne rejoignent plus le Strip.

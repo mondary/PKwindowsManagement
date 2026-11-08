@@ -6,7 +6,7 @@
 
 PKwindowsManagement is a macOS menu bar app for keyboard-driven window management and fast application launching.
 
-Dev version **2026.11.29**
+Dev version **2026.11.30**
 
 ## Interactive website
 
@@ -62,7 +62,7 @@ Dev version **2026.11.29**
 
 ### Exposé PK (Dev)
 
-- **`Ctrl + Option + E`** opens a **borderless fullscreen Exposé over your wallpaper**. Window replicas animate from their original desktop positions into app groups on the invoking display. The persisted **Islands / Android strip** switch inside Exposé offers two layouts: app islands distributed across almost the entire surface — each group on a dark card with its title and tight previews, captured at high resolution, or large fullscreen cards sized to each window's aspect ratio (no empty side bands on tall windows), navigated with the trackpad/wheel. Islands fits all windows exposed by macOS/AX without stacking or scrolling. Entry/return are animated without moving or resizing real windows. Video wallpapers use a static poster; Reduce Motion is respected.
+- **`Ctrl + Option + E`** opens a **borderless fullscreen Exposé over your wallpaper** (also opened by a **3- or 4-finger upward trackpad swipe**, your choice in Settings → ⌘Tab — exact count, the other one stays with macOS). Window replicas animate from their original desktop positions into app groups on the invoking display. The persisted **Islands / Android strip** switch inside Exposé offers two layouts: app islands distributed across almost the entire surface — each group on a dark card with its title and tight previews, captured at high resolution, or large fullscreen cards sized to each window's aspect ratio (no empty side bands on tall windows), navigated with the trackpad/wheel. Islands fits all windows exposed by macOS/AX without stacking or scrolling. Entry/return are animated without moving or resizing real windows. Video wallpapers use a static poster; Reduce Motion is respected.
 - Also available from the menu bar icon’s context menu → **Open Exposé PK**, or the Windows studio button. Change the shortcut in the switcher settings; URL: `pkwm://expose`.
 - `←→` or Tab between windows, `↑↓` between apps; click or Enter to activate the exact chosen window: its identity is captured and the overlay is removed before focus; Escape or click the background to return to the desktop with the reverse animation. Search by app/title, origin display on each card, visible `⌘W`/`⌘Q` actions for the selection.
 - Accessibility is required for inventory/activation; Screen Recording for thumbnails, otherwise titles/icons remain. Windows not exposed by macOS/AX or without a capturable surface (some Spaces, minimized/protected windows) may be missing or lack a preview.

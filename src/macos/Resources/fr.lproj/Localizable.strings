@@ -818,6 +818,10 @@
 
 /* Trackpad gesture → Exposé PK */
 "Four-finger swipe up" = "Balayage à quatre doigts vers le haut";
+"Trackpad swipe up" = "Balayage trackpad vers le haut";
+"Fingers" = "Doigts";
+"Trackpad swipe up" = "Balayage trackpad vers le haut";
+"Fingers" = "Doigts";
 "Opens Exposé PK instead of doing nothing" = "Ouvre Exposé PK au lieu de ne rien faire";
 "macOS keeps four-finger swipes for Mission Control. To make Exposé PK the only response, release that system gesture once in System Settings → Trackpad → More Gestures." = "macOS réserve les balayages à quatre doigts à Mission Control. Pour qu'Exposé PK soit la seule réponse, libère ce geste système une fois dans Réglages Système → Trackpad → Plus de gestes.";
 "Open Trackpad settings" = "Ouvrir les réglages Trackpad";

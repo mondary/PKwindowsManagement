@@ -59,6 +59,7 @@ final class AppSettings: ObservableObject {
         static let stripWideDisplayThreshold = "strip-wide-display-threshold"
         static let stripNewColumnNext = "strip-new-column-next"
         static let exposeTrackpadGesture = "expose-trackpad-gesture"
+        static let exposeTrackpadFingerCount = "expose-trackpad-finger-count"
         /// JSON [bundleID: ColumnWidthKind]; read directly by the Canvas worker.
         static let stripColumnWidths = "strip-column-widths"
     }
@@ -294,6 +295,15 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    /// Trackpad contacts that open Exposé: 3 or 4, exact count.
+    @Published var exposeTrackpadFingerCount: Int {
+        didSet {
+            exposeTrackpadFingerCount = exposeTrackpadFingerCount == 3 ? 3 : 4
+            defaults.set(exposeTrackpadFingerCount, forKey: Keys.exposeTrackpadFingerCount)
+            scheduleAutoBackup()
+        }
+    }
+
     /// Preferred strip column width per application (bundle ID → kind raw
     /// value). The Canvas worker reads the same defaults key directly, so no
     /// cross-thread access to this object is needed.
@@ -494,6 +504,7 @@ final class AppSettings: ObservableObject {
         stripWideDisplayThreshold = defaults.object(forKey: Keys.stripWideDisplayThreshold) as? Double ?? 2000
         stripNewColumnNext = defaults.object(forKey: Keys.stripNewColumnNext) as? Bool ?? true
         exposeTrackpadGesture = defaults.object(forKey: Keys.exposeTrackpadGesture) as? Bool ?? true
+        exposeTrackpadFingerCount = defaults.object(forKey: Keys.exposeTrackpadFingerCount) as? Int == 3 ? 3 : 4
         stripColumnWidths = (defaults.data(forKey: Keys.stripColumnWidths)
             .flatMap { try? JSONDecoder().decode([String: String].self, from: $0) }) ?? [:]
 
@@ -841,6 +852,8 @@ final class AppSettings: ObservableObject {
             stripDefaultWidthWide: stripDefaultWidthWide,
             stripWideDisplayThreshold: stripWideDisplayThreshold,
             stripNewColumnNext: stripNewColumnNext,
+            exposeTrackpadGesture: exposeTrackpadGesture,
+            exposeTrackpadFingerCount: exposeTrackpadFingerCount,
             stripColumnWidths: stripColumnWidths,
             tilingWorkspaceProfiles: TilingWorkspaceProfiles.load()
         )
@@ -924,6 +937,8 @@ final class AppSettings: ObservableObject {
            CanvasLayout.ColumnWidthKind(rawValue: wide) != nil { stripDefaultWidthWide = wide }
         if let threshold = backup.stripWideDisplayThreshold { stripWideDisplayThreshold = min(max(1024, threshold), 8192) }
         if let newColumnNext = backup.stripNewColumnNext { stripNewColumnNext = newColumnNext }
+        if let exposeGesture = backup.exposeTrackpadGesture { exposeTrackpadGesture = exposeGesture }
+        if let fingerCount = backup.exposeTrackpadFingerCount { exposeTrackpadFingerCount = fingerCount == 3 ? 3 : 4 }
         if let widths = backup.stripColumnWidths { stripColumnWidths = widths }
         if let profiles = backup.tilingWorkspaceProfiles {
             _ = TilingWorkspaceProfiles.replace(profiles)
@@ -1305,6 +1320,8 @@ private struct SettingsBackup: Codable {
     let stripDefaultWidthWide: String?
     let stripWideDisplayThreshold: Double?
     let stripNewColumnNext: Bool?
+    let exposeTrackpadGesture: Bool?
+    let exposeTrackpadFingerCount: Int?
     let stripColumnWidths: [String: String]?
     let tilingWorkspaceProfiles: [String: TilingWorkspaceProfile]?
 }

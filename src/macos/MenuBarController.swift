@@ -73,6 +73,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         )
         registerRoomsHotKey()
         TrackpadSwipeMonitor.shared.isEnabled = { AppRuntime.shared.settings?.exposeTrackpadGesture ?? true }
+        TrackpadSwipeMonitor.shared.requiredFingers = { AppRuntime.shared.settings?.exposeTrackpadFingerCount ?? 4 }
         TrackpadSwipeMonitor.shared.onSwipeUp = { WindowSwitcherController.shared.toggleExpose() }
         TrackpadSwipeMonitor.shared.start()
         UpdaterManager.shared.start()

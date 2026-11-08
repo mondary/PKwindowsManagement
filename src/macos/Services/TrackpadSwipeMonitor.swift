@@ -3,7 +3,9 @@ import Foundation
 
 /// Pure detection rules, shared by the live monitor and unit checks.
 struct TrackpadSwipeDetector {
-    var requiredFingers = 3
+    /// Exact contact count that fires the gesture: 3 or 4, never "or more" —
+    /// the other count keeps serving the system (Mission Control and friends).
+    var requiredFingers = 4
     var minimumTravel: Float = 0.10
     var maximumDuration: TimeInterval = 0.8
     var cooldown: TimeInterval = 0.6
@@ -16,7 +18,7 @@ struct TrackpadSwipeDetector {
     /// Returns true exactly once per upward gesture. `y` is the first contact
     /// position in normalized trackpad coordinates (0 = bottom, 1 = top).
     mutating func update(fingers: Int, y: Float, time: TimeInterval) -> Bool {
-        guard fingers >= requiredFingers else {
+        guard fingers == requiredFingers else {
             startedAt = nil
             armed = true
             return false
@@ -93,6 +95,7 @@ final class TrackpadSwipeMonitor {
     private let lock = NSLock()
 
     var isEnabled: () -> Bool = { true }
+    var requiredFingers: () -> Int = { 4 }
     var onSwipeUp: () -> Void = {}
 
     var isRunning: Bool { started }
@@ -139,6 +142,7 @@ final class TrackpadSwipeMonitor {
     fileprivate func receive(fingers: Int, y: Float, timestamp: TimeInterval) {
         guard isEnabled() else { detector.reset(); return }
         lock.lock()
+        detector.requiredFingers = min(max(3, requiredFingers()), 4)
         let fired = detector.update(fingers: fingers, y: y, time: timestamp)
         lock.unlock()
         guard fired else { return }

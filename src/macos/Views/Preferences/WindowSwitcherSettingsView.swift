@@ -506,13 +506,24 @@ struct WindowSwitcherSettingsView: View {
                 set: { settings.exposeTrackpadGesture = $0 }
             )) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(localizedString("Four-finger swipe up"))
+                    Text(localizedString("Trackpad swipe up"))
                         .font(.system(size: 12.5, weight: .semibold))
                     Text(localizedString("Opens Exposé PK instead of doing nothing"))
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             }
             .toggleStyle(.switch)
+
+            Picker(localizedString("Fingers"), selection: Binding(
+                get: { settings.exposeTrackpadFingerCount },
+                set: { settings.exposeTrackpadFingerCount = $0 }
+            )) {
+                Text("3").tag(3)
+                Text("4").tag(4)
+            }
+            .pickerStyle(.segmented)
+            .controlSize(.small)
+            .frame(width: 160)
 
             Text(localizedString("macOS keeps four-finger swipes for Mission Control. To make Exposé PK the only response, release that system gesture once in System Settings → Trackpad → More Gestures."))
                 .font(.caption).foregroundStyle(.secondary)
@@ -541,11 +552,15 @@ struct WindowSwitcherSettingsView: View {
     }
 
     /// Explicit, confirmed change of a macOS preference (never silent).
+    /// The released key follows the chosen finger count.
     private func releaseSystemSwipe() {
+        let key = settings.exposeTrackpadFingerCount == 3
+            ? "TrackpadThreeFingerVertSwipeGesture"
+            : "TrackpadFourFingerVertSwipeGesture"
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/defaults")
         process.arguments = ["write", "com.apple.AppleMultitouchTrackpad",
-                             "TrackpadFourFingerVertSwipeGesture", "-int", "0"]
+                             key, "-int", "0"]
         try? process.run()
     }
 
