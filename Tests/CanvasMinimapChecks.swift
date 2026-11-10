@@ -4,6 +4,24 @@ import Foundation
 @main
 enum CanvasMinimapChecks {
     static func main() {
+        let screenFrame = CGRect(x: 0, y: 0, width: 1440, height: 900)
+        let visibleFrame = CGRect(x: 0, y: 0, width: 1440, height: 876)
+        let noNotch = CanvasMinimap.barPlacement(
+            screenFrame: screenFrame, visibleFrame: visibleFrame, hasNotch: false, atBottom: false
+        )
+        assert(noNotch.overlaysMenuBar)
+        assert(abs(noNotch.frame.minY - (screenFrame.maxY - 22)) < 0.001)
+        let notched = CanvasMinimap.barPlacement(
+            screenFrame: screenFrame, visibleFrame: visibleFrame, hasNotch: true, atBottom: false
+        )
+        assert(!notched.overlaysMenuBar)
+        assert(abs(notched.frame.minY - (visibleFrame.maxY - 22)) < 0.001)
+        let bottomPlacement = CanvasMinimap.barPlacement(
+            screenFrame: screenFrame, visibleFrame: visibleFrame, hasNotch: false, atBottom: true
+        )
+        assert(!bottomPlacement.overlaysMenuBar)
+        assert(abs(bottomPlacement.frame.minY - visibleFrame.minY) < 0.001)
+
         // Two single-row columns of 300 and 600 px: extent = 8 + 300 + 8 + 600 + 8 = 924.
         let widths: [CGFloat] = [300, 600]
         let columns = [

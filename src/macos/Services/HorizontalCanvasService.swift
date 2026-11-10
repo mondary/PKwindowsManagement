@@ -34,10 +34,10 @@ final class HorizontalCanvasService: ObservableObject {
         let pointer: CGPoint
         let pointerDown: Bool
 
-        static func capture() -> Context {
-            precondition(Thread.isMainThread)
-            let top = NSScreen.screens.first?.frame.maxY ?? 0
-            let displays = NSScreen.screens.compactMap { screen -> Display? in
+        private static func displaySnapshot() -> (top: CGFloat, displays: [Display]) {
+            let screens = NSScreen.screens
+            let top = screens.first?.frame.maxY ?? 0
+            let displays = screens.compactMap { screen -> Display? in
                 guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
                       let uuid = CGDisplayCreateUUIDFromDisplayID(id)?.takeRetainedValue() else { return nil }
                 let visible = screen.visibleFrame
@@ -49,6 +49,12 @@ final class HorizontalCanvasService: ObservableObject {
                                  width: max(1, visible.width - 24), height: max(1, visible.height - 24))
                 )
             }
+            return (top, displays)
+        }
+
+        static func capture() -> Context {
+            precondition(Thread.isMainThread)
+            let snapshot = displaySnapshot()
             let apps = NSWorkspace.shared.runningApplications.filter {
                 $0.activationPolicy != .prohibited
             }.reduce(into: [pid_t: Date]()) { result, app in
@@ -56,11 +62,28 @@ final class HorizontalCanvasService: ObservableObject {
             }
             let pointer = NSEvent.mouseLocation
             return Context(
-                displays: displays,
+                displays: snapshot.displays,
                 apps: apps,
                 hiddenPIDs: Set(NSWorkspace.shared.runningApplications.filter(\.isHidden).map(\.processIdentifier)),
                 frontmostPID: NSWorkspace.shared.frontmostApplication?.processIdentifier,
-                pointer: CGPoint(x: pointer.x, y: top - pointer.y),
+                pointer: CGPoint(x: pointer.x, y: snapshot.top - pointer.y),
+                pointerDown: NSEvent.pressedMouseButtons != 0
+            )
+        }
+
+        /// Scroll frames only need the display geometry and drag guard. Avoid
+        /// enumerating every running app twice and resolving frontmost state on
+        /// the main thread for each wheel batch.
+        static func captureForScroll() -> Context {
+            precondition(Thread.isMainThread)
+            let snapshot = displaySnapshot()
+            let pointer = NSEvent.mouseLocation
+            return Context(
+                displays: snapshot.displays,
+                apps: [:],
+                hiddenPIDs: [],
+                frontmostPID: nil,
+                pointer: CGPoint(x: pointer.x, y: snapshot.top - pointer.y),
                 pointerDown: NSEvent.pressedMouseButtons != 0
             )
         }
@@ -614,7 +637,7 @@ final class HorizontalCanvasService: ObservableObject {
         DispatchQueue.main.async {
             let deltas = self.pendingScrolls
             self.pendingScrolls.removeAll(keepingCapacity: true)
-            let context = Context.capture()
+            let context = Context.captureForScroll()
             self.queue.async {
                 for (workspace, delta) in deltas {
                     self.shiftViewport(on: workspace, by: delta, context: context)
@@ -950,7 +973,11 @@ final class HorizontalCanvasService: ObservableObject {
         // flushes this placement as soon as the mouse button is released.
         guard !context.pointerDown else { strip.placementDeferred = true; return }
         strip.placementDeferred = false
-        _ = adoptFocusedWidth(strip, context: context)
+        // Width adoption reads accessibility geometry. The 0.2 s observer
+        // handles manual resize reconciliation; scroll frames stay position-only.
+        if !scrollFrame {
+            _ = adoptFocusedWidth(strip, context: context)
+        }
         let geometry = CanvasLayout.Geometry(area: strip.display.area, rows: 2)
         strip.viewport = CanvasLayout.clampViewport(strip.viewport, widths: strip.widths, viewport: geometry.contentWidth)
         let others = context.displays.filter { $0.id != strip.display.id }.map(\.bounds)
@@ -992,7 +1019,6 @@ final class HorizontalCanvasService: ObservableObject {
         for index in order {
             guard isCurrent(strip) else { strip.suspended = true; return }
             let entry = strip.entries[index]
-            guard CanvasWindowAccess.id(entry.window) == entry.saved.id else { continue }
             guard CanvasLayout.slot(index: index, columns: strip.columns) != nil else { continue }
             let target = placement(at: index)
             if let last = entry.lastFrame,
@@ -1000,7 +1026,11 @@ final class HorizontalCanvasService: ObservableObject {
                abs(last.width - target.frame.width) < 0.5, abs(last.height - target.frame.height) < 0.5 {
                 continue
             }
-            guard CanvasWindowAccess.eligible(entry.window),
+            // A scroll changes only position. Keep the safety checks for every
+            // window that actually moves, but avoid identity round-trips for
+            // offscreen/parked windows whose target frame did not change.
+            guard CanvasWindowAccess.id(entry.window) == entry.saved.id,
+                  CanvasWindowAccess.eligible(entry.window),
                   SpaceManagementService.desktops(forWindow: entry.saved.id) == [strip.space]
             else { continue }
             let result = CanvasWindowAccess.applyCanvasFrame(target.frame, window: entry.window,

@@ -50,12 +50,20 @@ final class CanvasMinimapController {
                 close(displayID)
                 continue
             }
-            let frame = barFrame(on: screen)
+            let placement = CanvasMinimap.barPlacement(
+                screenFrame: screen.frame,
+                visibleFrame: screen.visibleFrame,
+                hasNotch: screen.safeAreaInsets.top > 0,
+                atBottom: isAtBottom()
+            )
+            let level: NSWindow.Level = placement.overlaysMenuBar ? .statusBar : .floating
             if let panel = panels[displayID], let host = hosts[displayID] {
                 host.rootView = barView(model: model, displayID: displayID)
-                panel.setFrame(frame, display: true)
+                panel.level = level
+                panel.setFrame(placement.frame, display: true)
             } else {
-                open(model: model, displayID: displayID, frame: frame)
+                open(model: model, displayID: displayID, frame: placement.frame)
+                panels[displayID]?.level = level
             }
         }
     }
@@ -121,21 +129,6 @@ final class CanvasMinimapController {
         }
     }
 
-    /// Thin, subtle pill: 22 pt tall, narrower than before, right under the
-    /// menu bar — or right above the screen's bottom edge when the user
-    /// placed it there (no Dock in the way). It stays out of the way and
-    /// shows app icons, not blocks.
-    private func barFrame(on screen: NSScreen) -> NSRect {
-        let visible = screen.visibleFrame
-        let width = min(max(280, visible.width * 0.36), 560)
-        let height: CGFloat = 22
-        return NSRect(
-            x: visible.midX - width / 2,
-            y: isAtBottom() ? visible.minY : visible.maxY - height,
-            width: width,
-            height: height
-        )
-    }
 }
 
 /// The first click must navigate, not activate the hosting view first.

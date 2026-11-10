@@ -7,6 +7,33 @@ import Foundation
 /// reverse mapping that turns a click on the bar back into a column index.
 /// The UI layer never reads worker-owned strips; it renders these snapshots.
 enum CanvasMinimap {
+    struct BarPlacement: Equatable {
+        let frame: CGRect
+        let overlaysMenuBar: Bool
+    }
+
+    /// Frame for the minimap pill. Notched screens keep it below the menu bar;
+    /// notch-free screens use the otherwise empty center of the menu bar; the
+    /// optional bottom position stays above the Dock as before.
+    static func barPlacement(screenFrame: CGRect, visibleFrame: CGRect,
+                             hasNotch: Bool, atBottom: Bool) -> BarPlacement {
+        let height: CGFloat = 22
+        let width = min(visibleFrame.width, min(max(280, visibleFrame.width * 0.36), 560))
+        let overlaysMenuBar = !atBottom && !hasNotch
+        let y: CGFloat
+        if atBottom {
+            y = visibleFrame.minY
+        } else if hasNotch {
+            y = visibleFrame.maxY - height
+        } else {
+            y = screenFrame.maxY - height
+        }
+        return BarPlacement(
+            frame: CGRect(x: visibleFrame.midX - width / 2, y: y, width: width, height: height),
+            overlaysMenuBar: overlaysMenuBar
+        )
+    }
+
     struct Segment: Equatable {
         /// Leading edge of the column, as a fraction of the strip extent.
         let start: CGFloat
