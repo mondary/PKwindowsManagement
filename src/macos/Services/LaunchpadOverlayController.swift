@@ -81,6 +81,20 @@ final class LaunchpadOverlayController {
     /// not like a window brought back with its old state.
     private func announceShow() {
         NotificationCenter.default.post(name: .launchpadDidShow, object: nil)
+        // Second pass once the panel has settled: after a focus handoff
+        // (yieldActivation), the activate+makeKey at show time can land
+        // while the system is still switching apps, leaving the panel
+        // visible but not key — keystrokes then go to the app underneath.
+        // Guarded, so it costs nothing when everything already settled.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            guard let self, let panel = self.panel, panel.isVisible else { return }
+            if !NSApp.isActive {
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            if NSApp.keyWindow !== panel {
+                panel.makeKeyAndOrderFront(nil)
+            }
+        }
     }
 
     /// Remember who had the keyboard before the overlay took it, so closing

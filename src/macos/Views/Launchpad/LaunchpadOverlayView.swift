@@ -630,19 +630,29 @@ struct LaunchpadOverlayView: View {
     }
 
     /// Virgin launcher on every opening: empty query, default category, and
-    /// the search field focused as soon as the panel accepts keyboard focus
-    /// — re-armed briefly because panel activation races the keystrokes.
+    /// the search field focused as soon as the panel accepts keyboard focus.
+    /// Focus requests issued while the panel is not yet key can be dropped
+    /// by SwiftUI yet remembered as applied — a later plain `= true` is then
+    /// a no-op, which is how an Escape-closed session reopened unfocused.
+    /// The re-checks read the REAL first responder and force a false→true
+    /// transition only when the keyboard truly is elsewhere, so a field the
+    /// user is already typing into is never unfocused mid-word.
     private func resetForPresentation() {
         query = ""
         currentPage = 0
         selectedCategory = nil
         selectFirstApp()
         searchFocused = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            searchFocused = true
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            searchFocused = true
+        refocusSearchFieldIfIdle(after: 0.12)
+        refocusSearchFieldIfIdle(after: 0.35)
+        refocusSearchFieldIfIdle(after: 0.7)
+    }
+
+    private func refocusSearchFieldIfIdle(after delay: TimeInterval) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            if NSApp.keyWindow?.firstResponder is NSTextView { return }
+            searchFocused = false
+            DispatchQueue.main.async { searchFocused = true }
         }
     }
 

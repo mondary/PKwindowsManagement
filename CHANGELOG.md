@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.35] - 2026-11-10
+### Fixed
+- **Focus clavier garanti à la réouverture du launcher** : une session fermée par Échap rouvrait avec le champ de saisie non focus (il fallait cliquer pour taper). La requête de focus émise pendant que le panneau n'était pas encore fenêtre clé était perdue par SwiftUI, mais retenue comme « appliquée » — les rappels suivants ne faisaient donc rien. Les rappels lisent désormais le vrai first responder et forcent une transition false→true quand le clavier est réellement ailleurs (jamais pendant la frappe) ; le contrôleur réaffirme par ailleurs activation + fenêtre clé une fois le panneau posé, pour les réouvertures qui suivent une restitution de focus.
+
 ## [2026.11.34] - 2026-11-10
 ### Fixed
 - **Launcher vierge et tapable dès l'ouverture** : le panneau étant réutilisé d'une ouverture à l'autre, il rouvrait avec la dernière recherche (« mail » encore saisi et filtrant) et le champ sans focus clavier — impossible de taper juste après ⌥␣. Chaque ouverture vide désormais la requête, remet le périmètre/catégorie par défaut et focusse le champ (réarmé brièvement pendant que la fenêtre prend le focus). Échap revient d'abord à la version vierge, un second Échap ferme — dans les deux styles.
