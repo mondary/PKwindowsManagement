@@ -80,14 +80,12 @@ struct LaunchpadOverlayView: View {
         }
         .onAppear {
             reloadAppCatalog()
-            selectFirstApp()
-            searchFocused = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                searchFocused = true
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                searchFocused = true
-            }
+            resetForPresentation()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .launchpadDidShow)) { _ in
+            // The panel is reused across openings: without this, reopening
+            // would come back with the previous query and an unfocused field.
+            resetForPresentation()
         }
         .onChange(of: settings.launchShortcuts) { _ in
             reloadAppCatalog()
@@ -106,7 +104,14 @@ struct LaunchpadOverlayView: View {
             selectFirstApp()
         }
         .onExitCommand {
-            LaunchpadOverlayController.shared.hide()
+            // Escape with a query returns to the virgin launcher first;
+            // a second Escape closes it (same rule as the key monitor).
+            if query.isEmpty {
+                LaunchpadOverlayController.shared.hide()
+            } else {
+                query = ""
+                searchFocused = true
+            }
         }
         .sheet(item: $shortcutTarget) { app in
             LaunchShortcutEditor(app: app, settings: settings)
@@ -622,6 +627,23 @@ struct LaunchpadOverlayView: View {
             tileSize: CGSize(width: tileWidth, height: tileHeight),
             iconSize: iconSize
         )
+    }
+
+    /// Virgin launcher on every opening: empty query, default category, and
+    /// the search field focused as soon as the panel accepts keyboard focus
+    /// — re-armed briefly because panel activation races the keystrokes.
+    private func resetForPresentation() {
+        query = ""
+        currentPage = 0
+        selectedCategory = nil
+        selectFirstApp()
+        searchFocused = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            searchFocused = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            searchFocused = true
+        }
     }
 
     private func selectFirstApp() {

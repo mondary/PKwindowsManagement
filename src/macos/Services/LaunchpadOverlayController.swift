@@ -1,6 +1,14 @@
 import AppKit
 import SwiftUI
 
+extension Notification.Name {
+    /// Posted every time the launchpad overlay becomes visible — whether the
+    /// panel was created or reused — so the live views can reset their search
+    /// state and focus the field. Without it, a reused panel would reopen
+    /// with the previous query and without keyboard focus.
+    static let launchpadDidShow = Notification.Name("PKLaunchpadDidShow")
+}
+
 private final class LaunchpadPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
@@ -13,6 +21,8 @@ final class LaunchpadOverlayController {
     private var host: NSViewController?
     private var style: LaunchpadStyle?
     private var moveObserver: NSObjectProtocol?
+    private var previousFrontmostApp: NSRunningApplication?
+    private var focusHandoffWorkItem: DispatchWorkItem?
 
     private static let compactOriginXKey = "launchpad-compact-origin-x"
     private static let compactOriginYKey = "launchpad-compact-origin-y"
@@ -27,6 +37,7 @@ final class LaunchpadOverlayController {
 
     func show(settings: AppSettings) {
         guard panel?.isVisible != true else { return }
+        rememberFrontmostAppForHandoff()
         if style == settings.launchpadStyle, let panel {
             let targetScreen = screenForCurrentPointer() ?? NSScreen.main
             if style == .compact {
@@ -48,6 +59,7 @@ final class LaunchpadOverlayController {
             NSApp.activate(ignoringOtherApps: true)
             panel.makeKeyAndOrderFront(nil)
             panel.orderFrontRegardless()
+            announceShow()
             return
         }
         panel = nil
@@ -62,6 +74,22 @@ final class LaunchpadOverlayController {
         } else {
             showFullscreen(settings: settings)
         }
+    }
+
+    /// The live SwiftUI content listens for this to drop the previous query
+    /// and re-focus the search field: reopening must behave like Spotlight,
+    /// not like a window brought back with its old state.
+    private func announceShow() {
+        NotificationCenter.default.post(name: .launchpadDidShow, object: nil)
+    }
+
+    /// Remember who had the keyboard before the overlay took it, so closing
+    /// the overlay without launching anything can hand focus back.
+    private func rememberFrontmostAppForHandoff() {
+        guard let frontmost = NSWorkspace.shared.frontmostApplication,
+              frontmost.processIdentifier != ProcessInfo.processInfo.processIdentifier
+        else { return }
+        previousFrontmostApp = frontmost
     }
 
     private func showFullscreen(settings: AppSettings) {
@@ -94,6 +122,7 @@ final class LaunchpadOverlayController {
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         panel.orderFrontRegardless()
+        announceShow()
     }
 
     private func showCompact(settings: AppSettings) {
@@ -134,10 +163,44 @@ final class LaunchpadOverlayController {
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         panel.orderFrontRegardless()
+        announceShow()
     }
 
     func hide() {
         panel?.orderOut(nil)
+        scheduleFocusHandoff()
+    }
+
+    /// Closing the overlay activated at show time would otherwise leave this
+    /// app frontmost with no visible window — and the global shortcut
+    /// monitor deliberately ignores launch shortcuts while our own app is
+    /// active, so Fn⇧M-style shortcuts would stay dead until the user
+    /// clicks another app. Hand focus back to whoever had it before.
+    /// The check is deferred briefly so a launch fired on close (Mail,
+    /// settings window, Rooms overlay…) wins the focus race naturally.
+    private func scheduleFocusHandoff() {
+        focusHandoffWorkItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.handOffFocusIfNeeded()
+        }
+        focusHandoffWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: work)
+    }
+
+    private func handOffFocusIfNeeded() {
+        guard panel?.isVisible != true,
+              NSApp.isActive,
+              !NSApp.windows.contains(where: { $0.isVisible && $0 !== panel })
+        else { return }
+        if let previous = previousFrontmostApp,
+           !previous.isTerminated,
+           previous.processIdentifier != ProcessInfo.processInfo.processIdentifier {
+            if #available(macOS 14.0, *) {
+                NSApp.yieldActivation(to: previous)
+                return
+            }
+        }
+        NSApp.deactivate()
     }
 
     func openSettings() {

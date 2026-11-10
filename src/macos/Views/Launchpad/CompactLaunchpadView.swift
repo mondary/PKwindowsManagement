@@ -234,13 +234,12 @@ struct CompactLaunchpadView: View {
                 appCatalog = apps
                 selectedIndex = 0
             }
-            searchFocused = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                searchFocused = true
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                searchFocused = true
-            }
+            resetForPresentation()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .launchpadDidShow)) { _ in
+            // The panel is reused across openings: without this, reopening
+            // would come back with the previous query and an unfocused field.
+            resetForPresentation()
         }
         .onChange(of: query) { _ in
             selectedIndex = 0
@@ -249,12 +248,35 @@ struct CompactLaunchpadView: View {
             selectedIndex = 0
         }
         .onExitCommand {
-            LaunchpadOverlayController.shared.hide()
+            // Escape with a query returns to the virgin launcher first;
+            // a second Escape closes it (same rule as the key monitor).
+            if query.isEmpty {
+                LaunchpadOverlayController.shared.hide()
+            } else {
+                query = ""
+                searchFocused = true
+            }
         }
         .alert("Action Result", isPresented: commandFeedbackPresented) {
             Button("OK", role: .cancel) { commandFeedbackMessage = nil }
         } message: {
             Text(commandFeedbackMessage ?? "")
+        }
+    }
+
+    /// Virgin launcher on every opening: empty query, default scope, and the
+    /// search field focused as soon as the panel accepts keyboard focus —
+    /// re-armed briefly because panel activation races the first keystrokes.
+    private func resetForPresentation() {
+        query = ""
+        scope = .all
+        selectedIndex = 0
+        searchFocused = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            searchFocused = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            searchFocused = true
         }
     }
 

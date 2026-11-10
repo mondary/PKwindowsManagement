@@ -435,7 +435,15 @@ private struct ModifierState {
         case .rightShift:
             return exactly([.maskShift]) && rightShift
         case .fnShift:
-            return exactly([.maskShift]) && fn
+            // Stateless fn detection first: after macOS uses the Globe key
+            // for a system action (emoji picker, input source, dictation),
+            // the press/release notifications can desync and the next fn
+            // chord fails until fn is re-pressed — the "works every other
+            // press" symptom. The keyDown event itself stamps the truth
+            // (maskSecondaryFn is set while fn is physically held), so it
+            // wins over tracked state; the tracked press stays as a
+            // fallback for keyboards that do not stamp letter events.
+            return exactly([.maskShift]) && (flags.contains(.maskSecondaryFn) || fn)
         }
     }
 

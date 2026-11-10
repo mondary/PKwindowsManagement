@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026.11.34] - 2026-11-10
+### Fixed
+- **Launcher vierge et tapable dès l'ouverture** : le panneau étant réutilisé d'une ouverture à l'autre, il rouvrait avec la dernière recherche (« mail » encore saisi et filtrant) et le champ sans focus clavier — impossible de taper juste après ⌥␣. Chaque ouverture vide désormais la requête, remet le périmètre/catégorie par défaut et focusse le champ (réarmé brièvement pendant que la fenêtre prend le focus). Échap revient d'abord à la version vierge, un second Échap ferme — dans les deux styles.
+- **Raccourcis Fn⇧ fiables (Fn⇧M, Fn⇧W…)** : quand macOS utilise la touche Globe pour une action système (sélecteur d'émojis, source de saisie, dictée), les notifications presser/relâcher peuvent dévier et le prochain accord Fn⇧ échouait jusqu'à une nouvelle pression de fn — le « ça marche une fois sur deux ». Le moniteur lit maintenant le drapeau fn porté par l'événement keyDown lui-même (sans état), l'état suivi ne restant qu'en repli ; l'enregistreur de raccourcis applique la même règle.
+- **Focus rendu après fermeture du launcher** : fermer l'overlay sans rien lancer laissait notre app active sans fenêtre visible, et le moniteur ignore volontairement les raccourcis de lancement tant que notre app est au premier plan — les Fn⇧ restaient alors morts jusqu'à un clic dans une autre app. À la fermeture, le focus est rendu à l'app qui l'avait (après un court délai, pour laisser passer une application lancée depuis le launcher).
+
 ## [2026.11.33] - 2026-11-08
 ### Fixed
 - **Pictogrammes flèches lisibles** : les pastilles et touches de raccourcis utilisaient la police mono (SF Mono), qui ne couvre pas les glyphes ←/→/↑/↓ — `Fn⇧←` et `Fn⇧→` s'affichaient en carré avec point d'interrogation. Tous les affichages de raccourcis (pastilles des réglages, carte clavier, champ d'enregistrement) repassent en police système, qui rend toutes les flèches.

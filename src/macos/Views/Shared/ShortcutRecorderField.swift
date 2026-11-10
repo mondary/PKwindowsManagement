@@ -240,6 +240,8 @@ final class ShortcutRecorderController: ObservableObject {
                 return nil
             }
 
+            captureState.syncFnFlag(cgEvent.flags)
+
             if let special = Self.keyName(for: keyCode) {
                 recordShortcut(key: special)
                 return nil
@@ -270,6 +272,7 @@ final class ShortcutRecorderController: ObservableObject {
                 stop()
                 return nil
             }
+            captureState.syncFnFlag(CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue)))
             if let special = Self.keyName(for: Int64(event.keyCode)) {
                 recordShortcut(key: special)
                 return nil
@@ -339,6 +342,13 @@ private struct ShortcutCaptureState {
         case 63: fn = flags.contains(.maskSecondaryFn)
         default: break
         }
+    }
+
+    /// Same stateless recovery as the runtime monitor: the Globe key can
+    /// desync press/release tracking, but the pressed key event still
+    /// reports the fn flag — trust it when present.
+    mutating func syncFnFlag(_ flags: CGEventFlags) {
+        if flags.contains(.maskSecondaryFn) { fn = true }
     }
 
     func resolvedModifier(fallback: ShortcutModifierPreset) -> ShortcutModifierPreset {
