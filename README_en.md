@@ -6,7 +6,7 @@
 
 PKwindowsManagement is a macOS menu bar app for keyboard-driven window management and fast application launching.
 
-Dev version **2026.11.36**
+Dev version **2026.11.34**
 
 ## Interactive website
 

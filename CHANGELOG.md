@@ -1,16 +1,12 @@
 # Changelog
 
-## [2026.11.36] - 2026-11-10
+## [2026.11.34] - 2026-11-11
 ### Changed
 - **Défilement du Strip allégé** : chaque lot de scroll capture désormais uniquement les écrans et l’état de glissement, sans énumérer deux fois toutes les apps ; chaque frame évite aussi la lecture de largeur et les fenêtres inchangées ne déclenchent plus de round-trip AX. Les fenêtres qui bougent gardent leurs validations de sécurité et n’écrivent que leur position.
 - **Minimap dans la barre de menus quand elle est libre** : sur un écran sans encoche, elle se place au centre de la barre de menus ; sur un écran avec encoche, elle reste sous la barre pour éviter la zone caméra. Le choix bas de l’écran du studio Strip est inchangé. La géométrie notch/sans-notch/bas est couverte par `CanvasMinimapChecks`.
 
-## [2026.11.35] - 2026-11-10
 ### Fixed
 - **Focus clavier garanti à la réouverture du launcher** : une session fermée par Échap rouvrait avec le champ de saisie non focus (il fallait cliquer pour taper). La requête de focus émise pendant que le panneau n'était pas encore fenêtre clé était perdue par SwiftUI, mais retenue comme « appliquée » — les rappels suivants ne faisaient donc rien. Les rappels lisent désormais le vrai first responder et forcent une transition false→true quand le clavier est réellement ailleurs (jamais pendant la frappe) ; le contrôleur réaffirme par ailleurs activation + fenêtre clé une fois le panneau posé, pour les réouvertures qui suivent une restitution de focus.
-
-## [2026.11.34] - 2026-11-10
-### Fixed
 - **Launcher vierge et tapable dès l'ouverture** : le panneau étant réutilisé d'une ouverture à l'autre, il rouvrait avec la dernière recherche (« mail » encore saisi et filtrant) et le champ sans focus clavier — impossible de taper juste après ⌥␣. Chaque ouverture vide désormais la requête, remet le périmètre/catégorie par défaut et focusse le champ (réarmé brièvement pendant que la fenêtre prend le focus). Échap revient d'abord à la version vierge, un second Échap ferme — dans les deux styles.
 - **Raccourcis Fn⇧ fiables (Fn⇧M, Fn⇧W…)** : quand macOS utilise la touche Globe pour une action système (sélecteur d'émojis, source de saisie, dictée), les notifications presser/relâcher peuvent dévier et le prochain accord Fn⇧ échouait jusqu'à une nouvelle pression de fn — le « ça marche une fois sur deux ». Le moniteur lit maintenant le drapeau fn porté par l'événement keyDown lui-même (sans état), l'état suivi ne restant qu'en repli ; l'enregistreur de raccourcis applique la même règle.
 - **Focus rendu après fermeture du launcher** : fermer l'overlay sans rien lancer laissait notre app active sans fenêtre visible, et le moniteur ignore volontairement les raccourcis de lancement tant que notre app est au premier plan — les Fn⇧ restaient alors morts jusqu'à un clic dans une autre app. À la fermeture, le focus est rendu à l'app qui l'avait (après un court délai, pour laisser passer une application lancée depuis le launcher).
