@@ -66,6 +66,11 @@ jobs:
           swiftc src/macos/Services/SettingsWindowController.swift Tests/SettingsWindowChecks.swift -o "$RUNNER_TEMP/settings-window-checks"
           "$RUNNER_TEMP/settings-window-checks"
 
+      - name: Check automatic backup retention
+        run: |
+          swiftc src/macos/Services/BackupRetention.swift Tests/BackupRetentionChecks.swift -o "$RUNNER_TEMP/backup-retention-checks"
+          "$RUNNER_TEMP/backup-retention-checks"
+
       - name: Check window picker and capture lifecycle
         run: |
           swiftc src/macos/Services/WindowSwitcher/WindowSwitcherState.swift Tests/WindowSwitcherChecks.swift -o "$RUNNER_TEMP/window-picker-checks"

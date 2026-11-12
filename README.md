@@ -6,7 +6,7 @@
 
 PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres au clavier et lancer rapidement les applications installées.
 
-Version Dev **2026.11.34**
+Version Dev **2026.11.35**
 
 ## Vitrine interactive
 
@@ -56,7 +56,7 @@ Version Dev **2026.11.34**
 - Alignement en haut des pages en mode navigation horizontale.
 - Vue `Big Year` plein écran sans scroll : thèmes Pastel, Catppuccin Latte/Mocha, Dracula ou Poster bleu (12 mois × 31 jours), week-ends, jours fériés français, vacances scolaires A/B/C, anniversaires avec `🎂` et événements personnalisés ; fermeture par bouton, `Échap` ou `Cmd + W`.
 - Indicateur de statut d'accessibilité avec bouton pour autoriser l'accès.
-- Export automatique des backups vers un dossier au choix (ex : Google Drive) à chaque modification des réglages.
+- Export automatique des backups vers un dossier au choix (ex : Google Drive) : un fichier JSON par jour, semaine glissante de 7 jours.
 - Menu contextuel sur chaque application pour attribuer un raccourci ou la déplacer vers la Corbeille.
 - Commande `Empty Trash` dans le Launchpad pour vider la Corbeille via Finder.
 - Ouverture du Launchpad avec `Option + Espace`, le coin supérieur gauche ou un clic sur l'icône de barre de menu.

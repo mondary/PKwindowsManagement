@@ -866,13 +866,24 @@ final class AppSettings: ObservableObject {
         guard autoBackupEnabled, let folder = autoBackupFolder else { return }
         do {
             let data = try exportBackup()
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-            let filename = "PKwindowsManagement-backup-\(formatter.string(from: Date())).json"
-            let url = folder.appendingPathComponent(filename)
+            let url = folder.appendingPathComponent(BackupRetention.fileName(for: Date()))
             try data.write(to: url, options: .atomic)
+            pruneAutoBackups(in: folder)
         } catch {
             NSLog("PKwindowsManagement: auto-backup failed: %@", error.localizedDescription)
+        }
+    }
+
+    /// Removes the daily backups that fell out of the seven-day window.
+    private func pruneAutoBackups(in folder: URL) {
+        let fileManager = FileManager.default
+        guard let names = try? fileManager.contentsOfDirectory(atPath: folder.path) else { return }
+        for name in BackupRetention.expiredFileNames(in: names, today: Date()) {
+            do {
+                try fileManager.removeItem(at: folder.appendingPathComponent(name))
+            } catch {
+                NSLog("PKwindowsManagement: auto-backup cleanup failed for %@: %@", name, error.localizedDescription)
+            }
         }
     }
 

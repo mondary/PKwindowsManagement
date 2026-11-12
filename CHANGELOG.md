@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.35] - 2026-11-12
+### Fixed
+- **Backup automatique sans avalanche de fichiers** : chaque modification de réglages écrivait un JSON horodaté à la seconde dans le dossier choisi — jusqu'à 83 fichiers par jour et 581 copies dans `Documents`. Le backup tient désormais **un fichier par jour** (`PKwindowsManagement-backup-2026-11-12.json`), réécrit dans la journée, et purge automatiquement tout ce qui dépasse une **semaine glissante de 7 jours** ; les anciens noms horodatés sont reconnus et élagués. `BackupRetentionChecks` couvre le nommage, les anciens noms et la fenêtre de rétention.
+
 ## [2026.11.34] - 2026-11-11
 ### Changed
 - **Défilement du Strip allégé** : chaque lot de scroll capture désormais uniquement les écrans et l’état de glissement, sans énumérer deux fois toutes les apps ; chaque frame évite aussi la lecture de largeur et les fenêtres inchangées ne déclenchent plus de round-trip AX. Les fenêtres qui bougent gardent leurs validations de sécurité et n’écrivent que leur position.
