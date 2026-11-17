@@ -432,7 +432,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .general: details = "general général système system language langue accessibilité accessibility sauvegarde backup"
         case .windows: details = "canvas open canvas strip omniwm horizontal margins marges fenêtres windows tiling libre free"
         case .rooms: details = "rooms room projets projects espaces fenêtres windows disposition layout écran screen salles räume habitaciones"
-        case .windowSwitcher: details = "cmd tab alt tab switcher aperçus previews miniatures thumbnails fenêtres windows applications"
+        case .windowSwitcher: details = "cmd tab alt tab switcher aperçus previews miniatures thumbnails fenêtres windows applications exposé expose trackpad gesture gestes doigts mission control"
         case .launchpad: details = "activation hot corner coin actif raccourci shortcut applications spotlight"
         case .appearance: details = "style theme thème organisation organization groupes categories catégories grille grid navigation"
         case .snippets: details = "snippets scripts raccourcis commands commandes"

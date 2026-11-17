@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Carbon
 import Carbon.HIToolbox
 
@@ -16,6 +17,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var canvasObserver: NSObjectProtocol?
     private let termination = ApplicationTerminationCoordinator()
     private var automaticTerminationActivity: NSObjectProtocol?
+    private var trackpadGestureSubscription: AnyCancellable?
     private var hotCornerTimer: Timer?
     private var lastMouseLocation: CGPoint = .zero
     private var lastHotCornerTrigger: Date?
@@ -74,7 +76,18 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         registerRoomsHotKey()
         TrackpadSwipeMonitor.shared.isEnabled = { AppRuntime.shared.settings?.exposeTrackpadGesture ?? true }
         TrackpadSwipeMonitor.shared.requiredFingers = { AppRuntime.shared.settings?.exposeTrackpadFingerCount ?? 4 }
-        TrackpadSwipeMonitor.shared.onSwipeUp = { WindowSwitcherController.shared.toggleExpose() }
+        TrackpadSwipeMonitor.shared.isExposePresented = { WindowSwitcherController.shared.isExposePresented }
+        TrackpadSwipeMonitor.shared.onSwipeUp = { WindowSwitcherController.shared.openExposeFromGesture() }
+        TrackpadSwipeMonitor.shared.onSwipeDown = { WindowSwitcherController.shared.cancelExposeFromGesture() }
+        if let settings = AppRuntime.shared.settings {
+            trackpadGestureSubscription = Publishers.CombineLatest(
+                settings.$exposeTrackpadGesture, settings.$exposeTrackpadFingerCount
+            ).sink { enabled, fingers in
+                TrackpadSwipeMonitor.shared.configureScrollSuppression(
+                    enabled: enabled, requiredFingers: fingers
+                )
+            }
+        }
         TrackpadSwipeMonitor.shared.start()
         UpdaterManager.shared.start()
         SettingsWindowController.shared.showSettings()
@@ -102,6 +115,8 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         SettingsWindowController.shared.stopArtifactCleanup()
         LaunchShortcutMonitor.shared.stop()
         CommandTabMonitor.shared.stop()
+        trackpadGestureSubscription?.cancel()
+        trackpadGestureSubscription = nil
         TrackpadSwipeMonitor.shared.stop()
         unregisterLaunchpadHotKey()
         unregisterRoomsHotKey()

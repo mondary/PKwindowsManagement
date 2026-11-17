@@ -64,6 +64,87 @@ struct TrackpadSwipeChecks {
         // Default is the documented four-finger behaviour.
         precondition(TrackpadSwipeDetector().requiredFingers == 4)
 
-        print("Trackpad swipe checks passed: finger count, direction, single fire, rearm, cooldown, slow/invalid gestures")
+        // Read the native CFArray as raw device references, without trying
+        // to bridge its entries into Swift pointer objects. No real device
+        // is started by these checks.
+        let deviceA = UnsafeMutableRawPointer.allocate(byteCount: 1, alignment: 1)
+        let deviceB = UnsafeMutableRawPointer.allocate(byteCount: 1, alignment: 1)
+        defer { deviceA.deallocate(); deviceB.deallocate() }
+        var references: [UnsafeRawPointer?] = [UnsafeRawPointer(deviceA), UnsafeRawPointer(deviceB)]
+        let list = references.withUnsafeMutableBufferPointer {
+            CFArrayCreate(kCFAllocatorDefault, $0.baseAddress, $0.count, nil)!
+        }
+        precondition(TrackpadSwipeMonitor.devicePointers(in: list) == [deviceA, deviceB])
+        let empty = CFArrayCreate(kCFAllocatorDefault, nil, 0, nil)!
+        precondition(TrackpadSwipeMonitor.devicePointers(in: empty).isEmpty)
+
+        let contacts = UnsafeMutableRawPointer.allocate(
+            byteCount: MemoryLayout<TrackpadSwipeMonitor.Contact>.size,
+            alignment: MemoryLayout<TrackpadSwipeMonitor.Contact>.alignment
+        )
+        defer { contacts.deallocate() }
+        contacts.storeBytes(of: Float(0.42),
+                            toByteOffset: TrackpadSwipeMonitor.contactPositionYOffset, as: Float.self)
+        precondition(abs(TrackpadSwipeMonitor.contactY(from: contacts, count: 4) - 0.42) < 0.001)
+        precondition(TrackpadSwipeMonitor.contactY(from: nil, count: 0) == 0)
+        precondition(TrackpadSwipeMonitor.contactY(from: contacts, count: 0) == 0)
+
+        // A zero-contact callback must rearm the next identical gesture.
+        var repeated = TrackpadSwipeDetector()
+        for gesture in 0..<20 {
+            let time = Double(gesture)
+            precondition(!repeated.update(fingers: 4, y: 0.2, time: time))
+            precondition(repeated.update(fingers: 4, y: 0.4, time: time + 0.1))
+            precondition(!repeated.update(
+                fingers: 0, y: TrackpadSwipeMonitor.contactY(from: nil, count: 0), time: time + 0.2
+            ))
+        }
+
+        // Run the real callback-processing path without starting hardware,
+        // opening windows or accessing any user's preferences.
+        let monitor = TrackpadSwipeMonitor()
+        var enabled = true
+        var selectedFingers = 4
+        var fired = 0
+        monitor.isEnabled = { precondition(Thread.isMainThread); return enabled }
+        monitor.requiredFingers = { precondition(Thread.isMainThread); return selectedFingers }
+        monitor.onSwipeUp = { precondition(Thread.isMainThread); fired += 1 }
+        func drain() {
+            RunLoop.main.run(until: Date().addingTimeInterval(0.03))
+        }
+        monitor.receive(fingers: 4, y: 0.2, timestamp: 0)
+        monitor.receive(fingers: 4, y: 0.4, timestamp: 0.1)
+        drain()
+        precondition(fired == 1)
+        monitor.receive(fingers: 0, y: 0, timestamp: 0.2)
+        monitor.receive(fingers: 4, y: 0.2, timestamp: 1)
+        monitor.receive(fingers: 4, y: 0.4, timestamp: 1.1)
+        drain()
+        precondition(fired == 2)
+
+        // Changing the selected count rearms, rather than inheriting an
+        // already-fired four-finger session.
+        selectedFingers = 3
+        monitor.receive(fingers: 3, y: 0.2, timestamp: 2)
+        monitor.receive(fingers: 3, y: 0.4, timestamp: 2.1)
+        drain()
+        precondition(fired == 3)
+        enabled = false
+        monitor.receive(fingers: 3, y: 0.2, timestamp: 3)
+        monitor.receive(fingers: 3, y: 0.4, timestamp: 3.1)
+        drain()
+        precondition(fired == 3)
+        enabled = true
+
+        // Framework callbacks hop to main before reading observable settings.
+        DispatchQueue.global().async {
+            monitor.receive(fingers: 3, y: 0.2, timestamp: 4)
+            monitor.receive(fingers: 3, y: 0.4, timestamp: 4.1)
+        }
+        let deadline = Date().addingTimeInterval(2)
+        while fired < 4 && Date() < deadline { drain() }
+        precondition(fired == 4)
+
+        print("Trackpad swipe checks passed: exact count, repeated gestures, CFArray devices, empty frames, selection/toggle and off-main callback")
     }
 }

@@ -13,6 +13,8 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     private var exposePanels: [NSPanel] = []
     private var exposeScene: ExposeScene?
     private var exposePreparation: Task<Void, Never>?
+    private var exposeOriginApp: NSRunningApplication?
+    private var exposeOriginWindow: WindowSwitcherInventory.Candidate?
     private var displayObserver: NSObjectProtocol?
     private let model = WindowSwitcherModel()
     private var keyMonitor: Any?
@@ -50,6 +52,20 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     func showExpose() {
         if isVisible { hide() }
         present(mode: .expose)
+    }
+
+    var isExposePresented: Bool { presentation == .expose && exposeScene != nil }
+
+    /// The two directions are not a toggle: up opens, down only cancels an
+    /// existing Exposé (including one still preparing its thumbnails).
+    func openExposeFromGesture() {
+        guard !isExposePresented else { return }
+        showExpose()
+    }
+
+    func cancelExposeFromGesture() {
+        guard isExposePresented else { return }
+        endExpose()
     }
 
     /// Settings can request Screen Recording without opening the picker first.
@@ -191,6 +207,8 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
               let scene = ExposeScene(screens: NSScreen.screens, active: screen) else { return }
         interactionID = UUID()
         presentation = .expose
+        exposeOriginApp = NSWorkspace.shared.frontmostApplication
+        exposeOriginWindow = nil
         commandTabOffset = 0
         commandTabApplied = false
         commitWhenReady = false
@@ -260,17 +278,23 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             exposePanels.append(overlay)
         }
         installMonitors()
+        // Save original focus once, before the overlay takes it. Hover/search
+        // must never replace the cancellation target.
+        if exposeOriginWindow == nil, let origin = exposeOriginApp,
+           let focused = model.focusedCandidate, focused.item.id.pid == origin.processIdentifier {
+            exposeOriginWindow = focused
+        }
         // Without activating the app, macOS swallows the very first physical
         // click to activate us: the user had to click twice to pick a window.
         NSApp.activate(ignoringOtherApps: true)
         for overlay in exposePanels { overlay.orderFrontRegardless(); overlay.contentView?.layoutSubtreeIfNeeded() }
         panel?.makeKeyAndOrderFront(nil)
         let interaction = interactionID
-        // Let the source rectangles commit once before animating their targets.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.025) { [weak self, weak scene] in
+        // Commit the hidden final layout, then fade it in on the next turn.
+        DispatchQueue.main.async { [weak self, weak scene] in
             guard let self, let scene, self.interactionID == interaction,
                   self.exposeScene === scene, !scene.dismissing else { return }
-            withAnimation(.easeInOut(duration: scene.entryDuration)) { scene.expanded = true }
+            withAnimation(.easeOut(duration: scene.entryDuration)) { scene.expanded = true }
         }
     }
 
@@ -281,17 +305,35 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         // Capture the AX candidate now, never re-resolve the hover/selection
         // after the exit animation. A clicked Chrome window stays that window.
         let choice = id.flatMap { model.candidate(for: $0) }
+        let originApp = id == nil ? exposeOriginApp : nil
+        let originWindow = id == nil ? exposeOriginWindow : nil
         if let id, choice == nil {
             forceActivateApp(pid: id.pid)
             return
         }
         scene.dismissing = true
         let interaction = interactionID
-        withAnimation(.easeInOut(duration: scene.exitDuration)) { scene.expanded = false }
-        DispatchQueue.main.asyncAfter(deadline: .now() + scene.exitDuration) { [weak self] in
+        // Selecting is a short fade, not the reverse of entry. Keep captured
+        // identity and hide-before-focus ordering unchanged.
+        let duration = scene.exitDuration(activating: id != nil)
+        withAnimation(.easeOut(duration: duration)) { scene.expanded = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
             guard let self, self.interactionID == interaction else { return }
             self.hide() // Relinquish the fullscreen key panel BEFORE AX focus.
-            if let choice { self.activateAfterExpose(choice) }
+            if let choice {
+                self.activateAfterExpose(choice)
+            } else {
+                self.restoreExposeOrigin(window: originWindow, app: originApp)
+            }
+        }
+    }
+
+    private func restoreExposeOrigin(window: WindowSwitcherInventory.Candidate?, app: NSRunningApplication?) {
+        guard let app, !app.isTerminated else { return } // Never relaunch an app on cancel.
+        if let window {
+            activateAfterExpose(window, fallbackApp: app)
+        } else {
+            app.activate(options: [.activateIgnoringOtherApps])
         }
     }
 
@@ -304,7 +346,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
 
     /// The overlay and its key-focus enforcement are gone before focusing the
     /// captured window. Keep identity/launch-date validation in the inventory.
-    private func activateAfterExpose(_ choice: WindowSwitcherInventory.Candidate) {
+    private func activateAfterExpose(_ choice: WindowSwitcherInventory.Candidate, fallbackApp: NSRunningApplication? = nil) {
         SpaceManagementService.shared.userChangedWindowSelection()
         let ticket = SpaceManagementService.shared.windowSelectionTicket()
         let interaction = interactionID
@@ -318,8 +360,17 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             self.activationTask = nil
             guard self.interactionID == interaction else { return }
             if !succeeded {
-                // Never re-open a blocking overlay: bring the app forward.
-                self.forceActivateApp(pid: choice.item.id.pid)
+                guard SpaceManagementService.shared.windowSelectionTicket() == ticket else { return }
+                if let fallbackApp {
+                    // An origin window may have closed while Exposé was open.
+                    // Use the captured process object, never a recycled PID.
+                    if !fallbackApp.isTerminated {
+                        fallbackApp.activate(options: [.activateIgnoringOtherApps])
+                    }
+                } else {
+                    // Never re-open a blocking overlay: bring the app forward.
+                    self.forceActivateApp(pid: choice.item.id.pid)
+                }
             }
         }
     }
@@ -347,6 +398,8 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         exposePreparation?.cancel()
         exposePreparation = nil
         exposeScene = nil
+        exposeOriginApp = nil
+        exposeOriginWindow = nil
         // A focus request can outlive its picker session (Exposé closes, a new
         // Cmd-Tab opens). Never leave the controller locked behind a stale
         // task: every later click would silently do nothing.

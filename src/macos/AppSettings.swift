@@ -286,8 +286,8 @@ final class AppSettings: ObservableObject {
         }
     }
 
-    /// Upward trackpad swipe opens the fullscreen Exposé PK instead of the
-    /// macOS Mission Control gesture (which must be released separately).
+    /// Upward trackpad swipe opens the fullscreen Exposé PK. Configure
+    /// Mission Control separately in macOS to use the other finger count.
     @Published var exposeTrackpadGesture: Bool {
         didSet {
             defaults.set(exposeTrackpadGesture, forKey: Keys.exposeTrackpadGesture)
@@ -298,7 +298,13 @@ final class AppSettings: ObservableObject {
     /// Trackpad contacts that open Exposé: 3 or 4, exact count.
     @Published var exposeTrackpadFingerCount: Int {
         didSet {
-            exposeTrackpadFingerCount = exposeTrackpadFingerCount == 3 ? 3 : 4
+            // @Published re-enters didSet even when assigned the same value.
+            // Only normalize invalid input; a valid 3/4 selection writes once.
+            let normalized = exposeTrackpadFingerCount == 3 ? 3 : 4
+            if exposeTrackpadFingerCount != normalized {
+                exposeTrackpadFingerCount = normalized
+                return
+            }
             defaults.set(exposeTrackpadFingerCount, forKey: Keys.exposeTrackpadFingerCount)
             scheduleAutoBackup()
         }

@@ -6,7 +6,11 @@ struct WindowSwitcherSettingsView: View {
     @ObservedObject var settings: AppSettings
     @State private var previewSelectedCard: Int = 1
     @State private var previewFilterDemo: Bool = false
-    @State private var confirmReleaseGesture = false
+    @State private var nativeGestureStatus: MissionControlGesturePreferences.Status = .unknown
+    @State private var confirmGestureSeparation = false
+    @State private var pendingPKFingerCount = 4
+    @State private var nativeGestureError: String?
+    @State private var gesturePreferencesSaved = false
 
     private var accent: Color { PKStudioPalette.switcherAccent }
 
@@ -14,7 +18,7 @@ struct WindowSwitcherSettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 PKStudioSectionHeader(
-                    title: "CMD+Tab & Window Switcher",
+                    title: "CMD+Tab & Exposé PK",
                     subtitle: "Visual window previews, running apps and Rooms in a single keyboard-first stage.",
                     systemImage: "rectangle.on.rectangle.angled",
                     tint: accent
@@ -37,6 +41,8 @@ struct WindowSwitcherSettingsView: View {
                     }
                 }
 
+                exposeStudioCard
+
                 liveInteractiveSwitcherStage
 
                 HStack(alignment: .top, spacing: 16) {
@@ -50,6 +56,26 @@ struct WindowSwitcherSettingsView: View {
                 }
             }
             .padding(24)
+        }
+        .onAppear { refreshNativeGestureStatus() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            refreshNativeGestureStatus()
+        }
+        .onChange(of: settings.exposeTrackpadFingerCount) { _ in
+            gesturePreferencesSaved = false
+            nativeGestureError = nil
+            refreshNativeGestureStatus()
+        }
+        .alert(localizedString("Separate macOS and PK gestures?"), isPresented: $confirmGestureSeparation) {
+            Button(localizedString("Cancel"), role: .cancel) {}
+            Button(localizedString("Apply gesture separation")) {
+                applyNativeGestureSeparation()
+            }
+        } message: {
+            Text(localizedFormat(
+                "Mission Control will use %d fingers. macOS vertical gestures with %d fingers (up and down) will be disabled on built-in and Bluetooth trackpads. Horizontal gestures and keyboard shortcuts stay unchanged. This persists after quitting PK; restore it in Trackpad settings. Logging out and back in may be required.",
+                pendingPKFingerCount == 4 ? 3 : 4, pendingPKFingerCount
+            ))
         }
     }
 
@@ -436,9 +462,6 @@ struct WindowSwitcherSettingsView: View {
                 .padding(10)
                 .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-                exposeShortcutRow
-                exposeGestureRow
-
                 HStack(spacing: 12) {
                     Image(systemName: "photo.badge.checkmark")
                         .font(.system(size: 18, weight: .semibold))
@@ -489,7 +512,7 @@ struct WindowSwitcherSettingsView: View {
                 .buttonStyle(.plain)
                 .help(localizedString("Reset"))
             }
-            Text(localizedString("Try the fullscreen Exposé with Ctrl + Option + E: windows animate over your wallpaper. Trackpad gestures stay unchanged."))
+            Text(localizedString("Fullscreen window overview, independent of the ⌘Tab switcher. The keyboard shortcut works even when the trackpad gesture is off."))
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -497,71 +520,149 @@ struct WindowSwitcherSettingsView: View {
         .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    /// Optional native four-finger upward swipe. macOS owns that gesture by
-    /// default (Mission Control), so the row explains how to release it.
+    /// Keep Exposé separate from the keyboard switcher and explain the macOS
+    /// half of the setup here, rather than silently rewriting system defaults.
+    private var exposeStudioCard: some View {
+        PKStudioCard(tint: PKStudioPalette.freeAccent) {
+            VStack(alignment: .leading, spacing: 14) {
+                Label("Exposé PK", systemImage: "rectangle.split.3x1")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                exposeShortcutRow
+                exposeGestureRow
+            }
+        }
+    }
+
     private var exposeGestureRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Toggle(isOn: Binding(
-                get: { settings.exposeTrackpadGesture },
-                set: { settings.exposeTrackpadGesture = $0 }
-            )) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(localizedString("Trackpad swipe up"))
-                        .font(.system(size: 12.5, weight: .semibold))
-                    Text(localizedString("Opens Exposé PK instead of doing nothing"))
-                        .font(.caption2).foregroundStyle(.secondary)
-                }
-            }
-            .toggleStyle(.switch)
+        VStack(alignment: .leading, spacing: 12) {
+            Text(localizedString("Two gestures, two overviews"))
+                .font(.system(size: 13, weight: .semibold))
 
-            Picker(localizedString("Fingers"), selection: Binding(
-                get: { settings.exposeTrackpadFingerCount },
-                set: { settings.exposeTrackpadFingerCount = $0 }
-            )) {
-                Text("3").tag(3)
-                Text("4").tag(4)
-            }
-            .pickerStyle(.segmented)
-            .controlSize(.small)
-            .frame(width: 160)
+            // The native three-finger option can leave FOUR fingers enabled
+            // too. It is guidance, not evidence of an exclusive mapping.
+            Text(localizedString("The macOS three-finger option can also enable four fingers. PK does not block this native gesture."))
+            .font(.callout)
+            .fixedSize(horizontal: false, vertical: true)
 
-            Text(localizedString("macOS keeps four-finger swipes for Mission Control. To make Exposé PK the only response, release that system gesture once in System Settings → Trackpad → More Gestures."))
-                .font(.caption).foregroundStyle(.secondary)
+            Text(localizedString("1. Enable the PK gesture and choose its finger count."))
+                .font(.callout)
                 .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 10) {
-                Button(localizedString("Open Trackpad settings")) {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.Trackpad-Settings.extension") {
-                        NSWorkspace.shared.open(url)
-                    }
+            Toggle(localizedString("Swipe up to open, down to cancel Exposé PK"), isOn: $settings.exposeTrackpadGesture)
+                .toggleStyle(.switch)
+
+            Picker(localizedString("Exposé PK gesture"), selection: $settings.exposeTrackpadFingerCount) {
+                Text(localizedString("3 fingers")).tag(3)
+                Text(localizedString("4 fingers")).tag(4)
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 320)
+            .disabled(!settings.exposeTrackpadGesture)
+
+            Text(localizedString("Swipe down with the same fingers to cancel without selecting a window and return to your previous window."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if settings.exposeTrackpadGesture {
+                Text(localizedFormat(
+                    "Target: Mission Control %d fingers ↑ · Exposé PK %d fingers ↑",
+                    settings.exposeTrackpadFingerCount == 4 ? 3 : 4,
+                    settings.exposeTrackpadFingerCount
+                ))
+                .font(.callout.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(localizedString("Trackpad gesture is off. The keyboard shortcut still opens Exposé PK."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if settings.exposeTrackpadGesture {
+                Divider()
+                Text(localizedString("2. Separate the native gesture after confirmation."))
+                    .font(.callout.weight(.semibold))
+                nativeGestureSeparationRow
+            }
+
+            Button(localizedString("Open Trackpad settings")) {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.Trackpad-Settings.extension") {
+                    NSWorkspace.shared.open(url)
                 }
-                Button(localizedString("Release the gesture…")) { confirmReleaseGesture = true }
-                Spacer(minLength: 0)
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+
+            Text(localizedString("PK observes the swipe; it does not block Mission Control. No macOS preferences are changed without confirmation."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(10)
+        .padding(12)
         .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
-        .alert(localizedString("Release the Mission Control gesture?"), isPresented: $confirmReleaseGesture) {
-            Button(localizedString("Cancel"), role: .cancel) {}
-            Button(localizedString("Release the gesture"), role: .destructive) { releaseSystemSwipe() }
-        } message: {
-            Text(localizedString("This disables the four-finger vertical swipe in macOS Trackpad settings. Mission Control remains available from its keyboard shortcut and the menu bar. A logout may be required."))
-        }
     }
 
-    /// Explicit, confirmed change of a macOS preference (never silent).
-    /// The released key follows the chosen finger count.
-    private func releaseSystemSwipe() {
-        let key = settings.exposeTrackpadFingerCount == 3
-            ? "TrackpadThreeFingerVertSwipeGesture"
-            : "TrackpadFourFingerVertSwipeGesture"
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/defaults")
-        process.arguments = ["write", "com.apple.AppleMultitouchTrackpad",
-                             key, "-int", "0"]
-        try? process.run()
+    private var nativeGestureSeparationRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            switch nativeGestureStatus {
+            case .conflict:
+                Label(localizedString("Conflict: macOS also uses this finger count. Both overviews can open together."),
+                      systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            case .released:
+                Label(localizedString("The native gesture is disabled in saved preferences. This does not verify the current macOS session."),
+                      systemImage: "checkmark.circle")
+            case .unknown:
+                Label(localizedString("The native gesture setting could not be confirmed. An absent setting does not mean the gesture is off."),
+                      systemImage: "questionmark.circle")
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 10) {
+                Button(localizedString("Separate gestures…")) {
+                    pendingPKFingerCount = settings.exposeTrackpadFingerCount
+                    confirmGestureSeparation = true
+                }
+                .buttonStyle(.borderedProminent)
+                Button(localizedString("Recheck native settings")) {
+                    refreshNativeGestureStatus()
+                }
+                .buttonStyle(.bordered)
+            }
+            .controlSize(.small)
+
+            if gesturePreferencesSaved || nativeGestureStatus == .released {
+                Text(localizedString("If Mission Control still opens underneath PK, log out and back in to reload the saved mapping. PK does not restart Dock or close the native overview automatically."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let nativeGestureError {
+                Text(nativeGestureError)
+                    .foregroundStyle(.red)
+            }
+        }
+        .font(.callout)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func refreshNativeGestureStatus() {
+        nativeGestureStatus = MissionControlGesturePreferences()
+            .status(pkFingers: settings.exposeTrackpadFingerCount)
+    }
+
+    private func applyNativeGestureSeparation() {
+        nativeGestureError = nil
+        gesturePreferencesSaved = false
+        do {
+            try MissionControlGesturePreferences().apply(pkFingers: pendingPKFingerCount)
+            gesturePreferencesSaved = true
+        } catch MissionControlGesturePreferences.SaveError.rollbackFailed {
+            nativeGestureError = localizedString("Saving failed and the previous preferences could not be fully restored. Check both trackpad gesture settings in macOS.")
+        } catch {
+            nativeGestureError = localizedString("Saving failed. The previous preferences were restored; no gesture separation was applied.")
+        }
+        refreshNativeGestureStatus()
     }
 
     // MARK: - 5. Visual Keyboard Gestures Grid

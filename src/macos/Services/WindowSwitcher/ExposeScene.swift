@@ -6,8 +6,8 @@ import Combine
 import SwiftUI
 
 /// One coordinated animation clock for the borderless overlay on every display.
-/// All app groups settle on the display where Exposé was invoked; replicas on
-/// other screens travel from their real positions across the display boundary.
+/// App groups fade in at their final positions on the invoking display.
+/// No window replica travels across other windows or display boundaries.
 final class ExposeScene: ObservableObject {
     struct Screen: Identifiable {
         let id: CGDirectDisplayID
@@ -42,8 +42,10 @@ final class ExposeScene: ObservableObject {
                       height: max(1, activeFrame.height - safeTop - top - notice - (activeFrame.width < 1100 ? 92 : 60)))
     }
     @Published private(set) var wallpapers: [CGDirectDisplayID: NSImage] = [:]
-    var entryDuration: TimeInterval { reduceMotion ? 0.15 : 0.38 }
-    var exitDuration: TimeInterval { reduceMotion ? 0.12 : 0.28 }
+    var entryDuration: TimeInterval { ExposeAnimation.entryDuration(reduceMotion: reduceMotion) }
+    func exitDuration(activating: Bool) -> TimeInterval {
+        ExposeAnimation.exitDuration(activating: activating, reduceMotion: reduceMotion)
+    }
 
     init?(screens: [NSScreen], active: NSScreen, defaults: UserDefaults = .standard) {
         let descriptions = screens.compactMap { screen -> Screen? in

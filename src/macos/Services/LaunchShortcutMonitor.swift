@@ -238,6 +238,16 @@ final class LaunchShortcutMonitor {
     private var axisLock = ScrollAxisLock()
 
     private func handleScroll(event: CGEvent) -> Unmanaged<CGEvent>? {
+        // Before the Canvas path AND before Exposé is visible: never let the
+        // page (or Strip) consume the gesture that is opening the overview.
+        if TrackpadSwipeMonitor.shared.shouldSuppressScroll(
+            isContinuous: event.getIntegerValueField(.scrollWheelEventIsContinuous) != 0,
+            isMomentum: event.getIntegerValueField(.scrollWheelEventMomentumPhase) != 0
+        ) {
+            // Do not hand an old Canvas axis lock to the next two-finger scroll.
+            axisLock = ScrollAxisLock()
+            return nil
+        }
         if WindowSwitcherController.shared.isVisible { return .passUnretained(event) }
         let flags = event.flags
         guard !flags.contains(.maskCommand),

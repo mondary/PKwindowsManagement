@@ -11,7 +11,7 @@ struct ExposeView: View {
     @FocusState private var searchFocused: Bool
 
     private var primary: Bool { screen.id == scene.activeID }
-    private var decorationsVisible: Bool { scene.expanded && !scene.dismissing }
+    private var decorationsVisible: Bool { scene.expanded }
     private var canAct: Bool { model.selectedID != nil && !model.isBusy && !scene.dismissing }
 
     var body: some View {
@@ -70,8 +70,11 @@ struct ExposeView: View {
             }
         }
         .frame(width: screen.frame.width, height: screen.frame.height)
+        // One opacity clock for cards, captions and headings. Geometry and
+        // strip clipping remain unchanged while the overlay disappears.
+        .opacity(scene.expanded ? 1 : 0)
         .mask {
-            let clip = scene.mode == .strip && scene.expanded
+            let clip = scene.mode == .strip
             let area = clip ? (primary ? ExposeLayout.local(scene.availableArea, on: screen.frame)
                 : CGRect(x: -10000, y: -10000, width: 1, height: 1))
                 : CGRect(origin: .zero, size: screen.frame.size)
@@ -103,8 +106,9 @@ struct ExposeView: View {
     private func windowReplica(_ placement: ExposeLayout.Placement) -> some View {
         let item = placement.item
         let target = ExposeLayout.local(scene.displayed(placement.frame), on: screen.frame)
-        let source = ExposeLayout.local(ExposeLayout.sourceFrame(for: item, on: scene.activeFrame), on: screen.frame)
-        let frame = scene.expanded || scene.reduceMotion ? target : source
+        // Fixed final geometry during both entry and exit: no crossing or
+        // reverse pile-up of previews over the real desktop.
+        let frame = target
         let selected = model.selectedID == item.id
         return Button {
             model.selectItem(item.id)
@@ -125,14 +129,13 @@ struct ExposeView: View {
                 }
             }
             .frame(width: max(1, frame.width), height: max(1, frame.height))
-            .clipShape(RoundedRectangle(cornerRadius: scene.expanded ? 7 : 0))
+            .clipShape(RoundedRectangle(cornerRadius: 7))
             .overlay(RoundedRectangle(cornerRadius: 7)
-                .strokeBorder(selected && decorationsVisible ? Color.accentColor : .clear, lineWidth: 3))
-            .shadow(color: .black.opacity(scene.expanded ? 0.4 : 0), radius: scene.expanded ? 14 : 0, y: 5)
+                .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 3))
+            .shadow(color: .black.opacity(0.4), radius: 14, y: 5)
         }
         .buttonStyle(.plain)
         .position(x: frame.midX, y: frame.midY)
-        .opacity(scene.reduceMotion || model.images[item.id] == nil ? (scene.expanded ? 1 : 0) : 1)
         .disabled(model.isBusy || scene.dismissing || !scene.expanded)
         .onHover { hovering in
             if hovering && decorationsVisible && scene.mode == .islands { model.selectItem(item.id) }
@@ -156,7 +159,6 @@ struct ExposeView: View {
             .shadow(color: .black.opacity(0.7), radius: 3, y: 1)
             .frame(width: frame.width, height: frame.height)
             .position(x: frame.midX, y: frame.midY)
-            .opacity(decorationsVisible ? 1 : 0)
             .allowsHitTesting(false)
     }
 
@@ -169,7 +171,6 @@ struct ExposeView: View {
             .shadow(color: .black.opacity(0.28), radius: 10, y: 3)
             .frame(width: max(1, frame.width + 16), height: max(1, frame.height + 12))
             .position(x: frame.midX, y: frame.midY)
-            .opacity(decorationsVisible ? 1 : 0)
             .allowsHitTesting(false)
             .accessibilityHidden(true)
     }
@@ -200,7 +201,6 @@ struct ExposeView: View {
         .background(.black.opacity(0.45), in: Capsule())
         .frame(maxWidth: frame.width, alignment: .leading)
         .position(x: frame.minX + 14, y: frame.minY + 14)
-        .opacity(decorationsVisible ? 1 : 0)
         .allowsHitTesting(false)
     }
 
@@ -216,7 +216,6 @@ struct ExposeView: View {
         .shadow(color: .black.opacity(0.65), radius: 4, y: 1)
         .frame(width: frame.width, height: frame.height, alignment: .leading)
         .position(x: frame.midX, y: frame.midY)
-        .opacity(decorationsVisible ? 1 : 0)
         .allowsHitTesting(false)
     }
 
@@ -242,7 +241,7 @@ struct ExposeView: View {
         }
         .foregroundStyle(.white)
         .opacity(decorationsVisible ? 1 : 0)
-        .allowsHitTesting(decorationsVisible)
+        .allowsHitTesting(decorationsVisible && !scene.dismissing)
     }
 
     private var headerControls: some View {

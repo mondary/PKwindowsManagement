@@ -831,3 +831,40 @@
 "This disables the four-finger vertical swipe in macOS Trackpad settings. Mission Control remains available from its keyboard shortcut and the menu bar. A logout may be required." = "Cela désactive le balayage vertical à quatre doigts dans les réglages Trackpad de macOS. Mission Control reste accessible par son raccourci clavier et la barre de menus. Une reconnexion peut être nécessaire.";
 
 "Cycle Canvas Column Width" = "Strip : changer la largeur de colonne";
+
+/* Exposé PK: guided Mission Control + trackpad setup */
+"CMD+Tab & Exposé PK" = "CMD+Tab & Exposé PK";
+"Fullscreen window overview, independent of the ⌘Tab switcher. The keyboard shortcut works even when the trackpad gesture is off." = "Vue plein écran des fenêtres, indépendante du sélecteur ⌘Tab. Le raccourci clavier fonctionne même si le geste trackpad est désactivé.";
+"Two gestures, two overviews" = "Deux gestes, deux vues d’ensemble";
+"1. macOS: System Settings → Trackpad → More Gestures → Mission Control → Swipe up with %d fingers." = "1. macOS : Réglages Système → Trackpad → Gestes supplémentaires → Mission Control → Balayer vers le haut avec %d doigts.";
+"2. PK: enable the gesture and choose the other finger count." = "2. PK : active le geste et choisis l’autre nombre de doigts.";
+"Swipe up to open Exposé PK" = "Balayer vers le haut pour ouvrir Exposé PK";
+"Exposé PK gesture" = "Geste Exposé PK";
+"3 fingers" = "3 doigts";
+"4 fingers" = "4 doigts";
+"Mission Control: %d fingers ↑ · Exposé PK: %d fingers ↑" = "Mission Control : %d doigts ↑ · Exposé PK : %d doigts ↑";
+"Set Mission Control in macOS yourself; PK does not change it. If the old gesture still opens Mission Control, select the desired option again in Trackpad settings." = "Règle Mission Control dans macOS ; PK ne le modifie pas. Si l’ancien geste ouvre encore Mission Control, sélectionne à nouveau l’option souhaitée dans les réglages Trackpad.";
+"Trackpad gesture is off. The keyboard shortcut still opens Exposé PK." = "Le geste trackpad est désactivé. Le raccourci clavier ouvre toujours Exposé PK.";
+
+/* Native Mission Control conflict and confirmed gesture separation */
+"Separate macOS and PK gestures?" = "Séparer les gestes macOS et PK ?";
+"Apply gesture separation" = "Appliquer la séparation";
+"Mission Control will use %d fingers. macOS vertical gestures with %d fingers (up and down) will be disabled on built-in and Bluetooth trackpads. Horizontal gestures and keyboard shortcuts stay unchanged. This persists after quitting PK; restore it in Trackpad settings. Logging out and back in may be required." = "Mission Control utilisera %d doigts. Les gestes verticaux macOS à %d doigts (haut et bas) seront désactivés sur les trackpads intégrés et Bluetooth. Les gestes horizontaux et raccourcis clavier restent inchangés. Ce réglage persiste après fermeture de PK ; il peut être rétabli dans les réglages Trackpad. Une déconnexion/reconnexion peut être nécessaire.";
+"1. Choose the PK gesture below, then separate it from macOS. Choosing three fingers in System Settings can leave four fingers enabled too." = "1. Choisis le geste PK ci-dessous, puis sépare-le de macOS. L’option trois doigts des Réglages Système peut laisser les quatre doigts activés aussi.";
+"Target: Mission Control %d fingers ↑ · Exposé PK %d fingers ↑" = "Objectif : Mission Control %d doigts ↑ · Exposé PK %d doigts ↑";
+"PK observes the swipe; it does not block Mission Control. No macOS preferences are changed without confirmation." = "PK observe le balayage ; il ne bloque pas Mission Control. Aucun réglage macOS n’est modifié sans confirmation.";
+"Conflict: macOS also uses this finger count. Both overviews can open together." = "Conflit : macOS utilise aussi ce nombre de doigts. Les deux vues peuvent s’ouvrir ensemble.";
+"The native gesture is disabled in saved preferences. This does not verify the current macOS session." = "Le geste natif est désactivé dans les préférences enregistrées. Cela ne valide pas la session macOS en cours.";
+"The native gesture setting could not be confirmed. An absent setting does not mean the gesture is off." = "Le réglage du geste natif n’a pas pu être confirmé. Une préférence absente ne signifie pas que le geste est désactivé.";
+"Separate gestures…" = "Séparer les gestes…";
+"Recheck native settings" = "Revérifier les réglages natifs";
+"If Mission Control still opens underneath PK, log out and back in to reload the saved mapping. PK does not restart Dock or close the native overview automatically." = "Si Mission Control s’ouvre encore sous PK, déconnecte puis reconnecte ta session pour recharger les réglages enregistrés. PK ne redémarre pas le Dock et ne ferme pas automatiquement la vue native.";
+"Saving failed and the previous preferences could not be fully restored. Check both trackpad gesture settings in macOS." = "Échec de l’enregistrement et restauration incomplète des anciennes préférences. Vérifie les gestes des deux types de trackpad dans macOS.";
+"Saving failed. The previous preferences were restored; no gesture separation was applied." = "Échec de l’enregistrement. Les anciennes préférences ont été rétablies ; aucune séparation des gestes n’a été appliquée.";
+"The macOS three-finger option can also enable four fingers. PK does not block this native gesture." = "L’option trois doigts de macOS peut aussi activer les quatre doigts. PK ne bloque pas ce geste natif.";
+"1. Enable the PK gesture and choose its finger count." = "1. Active le geste PK et choisis son nombre de doigts.";
+"2. Separate the native gesture after confirmation." = "2. Sépare le geste natif après confirmation.";
+
+/* Inverse Exposé gesture */
+"Swipe up to open, down to cancel Exposé PK" = "Balayer vers le haut pour ouvrir, vers le bas pour annuler Exposé PK";
+"Swipe down with the same fingers to cancel without selecting a window and return to your previous window." = "Balaie vers le bas avec le même nombre de doigts pour annuler sans sélectionner de fenêtre et revenir à ta fenêtre précédente.";

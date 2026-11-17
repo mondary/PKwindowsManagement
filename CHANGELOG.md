@@ -1,5 +1,43 @@
 # Changelog
 
+## [2026.11.40] - 2026-11-17
+### Added
+- **Geste inverse Exposé PK** : le compte choisi (4 doigts par défaut, ou 3 dans les options) vers le haut ouvre la vue ; vers le bas, lorsqu’elle est ouverte, annule comme Échap sans sélectionner la fenêtre survolée. Vers le bas hors Exposé ne fait rien ; vers le haut dans Exposé ne le ferme plus.
+- Sens fixé au début de chaque toucher, annulation inverse possible sans attendre le cooldown d’ouverture, mais relâchement des doigts nécessaire pour changer d’intention : un petit rebond du geste d’ouverture ne referme pas immédiatement la vue. Le filtre anti-scroll reste actif pour les deux sens.
+
+### Fixed
+- **Retour au contexte initial à l’annulation** : app et fenêtre focalisées avant la prise de focus par Exposé sont conservées indépendamment de la recherche/sélection. À l’annulation (geste bas, Échap, fond ou bouton Fermer), les panneaux disparaissent avant de rendre le focus à cette fenêtre ; si elle a disparu, retour à son app encore vivante, sans la relancer. Les positions des vraies fenêtres ne sont pas modifiées.
+- Tests injectés haut/bas, inversion rapide, toucher unique, absence de toggle, compte exact 3/4 et désactivation ; gardes d’intégration sur mémorisation avant activation et retrait avant restauration. Options et documentation FR/EN/ES/DE mises à jour ; geste et focus réels restent à confirmer par l’utilisateur, sans interaction écran de l’agent.
+
+## [2026.11.39] - 2026-11-17
+### Fixed
+- **Le geste Exposé PK ne doit plus faire défiler la page d’abord** : les contacts du compte choisi (3 ou 4) réservent immédiatement le scroll continu, avant le seuil de déplacement et avant le saut vers le thread principal. Le filtre du moniteur global consomme ces événements avant le traitement du Strip ou la garde « sélecteur visible ».
+- Le geste reste réservé pendant le retrait progressif des doigts, puis un filtre borné absorbe les derniers événements et l’inertie associée. **Un nouveau geste à deux doigts libère immédiatement le scroll**, la molette discrète reste intacte, les contacts de l’autre compte ne sont pas réservés et désactiver le geste PK enlève le filtrage. Des délais de fraîcheur/expiration évitent un scroll bloqué si un callback manque.
+- Configuration thread-safe alimentée par les valeurs publiées, sans lire les réglages SwiftUI depuis les callbacks natifs ; suppression du filtre à l’arrêt. Tests déterministes du premier événement, retrait partiel, inertie, deux doigts, autre compte, molette, désactivation, expiration et publication brute avant le thread principal. Aucun événement généré, aucune préférence macOS changée ; le double Mission Control reste un sujet séparé. Validation physique du geste à confirmer par l’utilisateur.
+
+## [2026.11.38] - 2026-11-17
+### Changed
+- **Exposé PK plus rapide et sans ballet de fenêtres** : les aperçus sont placés directement dans leurs cases finales et apparaissent par un fondu commun de **160 ms** (au lieu de 380 ms). Ils ne traversent plus le bureau ni les autres aperçus depuis les positions des fenêtres réelles.
+- **Sélection sans refusion** : sortie par fondu de **70 ms** (au lieu de 280 ms), sans trajet inverse, redimensionnement, changement de rayon ou mélange des fenêtres. L’annulation utilise 100 ms ; Réduire les animations conserve un fondu bref de 60 ms. Le masque du Strip reste fixe pendant la sortie et les titres/cartes partagent la même opacité.
+- Identité de la fenêtre capturée avant la sortie et retrait des panneaux avant le focus conservés ; aucun déplacement des vraies fenêtres ni changement de gestes natifs. Régression des durées et garde d’intégration sur géométrie fixe, fondu commun, masque et ordre retrait/focus. Durées de transition configurées, pas une mesure du temps total d’inventaire/capture ; appréciation visuelle encore à confirmer par l’utilisateur.
+
+## [2026.11.37] - 2026-11-17
+### Fixed
+- **Mission Control sous Exposé PK** : le choix « trois doigts » dans les réglages macOS avait laissé les comptes trois ET quatre doigts à `2` dans les préférences des trackpads intégré et Bluetooth. Le moniteur PK observe les contacts sans consommer le geste natif : les deux vues s’ouvraient, et sélectionner dans PK révélait Mission Control en dessous. Le guide ne prétend plus que le choix trois doigts suffit à réserver les quatre doigts à PK.
+
+### Changed
+- **Séparer les gestes…** dans les options Exposé PK : détection lecture seule du conflit, puis modification des quatre clés verticales (deux comptes × deux types de trackpad) **uniquement après confirmation**. Le compte PK passe à `0` côté macOS, l’autre à `2` pour Mission Control ; gestes horizontaux et raccourcis préservés. La confirmation précise que haut ET bas sont concernés et que les réglages persistent après fermeture de PK.
+- Synchronisation et relecture des valeurs, restauration des anciennes valeurs (y compris clés absentes) en cas d’échec, et erreur distincte si la restauration échoue. Les préférences enregistrées ne prouvent pas l’état effectif de la session : une déconnexion/reconnexion peut être nécessaire. Aucun redémarrage de Dock, Échap simulé ni fermeture automatique de Mission Control. Localisations FR/EN/ES/DE ; tests injectés sans écrire les préférences système réelles. Validation du résultat après confirmation utilisateur encore nécessaire.
+
+## [2026.11.36] - 2026-11-17
+### Fixed
+- **Plantage au choix 3 / 4 doigts** : l’observateur `@Published` du nombre de doigts se réassignait sans condition et bouclait jusqu’au débordement de pile (confirmé dans le rapport de crash de la Dev 11.35). Les valeurs valides ne sont plus réassignées ; les valeurs invalides sont normalisées une seule fois. Régression exécutée sur les vrais observateurs : 7 000 choix, publications bornées, persistance, rechargement et activation/désactivation.
+- **Écoute du trackpad** : lecture directe des références de périphériques dans la CFArray native, conservée pendant l’écoute, au lieu d’un cast Swift qui écartait les périphériques. Les trames sans contact sont transmises au détecteur pour réarmer le geste suivant ; son état est réinitialisé sous verrou à la désactivation ou au changement de compte. Tests sans périphérique réel : références CFArray, coordonnées, trames vides et répétition de gestes.
+
+### Changed
+- **Exposé PK dans ses propres options visibles** : carte pleine largeur en tête de la page CMD+Tab, distincte du sélecteur clavier, avec raccourci, activation et choix explicite « 3 doigts / 4 doigts ».
+- **Guide Mission Control intégré** (FR/EN/ES/DE) : chemin Réglages Système → Trackpad → Gestes supplémentaires et bouton d’accès ; trois doigts pour macOS / quatre pour PK par défaut, instructions inversées si PK utilise trois doigts. L’ancien bouton de modification directe des préférences macOS est remplacé par ce parcours explicite ; aucun réglage système n’est changé automatiquement. Test réel du geste et lisibilité à confirmer par l’utilisateur, sans pilotage ni capture de son écran.
+
 ## [2026.11.35] - 2026-11-12
 ### Fixed
 - **Backup automatique sans avalanche de fichiers** : chaque modification de réglages écrivait un JSON horodaté à la seconde dans le dossier choisi — jusqu'à 83 fichiers par jour et 581 copies dans `Documents`. Le backup tient désormais **un fichier par jour** (`PKwindowsManagement-backup-2026-11-12.json`), réécrit dans la journée, et purge automatiquement tout ce qui dépasse une **semaine glissante de 7 jours** ; les anciens noms horodatés sont reconnus et élagués. `BackupRetentionChecks` couvre le nommage, les anciens noms et la fenêtre de rétention.

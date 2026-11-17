@@ -494,6 +494,12 @@ final class WindowSwitcherModel: ObservableObject {
 
     func candidate(for id: WindowSwitcherID) -> WindowSwitcherInventory.Candidate? { candidates[id] }
 
+    /// Inventory focus before Exposé takes key status, independent of hover,
+    /// search or the current selection.
+    var focusedCandidate: WindowSwitcherInventory.Candidate? {
+        focusedID.flatMap { candidates[$0] }
+    }
+
     // MARK: - Room creation from the picker
 
     func roomPickIndex(for id: WindowSwitcherID) -> Int? {

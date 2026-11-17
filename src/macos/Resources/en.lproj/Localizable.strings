@@ -489,3 +489,40 @@
 "Cancel" = "Cancel";
 
 "Cycle Canvas Column Width" = "Strip: cycle column width";
+
+/* Exposé PK: guided Mission Control + trackpad setup */
+"CMD+Tab & Exposé PK" = "CMD+Tab & Exposé PK";
+"Fullscreen window overview, independent of the ⌘Tab switcher. The keyboard shortcut works even when the trackpad gesture is off." = "Fullscreen window overview, independent of the ⌘Tab switcher. The keyboard shortcut works even when the trackpad gesture is off.";
+"Two gestures, two overviews" = "Two gestures, two overviews";
+"1. macOS: System Settings → Trackpad → More Gestures → Mission Control → Swipe up with %d fingers." = "1. macOS: System Settings → Trackpad → More Gestures → Mission Control → Swipe up with %d fingers.";
+"2. PK: enable the gesture and choose the other finger count." = "2. PK: enable the gesture and choose the other finger count.";
+"Swipe up to open Exposé PK" = "Swipe up to open Exposé PK";
+"Exposé PK gesture" = "Exposé PK gesture";
+"3 fingers" = "3 fingers";
+"4 fingers" = "4 fingers";
+"Mission Control: %d fingers ↑ · Exposé PK: %d fingers ↑" = "Mission Control: %d fingers ↑ · Exposé PK: %d fingers ↑";
+"Set Mission Control in macOS yourself; PK does not change it. If the old gesture still opens Mission Control, select the desired option again in Trackpad settings." = "Set Mission Control in macOS yourself; PK does not change it. If the old gesture still opens Mission Control, select the desired option again in Trackpad settings.";
+"Trackpad gesture is off. The keyboard shortcut still opens Exposé PK." = "Trackpad gesture is off. The keyboard shortcut still opens Exposé PK.";
+
+/* Native Mission Control conflict and confirmed gesture separation */
+"Separate macOS and PK gestures?" = "Separate macOS and PK gestures?";
+"Apply gesture separation" = "Apply gesture separation";
+"Mission Control will use %d fingers. macOS vertical gestures with %d fingers (up and down) will be disabled on built-in and Bluetooth trackpads. Horizontal gestures and keyboard shortcuts stay unchanged. This persists after quitting PK; restore it in Trackpad settings. Logging out and back in may be required." = "Mission Control will use %d fingers. macOS vertical gestures with %d fingers (up and down) will be disabled on built-in and Bluetooth trackpads. Horizontal gestures and keyboard shortcuts stay unchanged. This persists after quitting PK; restore it in Trackpad settings. Logging out and back in may be required.";
+"1. Choose the PK gesture below, then separate it from macOS. Choosing three fingers in System Settings can leave four fingers enabled too." = "1. Choose the PK gesture below, then separate it from macOS. Choosing three fingers in System Settings can leave four fingers enabled too.";
+"Target: Mission Control %d fingers ↑ · Exposé PK %d fingers ↑" = "Target: Mission Control %d fingers ↑ · Exposé PK %d fingers ↑";
+"PK observes the swipe; it does not block Mission Control. No macOS preferences are changed without confirmation." = "PK observes the swipe; it does not block Mission Control. No macOS preferences are changed without confirmation.";
+"Conflict: macOS also uses this finger count. Both overviews can open together." = "Conflict: macOS also uses this finger count. Both overviews can open together.";
+"The native gesture is disabled in saved preferences. This does not verify the current macOS session." = "The native gesture is disabled in saved preferences. This does not verify the current macOS session.";
+"The native gesture setting could not be confirmed. An absent setting does not mean the gesture is off." = "The native gesture setting could not be confirmed. An absent setting does not mean the gesture is off.";
+"Separate gestures…" = "Separate gestures…";
+"Recheck native settings" = "Recheck native settings";
+"If Mission Control still opens underneath PK, log out and back in to reload the saved mapping. PK does not restart Dock or close the native overview automatically." = "If Mission Control still opens underneath PK, log out and back in to reload the saved mapping. PK does not restart Dock or close the native overview automatically.";
+"Saving failed and the previous preferences could not be fully restored. Check both trackpad gesture settings in macOS." = "Saving failed and the previous preferences could not be fully restored. Check both trackpad gesture settings in macOS.";
+"Saving failed. The previous preferences were restored; no gesture separation was applied." = "Saving failed. The previous preferences were restored; no gesture separation was applied.";
+"The macOS three-finger option can also enable four fingers. PK does not block this native gesture." = "The macOS three-finger option can also enable four fingers. PK does not block this native gesture.";
+"1. Enable the PK gesture and choose its finger count." = "1. Enable the PK gesture and choose its finger count.";
+"2. Separate the native gesture after confirmation." = "2. Separate the native gesture after confirmation.";
+
+/* Inverse Exposé gesture */
+"Swipe up to open, down to cancel Exposé PK" = "Swipe up to open, down to cancel Exposé PK";
+"Swipe down with the same fingers to cancel without selecting a window and return to your previous window." = "Swipe down with the same fingers to cancel without selecting a window and return to your previous window.";
