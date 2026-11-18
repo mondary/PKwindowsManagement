@@ -559,6 +559,19 @@ struct WindowSwitcherSettingsView: View {
             .frame(maxWidth: 320)
             .disabled(!settings.exposeTrackpadGesture)
 
+            Picker(localizedString("Minimized windows"), selection: $settings.exposeMinimizedDisplay) {
+                Text(localizedString("Full size")).tag(ExposeMinimizedDisplay.normal)
+                Text(localizedString("Dimmed")).tag(ExposeMinimizedDisplay.dimmed)
+                Text(localizedString("Hidden")).tag(ExposeMinimizedDisplay.hidden)
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 320)
+
+            Text(localizedString("Dimmed shows minimized windows smaller and faded inside their app group; hidden lists only visible windows. Applies to the next Exposé PK opening."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
             Text(localizedString("Swipe down with the same fingers to cancel without selecting a window and return to your previous window."))
                 .font(.caption)
                 .foregroundStyle(.secondary)

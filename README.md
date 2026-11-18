@@ -6,7 +6,7 @@
 
 PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres au clavier et lancer rapidement les applications installées.
 
-Version Dev **2026.11.40**
+Version Dev **2026.11.43**
 
 ## Vitrine interactive
 
@@ -70,6 +70,7 @@ Version Dev **2026.11.40**
 
 - **Geste sans scroll parasite** : le compte de doigts réservé à PK bloque le défilement continu dès sa reconnaissance, avant l’ouverture d’Exposé, ainsi que sa courte traîne d’inertie. Un nouveau geste à **deux doigts** rend immédiatement le scroll normal ; la molette discrète n’est pas filtrée. Désactiver le geste PK désactive ce filtre. Cela ne bloque pas le geste natif Mission Control : sa désactivation/séparation reste nécessaire en cas de double ouverture. Le geste réel reste à valider par l’utilisateur.
 
+- **Fenêtres réduites au choix** : Normales (cartes identiques), **Atténuées** (défaut — en Îlots, étagère de miniatures en bas de la carte du groupe et **bandeau type dock en bas de l’écran pour les apps entièrement réduites** ; au Strip, carte réduite et estompée ; clic = restauration) ou Masquées (seules les fenêtres visibles), réglable dans **CMD+Tab → Exposé PK** ; inclus dans les sauvegardes v16.
 - **`Ctrl + Option + E`** ouvre un **Exposé plein écran, sans cadre** (aussi ouvert par un **balayage trackpad vers le haut à 3 ou 4 doigts**, au choix dans Réglages → CMD+Tab — compte exact côté PK ; séparation du geste natif à configurer ci-dessous), sur le fond d’écran. Les aperçus apparaissent directement dans leurs cases, regroupés par application sur l’écran de déclenchement : fondu court de 160 ms à l’ouverture, sans trajectoires croisées ; sélectionner une fenêtre ferme la vue par un fondu de 70 ms, sans refusion vers le bureau. Le choix **Îlots / Strip Android**, visible dans Exposé et mémorisé, propose deux dispositions : îlots d’applications répartis sur presque toute la surface — chaque groupe sur une carte sombre avec son titre et ses fenêtres resserrés, aperçus capturés en haute résolution, ou grandes cartes plein écran dimensionnées selon le ratio de chaque fenêtre (pas de bandes vides pour les fenêtres en colonne), défilant au trackpad/à la molette. En Îlots, toutes les fenêtres exposées par macOS/AX tiennent sans empilement ni défilement. Les transitions ne changent que l’opacité, jamais les positions ou tailles des fenêtres réelles. L’annulation dure 100 ms, Réduire les animations ramène les fondus à 60 ms. Les fonds vidéo utilisent une image statique ; ces durées n’incluent pas l’inventaire et les captures.
 - Autres accès : clic droit sur l’icône de barre de menu → **Ouvrir Exposé PK**, ou bouton du studio Fenêtres. Raccourci modifiable dans les réglages du sélecteur ; URL disponible : `pkwm://expose`.
 - `←→` ou Tab entre fenêtres, `↑↓` entre applications ; clic ou Entrée pour activer précisément la fenêtre choisie : son identité est mémorisée et l’overlay disparaît avant le focus ; Échap, geste vers le bas ou clic sur le fond pour revenir à la fenêtre initiale avec le fondu court d’annulation. Recherche par app/titre, écran d’origine sur chaque carte, actions visibles `⌘W`/`⌘Q` sur la sélection.

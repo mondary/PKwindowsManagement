@@ -109,6 +109,11 @@ struct ExposeView: View {
         // Fixed final geometry during both entry and exit: no crossing or
         // reverse pile-up of previews over the real desktop.
         let frame = target
+        // Dimmed mode: minimized windows fade with a badge. Islands pack them
+        // into the group's bottom shelf at layout level (frames already
+        // small); the Strip keeps large slots, so the card itself shrinks.
+        let dimmed = item.isMinimized && scene.minimizedDisplay == .dimmed
+        let visual = dimmed && scene.mode == .strip ? Self.dimmedFrame(target) : frame
         let selected = model.selectedID == item.id
         return Button {
             model.selectItem(item.id)
@@ -121,37 +126,57 @@ struct ExposeView: View {
                     // Protected/minimized windows may have no capturable surface.
                     Color.black.opacity(0.3)
                     VStack(spacing: 8) {
-                        appIcon(item.id.pid, size: min(36, target.height * 0.25))
+                        appIcon(item.id.pid, size: min(36, visual.height * 0.25))
                         Text(item.appName).font(.caption).lineLimit(1)
                         Text(localizedString("Preview unavailable")).font(.caption2).lineLimit(1)
                     }
                     .foregroundStyle(.white)
                 }
             }
-            .frame(width: max(1, frame.width), height: max(1, frame.height))
+            .frame(width: max(1, visual.width), height: max(1, visual.height))
             .clipShape(RoundedRectangle(cornerRadius: 7))
             .overlay(RoundedRectangle(cornerRadius: 7)
                 .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 3))
             .shadow(color: .black.opacity(0.4), radius: 14, y: 5)
+            .overlay(alignment: .topTrailing) {
+                if dimmed {
+                    Image(systemName: "arrow.down.app")
+                        .font(.system(size: min(13, visual.height * 0.16), weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(6)
+                        .background(.black.opacity(0.55), in: Circle())
+                        .padding(6)
+                }
+            }
         }
         .buttonStyle(.plain)
+        .opacity(dimmed ? 0.5 : 1)
         .position(x: frame.midX, y: frame.midY)
         .disabled(model.isBusy || scene.dismissing || !scene.expanded)
         .onHover { hovering in
             if hovering && decorationsVisible && scene.mode == .islands { model.selectItem(item.id) }
         }
-        .accessibilityLabel(item.appName + ": " + item.displayTitle + ", " + model.exposeScreenLabel(for: item))
+        .accessibilityLabel(item.appName + ": " + item.displayTitle + ", " + model.exposeScreenLabel(for: item)
+            + (item.isMinimized ? ", " + localizedString("Minimized") : ""))
         .accessibilityAddTraits(selected ? [.isSelected] : [])
         .help(item.displayTitle + " — " + model.exposeScreenLabel(for: item))
         .onAppear { model.requestPreview(item.id) }
         .onChange(of: model.generation) { _ in model.requestPreview(item.id) }
     }
 
+    /// Centered 65% inset inside the unchanged strip slot (islands shelf
+    /// frames are already small; see ExposeLayout.packShelf).
+    private static func dimmedFrame(_ frame: CGRect) -> CGRect {
+        guard frame.width > 40, frame.height > 40 else { return frame }
+        return frame.insetBy(dx: frame.width * 0.175, dy: frame.height * 0.175)
+    }
+
     private func caption(_ placement: ExposeLayout.Placement) -> some View {
         let frame = ExposeLayout.local(scene.displayed(placement.caption), on: screen.frame)
-        let title = scene.mode == .strip
+        var title = scene.mode == .strip
             ? placement.item.displayTitle
             : placement.item.displayTitle + " · " + model.exposeScreenLabel(for: placement.item)
+        if placement.item.isMinimized { title += " · " + localizedString("Minimized") }
         return Text(title)
             .font(.system(size: min(12, frame.height * 0.75), weight: .medium))
             .foregroundStyle(.white.opacity(0.9)).lineLimit(1)

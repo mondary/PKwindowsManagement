@@ -1,5 +1,20 @@
 # Changelog
 
+## [2026.11.43] - 2026-11-18
+### Changed
+- **Bandeau dock pour les applications entièrement réduites (Atténuées, Îlots)** : un groupe dont **toutes** les fenêtres sont réduites ne monopolise plus une région entière (cas MonoCode : un quart d’écran pour une vignette). Ces groupes s’alignent dans un **bandeau horizontal en bas de l’Exposé** (14 % de hauteur, 88–148 pt), chacun dans son enclos — nom de l’app en haut, miniatures estompées avec légende en dessous. Les groupes actifs gardent la partie supérieure ; leur partition est pondérée par fenêtres **ouvertes** (au lieu du total, réduites comprises).
+- Bandeau réservé aux surfaces lisibles (≥ 200 pt au-dessus) ; sinon retour au layout historique. Groupes sans réduites et mode Strip inchangés ; l’étagère interne des groupes mixtes reste en place. Régression dédiée : fenêtres dormantes sous les actives, composition valide en tout-dormant et petite surface. Rendu réel à confirmer par l’utilisateur.
+
+## [2026.11.42] - 2026-11-18
+### Changed
+- **Étagère de groupe pour les fenêtres réduites (Atténuées, Îlots)** : au lieu d’occuper des cases de la grille principale, les fenêtres réduites s’alignent en **petites vignettes grisées sur un rang en bas de la carte de leur groupe** — l’exemple Chrome (3 ouvertes + 2 réduites) affiche les grandes vignettes au-dessus, les miniatures estompées (badge, légende, clic = restauration) en dessous, sans jamais chevaucher la grille. Réservé à une hauteur de région lisible ; sinon repli automatique sur le packing inline historique. Groupes sans fenêtres réduites : disposition strictement inchangée (0–128 fenêtres revalidées).
+- Le Strip conserve l’atténuation en ligne (carte réduite et estompée dans son grand slot) ; **Masquées** et **Normales** inchangés. Régression géométrique dédiée : étagère sous les fenêtres ouvertes, proportions conservées, composition valide pour groupes tout-réduits et petites surfaces.
+
+## [2026.11.41] - 2026-11-18
+### Added
+- **Choix de présentation des fenêtres réduites dans Exposé PK** (Réglages → CMD+Tab → Exposé PK, segmenté Normales / Atténuées / Masquées) : **Atténuées** (défaut) garde chaque fenêtre réduite dans son groupe mais l’affiche **réduite à ~65 % centrée dans sa case, estompée à 50 %**, avec badge « réduite » et légende suffixée ; le clic restaure toujours. **Normales** conserve le comportement historique (cartes identiques). **Masquées** ne liste que les fenêtres visibles — leurs captures ne sont même plus demandées.
+- La règle est pure et testée (`ExposeMinimizedChecks` : filtrage, ordre, composition avec la recherche, valeur par défaut, champ de sauvegarde et câblage vue/modèle/réglages) ; le filtrage s’applique avant la disposition, la garde anti-chevauchement et le hit-test restent inchangés. Préférence persistée `expose-minimized-display`, incluse dans les sauvegardes **v16** ; prise en compte à la prochaine ouverture d’Exposé PK. Localisations FR/EN/ES/DE ; rendu réel à confirmer par l’utilisateur, sans pilotage d’écran.
+
 ## [2026.11.40] - 2026-11-17
 ### Added
 - **Geste inverse Exposé PK** : le compte choisi (4 doigts par défaut, ou 3 dans les options) vers le haut ouvre la vue ; vers le bas, lorsqu’elle est ouverte, annule comme Échap sans sélectionner la fenêtre survolée. Vers le bas hors Exposé ne fait rien ; vers le haut dans Exposé ne le ferme plus.

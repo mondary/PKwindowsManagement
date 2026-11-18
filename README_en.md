@@ -6,7 +6,7 @@
 
 PKwindowsManagement is a macOS menu bar app for keyboard-driven window management and fast application launching.
 
-Dev version **2026.11.40**
+Dev version **2026.11.43**
 
 ## Interactive website
 
@@ -66,6 +66,7 @@ Dev version **2026.11.40**
 
 - **No stray page scrolling**: PK’s reserved finger count blocks continuous scrolling as soon as its contacts are recognized, before Exposé opens, including the associated short momentum tail. A new **two-finger** gesture immediately restores normal scrolling; discrete mouse-wheel events are not filtered. Disabling the PK gesture disables this filter. This does not block the native Mission Control gesture: disable/separate it if both overviews open. Physical gesture behavior still needs user validation.
 
+- **Minimized windows, your choice**: Normal (identical cards), **Dimmed** (default — in Islands, a thumbnail shelf under the group card and **a dock-like bottom band for fully-minimized apps**; in the Strip, a smaller faded card; click restores) or Hidden (visible windows only), in **CMD+Tab → Exposé PK**; included in v16 backups.
 - **`Ctrl + Option + E`** opens a **borderless fullscreen Exposé over your wallpaper** (also opened by a **3- or 4-finger upward trackpad swipe**, your choice in Settings → ⌘Tab — exact count in PK; configure native gesture separation below). Previews appear directly in their final slots, grouped by app on the invoking display: a short 160 ms entry fade without crossing paths; selecting a window dismisses the overview with a 70 ms fade, without merging previews back onto the desktop. The persisted **Islands / Android strip** switch inside Exposé offers two layouts: app islands distributed across almost the entire surface — each group on a dark card with its title and tight previews, captured at high resolution, or large fullscreen cards sized to each window's aspect ratio (no empty side bands on tall windows), navigated with the trackpad/wheel. Islands fits all windows exposed by macOS/AX without stacking or scrolling. Transitions change opacity only, never the positions or sizes of real windows. Cancellation takes 100 ms; Reduce Motion shortens fades to 60 ms. Video wallpapers use a static poster; these durations exclude inventory and capture time.
 - Also available from the menu bar icon’s context menu → **Open Exposé PK**, or the Windows studio button. Change the shortcut in the switcher settings; URL: `pkwm://expose`.
 - `←→` or Tab between windows, `↑↓` between apps; click or Enter to activate the exact chosen window: its identity is captured and the overlay is removed before focus; Escape, a downward swipe or a background click returns to the original window with the short cancellation fade. Search by app/title, origin display on each card, visible `⌘W`/`⌘Q` actions for the selection.

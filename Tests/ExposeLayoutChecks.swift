@@ -147,6 +147,66 @@ struct ExposeLayoutChecks {
         precondition(!click.press(nil))
         precondition(ExposeLayout.Mode(rawValue: "islands") == .islands)
         precondition(ExposeLayout.Mode(rawValue: "strip") == .strip)
-        print("Exposé checks passed: spatial islands fill the display, large scrollable strip (0–128), no overlap, bounds/aspects, scrolled hit regions, exact single-click identity and drag cancellation")
+        // Dimmed islands: minimized windows pack into their group's bottom
+        // shelf, below every open window, without breaking composition.
+        func anyWindow(_ id: UInt32, minimized: Bool) -> WindowSwitcherItem {
+            WindowSwitcherItem(id: .init(pid: 7, windowID: id), appName: "Chrome",
+                title: "c\(id)", isMinimized: minimized, isHidden: false,
+                isFullScreen: false, isOnScreen: !minimized, frame: CGRect(x: 0, y: 0, width: 900, height: 600))
+        }
+        let dimItems = [anyWindow(1, minimized: false), anyWindow(2, minimized: true),
+                        anyWindow(3, minimized: false), anyWindow(4, minimized: false),
+                        anyWindow(5, minimized: true)]
+        let dimGroups = ExposeLayout.groups(dimItems, identities: [:])
+        let dimArea = CGRect(x: 0, y: 0, width: 1200, height: 700)
+        checkComposition(dimGroups, area: dimArea)
+        let dimOverview = ExposeLayout.overview(groups: dimGroups, in: dimArea)
+        let cardBounds = dimOverview.headings[0].bounds
+        let shelfItems = dimOverview.windows.filter { $0.item.isMinimized }
+        let openItems = dimOverview.windows.filter { !$0.item.isMinimized }
+        precondition(shelfItems.count == 2 && openItems.count == 3)
+        let shelfTop = shelfItems.map { $0.frame.minY }.min()!
+        for placement in shelfItems {
+            precondition(placement.frame.minY >= shelfTop - 0.01)
+            precondition(placement.frame.maxY <= cardBounds.maxY + 0.01)
+            precondition(placement.frame.height <= cardBounds.height * 0.3)
+            precondition(abs(placement.frame.width / placement.frame.height - 1.5) < 0.001)
+        }
+        for placement in openItems {
+            precondition(placement.frame.maxY <= shelfTop + 0.01)
+        }
+        // An all-minimized group still composes; tiny regions fall back inline.
+        let onlyMinimized = ExposeLayout.groups([anyWindow(1, minimized: true), anyWindow(2, minimized: true)], identities: [:])
+        checkComposition(onlyMinimized, area: dimArea)
+        precondition(ExposeLayout.overview(groups: onlyMinimized, in: dimArea).windows.count == 2)
+        checkComposition(dimGroups, area: CGRect(x: 0, y: 0, width: 320, height: 260))
+        // Strip layout still composes with minimized windows present.
+        let stripDimmed = ExposeLayout.strip(groups: dimGroups, in: dimArea)
+        precondition(stripDimmed.windows.count == dimItems.count)
+
+        // All-minimized groups dock into the bottom band; active windows keep
+        // the upper area. Small areas fall back to the historical layout.
+        let dockActive = ExposeLayout.groups([anyWindow(1, minimized: false), anyWindow(2, minimized: false)], identities: [:])
+        let dockDormant = ExposeLayout.groups([anyWindow(3, minimized: true), anyWindow(4, minimized: true)], identities: [:])
+        let dockArea = CGRect(x: 0, y: 0, width: 1200, height: 700)
+        let dockGroups = dockActive + dockDormant
+        checkComposition(dockGroups, area: dockArea)
+        let docked = ExposeLayout.overview(groups: dockGroups, in: dockArea)
+        let parkedWindows = docked.windows.filter { $0.item.isMinimized }
+        let liveWindows = docked.windows.filter { !$0.item.isMinimized }
+        precondition(parkedWindows.count == 2 && liveWindows.count == 2)
+        let dockTop = parkedWindows.map { $0.frame.minY }.min()!
+        for placement in parkedWindows {
+            precondition(placement.frame.maxY <= dockArea.maxY + 0.01)
+            precondition(placement.frame.height <= 148)
+        }
+        for placement in liveWindows {
+            precondition(placement.frame.maxY <= dockTop + 0.01)
+        }
+        checkComposition(dockDormant, area: dockArea)
+        precondition(ExposeLayout.overview(groups: dockDormant, in: dockArea).windows.count == 2)
+        checkComposition(dockGroups, area: CGRect(x: 0, y: 0, width: 320, height: 260))
+
+        print("Exposé checks passed: spatial islands fill the display, large scrollable strip (0–128), no overlap, bounds/aspects, scrolled hit regions, exact single-click identity, drag cancellation, minimized shelf, dormant dock band and inline fallback")
     }
 }

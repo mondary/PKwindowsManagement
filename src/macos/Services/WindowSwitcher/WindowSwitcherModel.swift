@@ -110,7 +110,9 @@ final class WindowSwitcherModel: ObservableObject {
     private var exposeDisplays: [ExposeLayout.Display] = []
 
     var exposeGroups: [ExposeLayout.Group] {
-        ExposeLayout.groups(filteredItems, identities: applicationIdentities)
+        ExposeLayout.groups(
+            WindowSwitcherState.exposeItems(filteredItems, display: AppRuntime.shared.settings?.exposeMinimizedDisplay ?? .dimmed),
+            identities: applicationIdentities)
     }
 
     func exposeScreenLabel(for item: WindowSwitcherItem) -> String {
@@ -1006,8 +1008,10 @@ final class WindowSwitcherModel: ObservableObject {
         guard isExposePresentation, isOpen, previewsGranted else { return }
         let token = generation
         let deadline = ProcessInfo.processInfo.systemUptime + 2.5
+        // Hidden mode never lists minimized windows: skip their captures too.
+        let listsMinimized = (AppRuntime.shared.settings?.exposeMinimizedDisplay ?? .dimmed) != .hidden
         let visibleFirst = items.filter { $0.isOnScreen && !$0.isMinimized && !$0.isHidden }
-            + items.filter { !$0.isOnScreen || $0.isMinimized || $0.isHidden }
+            + items.filter { listsMinimized && (!$0.isOnScreen || $0.isMinimized || $0.isHidden) }
         for item in visibleFirst.prefix(64) {
             guard !Task.isCancelled, isOpen, generation == token,
                   ProcessInfo.processInfo.systemUptime < deadline else { return }

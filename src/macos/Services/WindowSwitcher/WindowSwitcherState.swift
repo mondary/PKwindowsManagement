@@ -37,6 +37,24 @@ struct WindowSwitcherItem: Identifiable, Equatable, Sendable {
     var isProcess: Bool { kind != .window }
 }
 
+/// How Exposé PK presents minimized windows (Réglages → CMD+Tab → Exposé PK).
+enum ExposeMinimizedDisplay: String, CaseIterable, Codable {
+    /// Same cards as visible windows (historical behaviour).
+    case normal
+    /// Smaller, faded and badged inside their app group; click restores.
+    case dimmed
+    /// Only visible windows are listed.
+    case hidden
+}
+
+extension WindowSwitcherState {
+    /// Pure filtering rule shared by the model and unit checks. Search
+    /// filtering composes BEFORE this rule (query first, minimized last).
+    static func exposeItems(_ items: [WindowSwitcherItem], display: ExposeMinimizedDisplay) -> [WindowSwitcherItem] {
+        display == .hidden ? items.filter { !$0.isMinimized } : items
+    }
+}
+
 /// Pure selection rules shared by the keyboard, search field and grid.
 enum WindowSwitcherState {
     /// Return/keypad Enter confirms with or without Command/Shift held.

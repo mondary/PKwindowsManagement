@@ -865,3 +865,10 @@
 /* Inverse Exposé gesture */
 "Swipe up to open, down to cancel Exposé PK" = "Deslizar hacia arriba para abrir y hacia abajo para cancelar Exposé PK";
 "Swipe down with the same fingers to cancel without selecting a window and return to your previous window." = "Desliza hacia abajo con el mismo número de dedos para cancelar sin seleccionar una ventana y volver a la ventana anterior.";
+
+/* Exposé minimized window presentation */
+"Minimized windows" = "Ventanas minimizadas";
+"Full size" = "Normales";
+"Dimmed" = "Atenuadas";
+"Hidden" = "Ocultas";
+"Dimmed shows minimized windows smaller and faded inside their app group; hidden lists only visible windows. Applies to the next Exposé PK opening." = "« Atenuadas» coloca las ventanas minimizadas en una balda bajo su grupo (Islas) y alinea las apps totalmente minimizadas en una banda inferior, estilo dock; en la tira siguen en línea, desvanecidas y más pequeñas. « Ocultas» solo lista las ventanas visibles. Se aplica a la próxima apertura de Exposé PK.";

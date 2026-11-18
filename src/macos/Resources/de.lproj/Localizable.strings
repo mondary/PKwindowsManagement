@@ -865,3 +865,10 @@
 /* Inverse Exposé gesture */
 "Swipe up to open, down to cancel Exposé PK" = "Nach oben streichen zum Öffnen, nach unten zum Abbrechen von Exposé PK";
 "Swipe down with the same fingers to cancel without selecting a window and return to your previous window." = "Mit derselben Fingeranzahl nach unten streichen, um ohne Fensterauswahl abzubrechen und zum vorherigen Fenster zurückzukehren.";
+
+/* Exposé minimized window presentation */
+"Minimized windows" = "Minimierte Fenster";
+"Full size" = "Normal";
+"Dimmed" = "Abgedunkelt";
+"Hidden" = "Ausgeblendet";
+"Dimmed shows minimized windows smaller and faded inside their app group; hidden lists only visible windows. Applies to the next Exposé PK opening." = "« Abgedunkelt» ordnet minimierte Fenster unter ihrer Gruppe an (Inseln) und reiht vollständig minimierte Apps in einem unteren Streifen wie ein Dock auf; im Streifen bleiben sie inline, abgedunkelt und kleiner. « Ausgeblendet» listet nur sichtbare Fenster. Gilt ab dem nächsten Exposé-PK-Öffnen.";

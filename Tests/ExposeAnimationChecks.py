@@ -27,7 +27,9 @@ replica = body(view, "private func windowReplica(")
 assert "let frame = target" in replica
 assert "ExposeLayout.sourceFrame" not in replica
 assert "scene.expanded ?" not in replica
-assert "\n        .opacity(" not in replica, "All previews share the layer fade"
+assert ".opacity(scene" not in replica, "Per-preview opacity must not depend on expanded"
+assert ".opacity(decorationsVisible" not in replica, "Per-preview opacity must not depend on decorations"
+assert ".opacity(dimmed ? 0.5 : 1)" in replica, "Minimized previews fade via the dimmed flag"
 layer = body(view, "private var windowLayer:")
 assert ".opacity(scene.expanded ? 1 : 0)" in layer
 assert "let clip = scene.mode == .strip\n" in layer, "Do not unclip the strip on exit"

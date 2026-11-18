@@ -526,3 +526,10 @@
 /* Inverse Exposé gesture */
 "Swipe up to open, down to cancel Exposé PK" = "Swipe up to open, down to cancel Exposé PK";
 "Swipe down with the same fingers to cancel without selecting a window and return to your previous window." = "Swipe down with the same fingers to cancel without selecting a window and return to your previous window.";
+
+/* Exposé minimized window presentation */
+"Minimized windows" = "Minimized windows";
+"Full size" = "Full size";
+"Dimmed" = "Dimmed";
+"Hidden" = "Hidden";
+"Dimmed shows minimized windows smaller and faded inside their app group; hidden lists only visible windows. Applies to the next Exposé PK opening." = "Dimmed shelves minimized windows under their app group (Islands) and docks fully-minimized apps into a bottom band; in the Strip they appear inline, faded and smaller. Hidden lists only visible windows. Applies to the next Exposé PK opening.";

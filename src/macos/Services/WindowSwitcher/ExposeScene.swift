@@ -23,6 +23,9 @@ final class ExposeScene: ObservableObject {
     let activeFrame: CGRect
     let safeTop: CGFloat
     let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    /// Snapshot at open time (dimmed rendering); hidden filtering happens in
+    /// the model before the scene ever sees a minimized window.
+    let minimizedDisplay: ExposeMinimizedDisplay
     @Published var expanded = false
     @Published var dismissing = false
     @Published private(set) var overview = ExposeLayout.Overview()
@@ -60,6 +63,7 @@ final class ExposeScene: ObservableObject {
               let target = descriptions.first(where: { $0.id == activeID }) else { return nil }
         self.defaults = defaults
         self.mode = ExposeLayout.Mode(rawValue: defaults.string(forKey: Self.modeKey) ?? "") ?? .islands
+        self.minimizedDisplay = AppRuntime.shared.settings?.exposeMinimizedDisplay ?? .dimmed
         self.screens = descriptions
         self.activeID = activeID
         self.activeFrame = target.frame
