@@ -6,7 +6,7 @@
 
 PKwindowsManagement is a macOS menu bar app for keyboard-driven window management and fast application launching.
 
-Dev version **2026.11.43**
+Dev version **2026.11.44**
 
 ## Interactive website
 
@@ -62,6 +62,7 @@ Dev version **2026.11.43**
 
 ### Exposé PK (Dev)
 
+- **Progressive loading**: dismiss the panel as soon as it appears. Window cards appear when inventory is ready, then thumbnails fill in progressively.
 - **Up to open, down to cancel**: **swipe up with 4 fingers** to open Exposé PK; lift your fingers, then **swipe down with 4 fingers** to cancel without choosing a window and return focus to the one active before opening. The inverse gesture follows the 3-finger option when configured. Down outside Exposé does nothing; up while open does not close it. Escape, the background and Close share this return to the original context. If the original window is gone, its still-running app is activated without relaunch or geometry restoration. Real gesture/focus behavior still needs user validation.
 
 - **No stray page scrolling**: PK’s reserved finger count blocks continuous scrolling as soon as its contacts are recognized, before Exposé opens, including the associated short momentum tail. A new **two-finger** gesture immediately restores normal scrolling; discrete mouse-wheel events are not filtered. Disabling the PK gesture disables this filter. This does not block the native Mission Control gesture: disable/separate it if both overviews open. Physical gesture behavior still needs user validation.

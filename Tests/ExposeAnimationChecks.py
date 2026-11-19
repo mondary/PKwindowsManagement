@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 view = (ROOT / "src/macos/Views/WindowSwitcher/ExposeView.swift").read_text()
 controller = (ROOT / "src/macos/Services/WindowSwitcher/WindowSwitcherController.swift").read_text()
 scene = (ROOT / "src/macos/Services/WindowSwitcher/ExposeScene.swift").read_text()
+model = (ROOT / "src/macos/Services/WindowSwitcher/WindowSwitcherModel.swift").read_text()
 
 
 def body(source, declaration):
@@ -46,6 +47,27 @@ assert exit_body.index("self.hide()") < exit_body.index("self.activateAfterExpos
 assert "self.interactionID == interaction" in exit_body
 assert "ExposeAnimation.entryDuration(reduceMotion: reduceMotion)" in scene
 assert "ExposeAnimation.exitDuration(activating: activating, reduceMotion: reduceMotion)" in scene
+
+# The first draw must not wait for AX, wallpapers or captures. A cancelled
+# opening cannot finish against the next scene, even if a callback is late.
+present = body(controller, "private func presentExpose(")
+assert present.index("showExposePanels(scene)") < present.index("self.model.prepare(")
+assert present.index("showExposePanels(scene)") < present.index("await scene?.loadWallpapers()")
+assert "guard isExposePresented else {" in present and "hide()" in present
+assert "panel?.isVisible == true" in controller.split("var isExposePresented: Bool", 1)[1].splitlines()[0]
+assert present.count("self.interactionID == interaction") == 2
+assert present.count("!scene.dismissing") == 2
+assert "desktopImageURL" not in body(scene, "init?(screens:")
+assert "scene.waitingForInventory || model.isLoading" in view
+assert "windowLayer.transition(.opacity)" in view
+assert "scene.waitingForInventory && scene.expanded" in body(controller, "private func finishExposeInventory(")
+assert "warmExposePreviews" not in model and "warmExposePreviews" not in controller
+assert "exposeWallpaperTask?.cancel()" in body(controller, "func hide(")
+assert "previewTask?.cancel()" in body(model, "func stop(")
+assert "inventoryTask?.cancel()" in body(model, "func stop(")
+assert "previewTask?.cancel()" in body(model, "func resetExposePreviews(")
+assert "!Task.isCancelled, self.isOpen, self.generation == token" in body(model, "func requestPreview(")
+assert ".onChange(of: scene.mode) { _ in model.requestPreview(item.id) }" in replica
 
 fixture = """
 import Foundation

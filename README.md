@@ -6,7 +6,7 @@
 
 PKwindowsManagement est une app macOS en barre de menu pour gérer les fenêtres au clavier et lancer rapidement les applications installées.
 
-Version Dev **2026.11.43**
+Version Dev **2026.11.44**
 
 ## Vitrine interactive
 
@@ -66,6 +66,7 @@ Version Dev **2026.11.43**
 
 ### Exposé PK (Dev)
 
+- **Ouverture progressive** : le panneau peut être fermé dès son apparition. Les cartes apparaissent une fois l’inventaire prêt, puis les vignettes se chargent progressivement.
 - **Haut pour ouvrir, bas pour annuler** : **4 doigts vers le haut** ouvre Exposé PK ; après avoir relâché, **4 doigts vers le bas** annule sans sélectionner de fenêtre et rend le focus à celle active avant l’ouverture. Le geste suit le choix 3 doigts s’il est configuré. Vers le bas hors Exposé ne fait rien ; vers le haut dans Exposé ne le ferme pas. Échap, le fond et le bouton Fermer partagent ce retour au contexte initial. Si la fenêtre initiale a disparu, son app encore ouverte est activée, sans relancement ni restauration de géométrie. Geste/focus réels à confirmer par l’utilisateur.
 
 - **Geste sans scroll parasite** : le compte de doigts réservé à PK bloque le défilement continu dès sa reconnaissance, avant l’ouverture d’Exposé, ainsi que sa courte traîne d’inertie. Un nouveau geste à **deux doigts** rend immédiatement le scroll normal ; la molette discrète n’est pas filtrée. Désactiver le geste PK désactive ce filtre. Cela ne bloque pas le geste natif Mission Control : sa désactivation/séparation reste nécessaire en cas de double ouverture. Le geste réel reste à valider par l’utilisateur.

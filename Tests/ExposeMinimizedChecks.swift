@@ -35,8 +35,14 @@ enum ExposeMinimizedChecks {
         }
         let model = try source("src/macos/Services/WindowSwitcher/WindowSwitcherModel.swift")
         precondition(model.contains("WindowSwitcherState.exposeItems(filteredItems"))
-        precondition(model.contains("listsMinimized && (!$0.isOnScreen || $0.isMinimized || $0.isHidden)"))
+        // Requests come from laid-out cards, so Hidden cannot warm windows
+        // excluded from the scene by the policy above.
+        let controller = try source("src/macos/Services/WindowSwitcher/WindowSwitcherController.swift")
+        precondition(controller.contains("for placement in scene.overview.windows"))
+        precondition(controller.contains("model.requestPreview(placement.id)"))
         let view = try source("src/macos/Views/WindowSwitcher/ExposeView.swift")
+        precondition(view.contains("let item = placement.item"))
+        precondition(view.contains(".onAppear { model.requestPreview(item.id) }"))
         precondition(view.contains("scene.minimizedDisplay == .dimmed"))
         precondition(view.contains("Self.dimmedFrame(target)"))
         precondition(view.contains(".opacity(dimmed ? 0.5 : 1)"))

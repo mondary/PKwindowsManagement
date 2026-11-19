@@ -19,11 +19,15 @@ struct ExposeView: View {
             wallpaper
                 .contentShape(Rectangle())
                 .onTapGesture(perform: onClose)
-            windowLayer
             if primary {
+                if !scene.overview.windows.isEmpty {
+                    windowLayer.transition(.opacity)
+                }
                 floatingControls.zIndex(10000)
-                if model.isLoading {
+                if scene.waitingForInventory || model.isLoading {
                     ProgressView().controlSize(.large).position(x: screen.frame.width / 2, y: screen.frame.height / 2)
+                        .opacity(decorationsVisible ? 1 : 0)
+                        .allowsHitTesting(false)
                         .zIndex(10001)
                 } else if scene.overview.windows.isEmpty {
                     Text(localizedString("No matching windows"))
@@ -88,17 +92,21 @@ struct ExposeView: View {
             // when a wallpaper file cannot be read.
             LinearGradient(colors: [Color(white: 0.16), Color(white: 0.06)],
                            startPoint: .top, endPoint: .bottom)
-            if let image = scene.wallpapers[screen.id] {
-                if screen.fitWallpaper {
-                    Image(nsImage: image).resizable().scaledToFit()
-                } else {
-                    Image(nsImage: image).resizable().scaledToFill()
-                }
+            if let wallpaper = scene.wallpapers[screen.id] {
+                Group {
+                    if wallpaper.fits {
+                        Image(nsImage: wallpaper.image).resizable().scaledToFit()
+                    } else {
+                        Image(nsImage: wallpaper.image).resizable().scaledToFill()
+                    }
+                }.transition(.opacity)
             }
         }
         .frame(width: screen.frame.width, height: screen.frame.height)
         .clipped()
         .overlay(Color.black.opacity(0.2))
+        .animation(scene.reduceMotion || scene.dismissing ? nil : .easeOut(duration: 0.16),
+                   value: scene.wallpapers[screen.id] != nil)
         .opacity(scene.expanded ? 1 : 0)
         .accessibilityHidden(true)
     }
@@ -128,7 +136,9 @@ struct ExposeView: View {
                     VStack(spacing: 8) {
                         appIcon(item.id.pid, size: min(36, visual.height * 0.25))
                         Text(item.appName).font(.caption).lineLimit(1)
-                        Text(localizedString("Preview unavailable")).font(.caption2).lineLimit(1)
+                        if !model.previewsGranted || model.completedPreviews.contains(item.id) {
+                            Text(localizedString("Preview unavailable")).font(.caption2).lineLimit(1)
+                        }
                     }
                     .foregroundStyle(.white)
                 }
@@ -162,6 +172,7 @@ struct ExposeView: View {
         .help(item.displayTitle + " — " + model.exposeScreenLabel(for: item))
         .onAppear { model.requestPreview(item.id) }
         .onChange(of: model.generation) { _ in model.requestPreview(item.id) }
+        .onChange(of: scene.mode) { _ in model.requestPreview(item.id) }
     }
 
     /// Centered 65% inset inside the unchanged strip slot (islands shelf
@@ -252,7 +263,7 @@ struct ExposeView: View {
                 .frame(width: screen.frame.width - 48)
                 .position(x: screen.frame.width / 2,
                           y: screen.safeTop + (screen.frame.width < 900 ? 48 : 26))
-            if !model.accessibilityGranted || !model.previewsGranted || !model.message.isEmpty {
+            if !scene.waitingForInventory && (!model.accessibilityGranted || !model.previewsGranted || !model.message.isEmpty) {
                 notice.frame(maxWidth: screen.frame.width - 48)
                     .position(x: screen.frame.width / 2,
                               y: screen.safeTop + (screen.frame.width < 900 ? 134 : 88))

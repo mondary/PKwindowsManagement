@@ -10,7 +10,8 @@ struct TrackpadSwipeDetector {
     var requiredFingers = 4
     var minimumTravel: Float = 0.10
     var maximumDuration: TimeInterval = 0.8
-    var cooldown: TimeInterval = 0.6
+    // A new touch can open again immediately after Escape or cancellation.
+    var cooldown: TimeInterval = 0
 
     private var startedAt: TimeInterval?
     private var startY: Float = 0
@@ -33,7 +34,7 @@ struct TrackpadSwipeDetector {
     mutating func update(fingers: Int, y: Float, time: TimeInterval) -> Bool {
         guard fingers == requiredFingers else {
             startedAt = nil
-            armed = true
+            if fingers == 0 { armed = true }
             return false
         }
         guard armed, y.isFinite, (0...1).contains(y) else { return false }
@@ -106,6 +107,7 @@ final class TrackpadSwipeMonitor {
     private var devices: [UnsafeMutableRawPointer] = []
     private var detector = TrackpadSwipeDetector()
     private var gestureDirection: TrackpadSwipeDetector.Direction?
+    private var lastFrameAt: TimeInterval?
     private var scrollGate = TrackpadScrollGate()
     private var register: Register?
     private var unregister: Register?
@@ -158,6 +160,7 @@ final class TrackpadSwipeMonitor {
         lock.lock()
         detector.reset()
         gestureDirection = nil
+        lastFrameAt = nil
         scrollGate.configure(enabled: false, requiredFingers: 4)
         lock.unlock()
         started = false
@@ -221,6 +224,7 @@ final class TrackpadSwipeMonitor {
         guard isEnabled() else {
             detector.reset()
             gestureDirection = nil
+            lastFrameAt = nil
             lock.unlock()
             return
         }
@@ -230,6 +234,13 @@ final class TrackpadSwipeMonitor {
             detector.requiredFingers = required
             gestureDirection = nil
         }
+        // Driver/device interruption can omit the final empty frame. Rearm
+        // after a gap beyond any valid swipe rather than keep stale intent.
+        if let lastFrameAt, timestamp - lastFrameAt > detector.maximumDuration {
+            detector.reset()
+            gestureDirection = nil
+        }
+        lastFrameAt = timestamp
         if fingers == 0 { gestureDirection = nil }
         if gestureDirection == nil, fingers == required {
             let direction: TrackpadSwipeDetector.Direction = isExposePresented() ? .down : .up
@@ -242,16 +253,15 @@ final class TrackpadSwipeMonitor {
         let fired = detector.update(fingers: fingers, y: y, time: timestamp)
         lock.unlock()
         guard fired, let direction else { return }
-        DispatchQueue.main.async { [weak self] in
-            guard let self, self.isEnabled() else { return }
-            switch direction {
-            case .up:
-                guard !self.isExposePresented() else { return }
-                self.onSwipeUp()
-            case .down:
-                guard self.isExposePresented() else { return }
-                self.onSwipeDown()
-            }
+        // Already on main. A second async hop lets later contact frames
+        // infer their direction from stale presentation state.
+        switch direction {
+        case .up:
+            guard !isExposePresented() else { return }
+            onSwipeUp()
+        case .down:
+            guard isExposePresented() else { return }
+            onSwipeDown()
         }
     }
 }

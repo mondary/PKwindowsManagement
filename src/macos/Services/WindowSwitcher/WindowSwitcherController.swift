@@ -1,4 +1,5 @@
 import AppKit
+import OSLog
 import SwiftUI
 
 private final class WindowSwitcherPanel: NSPanel {
@@ -12,7 +13,8 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     private var panel: NSPanel?
     private var exposePanels: [NSPanel] = []
     private var exposeScene: ExposeScene?
-    private var exposePreparation: Task<Void, Never>?
+    private var exposeWallpaperTask: Task<Void, Never>?
+    private static let exposeLog = Logger(subsystem: "com.mondary.PKwindowsManagement", category: "Expose")
     private var exposeOriginApp: NSRunningApplication?
     private var exposeOriginWindow: WindowSwitcherInventory.Candidate?
     private var displayObserver: NSObjectProtocol?
@@ -54,10 +56,10 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         present(mode: .expose)
     }
 
-    var isExposePresented: Bool { presentation == .expose && exposeScene != nil }
+    var isExposePresented: Bool { presentation == .expose && panel?.isVisible == true }
 
     /// The two directions are not a toggle: up opens, down only cancels an
-    /// existing Exposé (including one still preparing its thumbnails).
+    /// visible Exposé, including while its inventory and previews load.
     func openExposeFromGesture() {
         guard !isExposePresented else { return }
         showExpose()
@@ -202,9 +204,14 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     /// rounded/material panel. Each physical display gets a borderless surface.
     private func presentExpose() {
         guard !isVisible else { return }
+        let openedAt = ProcessInfo.processInfo.systemUptime
         let pointer = NSEvent.mouseLocation
-        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(pointer) }) ?? NSScreen.main,
-              let scene = ExposeScene(screens: NSScreen.screens, active: screen) else { return }
+        let screens = NSScreen.screens
+        guard let screen = screens.first(where: { $0.frame.contains(pointer) }) ?? NSScreen.main,
+              let scene = ExposeScene(screens: screens, active: screen) else {
+            Self.exposeLog.error("Exposé could not resolve a display")
+            return
+        }
         interactionID = UUID()
         presentation = .expose
         exposeOriginApp = NSWorkspace.shared.frontmostApplication
@@ -215,10 +222,8 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         SpaceManagementService.shared.userChangedWindowSelection()
         activationTask?.cancel()
         activationTask = nil
+        committingActivation = false
         exposeScene = scene
-        displayObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
-        ) { [weak self] _ in self?.hide() }
         model.isExposePresentation = true
         model.exposeCaptureSize = Self.exposeCaptureSize(for: scene.mode, scene: scene)
         scene.onModeChange = { [weak self, weak scene] mode in
@@ -226,27 +231,62 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             self.model.exposeCaptureSize = Self.exposeCaptureSize(for: mode, scene: scene)
             self.model.resetExposePreviews()
         }
-        model.onReady = { [weak self] in self?.modelDidBecomeReady() }
-        model.prepare()
+        let interaction = interactionID
+        model.onReady = { [weak self, weak scene] in
+            guard let self, let scene, self.interactionID == interaction,
+                  self.exposeScene === scene, !scene.dismissing else { return }
+            self.finishExposeInventory(scene, openedAt: openedAt)
+        }
+
+        // Put the cancellable shell on screen before asking AX or
+        // ScreenCaptureKit for data. These services cannot gate first paint.
+        showExposePanels(scene)
+        guard isExposePresented else {
+            Self.exposeLog.error("Exposé panel did not become visible")
+            hide()
+            return
+        }
+        let panelMS = Int((ProcessInfo.processInfo.systemUptime - openedAt) * 1000)
+        Self.exposeLog.debug("Exposé panel ordered in \(panelMS) ms")
+        DispatchQueue.main.async { [weak self, weak scene] in
+            guard let self, let scene, self.interactionID == interaction,
+                  self.exposeScene === scene, !scene.dismissing else { return }
+            self.model.prepare(frontmostPID: self.exposeOriginApp?.processIdentifier)
+            self.exposeWallpaperTask = Task { @MainActor [weak scene] in
+                await scene?.loadWallpapers()
+            }
+        }
     }
 
-    private func prepareExposeScene(_ scene: ExposeScene) {
-        exposePreparation?.cancel()
-        scene.update(groups: model.exposeGroups, hasNotice: !model.accessibilityGranted || !model.previewsGranted || !model.message.isEmpty)
-        let interaction = interactionID
-        exposePreparation = Task { @MainActor [weak self, weak scene] in
-            guard let self, let scene else { return }
-            await scene.loadWallpapers()
-            await self.model.warmExposePreviews()
-            guard !Task.isCancelled, self.interactionID == interaction,
-                  self.exposeScene === scene else { return }
-            scene.update(groups: self.model.exposeGroups, hasNotice: !self.model.accessibilityGranted || !self.model.previewsGranted || !self.model.message.isEmpty)
-            if self.exposePanels.isEmpty {
-                scene.reveal(self.model.selectedID)
-                self.showExposePanels(scene)
-            }
-            self.exposePreparation = nil
+    private func finishExposeInventory(_ scene: ExposeScene, openedAt: TimeInterval) {
+        // If the shell has already faded in, insert the first cards with
+        // their own short opacity transition, at their final geometry.
+        withAnimation(scene.waitingForInventory && scene.expanded ? .easeOut(duration: scene.entryDuration) : nil) {
+            scene.update(groups: model.exposeGroups, hasNotice: !model.accessibilityGranted || !model.previewsGranted || !model.message.isEmpty)
+            scene.reveal(model.selectedID)
         }
+        // Request what is on screen before the Strip's offscreen cards
+        // enqueue their lazy requests. They all share the same worker.
+        for placement in scene.overview.windows
+            where scene.displayed(placement.frame).intersects(scene.availableArea) {
+            model.requestPreview(placement.id)
+        }
+        guard scene.waitingForInventory else { return } // A refresh must not replace the origin.
+        scene.waitingForInventory = false
+        if let origin = exposeOriginApp, let focused = model.focusedCandidate,
+           focused.item.id.pid == origin.processIdentifier {
+            exposeOriginWindow = focused
+        }
+        let elapsedMS = Int((ProcessInfo.processInfo.systemUptime - openedAt) * 1000)
+        if elapsedMS >= 750 {
+            Self.exposeLog.notice("Exposé inventory was slow (\(elapsedMS) ms); the panel was already ordered")
+        } else {
+            Self.exposeLog.debug("Exposé inventory ready in \(elapsedMS) ms")
+        }
+        // Once the cards are selectable, activate PK so the first physical
+        // click selects a window rather than merely activating our app.
+        NSApp.activate(ignoringOtherApps: true)
+        panel?.makeKeyAndOrderFront(nil)
     }
 
     private func showExposePanels(_ scene: ExposeScene) {
@@ -278,16 +318,9 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             exposePanels.append(overlay)
         }
         installMonitors()
-        // Save original focus once, before the overlay takes it. Hover/search
-        // must never replace the cancellation target.
-        if exposeOriginWindow == nil, let origin = exposeOriginApp,
-           let focused = model.focusedCandidate, focused.item.id.pid == origin.processIdentifier {
-            exposeOriginWindow = focused
-        }
-        // Without activating the app, macOS swallows the very first physical
-        // click to activate us: the user had to click twice to pick a window.
-        NSApp.activate(ignoringOtherApps: true)
-        for overlay in exposePanels { overlay.orderFrontRegardless(); overlay.contentView?.layoutSubtreeIfNeeded() }
+        // The loading shell is a nonactivating key panel: Escape works but
+        // the original app stays active until its focused window is recorded.
+        for overlay in exposePanels { overlay.orderFrontRegardless() }
         panel?.makeKeyAndOrderFront(nil)
         let interaction = interactionID
         // Commit the hidden final layout, then fade it in on the next turn.
@@ -307,6 +340,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         let choice = id.flatMap { model.candidate(for: $0) }
         let originApp = id == nil ? exposeOriginApp : nil
         let originWindow = id == nil ? exposeOriginWindow : nil
+        let shouldRestoreOrigin = !scene.waitingForInventory
         if let id, choice == nil {
             forceActivateApp(pid: id.pid)
             return
@@ -322,7 +356,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             self.hide() // Relinquish the fullscreen key panel BEFORE AX focus.
             if let choice {
                 self.activateAfterExpose(choice)
-            } else {
+            } else if shouldRestoreOrigin {
                 self.restoreExposeOrigin(window: originWindow, app: originApp)
             }
         }
@@ -354,11 +388,10 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
             let succeeded = await Task.detached(priority: .userInitiated) {
                 WindowSwitcherInventory.activate(choice, selectionTicket: ticket)
             }.value
-            guard let self else { return }
-            // Clear FIRST: the picker may already have been reopened (new
-            // interaction), and an early return must never poison the lock.
+            // hide()/presentExpose already clear the previous task; a late
+            // result must not clear the new session's focus request.
+            guard let self, !Task.isCancelled, self.interactionID == interaction else { return }
             self.activationTask = nil
-            guard self.interactionID == interaction else { return }
             if !succeeded {
                 guard SpaceManagementService.shared.windowSelectionTicket() == ticket else { return }
                 if let fallbackApp {
@@ -395,8 +428,8 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
     }
 
     func hide() {
-        exposePreparation?.cancel()
-        exposePreparation = nil
+        exposeWallpaperTask?.cancel()
+        exposeWallpaperTask = nil
         exposeScene = nil
         exposeOriginApp = nil
         exposeOriginWindow = nil
@@ -427,6 +460,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
         oldPanel?.delegate = nil
         oldPanel?.orderOut(nil)
         oldPanel?.contentView = nil
+        model.onReady = nil
         model.stop()
     }
 
@@ -443,10 +477,7 @@ final class WindowSwitcherController: NSObject, NSWindowDelegate {
 
     private func modelDidBecomeReady() {
         guard isVisible else { return }
-        if presentation == .expose, let scene = exposeScene {
-            prepareExposeScene(scene)
-            return
-        }
+        guard presentation != .expose else { return }
         if presentation == .commandTab, !commandTabApplied {
             commandTabApplied = true
             model.applyCommandTabOffset(commandTabOffset)

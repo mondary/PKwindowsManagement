@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026.11.44] - 2026-11-19
+### Fixed
+- **Ouverture d’Exposé PK** : le panneau s’affiche et peut être annulé sans attendre l’inventaire Accessibilité, le fond d’écran ou les captures. Les cartes et leurs vignettes apparaissent dès qu’elles sont disponibles, sans changer de place. Un résultat tardif ne peut pas rouvrir une session annulée.
+- **Gestes Exposé PK** : le sens de la prochaine séquence de contacts tient immédiatement compte de l’ouverture ; un nouveau geste peut rouvrir après Échap sans délai anti-rebond, et le détecteur se réarme après une interruption même si le trackpad a omis la trame de fin. Filtre anti-scroll, modes 3/4 doigts, fondus et présentation des fenêtres réduites conservés.
+
 ## [2026.11.43] - 2026-11-18
 ### Changed
 - **Bandeau dock pour les applications entièrement réduites (Atténuées, Îlots)** : un groupe dont **toutes** les fenêtres sont réduites ne monopolise plus une région entière (cas MonoCode : un quart d’écran pour une vignette). Ces groupes s’alignent dans un **bandeau horizontal en bas de l’Exposé** (14 % de hauteur, 88–148 pt), chacun dans son enclos — nom de l’app en haut, miniatures estompées avec légende en dessous. Les groupes actifs gardent la partie supérieure ; leur partition est pondérée par fenêtres **ouvertes** (au lieu du total, réduites comprises).

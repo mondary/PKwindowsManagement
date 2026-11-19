@@ -14,8 +14,11 @@ final class ExposeScene: ObservableObject {
         let appKitFrame: CGRect
         let frame: CGRect
         let safeTop: CGFloat
-        let wallpaperURL: URL?
-        let fitWallpaper: Bool
+    }
+
+    struct Wallpaper {
+        let image: NSImage
+        let fits: Bool
     }
 
     let screens: [Screen]
@@ -26,6 +29,7 @@ final class ExposeScene: ObservableObject {
     /// Snapshot at open time (dimmed rendering); hidden filtering happens in
     /// the model before the scene ever sees a minimized window.
     let minimizedDisplay: ExposeMinimizedDisplay
+    @Published var waitingForInventory = true
     @Published var expanded = false
     @Published var dismissing = false
     @Published private(set) var overview = ExposeLayout.Overview()
@@ -44,7 +48,7 @@ final class ExposeScene: ObservableObject {
                       width: max(1, activeFrame.width - 40),
                       height: max(1, activeFrame.height - safeTop - top - notice - (activeFrame.width < 1100 ? 92 : 60)))
     }
-    @Published private(set) var wallpapers: [CGDirectDisplayID: NSImage] = [:]
+    @Published private(set) var wallpapers: [CGDirectDisplayID: Wallpaper] = [:]
     var entryDuration: TimeInterval { ExposeAnimation.entryDuration(reduceMotion: reduceMotion) }
     func exitDuration(activating: Bool) -> TimeInterval {
         ExposeAnimation.exitDuration(activating: activating, reduceMotion: reduceMotion)
@@ -53,11 +57,8 @@ final class ExposeScene: ObservableObject {
     init?(screens: [NSScreen], active: NSScreen, defaults: UserDefaults = .standard) {
         let descriptions = screens.compactMap { screen -> Screen? in
             guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else { return nil }
-            let options = NSWorkspace.shared.desktopImageOptions(for: screen) ?? [:]
             return Screen(id: id, appKitFrame: screen.frame, frame: CGDisplayBounds(id),
-                safeTop: max(screen.safeAreaInsets.top, 24),
-                wallpaperURL: NSWorkspace.shared.desktopImageURL(for: screen),
-                fitWallpaper: options[.allowClipping] as? Bool == false)
+                safeTop: max(screen.safeAreaInsets.top, 24))
         }
         guard let activeID = active.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
               let target = descriptions.first(where: { $0.id == activeID }) else { return nil }
@@ -120,13 +121,28 @@ final class ExposeScene: ObservableObject {
     /// used to fall back to the default BLUE fill colour. When the file is
     /// missing, capture the desktop with every window excluded: the result
     /// is the actual wallpaper, whatever its format.
+    @MainActor
     func loadWallpapers() async {
-        for screen in screens {
-            guard !Task.isCancelled, wallpapers[screen.id] == nil else { continue }
-            if let image = await Self.image(from: screen.wallpaperURL) {
-                wallpapers[screen.id] = image
-            } else if let image = await Self.desktopSnapshot(displayID: screen.id) {
-                wallpapers[screen.id] = image
+        // Query the desktop only after ordering the panels. Prioritize the
+        // invoking display; secondary screens can stay on the neutral fill.
+        let displays = NSScreen.screens
+        let ordered = screens.filter { $0.id == activeID } + screens.filter { $0.id != activeID }
+        for screen in ordered {
+            guard !Task.isCancelled, !dismissing else { return }
+            guard let display = displays.first(where: {
+                $0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID == screen.id
+            }) else { continue }
+            let workspace = NSWorkspace.shared
+            let url = workspace.desktopImageURL(for: display)
+            let fits = workspace.desktopImageOptions(for: display)?[.allowClipping] as? Bool == false
+            if let image = await Self.image(from: url) {
+                guard !Task.isCancelled, !dismissing else { return }
+                wallpapers[screen.id] = Wallpaper(image: image, fits: fits)
+            } else {
+                guard !Task.isCancelled, !dismissing else { return }
+                let image = await Self.desktopSnapshot(displayID: screen.id)
+                guard !Task.isCancelled, !dismissing else { return }
+                if let image { wallpapers[screen.id] = Wallpaper(image: image, fits: false) }
             }
         }
     }
@@ -150,9 +166,8 @@ final class ExposeScene: ObservableObject {
         return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
     }
 
-    /// Wallpaper-only snapshot: every shareable window (apps, Finder desktop
-    /// icons, Dock, menu bar, our own panels) is excluded, so only the real
-    /// desktop picture remains. Requires Screen Recording, like previews.
+    /// Wallpaper fallback: exclude apps, including PK's now-visible
+    /// panels, while keeping the desktop background. Requires Screen Recording.
     private static func desktopSnapshot(displayID: CGDirectDisplayID) async -> NSImage? {
         guard #available(macOS 14.0, *), CGPreflightScreenCaptureAccess() else { return nil }
         let content = await WindowCaptureRequest<SCShareableContent>.perform { complete in
@@ -161,7 +176,8 @@ final class ExposeScene: ObservableObject {
             }
         }
         guard let content, let display = content.displays.first(where: { $0.displayID == displayID }) else { return nil }
-        let filter = SCContentFilter(display: display, excludingWindows: content.windows)
+        let filter = SCContentFilter(display: display, excludingApplications: content.applications,
+                                     exceptingWindows: [])
         let config = SCStreamConfiguration()
         config.width = Int(CGDisplayPixelsWide(displayID))
         config.height = Int(CGDisplayPixelsHigh(displayID))

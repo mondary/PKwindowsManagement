@@ -253,7 +253,7 @@ final class WindowSwitcherModel: ObservableObject {
         self.roomStore = roomStore
     }
 
-    func prepare(resetSearch: Bool = true) {
+    func prepare(resetSearch: Bool = true, frontmostPID: pid_t? = nil) {
         precondition(Thread.isMainThread)
         let previousSelection = resetSearch ? nil : selectedTarget
         stop()
@@ -353,13 +353,13 @@ final class WindowSwitcherModel: ObservableObject {
         }
         isLoading = true
         let token = generation
-        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        let originPID = frontmostPID ?? NSWorkspace.shared.frontmostApplication?.processIdentifier
         let snapshot = apps.map { app in
             WindowSwitcherInventory.Application(pid: app.processIdentifier,
                 name: app.localizedName ?? app.bundleIdentifier ?? "", launchedAt: app.launchDate, isHidden: app.isHidden)
         }
         let work = Task.detached(priority: .userInitiated) {
-            WindowSwitcherInventory.collect(apps: snapshot, frontmostPID: frontmostPID)
+            WindowSwitcherInventory.collect(apps: snapshot, frontmostPID: originPID)
         }
         inventoryTask = work
         loadingTask = Task { @MainActor [weak self] in
@@ -385,6 +385,8 @@ final class WindowSwitcherModel: ObservableObject {
             } else {
                 self.selectedTarget = WindowSwitcherState.selection(in: self.navigationTargets, keeping: previousSelection)
             }
+            self.inventoryTask = nil
+            self.loadingTask = nil
             self.isLoading = false
             self.loadLauncherAppsIfNeeded()
             self.onReady?()
@@ -1001,44 +1003,19 @@ final class WindowSwitcherModel: ObservableObject {
     /// WindowThumbnailCapture.captureSize); switching Exposé modes resets it.
     var exposeCaptureSize = CGSize(width: 640, height: 400)
 
-    /// Prime the entry animation BEFORE covering the actual desktop. Missing
-    /// or protected surfaces remain labeled placeholders. No window is moved,
-    /// unminimized or focused to obtain an image. Cancellation is generation-safe.
-    func warmExposePreviews() async {
-        guard isExposePresentation, isOpen, previewsGranted else { return }
-        let token = generation
-        let deadline = ProcessInfo.processInfo.systemUptime + 2.5
-        // Hidden mode never lists minimized windows: skip their captures too.
-        let listsMinimized = (AppRuntime.shared.settings?.exposeMinimizedDisplay ?? .dimmed) != .hidden
-        let visibleFirst = items.filter { $0.isOnScreen && !$0.isMinimized && !$0.isHidden }
-            + items.filter { listsMinimized && (!$0.isOnScreen || $0.isMinimized || $0.isHidden) }
-        for item in visibleFirst.prefix(64) {
-            guard !Task.isCancelled, isOpen, generation == token,
-                  ProcessInfo.processInfo.systemUptime < deadline else { return }
-            guard !attemptedPreviews.contains(item.id) else { continue }
-            attemptedPreviews.insert(item.id)
-            let image = await capture.image(for: item.id,
-                targetSize: isExposePresentation ? exposeCaptureSize : nil)
-            guard !Task.isCancelled, isOpen, generation == token else { return }
-            completedPreviews.insert(item.id)
-            if let image {
-                images[item.id] = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
-                imageOrder.append(item.id)
-            }
-        }
-    }
-
     /// Mode switch (Islands/Strip) changes the displayed replica size: drop the
     /// cached bitmaps so the next capture matches the new resolution.
     func resetExposePreviews() {
         precondition(Thread.isMainThread)
         guard isOpen, isExposePresentation else { return }
+        previewTask?.cancel()
+        previewTask = nil
+        capture = WindowThumbnailCapture()
         images.removeAll()
         imageOrder.removeAll()
         attemptedPreviews.removeAll()
         completedPreviews.removeAll()
         pendingPreviews.removeAll()
-        Task { @MainActor [weak self] in await self?.warmExposePreviews() }
     }
 
     /// Lazy grid cells enqueue requests; one screenshot at a time, bounded RAM.
@@ -1071,7 +1048,7 @@ final class WindowSwitcherModel: ObservableObject {
                     }
                 }
             }
-            if self.generation == token { self.previewTask = nil }
+            if !Task.isCancelled, self.generation == token { self.previewTask = nil }
         }
     }
 

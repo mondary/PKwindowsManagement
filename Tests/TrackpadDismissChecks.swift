@@ -86,19 +86,51 @@ enum TrackpadDismissChecks {
         frame(3, 0.8, 4.2); frame(3, 0.5, 4.3); drain()
         precondition(!open && cancellations == 3)
 
+        // Backlogged raw frames must see the new presentation immediately
+        // on main, not wait for another hop queued behind the inverse swipe.
+        let contacts: [(Int, Float, Double)] = [
+            (0, 0, 4.31), (3, 0.2, 5), (3, 0.4, 5.05), (0, 0, 5.06),
+            (3, 0.8, 5.09), (3, 0.6, 5.14), (0, 0, 5.15)
+        ]
+        let queued = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            for (count, y, time) in contacts { monitor.receive(fingers: count, y: y, timestamp: time) }
+            queued.signal()
+        }
+        precondition(queued.wait(timeout: .now() + 2) == .success)
+        drain()
+        precondition(!open && openings == 4 && cancellations == 4)
+
+        // Esc closes externally; a complete fresh touch may reopen at once.
+        frame(3, 0.2, 6); frame(3, 0.4, 6.05); frame(0, 0, 6.06)
+        precondition(open && openings == 5)
+        open = false
+        frame(3, 0.2, 6.1); frame(3, 0.4, 6.15)
+        precondition(open && openings == 6)
+        frame(2, 0.4, 6.16); frame(3, 0.2, 6.2); frame(3, 0.7, 6.3)
+        precondition(open && openings == 6 && cancellations == 4)
+        // A missing release can't lock the inverse direction forever.
+        frame(3, 0.8, 7.2); frame(3, 0.6, 7.25)
+        precondition(!open && cancellations == 5)
+
         // Source integration checks only: do not focus/capture real windows.
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         let controller = try! String(contentsOf: root.appendingPathComponent(
             "src/macos/Services/WindowSwitcher/WindowSwitcherController.swift"), encoding: .utf8)
+        let readyStart = controller.range(of: "private func finishExposeInventory(")!.lowerBound
         let showStart = controller.range(of: "private func showExposePanels(")!.lowerBound
         let endStart = controller.range(of: "private func endExpose(")!.lowerBound
+        let ready = String(controller[readyStart..<showStart])
         let show = String(controller[showStart..<endStart])
-        precondition(show.range(of: "model.focusedCandidate")!.lowerBound
-                     < show.range(of: "NSApp.activate")!.lowerBound)
+        precondition(ready.range(of: "model.focusedCandidate")!.lowerBound
+                     < ready.range(of: "NSApp.activate")!.lowerBound)
+        precondition(!show.contains("NSApp.activate"))
         let endFinish = controller.range(of: "private func restoreExposeOrigin(")!.lowerBound
         let end = String(controller[endStart..<endFinish])
         precondition(end.contains("id == nil ? exposeOriginApp : nil"))
         precondition(end.contains("id == nil ? exposeOriginWindow : nil"))
+        precondition(end.contains("let shouldRestoreOrigin = !scene.waitingForInventory"))
+        precondition(end.contains("else if shouldRestoreOrigin"))
         precondition(end.range(of: "self.hide()")!.lowerBound
                      < end.range(of: "self.restoreExposeOrigin(")!.lowerBound)
         precondition(!end.contains("model.selectedID"))
@@ -106,6 +138,6 @@ enum TrackpadDismissChecks {
         precondition(controller.contains("case 53: endExpose()"))
         precondition(controller.contains("guard let app, !app.isTerminated else { return }"))
 
-        print("Trackpad dismiss checks passed: up opens/down cancels, immediate inverse, same-touch lock, no toggle, no down-open, exact 3/4, disabled state and origin-before-activation/hide-before-restore integration")
+        print("Trackpad dismiss checks passed: up opens/down cancels, immediate inverse, same-touch lock, queued inverse, rapid reopen, missing release, exact 3/4, and origin-before-activation/hide-before-restore integration")
     }
 }
