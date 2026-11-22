@@ -75,6 +75,17 @@ struct TrackpadSwipeChecks {
             CFArrayCreate(kCFAllocatorDefault, $0.baseAddress, $0.count, nil)!
         }
         precondition(TrackpadSwipeMonitor.devicePointers(in: list) == [deviceA, deviceB])
+        // Recovery decisions for cold launch, reconnect, wake and stopped
+        // devices; an idle but healthy trackpad must keep its registration.
+        func plan(_ old: [Int], _ new: [Int], wake: Bool = false, stopped: Set<Int> = []) -> ([Int], [Int]) {
+            TrackpadSwipeMonitor.deviceChanges(old: old, current: new, afterWake: wake, running: { !stopped.contains($0) })
+        }
+        precondition(plan([], [1]) == ([], [1]))
+        precondition(plan([1], [1]) == ([], []))
+        precondition(plan([1], []) == ([1], []))
+        precondition(plan([1,2], [2,3]) == ([1], [3]))
+        precondition(plan([1,2], [1,2], stopped: [2]) == ([2], [2]))
+        precondition(plan([1], [1], wake: true) == ([1], [1]))
         let empty = CFArrayCreate(kCFAllocatorDefault, nil, 0, nil)!
         precondition(TrackpadSwipeMonitor.devicePointers(in: empty).isEmpty)
 

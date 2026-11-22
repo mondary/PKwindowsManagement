@@ -123,34 +123,86 @@ final class TrackpadSwipeMonitor {
 
     var isRunning: Bool { started }
 
+    private typealias IsRunning = @convention(c) (UnsafeMutableRawPointer) -> Bool
+    private var createList: CreateList?
+    private var startFunction: Start?
+    private var isDeviceRunning: IsRunning?
+    private var recoveryTimer: Timer?
+    private var wakeObserver: NSObjectProtocol?
+    private var generation: UInt64 = 0
+    private var suppressionEnabled = false
+    private var suppressionFingers = 4
+
     func start() {
-        guard !started else { return }
+        guard recoveryTimer == nil else { return }
         let path = "/System/Library/PrivateFrameworks/MultitouchSupport.framework/MultitouchSupport"
-        guard let handle = dlopen(path, RTLD_NOW) else {
-            NSLog("PKwindowsManagement: MultitouchSupport unavailable (%@)", String(cString: dlerror()))
+        guard let handle = self.handle ?? dlopen(path, RTLD_NOW) else {
+            NSLog("PKwindowsManagement: MultitouchSupport unavailable")
             return
         }
         self.handle = handle
-        guard let createSym = dlsym(handle, "MTDeviceCreateList"),
-              let registerSym = dlsym(handle, "MTRegisterContactFrameCallback"),
-              let unregisterSym = dlsym(handle, "MTUnregisterContactFrameCallback"),
-              let startSym = dlsym(handle, "MTDeviceStart") else { return }
-        let create = unsafeBitCast(createSym, to: CreateList.self)
-        register = unsafeBitCast(registerSym, to: Register.self)
-        unregister = unsafeBitCast(unregisterSym, to: Register.self)
-        stopFunction = dlsym(handle, "MTDeviceStop").map { unsafeBitCast($0, to: Stop.self) }
-        deviceList = create()?.takeRetainedValue()
-        let devices = deviceList.map(Self.devicePointers(in:)) ?? []
-        self.devices = devices
-        for device in devices {
+        guard let create = dlsym(handle, "MTDeviceCreateList"),
+              let add = dlsym(handle, "MTRegisterContactFrameCallback"),
+              let remove = dlsym(handle, "MTUnregisterContactFrameCallback"),
+              let begin = dlsym(handle, "MTDeviceStart"),
+              let stop = dlsym(handle, "MTDeviceStop") else { return }
+        createList = unsafeBitCast(create, to: CreateList.self)
+        register = unsafeBitCast(add, to: Register.self)
+        unregister = unsafeBitCast(remove, to: Register.self)
+        startFunction = unsafeBitCast(begin, to: Start.self)
+        stopFunction = unsafeBitCast(stop, to: Stop.self)
+        isDeviceRunning = dlsym(handle, "MTDeviceIsRunning").map { unsafeBitCast($0, to: IsRunning.self) }
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.refreshDevices(afterWake: true) }
+        let timer = Timer(timeInterval: 2, repeats: true) { [weak self] _ in self?.refreshDevices() }
+        timer.tolerance = 0.25
+        recoveryTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+        refreshDevices()
+    }
+
+    // An idle trackpad sends no frames: silence alone is never a reason to
+    // interrupt a healthy device. Rebind on wake even if its pointer survived.
+    static func deviceChanges<T: Hashable>(old: [T], current: [T], afterWake: Bool,
+                                           running: (T) -> Bool) -> (remove: [T], add: [T]) {
+        let kept = Set(current).intersection(old).filter { !afterWake && running($0) }
+        return (old.filter { !kept.contains($0) }, current.filter { !kept.contains($0) })
+    }
+
+    private func refreshDevices(afterWake: Bool = false) {
+        guard let list = createList?()?.takeRetainedValue() else { return }
+        let current = Self.devicePointers(in: list)
+        let changes = Self.deviceChanges(old: devices, current: current, afterWake: afterWake,
+                                        running: { isDeviceRunning?($0) ?? true })
+        guard !changes.remove.isEmpty || !changes.add.isEmpty else { return }
+        for device in changes.remove {
+            stopFunction?(device)
+            unregister?(device, trackpadCallback)
+        }
+        lock.lock()
+        generation &+= 1
+        detector = TrackpadSwipeDetector()
+        gestureDirection = nil
+        lastFrameAt = nil
+        scrollGate = TrackpadScrollGate()
+        scrollGate.configure(enabled: suppressionEnabled, requiredFingers: suppressionFingers)
+        lock.unlock()
+        deviceList = list
+        devices = current
+        for device in changes.add {
             register?(device, trackpadCallback)
-            unsafeBitCast(startSym, to: Start.self)(device, 0)
+            startFunction?(device, 0)
         }
         started = !devices.isEmpty
-        NSLog("PKwindowsManagement: trackpad swipe monitor started on %d device(s)", devices.count)
+        NSLog("PKwindowsManagement: trackpad listener refreshed (+%d/-%d, wake=%d)", changes.add.count, changes.remove.count, afterWake ? 1 : 0)
     }
 
     func stop() {
+        recoveryTimer?.invalidate()
+        recoveryTimer = nil
+        if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+        wakeObserver = nil
         for device in devices {
             stopFunction?(device)
             unregister?(device, trackpadCallback)
@@ -158,7 +210,8 @@ final class TrackpadSwipeMonitor {
         devices.removeAll()
         deviceList = nil
         lock.lock()
-        detector.reset()
+        generation &+= 1
+        detector = TrackpadSwipeDetector()
         gestureDirection = nil
         lastFrameAt = nil
         scrollGate.configure(enabled: false, requiredFingers: 4)
@@ -190,6 +243,8 @@ final class TrackpadSwipeMonitor {
     /// AppSettings. The event tap can consult this tiny locked state at once.
     func configureScrollSuppression(enabled: Bool, requiredFingers: Int) {
         lock.lock()
+        suppressionEnabled = enabled
+        suppressionFingers = requiredFingers
         scrollGate.configure(enabled: enabled, requiredFingers: requiredFingers)
         lock.unlock()
     }
@@ -207,11 +262,13 @@ final class TrackpadSwipeMonitor {
         // Claim raw contacts synchronously BEFORE dispatching detection to
         // main. Otherwise the first wheel events can reach the page first.
         lock.lock()
+        let token = generation
         scrollGate.updateContacts(fingers: fingers, time: ProcessInfo.processInfo.systemUptime)
         lock.unlock()
         guard Thread.isMainThread else {
             DispatchQueue.main.async { [weak self] in
-                self?.processContacts(fingers: fingers, y: y, timestamp: timestamp)
+                guard let self, self.generation == token else { return }
+                self.processContacts(fingers: fingers, y: y, timestamp: timestamp)
             }
             return
         }

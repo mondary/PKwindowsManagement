@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026.11.45] - 2026-11-22
+### Fixed
+- Exposé PK réarme l’écoute du trackpad au réveil et détecte les périphériques reconnectés ou arrêtés, même si aucun n’était disponible au lancement. La vérification périodique ne retarde pas le traitement des gestes.
+
 ## [2026.11.44] - 2026-11-19
 ### Fixed
 - **Ouverture d’Exposé PK** : le panneau s’affiche et peut être annulé sans attendre l’inventaire Accessibilité, le fond d’écran ou les captures. Les cartes et leurs vignettes apparaissent dès qu’elles sont disponibles, sans changer de place. Un résultat tardif ne peut pas rouvrir une session annulée.
